@@ -1,0 +1,11 @@
+# Sensitive data — do not commit
+spreadsheets/
+output/*.txt
+output/*.md
+output/*.xlsx
+output/ir_summaries/
+
+# System files
+.DS_Store
+__pycache__/
+*.pyc

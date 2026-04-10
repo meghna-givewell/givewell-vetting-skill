@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__hardened-workspace__read_sheet_values",
+      "mcp__hardened-workspace__read_sheet_notes",
+      "WebSearch"
+    ]
+  }
+}
