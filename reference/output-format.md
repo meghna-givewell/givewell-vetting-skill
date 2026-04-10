@@ -2,16 +2,18 @@
 
 ## Findings Sheet — Sheet 1
 
-Columns: Cell/Row | Error Type / Issue | Explanation | Recommended Fix | Severity | Estimated CE Impact | Researcher to confirm? | Status
+Columns (A–J): Cell/Row | Severity | Decision Relevance | Sheet | Error Type / Issue | Explanation | Recommended Fix | Estimated CE Impact | Status | Needs input?
 
-- **Cell/Row**: Exact location (e.g., `Sheet1!B14`)
-- **Error Type**: `Formula Error`, `Missing Source`, `Readability`, `Confidential Info`, `Adjustment Scope`, `Edge Case`, `Outdated Parameter`, `Template Language`, `Internal Reference`, `Intentional`
-- **Explanation**: Why this is an error or concern
-- **Recommended Fix**: Specific corrective action
-- **Severity**: `High`, `Medium`, or `Low`
-- **Estimated CE Impact**: For High findings, quantify directional effect on bottom-line CE (e.g., "raises weighted CE from 8.7x to ~10.2x"). For Medium/Low with negligible or unknown impact: "None / not quantified"
-- **Researcher to confirm?**: Mark `✓` if the finding cannot be resolved without researcher input. Leave blank if the fix is unambiguous.
-- **Status**: Leave blank. Researcher fills in: `Resolved`, `Won't Fix`, or `Disagree`.
+- **Cell/Row** (A): Exact location (e.g., `Main CEA!B14`). For grouped findings, list all affected cells (e.g., `B14, B18, B22`).
+- **Severity** (B): `High`, `Medium`, or `Low`. Color-coded — see Severity Rules below.
+- **Decision Relevance** (C): `D` if correcting the finding would change the bottom-line CE multiple; `H` if it affects interpretation, credibility, or reader understanding but not the calculated CE; `O` if it is a documentation, style, or labeling issue with no interpretation impact. Rule of thumb: High severity → usually D; Low severity → usually O; Medium → classify by content (stale parameter that changes CE = D; missing source for key assumption = H; first-person note = O).
+- **Sheet** (D): The sheet name the finding applies to (e.g., `Main CEA`, `Leverage/Funging`, `Inputs`). Use `Multiple` if a finding spans more than one sheet.
+- **Error Type / Issue** (E): `Formula Error`, `Missing Source`, `Readability`, `Confidential Info`, `Adjustment Scope`, `Edge Case`, `Outdated Parameter`, `Template Language`, `Internal Reference`, `Intentional`
+- **Explanation** (F): Why this is an error or concern.
+- **Recommended Fix** (G): Specific corrective action.
+- **Estimated CE Impact** (H): For High findings, quantify directional effect on bottom-line CE (e.g., "raises weighted CE from 8.7x to ~10.2x"). For Medium/Low with negligible or unknown impact: "None / not quantified".
+- **Status** (I): Researcher fills in: `Resolved`, `Won't Fix`, `Disagree`, or `In Progress`. Leave blank when creating the finding. Use dropdown validation if the MCP supports `setDataValidation`; otherwise leave as free text.
+- **Needs input?** (J): Mark `✓` if the finding cannot be resolved without researcher input — e.g., an intent question ("is this $0 intentional?") or a verification that requires the researcher to check a source. Leave blank if the fix is unambiguous.
 
 ### Severity Rules
 - **High**: Materially affects bottom-line CE — formula errors, structural omissions, adjustments calculated but not applied. Ask: does correcting this change the number a decision-maker sees? If yes, it's High.
@@ -19,10 +21,12 @@ Columns: Cell/Row | Error Type / Issue | Explanation | Recommended Fix | Severit
 - **Low**: Cosmetic or labeling issues with no calculation impact.
 
 ### Grouping and Sorting
-Sort by sheet, then row number. Where the same issue applies to multiple cells, **group into a single finding** listing all affected cells (e.g., "B14, B18, B22"). Only create separate rows when the issue, explanation, or recommended fix differs meaningfully. Aim for ~15–25 grouped findings rather than 50+ individual entries.
+Sort by sheet (column D), then row number. Where the same issue applies to multiple cells, **group into a single finding** listing all affected cells (e.g., "B14, B18, B22"). Only create separate rows when the issue, explanation, or recommended fix differs meaningfully. Aim for ~15–25 grouped findings rather than 50+ individual entries.
+
+**Newly-added geography column — missing source batch finding**: When a column represents a newly-added geography and multiple parameters in that column lack cell notes or source citations, file a single grouped Medium finding listing all affected cells rather than one finding per cell. Example wording: "CIV column (J) has N parameters with no source note — newly-added geographies commonly have documentation gaps across the board. Cells: [J16, J34, J92, J135, J146, ...]. Recommend adding a source note or cell note for each before publication." This prevents alert fatigue from 8+ identical Low/H findings that all have the same fix.
 
 ### Summary Row
-Row 2 (immediately below header, before findings): total findings, High count, Medium count, Low count, count of rows marked "Researcher to confirm". Light gray background. Write findings starting at row 3.
+Row 2 (immediately below header, before findings): total findings, High count, Medium count, Low count, D count, H count, O count, count of rows with `✓` in Needs input?. Light gray background. Write findings starting at row 3.
 
 ---
 
