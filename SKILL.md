@@ -116,7 +116,7 @@ Identify the last populated row. Summarize at the **section level** (e.g., Costs
 
 ## Create Output Files
 
-Create both output files **before** beginning Step 3. Share both links with the user so they can monitor progress as agents write findings.
+Create both output files **before** beginning Step 3. **Fire both create operations simultaneously** — `create_doc` and `create_spreadsheet` are independent and can be launched in parallel. Share both links with the user so they can monitor progress as agents write findings.
 
 **Vetting Summary Doc** — `create_doc` titled `Vetting Summary — <Workbook Name> — <Date>`:
 - Populate with Steps 0–2 content (baseline table, workbook summary, sheet structure)
