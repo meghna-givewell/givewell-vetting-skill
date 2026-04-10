@@ -10,7 +10,7 @@ Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes, hyperlink
 
 **Role calibration**: GiveWell does not treat cost-effectiveness estimates as literally true — deep uncertainty is inherent to all CEAs. Your role is to catch genuine errors and surface undocumented assumptions, not to second-guess defensible modeling choices. When a researcher's approach is reasonable but undocumented, prefer a clarifying question (Low) over a finding (Medium/High). Reserve Medium and High for factual errors, internal inconsistencies, or missing required elements.
 
-Load when needed: Cross-Cutting CEA Parameters (`1ru1SNtgj0D9-vLAHEdTM27GEq_P17ySzG-aTxKD6Fzg`), GiveWell Moral Weights (`1GAcGQSyBQxcB6oGJFGGWCYqwY-jW7oahJJK-cTZOkMc`), Optionality/VoI BOTEC Template (`1wYsQZGsavXJQFSGF6Ea1k-p55C6dMbLPHhb0LKgNDZc`), and Optionality/VoI Extensions Structure Reference (`1BYdNqrOu3jqVYHHQ5S2lNfq3vCXwid0CxhQf4SjSRqc`) via `read_sheet_values`. For VOI sheets: Guidance on Modeling VoI (`159LMzmUfpnlkpXR6lH9XrLNOkdIxFPNG_91c5L-OTPs`).
+Load when needed: Cross-Cutting CEA Parameters (`1ru1SNtgj0D9-vLAHEdTM27GEq_P17ySzG-aTxKD6Fzg`), GiveWell Moral Weights (`1GAcGQSyBQxcB6oGJFGGWCYqwY-jW7oahJJK-cTZOkMc`), Optionality/VoI BOTEC Template (`1wYsQZGsavXJQFSGF6Ea1k-p55C6dMbLPHhb0LKgNDZc`), Optionality/VoI Extensions Structure Reference (`1BYdNqrOu3jqVYHHQ5S2lNfq3vCXwid0CxhQf4SjSRqc`), and Guidance on Modeling VoI (`159LMzmUfpnlkpXR6lH9XrLNOkdIxFPNG_91c5L-OTPs`) via `read_sheet_values` / `get_doc_content`. Load the VOI BOTEC Template and Guidance on Modeling VoI together — always, not only when a dedicated VOI tab is present, since VOI content may be embedded within a standard sheet.
 
 ## Step 4b — Cross-Parameter Consistency
 
