@@ -1,6 +1,14 @@
 # Output Format Reference
 
-## Findings Sheet — Sheet 1
+## Sheet routing rule
+
+- **Findings** — model-integrity issues: anything with Decision Relevance `D` or `H` (formula errors, stale/wrong parameters, structural bugs, undocumented assumptions that affect CE or model interpretation).
+- **Publication Readiness** — issues that don't affect the model: Decision Relevance `O` findings (style, labeling, terminology), plus Low/H findings whose sole issue is citation format, link permissions, Box/Drive publish status, personal names in notes, or internal-only references.
+- When in doubt, use Findings. It is better to over-include in Findings than to hide a real issue in Publication Readiness.
+
+---
+
+## Findings Sheet — Sheet 1 (model integrity)
 
 Columns (A–J): Cell/Row | Severity | Decision Relevance | Sheet | Error Type / Issue | Explanation | Recommended Fix | Estimated CE Impact | Status | Needs input?
 
@@ -30,7 +38,15 @@ Row 2 (immediately below header, before findings): total findings, High count, M
 
 ---
 
-## Hardcoded Values Sheet — Sheet 2
+---
+
+## Publication Readiness Sheet — Sheet 2 (pub-only issues)
+
+Same 10-column format as the Findings sheet (A–J). Contains only issues that do not affect model outputs: permission flags, broken links, GBD/IHME citation completeness (text-only citations), personal names in notes, internal-only references, Box links, terminology (x cash → x benchmark), label/note style issues. Summary row (row 2) counts total / High / Medium / Low. Researchers working on model correctness can ignore this sheet entirely until the pre-publication checklist.
+
+---
+
+## Hardcoded Values Sheet — Sheet 3
 
 Columns: Cell/Row | Current Value | Description | Source to Verify | Validation Priority
 
@@ -43,7 +59,7 @@ Add a brief note at the top of the sheet listing High-priority inputs for triage
 
 ---
 
-## Sensitivity Sheet — Sheet 3
+## Sensitivity Sheet — Sheet 4
 
 Columns: Cell/Row | Content Found | Sensitivity Type | Recommended Action
 
