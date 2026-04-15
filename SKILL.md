@@ -43,7 +43,11 @@ Load each document only when the step that requires it begins.
 
 ### Google Sheets link
 1. Extract the spreadsheet ID from the URL (long string between `/d/` and `/edit` or `/view`)
-2. Use `get_spreadsheet_info` to list all sheet names. In a **single message**, ask: (a) which sheets to vet, and (b) the two Step 0.5 program context questions (see Step 0.5 below). Combining these into one ask means the user responds once and reads + literature searches can fire in parallel immediately after. Present only sheet names — do not display grid dimensions (rows × cols), as these reflect allocated space, not actual data, and will mislead the user about sheet size
+2. Use `get_spreadsheet_info` to list all sheet names. In a **single message**, ask: (a) which sheets to vet, (b) the two Step 0.5 program context questions (see Step 0.5 below), and (c) full or lite vet — include the descriptions below so the researcher can choose. Combining all three into one ask means the user responds once and reads + literature searches can fire in parallel immediately after. Present only sheet names — do not display grid dimensions (rows × cols), as these reflect allocated space, not actual data, and will mislead the user about sheet size.
+
+> **Full vet** (~23 agents, two independent passes per analysis check): Each analysis agent — sources, readability, plausibility, etc. — runs as two independent instances that don't know about each other. A reconciliation step then merges their findings. Most thorough. Recommended for models going to publication or grants over $1M.
+>
+> **Lite vet** (~12 agents, one pass per analysis check): Formula-check still runs twice independently, but other analysis checks run once each. A mandatory declaration table forces each agent to account for every row it scanned. Faster. Good for early-stage reviews, small BOTECs, or when you need results quickly.
 3. **Fire all reads and literature searches in a single parallel batch** — once the user answers: simultaneously fire `read_sheet_values` (FORMATTED_VALUE and FORMULA), `read_sheet_notes`, `read_sheet_hyperlinks`, and `read_spreadsheet_comments` (once for the workbook) for each vetted sheet — AND 1–2 literature web searches using the intervention type from the user's Step 0.5 answers. If the user provided a grant document link, include `get_doc_content` on that link in the same parallel batch.
 
 **Pre-vet acknowledged-issue extraction**: After the parallel batch, scan `read_spreadsheet_comments` results for RESOLVED threads where a researcher acknowledged a known issue (e.g., "keeping this for comparability," "reviewed and comfortable"). Add each to the declared-intentional deviations list as "Acknowledged in resolved comment [author, date]: [description]." Agents treat these as declared-intentional deviations — Low/H at most, not Medium or High.
@@ -157,10 +161,10 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 
 **Each sub-agent must execute its full checklist exhaustively, on every row.** No check in any agent file is optional or skippable because the sheet is small or because a prior agent already noticed something nearby. The formula-check agent must audit every formula row against its label — not just rows that match a named pattern. The sources agent must complete the full column F text audit on every row. The readability agent must read every row label top-to-bottom. The consistency agent must compare against the VOI template structure row-by-row. A sub-agent that shortcuts because "this is a small BOTEC" will miss findings the same way inline execution does. **The named checks in each agent file are patterns to look for on top of the row-by-row baseline — they are not a substitute for it.**
 
-Agents run in three waves — in either **full mode** or **lite mode**. Determine the mode immediately after Step 2 by summing populated rows across all vetted tabs:
+Agents run in three waves — in either **full mode** or **lite mode**, as selected by the researcher in the initial ask. Before spawning Wave 1, announce: "Using [full / lite] mode as requested."
 
-- **Lite mode**: total populated rows ≤ 150. Use the lite wave tables (marked **Lite**) below. Announce: "Model has [N] populated rows — using lite mode (4 Wave 1 agents, 7 Wave 2 agents, no Wave 2.5 reconciliation)."
-- **Full mode**: total populated rows > 150. Use the standard wave tables (marked **Full**) below.
+- **Lite mode**: Use the lite wave tables (marked **Lite**) below (4–5 Wave 1 agents, 7–8 Wave 2 agents, no Wave 2.5 reconciliation).
+- **Full mode**: Use the standard wave tables (marked **Full**) below (~23 agents across Waves 1 and 2, plus Wave 2.5 reconciliation).
 
 ---
 
