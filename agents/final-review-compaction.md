@@ -1,0 +1,86 @@
+# Final Review — Step 10a: Compaction Agent
+
+You are performing Step 10a of a GiveWell spreadsheet vet. This is the first of three sequential final-review steps. You have been provided:
+- Findings sheet ID and Publication Readiness sheet ID (both tabs within the same output spreadsheet)
+- User email for MCP calls
+
+**Do not read the source spreadsheet.** Your job is to restructure the findings lists only. Read both sheets — all rows — before doing anything else.
+
+**Do not invoke any skills or load additional context files.** Your task is defined entirely within this prompt.
+
+**Stakes**: GiveWell allocates hundreds of millions of dollars in grants based on cost-effectiveness analyses like this one. Every finding you misroute or inadvertently drop during compaction could affect real funding decisions. Exhaustive coverage of all rows — including rows beyond the first 50 — is a baseline requirement.
+
+**Coverage mandate**: Read all rows from both sheets in batches before taking any action. After completing each step below, write a coverage declaration before moving to the next: "Step [N] complete. [Result]." Do not proceed until you can write it.
+
+---
+
+## Step 1 — Read all rows
+
+Read the Findings sheet in **exactly five mandatory batches** — all five, regardless of whether any batch appears empty:
+1. `A2:L200`
+2. `A201:L400`
+3. `A401:L600`
+4. `A601:L800`
+5. `A801:L1000`
+
+**Do not stop early.** Buffer zones between pre-allocated agent ranges produce empty batches in the middle of the sheet — an empty batch does NOT mean the sheet is fully read, because data may resume in a later batch. Read all five batches before drawing any conclusions.
+
+After each batch completes, write the line: `"Batch [N] (rows [start]–[end]): [X] non-empty rows found."` Do this before reading the next batch. If you proceed to processing without completing all five reads and all five per-batch declarations, you will silently miss findings — and GiveWell may act on an incomplete vet.
+
+Read the Publication Readiness sheet in three mandatory batches: `A2:H200`, then `A201:H400`, then `A401:H600`. All three are required regardless of empty batches.
+
+Coverage declaration: "Read complete. Findings: [N1] rows in batch 1, [N2] in batch 2, [N3] in batch 3, [N4] in batch 4, [N5] in batch 5. Total non-empty Findings rows: [N]. Publication Readiness: [M] total non-empty rows."
+
+---
+
+## Step 2 — Route misrouted rows
+
+Check each row:
+- Findings sheet rows whose **sole** issue is citation format, link permissions, terminology, labeling, or style (no model impact) → move to Publication Readiness.
+- Findings sheet rows where **Changes CE? is blank or No** AND the explanation describes only a documentation gap (missing source, missing cell note, missing label) → move to Publication Readiness. A finding that does not change CE and only recommends adding a note belongs in Publication Readiness regardless of how its Error Type is worded.
+- Publication Readiness sheet rows that affect model outputs or interpretation → move to Findings.
+- When in doubt, leave in Findings.
+
+Coverage declaration: "Routing complete. [N] rows moved to Publication Readiness. [M] rows moved to Findings. No other misrouted rows."
+
+---
+
+## Step 3 — Deduplicate
+
+Scan all rows across both sheets for duplicates — rows where Cell/Row (column C) and Error Type/Issue (column E on Findings, column D on Publication Readiness) are substantively identical. Parallel Wave 2 agents cannot see each other's findings, so duplicates are most common between sources and readability (both check Notes columns) and between plausibility agents (both may flag the same cell).
+
+When duplicates are found: keep the finding with the more complete Explanation and Recommended Fix; merge any unique detail from the other row into the surviving row's Explanation field; mark the surviving row with "Merged with duplicate finding from parallel agent." Do not merge near-duplicates that are complementary — a broken link and a stale value at the same cell are distinct issues and should both be kept.
+
+Coverage declaration: "Deduplication complete. [N] duplicates merged. No other duplicates found."
+
+---
+
+## Step 4 — Rewrite and sort both sheets
+
+Rewrite both sheets sequentially from row 2, closing all gaps left by Wave 2's pre-allocated row ranges.
+
+Sort all Findings rows in memory: primary key = Severity (High → Medium → Low), secondary = Error Type/Issue (column E, alphabetical). Then rewrite the Findings sheet from row 2 with section dividers:
+- Before the first High finding: divider row with column B = `─── High (N findings) ───`, all other columns blank.
+- All High findings follow.
+- Before the first Medium finding: `─── Medium (N findings) ───`.
+- All Medium findings follow.
+- Before the first Low finding: `─── Low (N findings) ───`.
+
+Divider rows are auto-styled by conditional formatting (gray background — triggered when column B contains `───`). Divider rows are not finding rows — skip them when counting for the N values above.
+
+Sort the Publication Readiness sheet by Error Type/Issue (column D, alphabetical) and rewrite without dividers.
+
+Coverage declaration: "Sort and rewrite complete. Findings: [N] High, [M] Medium, [L] Low, [D] divider rows. Publication Readiness: [N] rows."
+
+---
+
+## Step 5 — Assign Finding IDs
+
+After sort is complete, write sequential IDs to column A. Skip divider rows — a row is a divider if column D (Severity) is empty and column B contains `───`.
+
+- Findings sheet: write `F-001`, `F-002`, `F-003`, … for each non-divider row from row 2 onward.
+- Publication Readiness sheet: write `PR-001`, `PR-002`, … from row 2 onward (no dividers to skip).
+
+Use a single `modify_sheet_values` call per sheet to write all IDs at once. Confirm `Finding #` is the column A header on both sheets (row 1).
+
+Final coverage declaration: "Compaction complete. [N] Findings IDs assigned (F-001 through F-[NNN]). [M] Publication Readiness IDs assigned (PR-001 through PR-[MMM]). [X] rows misrouted and moved. [Y] duplicates merged."

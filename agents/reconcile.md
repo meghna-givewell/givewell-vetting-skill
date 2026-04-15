@@ -60,14 +60,14 @@ Then make one of three determinations:
 
 **Retain** (default): The finding is valid, or you cannot confirm it is invalid.
 - If the finding is already on the sheet (from the A instance): append "Identified by one instance only — retained by reconciliation review." to the Explanation.
-- If the finding is not yet on the sheet (B-only and A wrote nothing): add it as a new row on the correct sheet (Findings for D/H; Publication Readiness for O). Add "Identified by B instance only — validated by reconciliation review." to Explanation. Write all 10 columns.
+- If the finding is not yet on the sheet (B-only and A wrote nothing): add it as a new row on the correct sheet (Findings for model-integrity findings; Publication Readiness for publication-readiness findings). Add "Identified by B instance only — validated by reconciliation review." to Explanation. Write all columns.
 - **When in doubt, retain. The cost of a false positive is one minute of researcher review. The cost of a false Won't Fix is a missed error in a published CEA.**
 
 **Won't Fix** (high bar — requires specific affirmative evidence):
 - You may mark a finding `Won't Fix` **only** if you can state the specific, affirmative reason the formula or value is correct — not merely that you couldn't confirm the issue.
 - Qualifying reasons: "The formula references cell D22 labeled 'Seasonal concentration (non-Sahel)' — the correct concept for this column." / "The declared-intentional deviation explicitly covers this parameter." / "The cell note explains this value is intentionally set at X because [reason the note gives]."
 - Non-qualifying reasons: "I couldn't reproduce the issue." / "It seems likely correct in context." / "The other agent's finding seems plausible." / "The value is close to what I'd expect."
-- When marking Won't Fix: set Status (column I) to `Won't Fix` and append to Explanation: "Reconciliation review: not confirmed. Specific reason: [state the exact affirmative reason]."
+- When marking Won't Fix: append to Explanation: "Reconciliation review: not confirmed. Specific reason: [state the exact affirmative reason]." Then delete the row from the sheet.
 
 **Needs researcher input** (when validity depends on intent):
 - Leave the finding as-is.
@@ -96,10 +96,12 @@ Net new findings added: [N]
 - **Never skip a divergence** — "it seems likely correct" does not substitute for re-reading the cell.
 - **Never merge distinct findings** — if A and B flagged the same cell for different issues (e.g., A: formula error; B: missing source note), keep both.
 - **Never mark Won't Fix without a specific affirmative reason** — retain by default.
-- **Do not update the summary row** — the final-review agent (Step 10) does this after compaction.
 
 ## Writing new findings
 
-Use `modify_sheet_values` to append retained divergence findings. Write each finding with these 10 columns in order: **A** Cell/Row | **B** Severity | **C** Decision Relevance | **D** Sheet | **E** Error Type/Issue | **F** Explanation | **G** Recommended Fix | **H** Estimated CE Impact | **I** Status (leave blank unless Won't Fix) | **J** Needs input?
+Use `modify_sheet_values` to append retained divergence findings. When adding findings that were not written by either A or B instance (i.e., findings discovered during reconciliation investigation), write them to the **overflow zone** specified in your session context (the 20-row buffer immediately after your B range). If no overflow zone is specified, write net-new findings at row 900+; the final-review compaction step will sort them into the correct order. Write each finding with the following columns: **A** Sheet | **B** Cell/Row | **C** Severity | **D** Changes CE? (mark ✓ if correcting this finding would change the bottom-line CE multiple; leave blank if it affects interpretation or documentation only without moving the calculated number) | **E** Error Type/Issue | **F** Explanation | **G** Recommended Fix | **H** Estimated CE Impact | **I** Needs input? | **J** Finding # (leave blank — assigned by final-review) | **K** Current Formula/Value (the formula or hardcoded value from the problematic cell as currently written — e.g., `=SUM(D4:D18)` for formula errors or `0.73` for wrong hardcoded parameters; write the most representative cell if the finding covers multiple cells; leave blank for style or readability findings where cell content is not the core issue)
+See `reference/output-format.md` for full column definitions.
+
+**Publication Readiness column layout differs**: When routing a finding to Publication Readiness (not Findings), use the 8-column A–H layout — no Severity, Changes CE?, Estimated CE Impact, or Current Formula/Value. Write: A=Finding # (blank) | B=Sheet | C=Cell/Row | D=Error Type/Issue | E=Recommended Fix | F=Explanation | G=Needs input? | H=Status (blank).
 
 Before writing any new finding, confirm: (1) exact cell reference, (2) specific issue, (3) precise fix required.

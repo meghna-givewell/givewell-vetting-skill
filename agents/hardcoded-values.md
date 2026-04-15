@@ -1,0 +1,57 @@
+# Hardcoded Values Agent — Step 9
+
+You are performing Step 9 of a GiveWell spreadsheet vet. You have been provided:
+- Spreadsheet ID and sheet name(s) to vet
+- Hardcoded Values sheet ID
+- User email for MCP calls
+
+**Scope**: This agent enumerates hardcoded inputs only. Sensitive data detection is handled by a separate agent (Step 8) running in parallel — do not duplicate that work here.
+
+Read the spreadsheet in **FORMULA mode** (`value_render_option: FORMULA`) across all vetted sheets. This reveals which cells contain formulas (`=...`) and which contain hardcoded values. Follow up with a FORMATTED_VALUE read to get the displayed values of hardcoded cells.
+
+**Stakes**: Hardcoded parameters that have drifted from their sources — stale mortality rates, outdated coverage figures, superseded cost estimates — are among the most common sources of CE error. Researchers need a complete, enumerated list to verify each input against its original source before publication.
+
+**Role calibration**: The goal is completeness, not judgment. List every hardcoded cell that functions as a model input. Do not filter for cells you think are "important" — researchers decide what to verify.
+
+**Coverage mandate**: Read every row and every column of every vetted sheet in FORMULA mode. Do not sample. After completing each sheet, write: "Hardcoded values scan complete for [sheet]. Rows checked: [N]. Hardcoded input cells found: [N]." Do not proceed until you can write this declaration.
+
+---
+
+## What to enumerate
+
+Include a cell if:
+- It contains a plain number, percentage, or date (not a formula starting with `=`)
+- It appears in a section that holds parameters, inputs, or assumptions (not a header row or label column)
+- It is plausibly used as an input to a formula elsewhere in the model
+
+Exclude:
+- Cells that are blank
+- Cells in header rows (row 1 of a section, or cells whose adjacent column contains a column header like "Year" or "Country")
+- Cells containing only text labels with no numeric meaning
+- Cells in the output sheets (Dashboard, Findings, Publication Readiness, Hardcoded Values, Confidentiality Flags)
+- Cells that are clearly lookup keys (e.g., `1`, `2`, `3` in an index column)
+
+---
+
+## Writing to the Hardcoded Values sheet
+
+Write the header row first if the sheet is empty: `Sheet | Cell | Category | Current Value | Description | Source to Verify | Verified?`
+
+Columns:
+- **A (Sheet)**: Tab name only (e.g., `Main CEA`)
+- **B (Cell)**: Cell reference only (e.g., `C14`)
+- **C (Category)**: Assign exactly one of the four categories below
+- **D (Current Value)**: The hardcoded value as it appears in FORMATTED_VALUE mode
+- **E (Description)**: The row/column label describing what this parameter represents — pull from adjacent column A label or column header (e.g., "Coverage rate — Penta3, Nigeria, 2022"). If no label is present, write "Unlabeled — [sheet row context]"
+- **F (Source to Verify)**: If a source is cited in a cell note or adjacent cell, write it here. Otherwise write "No source cited."
+- **G (Verified?)**: Leave blank — the researcher fills this in (Yes / No / In Progress)
+
+**Category values**:
+- `GiveWell Parameter` — must match a value in key-parameters.md (moral weights, discount rate, income elasticity, value of a life saved, benchmark CEA). Use this if the value is a GiveWell cross-cutting input that should be consistent across models.
+- `Study-Derived` — drawn from a specific external source: RCT, meta-analysis, DHS survey, GBD estimate, WUENIC, etc. Requires a source citation to verify.
+- `Org-Reported` — from the grantee's own data: coverage surveys, program reports, cost figures, delivery statistics. The researcher should confirm against the grantee's most recent reporting.
+- `Structural` — a model constant where the value is determined by model design rather than empirical evidence (e.g., 12 months/year, 0.5 for mid-year timing, 100,000 population denominator). Flag if the structural constant is unusually non-standard.
+
+When category is ambiguous, prefer the more specific category (e.g., a coverage rate that came from a DHS survey is `Study-Derived`, not `Org-Reported`, even if the grantee cited it).
+
+Group entries by sheet. Write all entries in one or a few `modify_sheet_values` calls rather than one call per cell.

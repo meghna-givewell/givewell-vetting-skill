@@ -53,11 +53,25 @@ For each key parameter ask: Is the assumption reasonable given program context? 
 
 **Benefit coverage**: If the program description identifies benefit streams not in the model, flag potential underestimation. Flag any direct benefit hardcoded as 0 — confirm this is intentional.
 
+**Benefit-stream scope drift**: Conversely, check whether the model includes benefit streams the grant document does not justify. A benefit stream absent from the grant description, program theory of change, or theory of impact — particularly long-term income, development, or behavioral effects requiring an explicit mechanism argument — should be flagged unless the cell note cites a GiveWell cross-cutting standard (e.g., "GiveWell standard long-term income benefit per key-parameters.md"). This is the reverse of the benefit-coverage check: look for streams that appear in the model but not in the grant. File as Low/H with Needs input? ✓: "The model includes a [benefit type] benefit stream, but the grant document does not describe [mechanism]. Confirm this is appropriate — if it's a GiveWell standard applied across all grants of this type, add a note citing the standard."
+
 **$0 direct benefits in design/pilot grants**: When "Grant cost going toward direct benefit" is $0 in a grant with beneficiary testing (e.g., 1,000–2,000 pairs), flag and ask the researcher to confirm no direct benefits occur during testing.
 
 **Cell note value consistency**: For every cell note citing a specific number, verify it matches the formula value. Flag any mismatch.
 
 **Study-derived effect sizes**: For any hardcoded value drawn from a specific study — mortality reduction percentages, RCT multipliers, epidemiological rates — verify the number against the cited source. Transcription errors are common. A cell showing 45% while the cited study reports 46% is a Medium finding.
+
+**Cell note hyperlink audit**: For every hyperlink found in cell notes across all vetted sheets (use the `read_sheet_hyperlinks` results already in your parallel read batch), attempt to fetch each URL using `WebFetch`. This is an exhaustive check — do not skip any link because the cell "looks fine" or the parameter seems minor. For each successfully fetched source, check all of the following:
+
+1. **Value match**: Does the number in the cell match the number in the linked source? Transcription errors at the point of data entry are common and may not be obvious without opening the link. A cell citing a specific figure from a linked document that does not actually report that figure is a Medium finding regardless of whether the discrepancy seems large.
+
+2. **Flat-projection trend check**: When the cell contains a scale parameter (organizational budget, coverage rate, program cost, staff count, beneficiaries served, population denominator) entered as a single flat value applied across all modeled periods, and the linked source contains multi-year historical data, extract the year-by-year series and check whether the most recent year in the source deviates from the flat projected value by more than 10%. If yes, file as **Low/H with Needs input? ✓**: "Model projects [parameter] as flat at $X, but [source name] shows [most recent year] at $Y — the flat assumption appears [conservative / optimistic]. Confirm whether the flat projection is intentional, and if so add a note explaining the choice." Compute and note the directional CE impact. Do not apply the trend check to biological constants, epidemiological parameters, or values where a single-period snapshot is the correct input.
+
+3. **Source-cell consistency**: Does the source actually support the claim made in the cell note? A cell note saying "per WHO 2022 report" but linking to a 2018 document, or a note citing 45% from a study where the study reports 42%, is a finding. Verify that the linked document says what the note says it says.
+
+**Inaccessible links**: When `WebFetch` returns an error (private Google Doc, Box link requiring login, paywalled journal article), do not skip — file as **Low/H with Needs input? ✓** for any high-priority parameter: "Cell note links to [URL], which could not be accessed. Researcher should confirm the cell value is consistent with the linked source." For low-priority parameters (supplementary rows, structural constants, well-understood parameters), note the inaccessible link in your reasoning but do not file a finding.
+
+**Coverage declaration required**: After completing this check, write: "Followed [N] hyperlinks from cell notes. Accessible: [N]. Inaccessible: [N]. Found discrepancies at: [list of cells or 'none']. No other value-match or trend issues found."
 
 **Pre- vs. post-adjustment UoV**: Verify whether formulas use pre- or post-adjustment UoV. Rows appearing after adjustments should generally reference post-adjustment values unless documented otherwise. Flag any instance where the UoV referenced appears to be the unadjusted figure.
 
@@ -119,28 +133,72 @@ When this check fires and a proxy pathway is suspected, run a targeted WebSearch
 
 **Global Fund funging calculation**: When a model includes a leverage or funging adjustment that treats freed Global Fund (GF) spending as flowing to the GF's full multi-disease portfolio (malaria + HIV + TB), flag as Medium/H. The Global Fund allocates by cause area: freed malaria funding stays within malaria programs, not across HIV or TB. A model that credits GiveWell malaria funding with displacing GF money and then assigns the displaced money the average cost-effectiveness of the full GF portfolio will overstate the leverage benefit. The correct comparison is the marginal cost-effectiveness of additional GF malaria spending. Ask the researcher to confirm which portfolio is used as the counterfactual in the funging calculation.
 
-## Step 6b — Cross-Column Comparison
+**Mandatory check log — write this before filing any findings.** For each item below, write `ran: [brief result or finding cell]` or `n/a: [one-word reason — e.g., not a top-charity, no probability chain, no income benefit]`. A blank or placeholder entry is not acceptable — it means the check was not considered. The log must be complete before any findings are written to the sheet.
 
-Compare every hardcoded input to values in neighboring columns (other geographies or program variants):
-- Material difference from neighbors with no cell note explanation → flag
-- Pay particular attention to asymmetric adjustments across columns
+```
+Heads-up check log:
 
-**Cross-row comparison**: For repeated calculation structures, compare key inputs. Flag identical values where they might reasonably differ, or different values where they might reasonably be the same. Verify equivalent formulas in parallel blocks reference the same input columns.
+CE overview:
+  top-5 interrogation [___]
+  sideways sanity check [___ — CE is [N]x vs. comparable range [X]–[Y]x]
+  correlated discrepancy pattern [___]
+  leverage/funging scenario probabilities [___]
 
-**Identical outputs across distinct scenarios**: For parallel rows representing distinct scenarios or actors, flag when outputs are identical without a cell note explaining why.
+Benefit streams:
+  missing streams [___]
+  extra/unjustified streams [___]
+  $0 direct benefits (design/pilot) [___]
+  income/development effects range [___]
+  treatment costs averted (top charities) [___]
+  resource sharing multiplier [___]
 
-**Structural parameter consistency**: Discount rates, time horizons, and funding duration assumptions should be consistent across parallel calculations unless documented. Flag undocumented asymmetries.
+Evidence quality:
+  study-derived effect sizes [___]
+  hyperlink audit [see declaration above]
+  study pathway directness [___]
+  trial follow-up vs. modeling horizon [___]
+  control group standard-of-care bias [___]
+  subgroup analysis validity [___]
 
-**Inherited-geography value severity calibration**: When a parameter appears to be copy-pasted from a neighboring geography (identical values, no explanatory note), run a targeted WebSearch before filing: e.g., `"[parameter] [target country] [year]"` against WHO, DHS, IHME, or other authoritative sources. If a published country-specific estimate contradicts the inherited value, file as High/D citing the contradicting source. If no country-specific data is found, file as Medium: "Value for [country] is identical to [neighbor]; no note documents whether this is intentional. Researcher should confirm and add a note if using [neighbor] data as a proxy." The appropriate severity is Medium when only suspicion of a copy-paste exists, and High/D when external data shows the value should differ — the web search is what determines which applies.
+Epidemiological parameters:
+  disease burden multi-source [___]
+  indirect deaths multiplier cap [___]
+  GBD vintage / intervention adjustment [___]
+  sub-national burden estimates [___]
+  IHME age range adjustment [___]
+  counterfactual coverage floor [___]
+  program-reported vs. independent coverage [___]
 
-**Large parameter divergence — source-type investigation**: When the same parameter has values that differ by ≥3× across geographies or implementation contexts within the same workbook (e.g., net loss 1% in one state vs. 26% in another, coverage 40% vs. 85%), verify whether the underlying data sources for each value are of the same type. A large divergence frequently reflects a data-methodology difference — one value sourced from program-reported M&E (distributor counts, facility records, grantee household surveys) and another from an independent household survey — rather than genuine contextual variation. Flag as Medium/H if: (a) the divergence exceeds 3×, (b) the data source types differ across the columns or are unclear, and (c) the cell notes do not explain whether the discrepancy reflects true contextual differences or different measurement approaches. Recommend: document whether the discrepancy was investigated, which source was prioritized and why, and whether the range across contexts should be used for sensitivity analysis. Note: this check is distinct from the inherited-geography check above — that one fires on identical values; this one fires on implausibly large differences.
+Model structure:
+  pre/post-adjustment UoV [___]
+  double-counting [___]
+  adjustment combination method [___]
+  probability-chain enumeration [___]
+  cross-tab time-parameter sourcing [___]
+  full-scale-up assumption (undocumented 100%) [___]
+  cost denominator scope [___]
+  benefit/cost allocation for leverage [___]
+  Global Fund funging calculation [___]
+
+Timing and program-specific:
+  cost estimate inflation adjustment [___]
+  VOI wait-time plausibility [___]
+  TA program duration [___]
+  program interaction / overlap [___]
+  selection into programs [___]
+```
 
 ## Writing Findings
 
 Before writing any finding, confirm you can answer all three of these: (1) the exact cell reference(s) affected, (2) the specific value or assumption that is questionable, and (3) the precise question the researcher needs to answer or fix required. A finding that identifies an area of concern without naming a cell is not complete — keep investigating until you can answer all three.
 
+**CE impact estimates — interaction caveat**: When estimating column H (Estimated CE Impact) for a finding about one parameter, check whether the model contains other "Guess"-labeled or unsourced parameters that interact with the parameter being corrected. If two or more parameters are simultaneously uncertain, the estimated CE impact of fixing one in isolation may be misleading — the actual change will depend on what else moves at the same time. In this case, add to the CE Impact cell: "Estimate assumes no other parameters change. If [parameter X] is also updated, net CE impact may differ." This is most important when: (a) the CE impact estimate is large (>15% of CE); (b) the finding involves an FP share, cost-per-unit, or coverage parameter that is cross-multiplied with multiple "Guess" adjustment rows; or (c) the model is known to be under active revision.
+
 **Do not write pass notes, verification notes, or "no issues found" summaries to the Findings sheet.** Every row written to the Findings sheet must be an actual finding — an issue requiring researcher attention or action. Notes like "Checked rows 1–50, no issues found" or "Parameters verified, no plausibility concerns" belong in your reasoning output, not in the sheet. Writing non-findings to the sheet pollutes the output and forces researchers to read rows that require no action.
 
 **Severity guard for uncertain findings**: A finding that uses language like "potential," "may be," "possibly," "appears to," or "might" in its Explanation cannot be filed as High. If you cannot confirm an issue is an actual error — as opposed to a question or concern — cap severity at Medium/H and mark Needs input? ✓. "This may be a double-counting error" is a Medium; "This is a double-counting error because [specific formula evidence]" can be High. This distinction matters: High findings signal confirmed errors that a researcher should fix, not hypotheses that require investigation.
 
-Append findings to the Findings sheet using `modify_sheet_values`. **Your row start position is pre-assigned in session context** — do not read existing rows to auto-detect position. Write each finding as a row with these 10 columns in order: **A** Cell/Row | **B** Severity | **C** Decision Relevance | **D** Sheet | **E** Error Type/Issue | **F** Explanation | **G** Recommended Fix | **H** Estimated CE Impact | **I** Status (leave blank) | **J** Needs input? (mark ✓ if researcher must answer to resolve). Assign Decision Relevance (D/H/O) for each finding: D = correcting it changes bottom-line CE; H = affects interpretation without changing the calculated CE; O = documentation or style only. Update the summary row (row 2) when done. See `reference/output-format.md` for column definitions and severity rules.
+Append findings to the Findings sheet using `modify_sheet_values`. **Your row start position is pre-assigned in session context** — do not read existing rows to auto-detect position. Column reference: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue | **F** Current Formula/Value (the formula or hardcoded value from the problematic cell as currently written; write the most representative cell if the finding covers multiple cells; leave blank for style/readability findings) | **G** Recommended Fix | **H** Explanation | **I** Changes CE? (mark ✓ if correcting this finding would change the bottom-line CE multiple; leave blank if it affects interpretation or documentation only without moving the calculated number) | **J** Estimated CE Impact | **K** Needs input? (mark ✓ if researcher must answer to resolve) | **L** Status (leave blank)
+See `reference/output-format.md` for full column definitions. **Group findings by issue type**: when the same issue applies to multiple cells or parameters (e.g., multiple "Guess"-labeled parameters with no external anchor), file one finding listing all affected cells in column B, not one row per cell. Exhaustive checking is still required — find every instance — but write one consolidated row per issue type. **Publication-readiness findings — batch by issue type**: for publication-readiness findings (permission flags, broken links, citation format, terminology, style), file at most one row per issue type, listing all affected cells in column B.
+
+**Publication Readiness column layout differs**: When routing a finding to Publication Readiness (not Findings), use the 8-column A–H layout — no Severity, Changes CE?, Estimated CE Impact, or Current Formula/Value. Write: A=Finding # (blank) | B=Sheet | C=Cell/Row | D=Error Type/Issue | E=Recommended Fix | F=Explanation | G=Needs input? | H=Status (blank).
