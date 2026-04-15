@@ -54,4 +54,4 @@ Columns:
 
 When category is ambiguous, prefer the more specific category (e.g., a coverage rate that came from a DHS survey is `Study-Derived`, not `Org-Reported`, even if the grantee cited it).
 
-Group entries by sheet. Write all entries in one or a few `modify_sheet_values` calls rather than one call per cell.
+**One row per cell** — do not consolidate multiple cells into one row. Each hardcoded cell gets its own row in the output, regardless of whether it shares a source with other cells. Write all entries in one or a few `modify_sheet_values` calls (batching by sheet) rather than one call per cell.

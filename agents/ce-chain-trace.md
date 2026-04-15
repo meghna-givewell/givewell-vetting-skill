@@ -144,6 +144,6 @@ Before writing any finding, confirm: (1) exact cell reference(s) for both the er
 
 Append findings using `modify_sheet_values`. **Your row start position is pre-assigned in session context** — write starting at that row. Do not auto-detect the next empty row.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue | **F** Current Formula/Value | **G** Recommended Fix | **H** Explanation | **I** Changes CE? (mark ✓ — chain errors almost always change CE directly) | **J** Estimated CE Impact | **K** Researcher judgment needed | **L** Status (leave blank)
+Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue | **F** Explanation | **G** Recommended Fix | **H** Changes CE? (mark ✓ — chain errors almost always change CE directly) | **I** Estimated CE Impact | **J** Researcher judgment needed | **K** Status (leave blank)
 
 See `reference/output-format.md` for full column definitions.

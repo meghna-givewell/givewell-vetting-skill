@@ -69,9 +69,9 @@ Coverage declaration: "Placeholder scan complete. Header rows and column A check
 
 ## Check 4 — CE impact completeness
 
-For every **High** finding in the Findings sheet with a blank Estimated CE Impact (column J):
+For every **High** finding in the Findings sheet with a blank Estimated CE Impact (column I):
 - Compute the directional impact using the pre-vet baseline CE from session context.
-- Write a short phrase in column J: e.g., "raises CE from 8.7x to ~10.2x" or "lowers CE — magnitude unclear without fix."
+- Write using the standard format: `Raises CE — 8.7x → ~10.2x` or `Lowers CE — magnitude unknown` etc. Always lead with the standard phrase from output-format.md.
 - Update the finding in place using `modify_sheet_values`.
 
 Do not modify any other columns of existing findings.
@@ -88,6 +88,6 @@ Before writing any new finding, confirm: (1) exact cell reference(s), (2) specif
 
 Assign the next sequential Finding ID continuing from where compaction left off (e.g., if last ID was F-015, write F-016).
 
-**Findings sheet** (A–L): A=Finding # | B=Sheet | C=Cell/Row | D=Severity | E=Error Type/Issue | F=Current Formula/Value | G=Recommended Fix | H=Explanation | I=Changes CE? (✓ if correcting changes CE) | J=Estimated CE Impact | K=Researcher judgment needed | L=Status (leave blank)
+**Findings sheet** (A–K): A=Finding # | B=Sheet | C=Cell/Row | D=Severity | E=Error Type/Issue | F=Explanation | G=Recommended Fix | H=Changes CE? (✓ if correcting changes CE) | I=Estimated CE Impact | J=Researcher judgment needed | K=Status (leave blank)
 
 **Publication Readiness** (A–G): A=Finding # | B=Sheet | C=Cell/Row | D=Error Type/Issue | E=Recommended Fix | F=Explanation | G=Status (leave blank)

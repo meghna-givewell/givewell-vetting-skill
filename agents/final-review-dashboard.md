@@ -21,7 +21,7 @@ Read all rows from Publication Readiness (batched: A2:H200, continuing until emp
 
 Use `modify_sheet_values` (USER_ENTERED) on the Dashboard tab.
 
-**a. CE estimate direction (cell B22)**: Write a short phrase stating direction and estimated magnitude of misstatement. Review Estimated CE Impact (column J) for all High findings:
+**a. CE estimate direction (cell B22)**: Write a short phrase stating direction and estimated magnitude of misstatement. Review Estimated CE Impact (column I) for all High findings:
 - If correcting them would raise CE → current estimate is understated
 - If correcting them would lower CE → current estimate is overstated
 - If both directions → write "Mixed"

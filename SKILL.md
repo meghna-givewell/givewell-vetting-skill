@@ -43,11 +43,15 @@ Load each document only when the step that requires it begins.
 
 ### Google Sheets link
 1. Extract the spreadsheet ID from the URL (long string between `/d/` and `/edit` or `/view`)
-2. Use `get_spreadsheet_info` to list all sheet names. In a **single message**, ask: (a) which sheets to vet, (b) the two Step 0.5 program context questions (see Step 0.5 below), and (c) full or lite vet — include the descriptions below so the researcher can choose. Combining all three into one ask means the user responds once and reads + literature searches can fire in parallel immediately after. Present only sheet names — do not display grid dimensions (rows × cols), as these reflect allocated space, not actual data, and will mislead the user about sheet size.
+2. Use `get_spreadsheet_info` to list all sheet names. In a **single message**, ask: (a) which sheets to vet, (b) the two Step 0.5 program context questions (see Step 0.5 below), (c) full or lite vet, and (d) vet scope — publication readiness included or formula/heads-up only. Include all descriptions below so the researcher can choose. Combining all four into one ask means the user responds once and reads + literature searches can fire in parallel immediately after. Present only sheet names — do not display grid dimensions (rows × cols), as these reflect allocated space, not actual data, and will mislead the user about sheet size.
 
 > **Full vet** (~23 agents, two independent passes per analysis check): Each analysis agent — sources, readability, plausibility, etc. — runs as two independent instances that don't know about each other. A reconciliation step then merges their findings. Most thorough. Recommended for models going to publication or grants over $1M.
 >
 > **Lite vet** (~12 agents, one pass per analysis check): Formula-check still runs twice independently, but other analysis checks run once each. A mandatory declaration table forces each agent to account for every row it scanned. Faster. Good for early-stage reviews, small BOTECs, or when you need results quickly.
+>
+> **Publication readiness included** (default): All checks run — formula errors, assumptions, sources, readability, and notes. Recommended when the model is heading toward publication, external review, or a grant recommendation.
+>
+> **Formula/heads-up only**: Sources, readability, and notes documentation checks are skipped. Focuses on formula correctness, assumption plausibility, leverage/funging, and CE chain. Good for internal review, early-stage models, or when you want to confirm the math is right before polishing citations and labels.
 3. **Fire all reads and literature searches in a single parallel batch** — once the user answers: simultaneously fire `read_sheet_values` (FORMATTED_VALUE and FORMULA), `read_sheet_notes`, `read_sheet_hyperlinks`, and `read_spreadsheet_comments` (once for the workbook) for each vetted sheet — AND 1–2 literature web searches using the intervention type from the user's Step 0.5 answers. If the user provided a grant document link, include `get_doc_content` on that link in the same parallel batch.
 
 **Pre-vet acknowledged-issue extraction**: After the parallel batch, scan `read_spreadsheet_comments` results for RESOLVED threads where a researcher acknowledged a known issue (e.g., "keeping this for comparability," "reviewed and comfortable"). Add each to the declared-intentional deviations list as "Acknowledged in resolved comment [author, date]: [description]." Agents treat these as declared-intentional deviations — Low/H at most, not Medium or High.
@@ -60,7 +64,7 @@ Load each document only when the step that requires it begins.
 
 **Restricted sheet scope — lite pass on standard tabs**: Instruct readability agents to lite-pass any standard CEA tab not in scope (Simple CEA, External Validity, Leverage/Funging). Lite pass: (a) section ordering — derived values appear after inputs; (b) column/row labels — no placeholders or stale labels; (c) obvious structural issues only. No cell-level formula audit. File as Low/O. Pass in-scope vs. lite-pass tab lists in session context.
 
-**"No pub readiness" scope boundary**: Skip sources and readability agents only. Value-correctness verification (GBD vizhub URLs, study extractions) is a formula-correctness check, not pub-readiness — it stays in formula-check scope. Pass to formula-check agents: "Pub readiness out of scope; value-correctness verification is in scope."
+**"Formula/heads-up only" scope boundary**: Activated when the researcher selects "formula/heads-up only" in the upfront question (or otherwise restricts scope to exclude pub readiness). Skip sources, readability, and notes-scan agents. Value-correctness verification (GBD vizhub URLs, study extractions) is a formula-correctness check, not pub-readiness — it stays in formula-check scope. Pass to formula-check agents: "Pub readiness out of scope; value-correctness verification is in scope." Record the scope choice at the top of the Vetting Summary doc.
 
 **If `get_spreadsheet_info` returns "This operation is not supported"**: The file is an `.xlsx` upload, not a native Google Sheet. Tell the user to either convert via File → Save as Google Sheets and share the new link, or explicitly acknowledge values-only analysis with that limitation noted at the top of the output. Do not proceed until the user responds.
 
@@ -134,6 +138,9 @@ Identify the last populated row. Summarize at the **section level** (e.g., Costs
 
 Read `reference/output-setup.md` now and execute it fully before spawning agents — it covers tab creation, header rows, formatting batch, and Dashboard content. Share the output spreadsheet link with the user immediately after creation.
 
+**If formula/heads-up only scope was selected**, after completing the output setup, write the following note to the Publication Readiness tab using `modify_sheet_values`:
+- Cell A2: `Publication readiness checks were not run for this vet. Scope was set to formula/heads-up only — sources, readability, and notes documentation checks were skipped. To run a full publication readiness check, start a new vet and select "Publication readiness included."`
+
 **Which sheet to use — routing rule for agents**:
 - → **Findings**: anything that affects model outputs or interpretation — formula errors, wrong/stale parameters, undocumented assumptions, structural bugs.
 - → **Publication Readiness**: issues that do not affect the model — missing sources, permission flags, broken links, citation completeness, terminology (x cash → x benchmark), style, labeling.
@@ -161,7 +168,9 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 
 **Each sub-agent must execute its full checklist exhaustively, on every row.** No check in any agent file is optional or skippable because the sheet is small or because a prior agent already noticed something nearby. The formula-check agent must audit every formula row against its label — not just rows that match a named pattern. The sources agent must complete the full column F text audit on every row. The readability agent must read every row label top-to-bottom. The consistency agent must compare against the VOI template structure row-by-row. A sub-agent that shortcuts because "this is a small BOTEC" will miss findings the same way inline execution does. **The named checks in each agent file are patterns to look for on top of the row-by-row baseline — they are not a substitute for it.**
 
-Agents run in three waves — in either **full mode** or **lite mode**, as selected by the researcher in the initial ask. Before spawning Wave 1, announce: "Using [full / lite] mode as requested."
+Agents run in three waves — in either **full mode** or **lite mode**, as selected by the researcher in the initial ask. Before spawning Wave 1, announce progress:
+- **Full mode**: `[Phase 1/4] Wave 1 starting — 9 agents (formula checks). Using full mode as requested.`
+- **Lite mode**: `[Phase 1/3] Wave 1 starting — 4–5 agents (formula checks). Using lite mode as requested.`
 
 - **Lite mode**: Use the lite wave tables (marked **Lite**) below (4–5 Wave 1 agents, 7–8 Wave 2 agents, no Wave 2.5 reconciliation).
 - **Full mode**: Use the standard wave tables (marked **Full**) below (~23 agents across Waves 1 and 2, plus Wave 2.5 reconciliation).
@@ -207,6 +216,8 @@ Do **not** tell any instance that other instances are running — identical prom
 
 **Consistency-check always runs — including for BOTECs**: Do not skip the consistency-check agent for simple BOTECs, single-sheet models, or workbooks with no declared deviations. Every model uses moral weights, and moral weight drift is one of the most common silent errors. Pass this note in the consistency-check session context: "For simple BOTECs and non-standard models that lack VOI content: skip the VOI structural completeness check and the cross-cutting CEA parameters check. Always run the moral weights numeric verification regardless of model type."
 
+**Progress — Wave 1 complete**: Before reading the Findings sheet, announce: `[Phase 1 done — full: 1/4, lite: 1/3] Wave 1 complete.`
+
 **Researcher-confirm checkpoint**: After all Wave 1 agents complete and before spawning Wave 2, read the Findings sheet and collect all rows with `✓` in the **Researcher judgment needed** column (column I). If **no such rows exist**, skip this checkpoint entirely and proceed immediately to Wave 2. If flagged rows exist, present them to the user as a numbered list: cell reference, finding type, and the specific question. Explain that subsequent agents will proceed on current assumptions unless they respond. Then continue — do not wait indefinitely. This checkpoint exists so intent questions (e.g., "is this $0 intentional?") can be answered before plausibility and readability agents analyze the same cells. **For any checkpoint item that is High severity or tagged D**: add a sentence flagging that downstream agents will analyze this cell using the current (potentially wrong) value — if the researcher's answer changes the value, the plausibility findings for that section may need to be revisited.
 
 #### Lite mode — spawn 3–4 Wave 1 agents simultaneously
@@ -233,7 +244,15 @@ The researcher-confirm checkpoint applies in lite mode the same as full mode.
 
 ### Wave 2 — Parallel (doubled for independent verification)
 
-Spawn all fourteen agents simultaneously after the researcher checkpoint. Each of the six core analysis agents (sources, heads-up, heads-up-intervention, readability, leverage-funging, ce-chain-trace) runs as two independent instances (A and B) with separate context windows and no knowledge of each other. sensitivity-scan and hardcoded-values each run once, writing to their respective output sheets only.
+**Progress announcement** before spawning:
+- **Full mode, pub readiness included**: `[Phase 2/4] Wave 2 starting — 14 agents (sources, readability, heads-up, leverage, CE chain).`
+- **Full mode, formula/heads-up only**: `[Phase 2/4] Wave 2 starting — 9 agents (heads-up, leverage, CE chain — pub readiness skipped).`
+- **Lite mode, pub readiness included**: `[Phase 2/3] Wave 2 starting — 7–8 agents (sources, readability, heads-up, leverage, CE chain).`
+- **Lite mode, formula/heads-up only**: `[Phase 2/3] Wave 2 starting — 4–5 agents (heads-up, leverage, CE chain — pub readiness skipped).`
+
+Spawn agents simultaneously after the researcher checkpoint. Each of the six core analysis agents (sources, heads-up, heads-up-intervention, readability, leverage-funging, ce-chain-trace) runs as two independent instances (A and B) with separate context windows and no knowledge of each other. sensitivity-scan and hardcoded-values each run once, writing to their respective output sheets only.
+
+**If formula/heads-up only scope was selected**: skip sources-A, sources-B, readability-A, readability-B, and `agents/notes-scan.md` entirely — spawn 9 agents instead of 14. Their pre-allocated row ranges remain reserved but unused. Notes are still *read* in the initial batch (step 3) and remain available to all formula-check and heads-up agents as formula context — only the pub-readiness audit of notes documentation (missing "Calculation." entries, source annotations, style) is skipped. Pass to all spawned agents: "Pub readiness out of scope; value-correctness verification (GBD vizhub URLs, study extractions) is in scope."
 
 **Before spawning**, read the Findings sheet and identify the last populated finding row (call it `last_row`; use `last_row = 1` if no findings yet). **Verify that `last_row ≤ 390`** — if Wave 1 agents exceeded their budgets and `last_row > 390`, the Wave 2 allocations will approach the 1000-row Google Sheets limit; warn in chat before proceeding. Calculate pre-allocated start rows:
 - sources-A: `last_row + 1`
@@ -278,6 +297,8 @@ For each A/B instance, pass **identical** session context — do not tell either
 
 In lite mode, each analysis agent runs as a **single instance** (no A/B doubling). Always include leverage-funging. Skip heads-up-intervention only if the model has no intervention-specific content (i.e., pure BOTEC with no program delivery parameters). sensitivity-scan and hardcoded-values always run once.
 
+**If formula/heads-up only scope was selected**: skip sources, readability, and `agents/notes-scan.md` — spawn 4–5 agents instead of 7–8. Notes are still read in the initial batch and available to formula-check agents as context; only the pub-readiness notes documentation audit is skipped. Pass to all spawned agents: "Pub readiness out of scope; value-correctness verification is in scope."
+
 Read the Findings sheet and identify `last_row` (use `last_row = 251` if no findings exceeded the lite Wave 1 buffer). **Verify `last_row ≤ 251`** before proceeding. Pre-allocate start rows:
 
 | Step | Agent file | Row allocation | Budget |
@@ -301,7 +322,9 @@ Pass the row allocation to each agent:
 
 ### Wave 2.5 — Reconciliation (full mode only, after all Wave 2 agents complete)
 
-**Skip Wave 2.5 entirely in lite mode.** Single-instance Wave 2 agents produce no A/B pairs to reconcile; the compaction step in Wave 3 handles any within-agent duplication.
+**Skip Wave 2.5 entirely in lite mode.** In lite mode, announce: `[Phase 2/3 done] Wave 2 complete — proceeding to final review.`
+
+**In full mode**, announce before spawning: `[Phase 2/4 done → Phase 3/4] Wave 2 complete — starting reconciliation (10 agents).` Single-instance Wave 2 agents produce no A/B pairs to reconcile; the compaction step in Wave 3 handles any within-agent duplication.
 
 Spawn **10 reconciliation agents simultaneously**, one per A/B pair, using `agents/reconcile.md`. The source-data-check agent runs solo — no reconciliation pair. Each agent receives the standard session context plus its specific pair assignment. Do not tell any reconcile agent about the other pairs being processed.
 
@@ -330,7 +353,14 @@ Note: source-data-check findings (rows 182–211) have no reconciliation pair. n
 
 ### Wave 3 — Sequential (after Wave 2.5 in full mode, or directly after Wave 2 in lite mode)
 
-Run the three steps in order — each must complete before the next begins:
+**Progress announcement** before starting:
+- **Full mode**: `[Phase 3/4 done → Phase 4/4] Reconciliation complete — starting final review (3 sequential steps).`
+- **Lite mode**: *(already announced at the Wave 2.5 skip point above)*
+
+Run the three steps in order — each must complete before the next begins. Announce each step as it starts:
+- Before 10a: `[Wave 3 — Step 1/3] Running compaction.`
+- Before 10b: `[Wave 3 — Step 2/3] Running validation.`
+- Before 10c: `[Wave 3 — Step 3/3] Running dashboard.`
 
 | Step | Agent file | Covers |
 |---|---|---|
@@ -342,7 +372,7 @@ Run the three steps in order — each must complete before the next begins:
 
 ## Final Summary
 
-After all agents complete, read the findings sheet and present to the user:
+After all agents complete, announce `[Vet complete — full: Phase 4/4 done, lite: Phase 3/3 done]`, then read the findings sheet and present to the user:
 
 **Findings Sheet (Google Sheet):** [link]
 
