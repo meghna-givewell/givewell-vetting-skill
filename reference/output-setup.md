@@ -10,14 +10,14 @@ Create six tabs with these header rows (row 1) before spawning agents:
 
 **CE Baseline** — columns: `Geography/Scenario | Cost-Effectiveness`. Write the baseline CE table from Step 0, one row per geography/scenario.
 
-**Findings** — columns A–L: `Finding # | Sheet | Cell/Row | Severity | Error Type/Issue | Current Formula/Value | Recommended Fix | Explanation | Changes CE? | Estimated CE Impact | Needs input? | Status`
+**Findings** — columns A–L: `Finding # | Sheet | Cell/Row | Severity | Error Type/Issue | Current Formula/Value | Recommended Fix | Explanation | Changes CE? | Estimated CE Impact | Researcher judgment needed | Status`
 - Column A (`Finding #`): left blank by agents — assigned by final-review-compaction
 - Column I (`Changes CE?`): mark ✓ if correcting the finding changes the bottom-line CE multiple; blank otherwise
 - Column L (`Status`): left blank — researcher fills in (Open / Fixed / Won't Fix / Needs Discussion)
 
-**Publication Readiness** — columns A–H: `Finding # | Sheet | Cell/Row | Error Type/Issue | Recommended Fix | Explanation | Needs input? | Status`
+**Publication Readiness** — columns A–G: `Finding # | Sheet | Cell/Row | Error Type/Issue | Recommended Fix | Explanation | Status`
 - Column A (`Finding #`): left blank by agents — assigned by final-review-compaction
-- Column H (`Status`): left blank for researcher
+- Column G (`Status`): left blank for researcher
 
 **Hardcoded Values** — columns A–G: `Sheet | Cell | Category | Current Value | Description | Source to Verify | Verified?`
 - Column A (`Sheet`): tab name only (e.g., `Main CEA`)
@@ -33,12 +33,11 @@ Fire all formatting in a single parallel batch immediately after writing headers
 
 - `add_conditional_formatting`: Severity D3:D1000 on Findings — High → `#FFB3B3`, Medium → `#FFE5B3`, Low → `#B3D9B3`
 - `add_conditional_formatting`: Changes CE? I3:I1000 on Findings — if value = `✓`, background → `#FFFF99`
-- `add_conditional_formatting`: Needs input? K3:K1000 on Findings — if value = `✓`, background → `#FFFF99`
+- `add_conditional_formatting`: Researcher judgment needed K3:K1000 on Findings — if value = `✓`, background → `#FFFF99`
 - `add_conditional_formatting`: Status L3:L1000 on Findings — `Fixed` → `#B3D9B3`, `Won't Fix` → `#E0E0E0`
-- `add_conditional_formatting`: Needs input? G3:G1000 on Publication Readiness — if value = `✓`, background → `#FFFF99`
 - `add_conditional_formatting`: Section dividers A2:L1000 on Findings — CUSTOM_FORMULA `=ISNUMBER(SEARCH("───",$B2))`, background `#D9D9D9`
 - `format_sheet_range`: header row 1 on Findings (A1:L1) — dark blue `#1F4E79`, white text, bold; freeze row 1 and columns A–C
-- `format_sheet_range`: header row 1 on Publication Readiness (A1:H1) — dark blue `#1F4E79`, white text, bold; freeze row 1 and columns A–C
+- `format_sheet_range`: header row 1 on Publication Readiness (A1:G1) — dark blue `#1F4E79`, white text, bold; freeze row 1 and columns A–C
 - `format_sheet_range`: header row 1 on Hardcoded Values (A1:G1) — dark blue `#1F4E79`, white text, bold
 - `add_conditional_formatting`: Category C2:C1000 on Hardcoded Values — `GiveWell Parameter` → `#D9E1F2`, `Study-Derived` → `#E2EFDA`, `Org-Reported` → `#FFF2CC`, `Structural` → `#EDEDED`
 - `format_sheet_range`: header row 1 on CE Baseline (A1:B1) — dark blue `#1F4E79`, white text, bold

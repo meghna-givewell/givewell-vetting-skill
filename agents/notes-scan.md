@@ -74,11 +74,11 @@ If any line is left blank or contains a placeholder, stop and complete the scan 
 
 Read the Publication Readiness sheet to find the last populated row. Append all findings starting at the next available row.
 
-Use the 8-column Publication Readiness layout:
-**A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Error Type/Issue | **E** Recommended Fix | **F** Explanation | **G** Needs input? | **H** Status (leave blank)
+Use the 7-column Publication Readiness layout:
+**A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Error Type/Issue | **E** Recommended Fix | **F** Explanation | **G** Status (leave blank)
 
 **Batch by issue type**: For each issue type (e.g., "Missing 'Calculation.' note"), file one finding row listing all affected rows in column C — do not write one row per instance. Exception: if meaningfully different recommended fixes are required for different rows, file them separately.
 
-**Do not mark Needs input?** for: missing "Calculation." notes, missing source annotations, template boilerplate, raw URLs, or first-person language. These have unambiguous fixes regardless of researcher intent.
+**Do not mark Researcher judgment needed** for: missing "Calculation." notes, missing source annotations, template boilerplate, raw URLs, or first-person language. These have unambiguous fixes regardless of researcher intent.
 
 Use `modify_sheet_values` to write all findings in a single call. Include the sheet name in column B for every row.

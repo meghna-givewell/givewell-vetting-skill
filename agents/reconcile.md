@@ -21,7 +21,7 @@ Count the non-empty rows in the A range. Count the non-empty rows in the B range
 
 **If either instance wrote fewer than 3 non-empty findings** in its range:
 - Do not treat this as "no findings" — treat it as a potential agent failure.
-- Add a High/H finding to the Findings sheet: "Possible agent failure — [A or B] instance for [pair name] wrote only [N] findings in its allocated range (rows [X]–[Y]). This may indicate a silent failure (auth timeout, context limit). Recommend re-running this agent before publishing." Mark Needs input? ✓.
+- Add a High/H finding to the Findings sheet: "Possible agent failure — [A or B] instance for [pair name] wrote only [N] findings in its allocated range (rows [X]–[Y]). This may indicate a silent failure (auth timeout, context limit). Recommend re-running this agent before publishing." Mark Researcher judgment needed ✓.
 - Proceed with reconciliation on the available findings, but note in the coverage declaration that one instance may be incomplete.
 
 Exception: plausibility-intervention and formula-check-structure may legitimately produce fewer than 3 findings if the intervention type or sheet structure doesn't trigger their checks — use judgment. If the sheet is a simple BOTEC and sources found 1 finding, that may be valid. If formula-check found 0 findings on a 100-row CEA, that is not plausible.
@@ -72,7 +72,7 @@ Then make one of three determinations:
 **Needs researcher input** (when validity depends on intent):
 - Leave the finding as-is.
 - Append to Explanation: "Reconciliation review: validity depends on researcher intent. Question: [specific question]."
-- Set Needs input? (column J) to ✓.
+- Set Researcher judgment needed (column J) to ✓.
 
 ---
 
@@ -99,9 +99,9 @@ Net new findings added: [N]
 
 ## Writing new findings
 
-Use `modify_sheet_values` to append retained divergence findings. When adding findings that were not written by either A or B instance (i.e., findings discovered during reconciliation investigation), write them to the **overflow zone** specified in your session context (the 20-row buffer immediately after your B range). If no overflow zone is specified, write net-new findings at row 900+; the final-review compaction step will sort them into the correct order. Write each finding with the following columns: **A** Sheet | **B** Cell/Row | **C** Severity | **D** Changes CE? (mark ✓ if correcting this finding would change the bottom-line CE multiple; leave blank if it affects interpretation or documentation only without moving the calculated number) | **E** Error Type/Issue | **F** Explanation | **G** Recommended Fix | **H** Estimated CE Impact | **I** Needs input? | **J** Finding # (leave blank — assigned by final-review) | **K** Current Formula/Value (the formula or hardcoded value from the problematic cell as currently written — e.g., `=SUM(D4:D18)` for formula errors or `0.73` for wrong hardcoded parameters; write the most representative cell if the finding covers multiple cells; leave blank for style or readability findings where cell content is not the core issue)
+Use `modify_sheet_values` to append retained divergence findings. When adding findings that were not written by either A or B instance (i.e., findings discovered during reconciliation investigation), write them to the **overflow zone** specified in your session context (the 20-row buffer immediately after your B range). If no overflow zone is specified, write net-new findings at row 900+; the final-review compaction step will sort them into the correct order. Write each finding with the following columns: **A** Sheet | **B** Cell/Row | **C** Severity | **D** Changes CE? (mark ✓ if correcting this finding would change the bottom-line CE multiple; leave blank if it affects interpretation or documentation only without moving the calculated number) | **E** Error Type/Issue | **F** Explanation | **G** Recommended Fix | **H** Estimated CE Impact | **I** Researcher judgment needed | **J** Finding # (leave blank — assigned by final-review) | **K** Current Formula/Value (the formula or hardcoded value from the problematic cell as currently written — e.g., `=SUM(D4:D18)` for formula errors or `0.73` for wrong hardcoded parameters; write the most representative cell if the finding covers multiple cells; leave blank for style or readability findings where cell content is not the core issue)
 See `reference/output-format.md` for full column definitions.
 
-**Publication Readiness column layout differs**: When routing a finding to Publication Readiness (not Findings), use the 8-column A–H layout — no Severity, Changes CE?, Estimated CE Impact, or Current Formula/Value. Write: A=Finding # (blank) | B=Sheet | C=Cell/Row | D=Error Type/Issue | E=Recommended Fix | F=Explanation | G=Needs input? | H=Status (blank).
+**Publication Readiness column layout differs**: When routing a finding to Publication Readiness (not Findings), use the 7-column A–G layout — no Severity, Changes CE?, Estimated CE Impact, or Current Formula/Value. Write: A=Finding # (blank) | B=Sheet | C=Cell/Row | D=Error Type/Issue | E=Recommended Fix | F=Explanation | G=Status (blank).
 
 Before writing any new finding, confirm: (1) exact cell reference, (2) specific issue, (3) precise fix required.

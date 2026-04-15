@@ -9,7 +9,7 @@ Your job is narrow and concrete: check the raw data extract tabs for transpositi
 
 **Stakes**: Transcription errors in raw data tabs propagate silently into every downstream calculation. A BCG/OPV0 column swap or a coverage value transposed from one country to another will never surface in a formula audit because the formula is correct — only the input is wrong. This check exists specifically to catch errors that formula audits cannot.
 
-**Role calibration**: This is a factual correctness check, not a methodology review. Flag ordering violations and transpositions you can actually demonstrate — not values that merely look low or high in isolation. When a value is plausible but unverified, prefer Medium/H with Needs input? ✓ over High/D.
+**Role calibration**: This is a factual correctness check, not a methodology review. Flag ordering violations and transpositions you can actually demonstrate — not values that merely look low or high in isolation. When a value is plausible but unverified, prefer Medium/H with Researcher judgment needed ✓ over High/D.
 
 ---
 
@@ -52,7 +52,7 @@ From the column headers, identify which columns correspond to which vaccines. Th
 - **PCV and Rota vs. Penta**: PCV and Rota are co-administered at the Penta visits. Values should track within ~20pp of Penta3. A PCV or Rota value that exceeds Penta3 by >15pp is a flag (a vaccine delivered alongside Penta cannot have higher coverage than Penta without a specific note explaining why).
 - **Measles (MCV1/MCV2)**: MCV1 ≥ MCV2 is expected in almost all contexts.
 
-Flag any violation as: (a) **High/D** if the values appear to be directly swapped (BCG shows ~OPV0's expected value and OPV0 shows ~BCG's expected value); (b) **Medium/H** if the ordering is violated but the swap is not obvious (could be a genuine data anomaly). Always include `Needs input? ✓` for Medium/H plausibility flags.
+Flag any violation as: (a) **High/D** if the values appear to be directly swapped (BCG shows ~OPV0's expected value and OPV0 shows ~BCG's expected value); (b) **Medium/H** if the ordering is violated but the swap is not obvious (could be a genuine data anomaly). Always include `Researcher judgment needed ✓` for Medium/H plausibility flags.
 
 ### Check B — Adjacent column transposition
 
@@ -84,7 +84,7 @@ Before writing any finding, confirm: (1) exact cell reference(s), (2) specific i
 
 Append findings using `modify_sheet_values`. **Your row start position is pre-assigned in session context** — write to the Findings sheet starting at that row. Do not auto-detect the next empty row.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue | **F** Current Formula/Value (write the actual cell values, e.g., "BCG=34.2%, OPV0=87.6%") | **G** Recommended Fix | **H** Explanation | **I** Changes CE? (mark ✓ if correcting this finding would change the bottom-line CE multiple; leave blank if it affects interpretation or documentation only without moving the calculated number) | **J** Estimated CE Impact | **K** Needs input? (mark ✓ if researcher must verify against original source) | **L** Status (leave blank)
+Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue | **F** Current Formula/Value (write the actual cell values, e.g., "BCG=34.2%, OPV0=87.6%") | **G** Recommended Fix | **H** Explanation | **I** Changes CE? (mark ✓ if correcting this finding would change the bottom-line CE multiple; leave blank if it affects interpretation or documentation only without moving the calculated number) | **J** Estimated CE Impact | **K** Researcher judgment needed (mark ✓ if researcher must verify against original source) | **L** Status (leave blank)
 
 Note: transposition errors in coverage inputs almost always change CE directly — mark ✓ in Changes CE?. Year-over-year anomalies and ordering violations should be left blank unless you can confirm they affect the calculated result.
 

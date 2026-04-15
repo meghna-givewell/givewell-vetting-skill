@@ -11,7 +11,7 @@ You are performing Step 10c of a GiveWell spreadsheet vet. This is the last of t
 
 ## Step 1 — Read findings for summary
 
-Read all non-divider rows from the Findings sheet (batched: A2:L200, A201:L400, continuing until empty). Collect: all High findings (for Key Findings summary), all findings with `✓` in column K (Needs input?), and the count of High/Medium/Low findings.
+Read all non-divider rows from the Findings sheet (batched: A2:L200, A201:L400, continuing until empty). Collect: all High findings (for Key Findings summary), all findings with `✓` in column K (Researcher judgment needed), and the count of High/Medium/Low findings.
 
 Read all rows from Publication Readiness (batched: A2:H200, continuing until empty). Collect the total count.
 
@@ -68,5 +68,5 @@ Present the following in chat:
 Rules:
 - Pull the Vet scope line from the session context scope declaration. If no scope restriction was declared: "Fully vetted: all tabs | Lite-pass: none | Not checked: none."
 - List every High finding under "High findings," grouped by sheet. If no High findings, write "No High findings."
-- List only items with `✓` in column K (Needs input?) from the Findings sheet under "Items requiring researcher input" — do not include pub-readiness items here. If none, omit this section.
+- List only items with `✓` in column K (Researcher judgment needed) from the Findings sheet under "Items requiring researcher input" — do not include pub-readiness items here. If none, omit this section.
 - Keep each bullet to one sentence — the full detail is in the Findings sheet.

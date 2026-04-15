@@ -91,7 +91,7 @@ Write a new row to the **Log** sheet using `modify_sheet_values`. **All values m
 | R | Uncertain findings | Count of U findings |
 | S | Precision % | Formula: `=(P19-Q19-R19)/(P19-R19)` or "n/a (small sample)" |
 | T | Valid catches (V) | Count of Claude-only V findings |
-| U | Researcher-to-confirm | Claude findings flagged Needs input? ✓ |
+| U | Researcher-to-confirm | Claude findings flagged Researcher judgment needed ✓ |
 | V | Notes | Vet scope, key misses, valid catches summary |
 
 Write recall/precision columns as `value_input_option: USER_ENTERED` so formulas auto-calculate.

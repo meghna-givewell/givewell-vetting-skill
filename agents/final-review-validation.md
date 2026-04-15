@@ -88,6 +88,6 @@ Before writing any new finding, confirm: (1) exact cell reference(s), (2) specif
 
 Assign the next sequential Finding ID continuing from where compaction left off (e.g., if last ID was F-015, write F-016).
 
-**Findings sheet** (A–L): A=Finding # | B=Sheet | C=Cell/Row | D=Severity | E=Error Type/Issue | F=Current Formula/Value | G=Recommended Fix | H=Explanation | I=Changes CE? (✓ if correcting changes CE) | J=Estimated CE Impact | K=Needs input? | L=Status (leave blank)
+**Findings sheet** (A–L): A=Finding # | B=Sheet | C=Cell/Row | D=Severity | E=Error Type/Issue | F=Current Formula/Value | G=Recommended Fix | H=Explanation | I=Changes CE? (✓ if correcting changes CE) | J=Estimated CE Impact | K=Researcher judgment needed | L=Status (leave blank)
 
-**Publication Readiness** (A–H): A=Finding # | B=Sheet | C=Cell/Row | D=Error Type/Issue | E=Recommended Fix | F=Explanation | G=Needs input? | H=Status (leave blank)
+**Publication Readiness** (A–G): A=Finding # | B=Sheet | C=Cell/Row | D=Error Type/Issue | E=Recommended Fix | F=Explanation | G=Status (leave blank)

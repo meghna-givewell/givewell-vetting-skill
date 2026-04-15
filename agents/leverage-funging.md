@@ -86,7 +86,7 @@ For each leverage/funging parameter and formula found:
 - Is there a cell note or adjacent label explaining what the parameter represents and its source?
 - If the model deviates from GiveWell's standard leverage/funging methodology (as described in program context or grant documents), is the deviation documented?
 
-Flag undocumented leverage parameters as Low/H with `Needs input? ✓` if the value is outside typical ranges for this intervention type, or as Low/O if the value is plausible and the only issue is missing documentation.
+Flag undocumented leverage parameters as Low/H with `Researcher judgment needed ✓` if the value is outside typical ranges for this intervention type, or as Low/O if the value is plausible and the only issue is missing documentation.
 
 ---
 
@@ -96,6 +96,6 @@ Before writing any finding, confirm: (1) exact cell reference(s), (2) specific i
 
 Append findings using `modify_sheet_values`. **Your row start position is pre-assigned in session context** — write starting at that row. Do not auto-detect the next empty row.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue | **F** Current Formula/Value | **G** Recommended Fix | **H** Explanation | **I** Changes CE? (mark ✓ — leverage/funging errors almost always change CE directly) | **J** Estimated CE Impact | **K** Needs input? | **L** Status (leave blank)
+Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue | **F** Current Formula/Value | **G** Recommended Fix | **H** Explanation | **I** Changes CE? (mark ✓ — leverage/funging errors almost always change CE directly) | **J** Estimated CE Impact | **K** Researcher judgment needed | **L** Status (leave blank)
 
 See `reference/output-format.md` for full column definitions.

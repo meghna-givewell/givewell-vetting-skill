@@ -11,7 +11,7 @@
 
 ## Findings Sheet — Sheet 1 (model integrity)
 
-Columns (A–L): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | Current Formula/Value | Recommended Fix | Explanation | Changes CE? | Estimated CE Impact | Needs input? | Status
+Columns (A–L): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | Current Formula/Value | Recommended Fix | Explanation | Changes CE? | Estimated CE Impact | Researcher judgment needed | Status
 
 - **Finding #** (A): Sequential ID assigned by the final-review compaction step (e.g., `F-001`, `F-002` on the Findings sheet; `PR-001`, `PR-002` on Publication Readiness). Left blank by all analysis agents — do not write to this column.
 - **Sheet** (B): The sheet name the finding applies to (e.g., `Main CEA`, `Leverage/Funging`, `Inputs`). Use `Multiple` if a finding spans more than one sheet.
@@ -23,7 +23,7 @@ Columns (A–L): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
 - **Explanation** (H): Why this is an error or concern.
 - **Changes CE?** (I): Mark `✓` if correcting this finding would change the bottom-line CE multiple. Leave blank if it affects interpretation or documentation only without moving the calculated number. For formula errors in the CE calculation chain, this is almost always ✓. For missing sources where the value may be correct, leave blank unless there is reason to believe the value is wrong.
 - **Estimated CE Impact** (J): For High findings, quantify directional effect on bottom-line CE (e.g., "raises weighted CE from 8.7x to ~10.2x"). For Medium/Low with negligible or unknown impact: "None / not quantified".
-- **Needs input?** (K): Mark `✓` if the finding cannot be resolved without researcher input — e.g., an intent question ("is this $0 intentional?") or a verification that requires the researcher to check a source. Leave blank if the fix is unambiguous.
+- **Researcher judgment needed** (K): Mark `✓` if the finding cannot be resolved without researcher input — e.g., an intent question ("is this $0 intentional?") or a verification that requires the researcher to check a source. Leave blank if the fix is unambiguous.
 - **Status** (L): Left blank by Claude. The researcher fills this in: `Open` / `Fixed` / `Won't Fix` / `Needs Discussion`. Do not write to this column.
 
 ### Severity Rules
@@ -44,9 +44,9 @@ Write findings starting at row 2.
 
 ## Publication Readiness Sheet — Sheet 2 (pub-only issues)
 
-8-column format (A–H) — streamlined for pub-readiness work. No Severity, Decision Relevance, Estimated CE Impact, or Current Formula/Value. Contains only issues that do not affect model outputs: permission flags, broken links, GBD/IHME citation completeness (text-only citations), personal names in notes, internal-only references, Box links, terminology (x cash → x benchmark), label/note style issues. Researchers working on model correctness can ignore this sheet entirely until the pre-publication checklist.
+7-column format (A–G) — streamlined for pub-readiness work. No Severity, Decision Relevance, Estimated CE Impact, or Current Formula/Value. Contains only issues that do not affect model outputs: permission flags, broken links, GBD/IHME citation completeness (text-only citations), personal names in notes, internal-only references, Box links, terminology (x cash → x benchmark), label/note style issues. Researchers working on model correctness can ignore this sheet entirely until the pre-publication checklist.
 
-Columns (A–H): Finding # | Sheet | Cell/Row | Error Type / Issue | Recommended Fix | Explanation | Needs input? | Status
+Columns (A–G): Finding # | Sheet | Cell/Row | Error Type / Issue | Recommended Fix | Explanation | Status
 
 - **Finding #** (A): Sequential ID assigned by final-review (e.g., `PR-001`, `PR-002`). Left blank by agents.
 - **Sheet** (B): Sheet name the finding applies to.
@@ -54,8 +54,7 @@ Columns (A–H): Finding # | Sheet | Cell/Row | Error Type / Issue | Recommended
 - **Error Type / Issue** (D): Same vocabulary as Findings sheet — `Missing Source`, `Readability`, `Internal Reference`, etc.
 - **Recommended Fix** (E): Specific corrective action, leading with an imperative verb.
 - **Explanation** (F): Why this is an issue.
-- **Needs input?** (G): Mark `✓` if researcher input is required to resolve. Leave blank otherwise.
-- **Status** (H): Left blank by Claude. The researcher fills this in: `Open` / `Fixed` / `Won't Fix` / `Needs Discussion`.
+- **Status** (G): Left blank by Claude. The researcher fills this in: `Open` / `Fixed` / `Won't Fix` / `Needs Discussion`.
 
 ---
 
