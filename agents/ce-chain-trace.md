@@ -34,6 +34,17 @@ Record: the cell reference, the label used, and its current displayed value.
 
 Coverage declaration: "Step 1 complete. Final CE cell: [ref]. Label: [label]. Value: [X]."
 
+### Step 1b — CE plausibility guard
+
+After locating the final CE multiple, check whether its value falls within a plausible range for GiveWell-funded interventions:
+
+- A CE multiple **below 0.5x** is implausibly low — a program less than half as cost-effective as direct cash transfers would not typically be funded. Flag as **Medium/H** with Researcher judgment needed ✓.
+- A CE multiple **above 200x** is implausibly high — flag as **Medium/H** with Researcher judgment needed ✓.
+
+Exception: if the program context explains the CE multiple represents a different comparison base (not GiveDirectly cash transfers), or if the value is from a sensitivity scenario rather than the primary best-estimate, do not flag.
+
+If the value is outside the 0.5x–200x range, file this as a finding before continuing to trace the chain — it may indicate a units error or structural formula error that will become apparent during chain tracing.
+
 ---
 
 ## Step 2 — Map the chain: units of value per $10,000

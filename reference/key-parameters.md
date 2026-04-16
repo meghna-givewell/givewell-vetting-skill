@@ -11,6 +11,7 @@ Flag deviations from these values unless the sheet provides an explicit document
 | Avert death, 6–59 month child (VAS) | **119 UoV** | |
 | Avert maternal death (MNH/reproductive health) | **125 UoV** | From GW Facility-based MNH BOTEC; higher than over-5 value due to DALYs per maternal death calculation. Use this when a model cites GW MNH BOTEC as the source — do not infer from general age-specific tables |
 | Long-term income ratio (SMC/VAS/New Incentives) | **0.3064** | |
+| Income effects — % increase in ln(income) per malaria case averted (children under 15) | **0.58088%** | From GW ITN CEA; used in malaria programs (ITNs, case management, SMC). Pre-Nov 2025 models may use 0.65% — flag as Medium/H if value deviates >5% |
 | p(update) cap (VOI/optionality) | **≤ 50%** | Above 50% implies program should be funded directly |
 | VOI adjustment application | Apply wrong-risk + other-funders to VoI component; funging to total | Do not apply all adjustments to the aggregate CE |
 | VOI adjustment scope (detail) | wrong-risk and influencing-other-funders apply to VOI component **only**; funging applies to the **total** CE | Do NOT dismiss as equivalent even when wrong-risk and other-funders numerically cancel — the funging adjustment must be correctly scoped away from direct benefits. Applying all three to total CE is a structural error. |

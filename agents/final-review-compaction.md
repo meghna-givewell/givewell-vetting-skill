@@ -6,6 +6,14 @@ You are performing Step 10a of a GiveWell spreadsheet vet. This is the first of 
 
 **Do not read the source spreadsheet.** Your job is to restructure the findings lists only. Read both sheets — all rows — before doing anything else.
 
+## Step 0 — Backup declaration
+
+Before reading or modifying anything, write the following in your reasoning:
+
+> Pre-compaction state: No rows have been read or modified yet. Will read Findings sheet in 5 batches (A2:L200, A201:L400, A401:L600, A601:L800, A801:L1000) and Publication Readiness in 3 batches (A2:H200, A201:H400, A401:H600). If compaction fails partway through, this declaration establishes the pre-compaction state.
+
+This declaration serves as a checkpoint. If the rewrite step fails mid-execution (e.g., an MCP error after partial writes), it confirms that the original data had not yet been overwritten as of Step 0.
+
 **Do not invoke any skills or load additional context files.** Your task is defined entirely within this prompt.
 
 **Stakes**: GiveWell allocates hundreds of millions of dollars in grants based on cost-effectiveness analyses like this one. Every finding you misroute or inadvertently drop during compaction could affect real funding decisions. Exhaustive coverage of all rows — including rows beyond the first 50 — is a baseline requirement.
@@ -59,7 +67,12 @@ Coverage declaration: "Deduplication complete. [N] duplicates merged. No other d
 
 Rewrite both sheets sequentially from row 2, closing all gaps left by Wave 2's pre-allocated row ranges.
 
-Sort all Findings rows in memory: primary key = Severity (High → Medium → Low), secondary = Error Type/Issue (column E, alphabetical). Then rewrite the Findings sheet from row 2 with section dividers:
+Sort all Findings rows in memory using three sort keys:
+1. **Primary**: Severity (High → Medium → Low)
+2. **Secondary**: Estimated CE Impact (column J) — within each severity tier, apply this order: numeric magnitude findings first (rows where column J contains a specific estimate, e.g., "Raises CE — 2.5x" or "Lowers CE — 1.3x"), then magnitude-unknown findings ("Raises CE — magnitude unknown", "Lowers CE — magnitude unknown"), then "Direction unknown", then "No CE impact", then blank
+3. **Tertiary**: Error Type/Issue (column E, alphabetical)
+
+Then rewrite the Findings sheet from row 2 with section dividers:
 - Before the first High finding: divider row with column B = `─── High (N findings) ───`, all other columns blank.
 - All High findings follow.
 - Before the first Medium finding: `─── Medium (N findings) ───`.
