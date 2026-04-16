@@ -54,4 +54,26 @@ Columns:
 
 When category is ambiguous, prefer the more specific category (e.g., a coverage rate that came from a DHS survey is `Study-Derived`, not `Org-Reported`, even if the grantee cited it).
 
-**One row per cell** — do not consolidate multiple cells into one row. Each hardcoded cell gets its own row in the output, regardless of whether it shares a source with other cells. Write all entries in one or a few `modify_sheet_values` calls (batching by sheet) rather than one call per cell.
+**One row per unique parameter** — if the same parameter value (e.g., discount rate, moral weight, units of value per dollar) appears in multiple cells, create a single row and list all cell references in column B, separated by commas (e.g., `C14, C22, E14`). Treat cells as the same parameter if they share the same row label or adjacent description and the same value. Each *distinct* parameter still gets its own row.
+
+**One row per source table** — if a contiguous block of hardcoded cells all come from the same external data source (e.g., an entire GBD table, an IHME prevalence table, a WUENIC coverage table), consolidate them into a single row:
+- **B (Cell)**: the full cell range (e.g., `C5:H42`)
+- **C (Category)**: assign the category for the block (typically `Study-Derived`)
+- **D (Current Value)**: write `[table — N values]` (e.g., `[table — 48 values]`)
+- **E (Description)**: describe what the data represents (e.g., `GBD under-5 mortality rates by country and year`)
+- **F (Source to Verify)**: the source for the block (e.g., `GBD 2021 — vizhub URL or citation in cell note`)
+
+Use this consolidation only when all cells in the range share the same source and data type. If a table mixes sources or data types, split into separate rows by sub-range.
+
+**Write all entries in a single `modify_sheet_values` call starting at row 2, with no blank rows.** Assemble every entry across all vetted sheets into one consecutive list before writing — do not write sheet by sheet in separate calls, as that causes gaps. Rows must be contiguous: row 2, row 3, row 4, … with no skipped rows between them.
+
+## Final step — apply conditional formatting
+
+After all rows are written, call `add_conditional_formatting` on the Hardcoded Values sheet to color column C (C2:C1000) by category:
+
+- `GiveWell Parameter` → background `#D9E1F2` (light blue)
+- `Study-Derived` → background `#E2EFDA` (light green)
+- `Org-Reported` → background `#FFF2CC` (light yellow)
+- `Structural` → background `#EDEDED` (light grey)
+
+This step is required — do not skip it even if the output-setup step already attempted this formatting.

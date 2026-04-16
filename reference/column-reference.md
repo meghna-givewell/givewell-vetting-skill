@@ -4,7 +4,7 @@ This is the canonical column specification for the two output sheets. All agents
 
 ---
 
-## Findings Sheet (A–L)
+## Findings Sheet (A–J)
 
 | Column | Name | Content |
 |---|---|---|
@@ -13,17 +13,15 @@ This is the canonical column specification for the two output sheets. All agents
 | C | Cell/Row | Cell reference (e.g., B14) or row description |
 | D | Severity | High, Medium, or Low |
 | E | Error Type/Issue | Use **exactly one of**: Formula Error, Parameter Issue, Adjustment Issue, Assumption Issue, Structural Issue, Inconsistency |
-| F | Current Formula/Value | The formula or hardcoded value from the problematic cell as currently written (e.g., `=SUM(D4:D18)` or `0.73`). Write the most representative cell if the finding covers multiple cells. Leave blank for documentation-only findings where cell content is not the core issue. |
-| G | Explanation | 1–2 sentences: what is wrong and why it matters. For formula errors, include the current or expected value. No chain traces. |
-| H | Recommended Fix | Lead with an imperative verb. For formula fixes, include the complete replacement formula so the researcher can copy-paste directly. |
-| I | Changes CE? | Mark ✓ if correcting this finding would change the bottom-line CE multiple. Leave blank if the finding affects interpretation or documentation only, without moving the calculated number. |
-| J | Estimated CE Impact | Use **exactly one of**: Raises CE — [estimate], Lowers CE — [estimate], Raises CE — magnitude unknown, Lowers CE — magnitude unknown, No CE impact, Direction unknown |
-| K | Researcher judgment needed | Mark ✓ only when the researcher must make a **decision** — e.g., an intent question or a choice between two valid approaches. Do NOT mark for verification tasks or plausibility concerns. Leave blank if the correct action is unambiguous. |
-| L | Status | Leave blank — filled in by the researcher after review |
+| F | Explanation | 1–2 sentences max. Lead with the specific problem. Make a specific, falsifiable claim; include the actual value or formula (e.g., "B14 = 0.87 but C22 = 0.79"). Plain language. Do not hedge what you can confirm. No chain traces. |
+| G | Recommended Fix | One sentence or formula only. Lead with an imperative verb. Include the exact replacement formula or value. No explanation of why. |
+| H | Estimated CE Impact | Use **exactly one of**: Raises CE — [estimate], Lowers CE — [estimate], Raises CE — magnitude unknown, Lowers CE — magnitude unknown, No CE impact, Direction unknown |
+| I | Researcher judgment needed | Mark ✓ only when the researcher must make a **decision** — e.g., an intent question or a choice between two valid approaches. Do NOT mark for verification tasks or plausibility concerns. Leave blank if the correct action is unambiguous. |
+| J | Status | Leave blank — filled in by the researcher after review |
 
 ---
 
-## Publication Readiness Sheet (A–G)
+## Publication Readiness Sheet (A–F)
 
 | Column | Name | Content |
 |---|---|---|
@@ -33,7 +31,6 @@ This is the canonical column specification for the two output sheets. All agents
 | D | Error Type/Issue | Use **exactly one of**: Missing Source, Broken Link, Permission Issue, Readability, Terminology |
 | E | Explanation | 1–2 sentences: what is wrong and why it matters |
 | F | Recommended Fix | Lead with an imperative verb |
-| G | Status | Leave blank — filled in by the researcher after review |
 
 ---
 

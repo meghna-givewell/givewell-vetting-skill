@@ -42,7 +42,7 @@ Write all flags to the **Confidentiality Flags sheet** — not the Findings shee
 Write the header row first if the sheet is empty: `Cell/Row | Content Found | Sensitivity Type | Recommended Action`
 
 Columns:
-- **A (Cell/Row)**: Cell reference (e.g., `Main CEA!C14`, or `Notes` if found in a cell note)
+- **A (Cell/Row)**: Cell reference only — e.g., `Main CEA!C14`. No row labels or descriptions. If found in a cell note rather than a cell value, write the cell reference followed by ` (note)` — e.g., `Main CEA!C14 (note)`.
 - **B (Content Found)**: The sensitive content found — quote it directly, or describe it if quoting would itself be a risk
 - **C (Sensitivity Type)**: `PII` | `Donor Info` | `Salary/Compensation` | `Unpublished Strategy` | `Contact Info` | `Other`
 - **D (Recommended Action)**: Specific instruction (e.g., "Remove name — replace with role title", "Delete row before publication", "Move to internal-only version")

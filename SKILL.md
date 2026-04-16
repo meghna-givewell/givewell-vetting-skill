@@ -36,6 +36,8 @@ Load each document only when the step that requires it begins.
 | 8 | Optionality/VoI Extensions Structure Reference | `1BYdNqrOu3jqVYHHQ5S2lNfq3vCXwid0CxhQf4SjSRqc` | `read_sheet_values` | Step 3 |
 | 9 | TA Modeling Guidance | `12onXe086vgvSBSVCbIwvWwWft7JYIpPpJ--CK80Ez6M` | `get_doc_content` | Step 6 (TA grants only) |
 | 10 | TA Modeling Templates | `1FGccVLs21mqHdJjnzJKSpl2_MVLcLNcxP9omXX62jQg` | `read_sheet_values` | Step 6 (TA grants only) |
+| 11 | GiveWell Vaccination Programs CEA Tool | `1r-1u8u-N50U2cHQyGUYSJQDidxYz7JYDLqffwBZhKlw` | `read_sheet_values` | Step 3 (vaccine grants only) |
+| 12 | Master Vaccinations CEA Notes | `1GAJrDSsTiGldYnYkbEQ5UqoB-9DsgWqKQkdpHeD6RvQ` | `get_doc_content` | Step 3 (vaccine grants only) |
 
 ---
 
@@ -126,6 +128,8 @@ Identify the last populated row. Summarize at the **section level** (e.g., Costs
 
 *Main CEA section structure* (Medium/H if sections appear in the wrong order — read column A of Main CEA to locate section headers): Costs → Outputs → Outcomes → Summary of outcomes/initial CE → Adjustments → Cost-effectiveness after final adjustments → Counterfactual impact. An adjustment section appearing before the summary/initial CE section is a structural inversion. This check applies only to top-charity CEA sheets — skip for RFMF models, standalone BOTECs, optionality sheets, and other non-standard model types that do not follow this section sequence.
 
+*Simple CEA section structure* (Low/O if sections appear in the wrong order — read column A of Simple CEA to locate section headers): Inputs → Direct CE calculation → Adjustments → Final CE. A final CE row appearing before adjustments, or inputs appearing after calculations that depend on them, is a structural inversion. This check applies to all Simple CEA tabs regardless of whether they are in primary vet scope — do not lite-pass section ordering on Simple CEA.
+
 **After Steps 1–2, present output and ask**: "Does this match your understanding? Are there any misinterpretations before I proceed to error-checking?" Do not begin Step 3 until the user confirms.
 
 ---
@@ -162,6 +166,12 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 > **Never mark Researcher judgment needed for**: formula errors with a single unambiguous correct fix (e.g., replacing one cell reference with another — the fix is clear regardless of intent); missing source notes where the value itself is not in dispute; terminology renames; or documentation gaps where the recommended fix is simply "add a note." The test is whether the researcher's answer changes what you recommend — if the fix is identical regardless of their response, Researcher judgment needed is wrong.
 >
 > **Overflow protection**: If you exhaust your allocated row budget and still have findings to write, do not stop. Continue writing at the next row beyond your budget — the compaction agent reads all rows across the full Findings sheet and will sort any overflow findings into the correct position. Never truncate findings due to row budget exhaustion.
+>
+> **Cell/Row column format**: Column C on Findings and Publication Readiness must contain cell references or row numbers only — e.g., `B14` or `C4, F7, H12` or `Row 14`. Do not include row labels, descriptions, or any other text after the reference. The cell or row identifier is the only content this column should contain.
+>
+> **Explanation — length and style**: Column F must be 1–2 sentences maximum. Apply GiveWell legibility principles: lead with the specific problem (not background); make a specific, falsifiable claim; include the actual value or formula fragment (e.g., "B14 = 0.87 but C22 = 0.79"); use plain language a non-expert can understand; do not hedge what you can confirm — write "B14 references the wrong row" not "B14 may be referencing the wrong row." No chain traces, no reasoning.
+>
+> **Recommended Fix — length and style**: Column G must be one sentence or formula only. Lead with an imperative verb (Change, Replace, Add, Delete). Be specific — include the exact replacement formula or value. No explanation of why — only the action.
 
 **Sub-agents are required for every vet, without exception — including small BOTECs and single-sheet optionality models.** There is no sheet-size threshold below which inline execution is acceptable. Inline execution causes anchoring: observations from Steps 0–2 contaminate later steps, and each subsequent "pass" becomes confirmation of what was already noticed rather than an independent exhaustive check. Every step must start with a clean context. If a sheet has only 10 rows, spawn sub-agents anyway — the exhaustiveness of the check matters more than the time saved by running inline.
 

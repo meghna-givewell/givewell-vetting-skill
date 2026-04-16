@@ -23,7 +23,7 @@ Read all vetted sheets in a parallel batch: FORMATTED_VALUE mode and FORMULA mod
 
 ## Step 2 — Row-by-row Notes scan
 
-For each vetted sheet, scan every row from row 1 to the last populated row. For each row, check all six categories below:
+For each vetted sheet, scan every row from row 1 to the last populated row. For each row, check all seven categories below:
 
 **A. Formula rows missing "Calculation." note**
 If the Notes cell is blank AND the corresponding data cell contains a formula (`=...`), record this row. GiveWell's convention is to write "Calculation." in the Notes column for every formula row without exception — even when the row label makes the calculation obvious. Do not skip rows because their labels seem self-explanatory. Every formula row. Every one.
@@ -40,12 +40,16 @@ Flag any Notes cell whose entire content is a bare URL with no descriptive label
 Flag any Notes cell containing first-person language ("I think," "I increased," "I assumed," "my estimate," "I've"). GiveWell convention is organizational voice ("our estimate," "GiveWell's assessment," "the model assumes").
 
 **F. Row label quality**
-As you scan each row's Notes entry, simultaneously check the row label in column A. Record any label matching these three patterns — flag as Low/O with a specific rename recommendation:
+As you scan each row's Notes entry, simultaneously check the row label in column A. Record any label matching these four patterns — flag as Low/O with a specific rename recommendation:
 - **Redundant labels** — e.g., "Total pilot cost - pilot - operational pilot" where "pilot" appears multiple times
 - **Directionally misleading labels** — e.g., "above/below bar" when the model only computes above-bar scenarios (the "below" implies content that isn't there)
 - **Scope-mismatched labels** — labels referencing a different org, geography, or program than what the formula actually computes
+- **Vague or opaque labels** — e.g., "value," "arbitrary value," "placeholder," "figure," "X," "TBD," or any single-word label that doesn't describe what the row computes. Recommended fix: rename to state what the row represents (e.g., "arbitrary value" → "Coverage adjustment factor — [source]").
 
 Check every row label — not just rows with unusual notes.
+
+**G. Stale year references in notes**
+Flag any Notes cell citing a specific year (e.g., "per 2022 WHO data," "from 2020 DHS survey") where that year is more than 2 years before the current date. Recommended fix: verify whether a more recent data vintage is available; if so, update both the value and the note. If the older vintage is intentional (e.g., for comparability), the researcher should add a sentence explaining why.
 
 ---
 
@@ -62,7 +66,8 @@ B. Hardcoded rows missing source annotation: N/A — tracked in Hardcoded Values
 C. Template boilerplate notes: [list row references, or "none"]
 D. Raw URL notes / unlabeled hyperlinks: [list row references, or "none"]
 E. First-person language: [list row references, or "none"]
-F. Row labels flagged (redundant / misleading / wrong scope): [list row references with label text, or "none"]
+F. Row labels flagged (redundant / misleading / wrong scope / vague): [list row references with label text, or "none"]
+G. Stale year references in notes: [list row references with cited year, or "none"]
 ```
 
 If any line is left blank or contains a placeholder, stop and complete the scan before proceeding.
@@ -73,8 +78,9 @@ If any line is left blank or contains a placeholder, stop and complete the scan 
 
 **Your start row in the Publication Readiness sheet is pre-assigned in session context** — use it. Do not auto-detect the last row. Position conflicts are resolved by the final-review compaction agent.
 
-Use the 7-column Publication Readiness layout:
-**A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Error Type/Issue (use exactly one of: Missing Source, Broken Link, Permission Issue, Readability, Terminology) | **E** Explanation | **F** Recommended Fix | **G** Status (leave blank)
+Use the 6-column Publication Readiness layout. Write exactly 6 values per row — no more. **Do not include Severity, Status, Changes CE?, Estimated CE Impact, or Researcher judgment needed** — these are Findings-only columns. Writing a 7th column will corrupt the sheet layout.
+
+**A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Error Type/Issue (use exactly one of: Missing Source, Broken Link, Permission Issue, Readability, Terminology) | **E** Explanation | **F** Recommended Fix
 
 **Batch by issue type**: For each issue type (e.g., "Missing 'Calculation.' note"), file one finding row listing all affected rows in column C — do not write one row per instance. Exception: if meaningfully different recommended fixes are required for different rows, file them separately.
 
