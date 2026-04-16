@@ -41,5 +41,6 @@ This is the canonical column specification for the two output sheets. All agents
 
 - **→ Findings**: anything that affects model outputs or interpretation — formula errors, wrong/stale parameters, undocumented assumptions, structural bugs.
 - **→ Publication Readiness**: issues that do not affect the model — missing sources, permission flags, broken links, citation completeness, terminology, style, labeling.
-- **Missing Source always goes to Publication Readiness** unless the value itself is suspect (labeled "guess," outside plausible range, or inconsistent with other sources) — in that case, use Findings.
+- **Missing Source for standalone hardcoded cells → Hardcoded Values sheet**, not Publication Readiness. The Hardcoded Values sheet (column F "Source to Verify") already tracks this. Exception: hardcoded literals *embedded inside formulas* (e.g., `=2.47%*C43`) are not captured there — those still go to Publication Readiness as "Missing Source."
+- If the value itself is suspect (labeled "guess," outside plausible range, or inconsistent with other sources), use `Parameter Issue` in Findings instead.
 - When in doubt between Findings and Publication Readiness, use Findings.

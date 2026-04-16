@@ -28,8 +28,7 @@ For each vetted sheet, scan every row from row 1 to the last populated row. For 
 **A. Formula rows missing "Calculation." note**
 If the Notes cell is blank AND the corresponding data cell contains a formula (`=...`), record this row. GiveWell's convention is to write "Calculation." in the Notes column for every formula row without exception — even when the row label makes the calculation obvious. Do not skip rows because their labels seem self-explanatory. Every formula row. Every one.
 
-**B. Hardcoded rows missing source annotation**
-If the Notes cell is blank AND the data cell contains a hardcoded value (not a formula) AND the row appears in a parameter or input section (not a header row, label column, or lookup-key column), record this row. Researchers need to know the source of every hardcoded input.
+**B. Hardcoded rows missing source annotation** — SKIP. Source completeness for standalone hardcoded cells is already tracked in the Hardcoded Values sheet (column F "Source to Verify" writes "No source cited" for every unsourced input). Do not duplicate those findings here.
 
 **C. Template boilerplate notes**
 Flag Notes cells copied verbatim from the VOI/optionality template without customization — e.g., notes referencing "Section 2.1.x of write-up," generic "cross-cutting team responsibility" language, or placeholder phrases like "to be confirmed" or "update before publication." The note should describe this program's specific rationale, not generic template guidance.
@@ -59,7 +58,7 @@ Notes column scan complete.
 Sheet(s) scanned: [list all sheet names]
 Total rows scanned: [N] (rows [first]–[last] on [sheet name], repeat per sheet)
 A. Formula rows missing "Calculation." note: [list row references, or "none"]
-B. Hardcoded rows missing source annotation: [list row references, or "none"]
+B. Hardcoded rows missing source annotation: N/A — tracked in Hardcoded Values sheet
 C. Template boilerplate notes: [list row references, or "none"]
 D. Raw URL notes / unlabeled hyperlinks: [list row references, or "none"]
 E. First-person language: [list row references, or "none"]
