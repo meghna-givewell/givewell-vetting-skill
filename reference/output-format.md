@@ -4,7 +4,8 @@
 
 - **Findings** — model-integrity issues: formula errors, stale/wrong parameters, structural bugs, undocumented assumptions that affect CE or model interpretation.
 - **Publication Readiness** — issues that don't affect the model: missing sources, permission flags, broken links, citation format, terminology, style, labeling, personal names in notes, internal-only references.
-- **Missing Source always goes to Publication Readiness** — a missing citation does not by itself mean the value is wrong. If the value itself is suspect (e.g., labeled "guess," outside the plausible range, or inconsistent with other sources), file it as `Parameter Issue` or `Assumption Issue` in Findings instead.
+- **Missing Source for standalone hardcoded cells → Hardcoded Values sheet** (not Publication Readiness) — the Hardcoded Values sheet already tracks source completeness in column F. Exception: hardcoded literals embedded *inside* formulas still go to Publication Readiness. If the value is outside the plausible range or inconsistent with other sources, file it as `Parameter Issue` in Findings.
+- **Values labeled "guess" or "best guess" are not findings** — this is acceptable uncertainty documentation. Do not file Parameter Issue or Assumption Issue entries for these.
 - When in doubt between Findings and Publication Readiness, use Findings.
 
 ---
