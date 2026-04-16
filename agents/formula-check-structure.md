@@ -33,6 +33,14 @@ Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes, hyperlink
 
 **Formula architecture — direct positional references vs. keyed lookups**: When a model uses direct positional cross-sheet references (e.g., `='[Source]: DtW RFMF'!E24`) to pull values from source tabs that have identifiable row keys (program names, geography labels), flag as Low and recommend replacing with VLOOKUP or INDEX/MATCH keyed on the identifier. Direct positional references break silently if rows are inserted or reordered in the source tab; a keyed lookup is both more robust and self-documenting. This check applies to source/data-table tabs where row order may change as the program portfolio evolves.
 
+**Multi-year temporal alignment**: When a model projects costs or benefits over multiple years, verify the following across all year columns:
+
+- **Discount factor exponent**: For formulas of the form `value / (1+r)^n`, verify the exponent `n` is correct for each year column (e.g., Year 1 → n=1, Year 2 → n=2). A common error is copying the formula across columns without updating the exponent, resulting in identical discounting for all years.
+- **Ramp-up symmetry**: If costs include a partial-year ramp-up in Year 1 (e.g., `×0.5` for six months of activity), verify the benefit side has a corresponding ramp-up or a documented reason it does not. Costs discounted for partial-year implementation paired with full-year benefits overcount benefits relative to costs in Year 1.
+- **Year count**: Verify the number of years in the benefit horizon matches the formula range. A model labeled "5-year benefit horizon" using `SUM(B4:F4)` where column F represents year 6 has a boundary error. Check both the column headers and the formula range endpoints.
+
+Flag as Medium/H for confirmed misalignments. Flag as Low/H if the formula is internally consistent but year-label mapping is undocumented or unclear.
+
 ## Cross-Column Value Consistency
 
 Compare every hardcoded input to values in neighboring columns (other geographies or program variants):

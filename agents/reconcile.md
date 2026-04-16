@@ -72,7 +72,7 @@ Then make one of three determinations:
 **Needs researcher input** (when validity depends on intent):
 - Leave the finding as-is.
 - Append to Explanation: "Reconciliation review: validity depends on researcher intent. Question: [specific question]."
-- Set Researcher judgment needed (column J) to ✓.
+- Set Researcher judgment needed (column I) to ✓.
 
 **Won't Fix vs. Needs researcher input — key distinction**: If you re-read the referenced cell and the formula or value is *genuinely ambiguous* — it could be correct or incorrect depending on what the researcher intended — this is **Needs researcher input**, not Won't Fix. Won't Fix requires specific affirmative evidence that the cell is correct *as written*, not just that you cannot confirm it is wrong. When intent is the open question, always use Needs researcher input and flag for the researcher.
 

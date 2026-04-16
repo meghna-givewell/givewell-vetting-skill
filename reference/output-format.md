@@ -4,7 +4,7 @@
 
 - **Findings** — model-integrity issues: formula errors, stale/wrong parameters, structural bugs, undocumented assumptions that affect CE or model interpretation.
 - **Publication Readiness** — issues that don't affect the model: missing sources, permission flags, broken links, citation format, terminology, style, labeling, personal names in notes, internal-only references.
-- **Missing Source for standalone hardcoded cells → Hardcoded Values sheet** (not Publication Readiness) — the Hardcoded Values sheet already tracks source completeness in column F. Exception: hardcoded literals embedded *inside* formulas still go to Publication Readiness. If the value is outside the plausible range or inconsistent with other sources, file it as `Parameter Issue` in Findings.
+- **Missing Source for standalone hardcoded cells → Hardcoded Values sheet** (not Publication Readiness) — the Hardcoded Values sheet already tracks source completeness in column F. Exception: hardcoded literals embedded *inside* formulas still go to Publication Readiness. If the value is outside the plausible range or inconsistent with other sources, file it as `Parameter Issue` in Findings. **A value that is both potentially wrong and undocumented is always `Parameter Issue` in Findings — do not also file `Missing Source` in Publication Readiness for the same cell.**
 - **Values labeled "guess" or "best guess" are not findings** — this is acceptable uncertainty documentation. Do not file Parameter Issue or Assumption Issue entries for these.
 - When in doubt between Findings and Publication Readiness, use Findings.
 
@@ -19,7 +19,7 @@ Columns (A–J): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
 - **Cell/Row** (C): Exact location (e.g., `B14`). For grouped findings, list all affected cells (e.g., `B14, B18, B22`).
 - **Severity** (D): `High`, `Medium`, or `Low`. Color-coded — see Severity Rules below.
 - **Error Type / Issue** (E): Use exactly one of the six standard categories below:
-  - `Formula Error` — wrong cell reference, wrong range, broken logic, incorrect operator
+  - `Formula Error` — wrong cell reference, wrong range, broken logic, incorrect operator. When filing a Formula Error, include a bracketed sub-type at the start of the Explanation: `[Copy-paste]`, `[Wrong reference]`, `[Year range]`, `[Sign error]`, `[Wrong operator]`, or `[Off-by-one]`.
   - `Parameter Issue` — hardcoded value is stale/outdated, or conflicts with a GW cross-cutting standard (moral weight, benchmark, discount rate)
   - `Adjustment Issue` — an adjustment (IV, EV, leverage, funging, supplemental) is absent, has the wrong sign, wrong base, or is multiplicative vs. additive incorrectly
   - `Assumption Issue` — key assumption lacks a source, explanation, or is an unacknowledged edge case
