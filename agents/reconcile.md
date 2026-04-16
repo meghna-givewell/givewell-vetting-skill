@@ -42,7 +42,7 @@ Two findings **match** if they reference the same cell or overlapping row range 
 
 ## Step 3 — Classify
 
-- **Confirmed**: both A and B caught it → keep the version with more complete Explanation and Recommended Fix; append "Confirmed by both independent agents." to the surviving row's Explanation.
+- **Confirmed**: both A and B caught it → keep the version with more complete Explanation and Recommended Fix. If A and B assigned different severities, retain the higher severity silently — do not note the discrepancy in the Explanation. Do not append any meta-commentary (e.g., "Confirmed by both independent agents", "Two independent agents assessed this at different severities") to the surviving row's Explanation.
 - **A-only**: A caught it, B did not → investigate (Step 4).
 - **B-only**: B caught it, A did not → investigate (Step 4).
 
@@ -59,15 +59,15 @@ For each A-only or B-only finding, do **all** of the following before making any
 Then make one of three determinations:
 
 **Retain** (default): The finding is valid, or you cannot confirm it is invalid.
-- If the finding is already on the sheet (from the A instance): append "Identified by one instance only — retained by reconciliation review." to the Explanation.
-- If the finding is not yet on the sheet (B-only and A wrote nothing): add it as a new row on the correct sheet (Findings for model-integrity findings; Publication Readiness for publication-readiness findings). Add "Identified by B instance only — validated by reconciliation review." to Explanation. Write all columns.
+- If the finding is already on the sheet (from the A instance): leave the Explanation unchanged.
+- If the finding is not yet on the sheet (B-only and A wrote nothing): add it as a new row on the correct sheet (Findings for model-integrity findings; Publication Readiness for publication-readiness findings). Write all columns; do not add any meta-commentary to the Explanation.
 - **When in doubt, retain. The cost of a false positive is one minute of researcher review. The cost of a false Won't Fix is a missed error in a published CEA.**
 
 **Won't Fix** (high bar — requires specific affirmative evidence):
 - You may mark a finding `Won't Fix` **only** if you can state the specific, affirmative reason the formula or value is correct — not merely that you couldn't confirm the issue.
 - Qualifying reasons: "The formula references cell D22 labeled 'Seasonal concentration (non-Sahel)' — the correct concept for this column." / "The declared-intentional deviation explicitly covers this parameter." / "The cell note explains this value is intentionally set at X because [reason the note gives]."
 - Non-qualifying reasons: "I couldn't reproduce the issue." / "It seems likely correct in context." / "The other agent's finding seems plausible." / "The value is close to what I'd expect."
-- When marking Won't Fix: append to Explanation: "Reconciliation review: not confirmed. Specific reason: [state the exact affirmative reason]." Then delete the row from the sheet.
+- When marking Won't Fix: delete the row from the sheet.
 
 **Needs researcher input** (when validity depends on intent):
 - Leave the finding as-is.
