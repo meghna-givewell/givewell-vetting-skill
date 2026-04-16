@@ -69,7 +69,7 @@ Columns (A–G): Finding # | Sheet | Cell/Row | Error Type / Issue | Explanation
   - `Permission Issue` — file needs publish permission, or links to an internal-only GiveWell doc
   - `Readability` — unclear/stale labels, placeholder text, formatting that impedes comprehension
   - `Terminology` — wrong term (e.g., "x cash" instead of "x benchmark", outdated program names)
-- **Explanation** (E): One sentence describing what is wrong. No chain trace.
+- **Explanation** (E): One short sentence (≤25 words) describing what is wrong in plain language. No chain trace, no internal doc IDs, no references to skill files or .md files. Write for a researcher, not for debugging output.
 - **Recommended Fix** (F): Short imperative action — what to do, not why. E.g., "Add source note to B14" or "Change 'x cash' to 'x benchmark' in B6."
 - **Status** (G): Left blank by Claude. The researcher fills this in: `Open` / `Fixed` / `Won't Fix` / `Needs Discussion`.
 
