@@ -21,13 +21,7 @@ Read all rows from Publication Readiness (batched: A2:H200, continuing until emp
 
 Use `modify_sheet_values` (USER_ENTERED) on the Dashboard tab.
 
-**a. CE estimate direction (cell B22)**: Write a short phrase stating direction and estimated magnitude of misstatement. Review Estimated CE Impact (column I) for all High findings:
-- If correcting them would raise CE → current estimate is understated
-- If correcting them would lower CE → current estimate is overstated
-- If both directions → write "Mixed"
-- If no High findings → write "Not quantified (no High findings)"
-
-Include a magnitude estimate drawn from column J values — e.g., `Likely overstated (~1.4x)` or `Likely understated (CE may rise from 8.7x to ~10x)`. If magnitude is unknown: `Likely overstated (magnitude unclear — see High findings)`.
+**a. CE estimate direction (cell B22)**: Review Estimated CE Impact (column I) for all High findings and write one short phrase: `Likely overstated (~1.4x)`, `Likely understated (CE may rise from 8.7x to ~10x)`, `Mixed`, or `Not quantified (no High findings)`. If magnitude is unknown: `Likely overstated (magnitude unclear — see High findings)`.
 
 **b. Findings by sheet table and Sheets not vetted (rows 24 onward)**:
 
@@ -40,7 +34,7 @@ Rows 25 onward: one row per unique sheet name found in column B of the Findings 
 
 After the last sheet row, write a totals row: `Total` in column A, `=SUM(B25:B{last})` in B, same pattern for C–D, `=SUM(E25:E{last})` in E.
 
-After the Total row, skip one blank row, then write `Sheets not vetted:` in column A and a comma-separated list of tabs not checked at all in column B. Write `None` if all tabs were vetted or lite-passed. Pull from the session context scope declaration.
+After the Total row, skip one blank row, then write `Sheets not vetted:` in column A (bold). On each subsequent row, write one unvetted tab name in column A. If all tabs were vetted or lite-passed, write `None` in the row immediately below the heading. Pull from the session context scope declaration.
 
 ---
 

@@ -11,7 +11,7 @@
 
 ## Findings Sheet — Sheet 1 (model integrity)
 
-Columns (A–K): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | Explanation | Recommended Fix | Changes CE? | Estimated CE Impact | Researcher judgment needed | Status
+Columns (A–L): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | Current Formula/Value | Explanation | Recommended Fix | Changes CE? | Estimated CE Impact | Researcher judgment needed | Status
 
 - **Finding #** (A): Sequential ID assigned by the final-review compaction step (e.g., `F-001`, `F-002` on the Findings sheet; `PR-001`, `PR-002` on Publication Readiness). Left blank by all analysis agents — do not write to this column.
 - **Sheet** (B): The sheet name the finding applies to (e.g., `Main CEA`, `Leverage/Funging`, `Inputs`). Use `Multiple` if a finding spans more than one sheet.
@@ -24,17 +24,18 @@ Columns (A–K): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
   - `Assumption Issue` — key assumption lacks a source, explanation, or is an unacknowledged edge case
   - `Structural Issue` — tab ordering, section ordering, missing required tab, inverted section structure
   - `Inconsistency` — values that should match across sheets or within the model don't
-- **Explanation** (F): A concise description of the issue — what is wrong and why it matters. 1–2 sentences. For formula errors, include the current or expected value for context. Do not write a full chain trace here.
-- **Recommended Fix** (G): Specific corrective action. Lead with an imperative verb. When the fix is a formula change, include the complete replacement formula string — e.g., "Change to `=SUM(D4:D19)` (current formula excludes row 19)" so the researcher can copy-paste directly.
-- **Changes CE?** (H): Mark `✓` if correcting this finding would change the bottom-line CE multiple. Leave blank if it affects interpretation or documentation only without moving the calculated number. For formula errors in the CE calculation chain, this is almost always ✓. For missing sources where the value may be correct, leave blank unless there is reason to believe the value is wrong.
-- **Estimated CE Impact** (I): Always begin with one of these standard phrases, then append a magnitude note if known:
+- **Current Formula/Value** (F): The formula (e.g., `=SUM(D4:D18)`) or hardcoded value (e.g., `0.003355`) currently in the problematic cell, as written. Write the most representative cell if the finding covers multiple cells. Leave blank for style/readability findings where cell content is not the core issue.
+- **Explanation** (G): 1–2 sentences: what is wrong and why it matters. For formula errors, include the current or expected value. No chain traces.
+- **Recommended Fix** (H): Lead with an imperative verb. For formula fixes, include the complete replacement formula so the researcher can copy-paste directly.
+- **Changes CE?** (I): Mark `✓` if correcting this finding would change the bottom-line CE multiple. Leave blank if it affects interpretation or documentation only without moving the calculated number. For formula errors in the CE calculation chain, this is almost always ✓. For missing sources where the value may be correct, leave blank unless there is reason to believe the value is wrong.
+- **Estimated CE Impact** (J): Always begin with one of these standard phrases, then append a magnitude note if known:
   - `Raises CE — [estimate, e.g. 17.4x → ~23.6x]`
   - `Lowers CE — [estimate, e.g. ~5% reduction]`
   - `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown` (direction clear, size unclear)
   - `No CE impact` (use when Changes CE? is blank)
   - `Direction unknown` (use when even direction requires researcher input)
-- **Researcher judgment needed** (J): Mark `✓` if the finding cannot be resolved without researcher input — e.g., an intent question ("is this $0 intentional?") or a verification that requires the researcher to check a source. Leave blank if the fix is unambiguous.
-- **Status** (K): Left blank by Claude. The researcher fills this in: `Open` / `Fixed` / `Won't Fix` / `Needs Discussion`. Do not write to this column.
+- **Researcher judgment needed** (K): Mark `✓` only when the researcher must make a **decision** — e.g., an intent question ("is this $0 intentional?") or a choice between two valid approaches. Do NOT mark for verification tasks ("check this against the source") or plausibility concerns ("this value seems off") — those are just Medium findings. Leave blank if the correct action is unambiguous, even if the researcher still has to perform it.
+- **Status** (L): Left blank by Claude. The researcher fills this in: `Open` / `Fixed` / `Won't Fix` / `Needs Discussion`. Do not write to this column.
 
 ### Severity Rules
 - **High**: Materially affects bottom-line CE — formula errors, structural omissions, adjustments calculated but not applied. Ask: does correcting this change the number a decision-maker sees? If yes, it's High.

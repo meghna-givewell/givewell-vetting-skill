@@ -72,10 +72,10 @@ If any line is left blank or contains a placeholder, stop and complete the scan 
 
 ## Step 4 — Write findings to Publication Readiness
 
-Read the Publication Readiness sheet to find the last populated row. Append all findings starting at the next available row.
+Write findings starting at **row 250** of the Publication Readiness sheet. **Do not read the Publication Readiness sheet to detect the last row** — your start position is pre-assigned in session context, and position conflicts are resolved by the final-review compaction agent.
 
 Use the 7-column Publication Readiness layout:
-**A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Error Type/Issue | **E** Explanation | **F** Recommended Fix | **G** Status (leave blank)
+**A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Error Type/Issue (use exactly one of: Missing Source, Broken Link, Permission Issue, Readability, Terminology) | **E** Explanation | **F** Recommended Fix | **G** Status (leave blank)
 
 **Batch by issue type**: For each issue type (e.g., "Missing 'Calculation.' note"), file one finding row listing all affected rows in column C — do not write one row per instance. Exception: if meaningfully different recommended fixes are required for different rows, file them separately.
 

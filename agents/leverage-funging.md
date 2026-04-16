@@ -96,6 +96,6 @@ Before writing any finding, confirm: (1) exact cell reference(s), (2) specific i
 
 Append findings using `modify_sheet_values`. **Your row start position is pre-assigned in session context** — write starting at that row. Do not auto-detect the next empty row.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue | **F** Explanation | **G** Recommended Fix | **H** Changes CE? (mark ✓ — leverage/funging errors almost always change CE directly) | **I** Estimated CE Impact | **J** Researcher judgment needed | **K** Status (leave blank)
+Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (use exactly one of: Formula Error, Parameter Issue, Adjustment Issue, Assumption Issue, Structural Issue, Inconsistency) | **F** Current Formula/Value (the formula or hardcoded value from the problematic cell as currently written; leave blank for documentation-only findings) | **G** Explanation | **H** Recommended Fix | **I** Changes CE? (mark ✓ — leverage/funging errors almost always change CE directly) | **J** Estimated CE Impact (use exactly one of: Raises CE — [estimate], Lowers CE — [estimate], Raises CE — magnitude unknown, Lowers CE — magnitude unknown, No CE impact, Direction unknown) | **K** Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | **L** Status (leave blank)
 
 See `reference/output-format.md` for full column definitions.
