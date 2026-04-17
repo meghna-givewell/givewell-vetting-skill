@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vetting Skill — Agent Architecture</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f5f4f0;
+    color: #1a1a1a;
+    padding: 20px 20px 32px;
+  }
+
+  h1 {
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 3px;
+    letter-spacing: -0.3px;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 20px;
+  }
+
+  /* ── FLOW ── */
+  .flow { display: flex; flex-direction: column; align-items: center; gap: 0; }
+
+  /* ── CONNECTOR ARROWS ── */
+  .arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    margin: 0;
+  }
+  .arrow-line {
+    width: 2px;
+    height: 10px;
+    background: #bbb;
+  }
+  .arrow-head {
+    width: 0; height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid #bbb;
+  }
+
+  /* ── WAVE BLOCKS ── */
+  .wave {
+    width: 100%;
+    max-width: 920px;
+    border-radius: 10px;
+    padding: 10px 14px 14px;
+    margin: 0;
+  }
+
+  .wave-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .wave-label .badge {
+    padding: 1px 8px;
+    border-radius: 20px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  /* Wave colour themes */
+  .wave-1  { background: #eef3fb; border: 1.5px solid #c2d5f5; }
+  .wave-1 .wave-label { color: #2c5fa8; }
+  .wave-1 .badge { background: #2c5fa8; color: #fff; }
+
+  .wave-cp { background: #fdf6e3; border: 1.5px dashed #e0b94b; max-width: 920px; }
+  .wave-cp .wave-label { color: #a07a00; }
+
+  .wave-2  { background: #edf7f1; border: 1.5px solid #9fd4b3; }
+  .wave-2 .wave-label { color: #1d7a47; }
+  .wave-2 .badge { background: #1d7a47; color: #fff; }
+
+  .wave-25 { background: #f2edfb; border: 1.5px solid #c4adee; }
+  .wave-25 .wave-label { color: #6035a8; }
+  .wave-25 .badge { background: #6035a8; color: #fff; }
+
+  .wave-3  { background: #fef0ec; border: 1.5px solid #f5bba8; }
+  .wave-3 .wave-label { color: #c04a20; }
+  .wave-3 .badge { background: #c04a20; color: #fff; }
+
+  .wave-out { background: #f0f0f0; border: 1.5px solid #ccc; }
+  .wave-out .wave-label { color: #444; }
+
+  /* ── AGENT GRIDS ── */
+  .agent-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .agent-grid.sequential { flex-wrap: nowrap; }
+
+  /* ── AGENT CARD ── */
+  .agent {
+    border-radius: 7px;
+    padding: 6px 9px;
+    flex: 1 1 130px;
+    min-width: 120px;
+    background: rgba(255,255,255,0.75);
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  .agent .name {
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 2px;
+    line-height: 1.3;
+  }
+  .agent .desc {
+    font-size: 10px;
+    color: #555;
+    line-height: 1.3;
+  }
+  .agent .pair-badge {
+    display: inline-block;
+    font-size: 8px;
+    font-weight: 700;
+    background: rgba(0,0,0,0.08);
+    border-radius: 4px;
+    padding: 1px 4px;
+    margin-bottom: 3px;
+    letter-spacing: 0.5px;
+  }
+  /* Split badge — highlights the heads-up split */
+  .agent .pair-badge.split {
+    background: #d4edda;
+    color: #155724;
+  }
+
+  /* Sequential step numbers */
+  .step-num {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #c04a20;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-right: 6px;
+  }
+  .wave-3 .agent { display: flex; align-items: flex-start; flex: 1 1 220px; }
+  .wave-3 .agent .text { flex: 1; }
+
+  /* Checkpoint layout */
+  .checkpoint-body {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .checkpoint-icon {
+    font-size: 18px;
+    line-height: 1;
+    margin-top: 1px;
+  }
+  .checkpoint-text h3 {
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 2px;
+    color: #7a5a00;
+  }
+  .checkpoint-text p {
+    font-size: 10px;
+    color: #7a5a00;
+    line-height: 1.4;
+  }
+
+  /* Output row */
+  .output-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .output-chip {
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #fff;
+    border: 1px solid #ccc;
+    flex: 1 1 130px;
+    text-align: center;
+    color: #333;
+  }
+  .output-chip span {
+    display: block;
+    font-size: 9px;
+    font-weight: 400;
+    color: #888;
+    margin-top: 1px;
+  }
+
+  /* Section dividers inside a wave */
+  .section-title {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #888;
+    margin: 8px 0 4px;
+  }
+
+  /* Callout for split explanation */
+  .split-note {
+    font-size: 9px;
+    color: #155724;
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 5px;
+    padding: 4px 8px;
+    margin-bottom: 5px;
+    display: inline-block;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    font-size: 10px;
+    color: #555;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<h1>Vetting Skill — Agent Architecture</h1>
+<p class="subtitle">How the /vetting skill orchestrates 44 agents across four waves to produce a fully-reviewed spreadsheet.</p>
+
+<div class="flow">
+
+  <!-- ── WAVE 1 ── -->
+  <div class="wave wave-1" style="max-width:920px;">
+    <div class="wave-label">
+      <span class="badge">WAVE 1</span>
+      Formula &amp; Structure Checks &nbsp;·&nbsp; 14 agents, all parallel
+    </div>
+
+    <div class="section-title">Arithmetic &amp; Logic (rows split into halves)</div>
+    <div class="agent-grid">
+      <div class="agent">
+        <div class="pair-badge">PAIR A·B — rows 1→½</div>
+        <div class="name">Formula-Check-Arithmetic</div>
+        <div class="desc">Cell references, arithmetic correctness, label-formula alignment, scalar multipliers</div>
+      </div>
+      <div class="agent">
+        <div class="pair-badge">PAIR C·D — rows ½→end</div>
+        <div class="name">Formula-Check-Arithmetic</div>
+        <div class="desc">Second half of sheet; same checks as A·B</div>
+      </div>
+    </div>
+
+    <div class="section-title">Data, Edge Cases &amp; Structure (full sheet)</div>
+    <div class="agent-grid">
+      <div class="agent">
+        <div class="pair-badge">PAIR A·B</div>
+        <div class="name">Formula-Check-Data</div>
+        <div class="desc">External data verification: GBD, trial papers, cross-model values</div>
+      </div>
+      <div class="agent">
+        <div class="pair-badge">PAIR A·B</div>
+        <div class="name">Formula-Check-Edge-Cases</div>
+        <div class="desc">Zero denominators, blank refs, silenced errors, aggregation gaps</div>
+      </div>
+      <div class="agent">
+        <div class="pair-badge">PAIR A·B</div>
+        <div class="name">Formula-Check-Structure</div>
+        <div class="desc">Missing cost/benefit components, scope mismatches, parallel scenario symmetry</div>
+      </div>
+      <div class="agent">
+        <div class="pair-badge">PAIR A·B</div>
+        <div class="name">Source-Data-Check</div>
+        <div class="desc">Raw-data tab plausibility: transpositions, year-over-year anomalies</div>
+      </div>
+      <div class="agent">
+        <div class="pair-badge">PAIR A·B</div>
+        <div class="name">Consistency-Check</div>
+        <div class="desc">Units, moral weights, cross-CEA parameters, study-derived parameter row consistency</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- arrow -->
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <!-- ── CHECKPOINT ── -->
+  <div class="wave wave-cp" style="max-width:920px; padding: 8px 14px;">
+    <div class="wave-label" style="margin-bottom:8px;">Researcher Checkpoint</div>
+    <div class="checkpoint-body">
+      <div class="checkpoint-icon">⏸</div>
+      <div class="checkpoint-text">
+        <h3>Pause &amp; Present</h3>
+        <p>Wave 1 findings flagged "Researcher Judgment Needed" are surfaced before Wave 2 launches. The researcher can clarify intent or confirm deviations. This prevents Wave 2 agents from spending effort on known non-issues.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- arrow -->
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <!-- ── WAVE 2 ── -->
+  <div class="wave wave-2" style="max-width:920px;">
+    <div class="wave-label">
+      <span class="badge">WAVE 2</span>
+      Independent Verification &nbsp;·&nbsp; 17 agents, all parallel
+    </div>
+
+    <div class="section-title">A·B Paired agents (run independently, no cross-knowledge)</div>
+
+    <div class="split-note">&#x2702; heads-up split into two agents to reduce context load — each ~7,400 tokens vs. the original ~12,500 token monolith</div>
+
+    <div class="agent-grid">
+      <div class="agent">
+        <div class="pair-badge">PAIR A·B</div>
+        <div class="name">Sources</div>
+        <div class="desc">Citation completeness, broken links, GBD reproducibility, permission flags, cost input row coverage</div>
+      </div>
+      <div class="agent">
+        <div class="pair-badge split">PAIR A·B &nbsp;·&nbsp; Step 6a</div>
+        <div class="name">Heads-Up-Evidence</div>
+        <div class="desc">CE sanity check, top-5 assumption interrogation, hyperlink audit, benefit streams, evidence quality (proxy pathways, trial follow-up, subgroup validity, benefit transfer)</div>
+      </div>
+      <div class="agent">
+        <div class="pair-badge split">PAIR A·B &nbsp;·&nbsp; Step 6b</div>
+        <div class="name">Heads-Up-Epi</div>
+        <div class="desc">Epidemiological parameters, disease burden sourcing, GBD vintage, sub-national estimates, model structure (pre/post UoV, double-counting, ceiling analysis, leverage/funging UoV references)</div>
+      </div>
+      <div class="agent">
+        <div class="pair-badge">PAIR A·B &nbsp;·&nbsp; Step 6c</div>
+        <div class="name">Heads-Up-Intervention</div>
+        <div class="desc">Intervention-specific logic (VAS, SMC, ITN, deworming, New Incentives, malaria vaccines…)</div>
+      </div>
+      <div class="agent">
+        <div class="pair-badge">PAIR A·B</div>
+        <div class="name">Readability</div>
+        <div class="desc">Label precision, tab ordering, calculation flow, first-time-reader scan</div>
+      </div>
+      <div class="agent">
+        <div class="pair-badge">PAIR A·B</div>
+        <div class="name">Leverage-Funging</div>
+        <div class="desc">Funging direction, multiplicative vs. additive, government co-financing, UoV pre/post reference check</div>
+      </div>
+      <div class="agent">
+        <div class="pair-badge">PAIR A·B</div>
+        <div class="name">CE-Chain-Trace</div>
+        <div class="desc">Full chain from final CE back to inputs, unit correctness, moral weights, leverage scenario UoV references</div>
+      </div>
+    </div>
+
+    <div class="section-title">Single-instance agents</div>
+    <div class="agent-grid">
+      <div class="agent">
+        <div class="pair-badge">SINGLE</div>
+        <div class="name">Sensitivity-Scan</div>
+        <div class="desc">Detects names, salaries, donor info, unpublished strategy → Confidentiality Flags sheet</div>
+      </div>
+      <div class="agent">
+        <div class="pair-badge">SINGLE</div>
+        <div class="name">Hardcoded-Values</div>
+        <div class="desc">Enumerates all hardcoded inputs with category &amp; source citation</div>
+      </div>
+      <div class="agent">
+        <div class="pair-badge">SINGLE</div>
+        <div class="name">Notes-Scan</div>
+        <div class="desc">Missing "Calculation." entries, boilerplate, raw URLs, label quality</div>
+      </div>
+    </div>
+
+
+  </div>
+
+  <!-- arrow -->
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <!-- ── WAVE 2.5 ── -->
+  <div class="wave wave-25" style="max-width:920px;">
+    <div class="wave-label">
+      <span class="badge">WAVE 2.5</span>
+      Reconciliation &nbsp;·&nbsp; 15 agents, all parallel
+    </div>
+
+    <div class="agent-grid" style="margin-bottom:6px;">
+      <div class="agent" style="flex: 1 1 100%;">
+        <div class="name">One reconciliation agent per A·B pair</div>
+        <div class="desc" style="margin-top:2px;">
+          Reads both A's and B's findings, re-reads divergent cells, and classifies each as:
+          <strong>Confirmed · A-only · B-only · Won't Fix · Needs Researcher Input.</strong>
+          Net-new findings written to each pair's 10-row overflow buffer.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- arrow -->
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <!-- ── WAVE 3 ── -->
+  <div class="wave wave-3" style="max-width:920px;">
+    <div class="wave-label">
+      <span class="badge">WAVE 3</span>
+      Final Review &nbsp;·&nbsp; 3 agents, sequential
+    </div>
+
+    <div class="agent-grid sequential" style="flex-direction: column; gap: 8px;">
+      <div class="agent" style="display:flex; align-items:flex-start; flex: unset;">
+        <div class="step-num">1</div>
+        <div class="text">
+          <div class="name">Final-Review-Compaction</div>
+          <div class="desc">Routes misrouted findings (Adjustment Issue findings always stay in Findings), deduplicates, sorts by severity/CE-impact, assigns Finding IDs. Rewrites both Findings and Publication Readiness sheets sequentially.</div>
+        </div>
+      </div>
+      <div class="agent" style="display:flex; align-items:flex-start; flex: unset;">
+        <div class="step-num">2</div>
+        <div class="text">
+          <div class="name">Final-Review-Validation</div>
+          <div class="desc">Confirms proposed fixes don't break downstream cells. Checks confidence intervals. Fills in missing CE impact estimates for all High findings.</div>
+        </div>
+      </div>
+      <div class="agent" style="display:flex; align-items:flex-start; flex: unset;">
+        <div class="step-num">3</div>
+        <div class="text">
+          <div class="name">Final-Review-Dashboard</div>
+          <div class="desc">Writes Dashboard tab (CE direction, findings by sheet, tabs vetted). Presents Key Findings summary in chat.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- arrow -->
+  <div class="arrow"><div class="arrow-line"></div><div class="arrow-head"></div></div>
+
+  <!-- ── OUTPUTS ── -->
+  <div class="wave wave-out" style="max-width:920px;">
+    <div class="wave-label">Outputs</div>
+    <div class="output-grid">
+      <div class="output-chip">Findings Sheet<span>H/M/L findings, sorted by severity &amp; CE impact</span></div>
+      <div class="output-chip">Publication Readiness Sheet<span>Citation, style, and documentation issues</span></div>
+      <div class="output-chip">Hardcoded Values Sheet<span>Audit trail of all model inputs</span></div>
+      <div class="output-chip">Confidentiality Flags Sheet<span>Sensitive data redaction checklist</span></div>
+      <div class="output-chip">Dashboard<span>One-page summary + Key Findings in chat</span></div>
+    </div>
+  </div>
+
+</div><!-- /flow -->
+
+
+</body>
+</html>
