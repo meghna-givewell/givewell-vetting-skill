@@ -33,6 +33,8 @@ Columns (A–J): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
   - `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown` (direction clear, size unclear)
   - `No CE impact`
   - `Direction unknown` (use when even direction requires researcher input)
+
+  **When to use `Direction unknown`**: Use this phrase whenever the researcher's judgment determines both *what the fix is* and *which direction it moves CE* — not just the magnitude. A finding marked `Researcher judgment needed ✓` where the researcher could legitimately revise the parameter in either direction (e.g., a placeholder that real-world evidence might revise up or down, an AMR assumption that a new study might increase or decrease) must use `Direction unknown`, not a directional phrase based on one assumed revision. Predicting a direction under one assumption and filing it as `Raises CE` or `Lowers CE` is only correct when the direction is unambiguous regardless of which reasonable fix the researcher chooses.
 - **Researcher judgment needed** (I): Mark `✓` only when the researcher must make a **decision** — e.g., an intent question ("is this $0 intentional?") or a choice between two valid approaches. Do NOT mark for verification tasks ("check this against the source") or plausibility concerns ("this value seems off") — those are just Medium findings. Leave blank if the correct action is unambiguous, even if the researcher still has to perform it.
 - **Status** (J): Left blank by Claude. The researcher fills this in: `Open` / `Fixed` / `Won't Fix` / `Needs Discussion`. Do not write to this column.
 

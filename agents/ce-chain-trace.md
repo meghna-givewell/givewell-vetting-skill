@@ -17,6 +17,8 @@ Read the spreadsheet in FORMULA mode first (`value_render_option: FORMULA`) acro
 
 **Coverage mandate**: Trace the full chain from final CE output back to every source input. Do not stop after finding one error — continue tracing the entire chain. After completing each step below, write a coverage declaration: "Step [N] complete: [what was found]." Do not proceed until you can write it.
 
+**Multi-root-cause discipline**: When you identify a broken cascade (e.g., IMPORTRANGE failure, broken cross-sheet link), do not attribute all downstream broken cells to that single root cause without first reading each broken cell in FORMULA mode. A cell that appears broken due to cascade may contain an independent literal error (e.g., a literal `#REF!` token embedded in the formula, a broken reference to a deleted range) that would persist after the primary root cause is fixed. After filing a finding for the cascade root cause, continue reading every cell in the broken range in FORMULA mode. File each independent error as a separate finding. Do not write "caused by [root cause]" in any finding's Explanation unless you have confirmed via FORMULA mode that the cell contains no independent error.
+
 ---
 
 ## Step 1 — Locate the final CE output
@@ -146,6 +148,22 @@ Based on the program context and grant document (if provided):
 - Are there outcomes the grant document describes as being modeled that are absent from the CE chain? Flag as High if a claimed outcome has no corresponding row in the model.
 - Are there outcomes in the model not mentioned in the grant document that materially affect the CE estimate? Flag as Medium/H — may be intentional extensions, requires input.
 - Does the model's description of what it is computing (in cell notes, tab names, or row labels) match the actual formula structure? A label that says "coverage-adjusted deaths averted" should reference a coverage parameter in its formula.
+
+---
+
+## Step 6 — Leverage/funging scenario rows
+
+For every row in the leverage/funging section (or embedded leverage block) that computes a CE multiple or units of value for a specific scenario, verify the formula references the **post-adjustment** units of value row — not a pre-adjustment intermediate (e.g., "Total units of value before adjustments" or "Direct benefits only").
+
+Common failure mode: scenario rows in the leverage/funging section are built by copying the direct-CE formula and referencing the unadjusted UoV subtotal, rather than the fully-adjusted UoV row that accounts for external validity, supplemental benefits, and other discounts applied earlier in the model. If a CE multiple row in the leverage section divides by cost but multiplies by a UoV figure from earlier in the chain than the final adjusted UoV, the CE multiples in every scenario will be systematically overstated or understated relative to the main CE estimate.
+
+Check each scenario CE row:
+1. Read the formula (FORMULA mode).
+2. Identify the UoV cell being referenced.
+3. Read the row label of that UoV cell and confirm it represents the *final* adjusted UoV — not an intermediate sum. The correct row is typically labeled "Total units of value (after all adjustments)" or "Adjusted units of value."
+4. If the referenced row is a pre-adjustment subtotal, flag as **High/Formula Error**: "Scenario CE row [ref] divides by cost but references [pre-adjustment UoV row label] instead of the final adjusted UoV row [correct ref]. All scenario CE multiples computed from this row are overstated/understated by the omitted adjustment factor."
+
+Coverage declaration: "Step 6 complete. Leverage/funging scenario UoV references checked: [N rows]. Issues found at: [list or 'none']."
 
 ---
 

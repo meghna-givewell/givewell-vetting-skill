@@ -31,7 +31,8 @@ For each **High or Medium** finding in the Findings sheet whose Recommended Fix 
 1. Use `read_sheet_values` (FORMULA mode) on the cell being fixed to confirm the current formula matches what the finding describes. If it does not match, note the discrepancy in the finding's Explanation — do not mark the finding resolved.
 2. Identify cells that reference the changed cell by reading likely downstream consumers using targeted `read_sheet_values` (FORMULA mode) calls. Do not read whole sheets.
 3. Verify the proposed fix would produce a correct result in each downstream consumer.
-4. **Flag as a new High finding** any proposed fix that would introduce a new formula error — name the breaking cell and why.
+4. **Blank-range check**: For any proposed fix whose Recommended Fix formula involves multiplication or division across a cell range (e.g., `=A1*B1`, `=SUM(C4:C18)/D4`, `=PRODUCT(...)`), use `read_sheet_values` (UNFORMATTED_VALUE) on all cells in the range. If any cell in the range is blank, append to the finding's Explanation: "Note: [cell ref] in the proposed fix range is currently blank — populate it before applying this fix or the result will silently be zero." Do not mark the finding resolved.
+5. **Flag as a new High finding** any proposed fix that would introduce a new formula error — name the breaking cell and why.
 
 **Do not mark prior findings as false positives or resolved** unless you directly re-read the referenced cell via `read_sheet_values` (UNFORMATTED_VALUE) and confirm the raw stored value matches what is expected. A cell showing "0.003" may store 0.00333 or 0.003000; only the raw unformatted read is definitive. "It appears to be a display artifact" is not sufficient grounds to resolve a finding — leave it open and note your uncertainty in the Explanation field.
 

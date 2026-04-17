@@ -15,6 +15,8 @@ Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes, hyperlink
 
 ## Step 5 — Data Source Audit
 
+**Cost input row coverage — mandatory per-row scan**: For every row in the costs section of the main CEA or BOTEC that contains a hardcoded dollar amount, ratio, or unit cost (e.g., cost per person trained, cost per patient, cost per delivery, overhead rate), verify a source note or hyperlink exists citing the origin of that value. Do not treat structural rows (formulas deriving totals from other rows) as exempt — check whether the source row itself has a citation. File as **Low/PR Missing Source** for any cost input row lacking a citation; escalate to **Medium/H** if the value appears implausible for the program context or deviates significantly from analogous programs. This check applies row by row across all cost sections — do not sample.
+
 **Uncertainty-flagged cells — mandatory verification**: When a cell note contains language indicating the value is preliminary, under review, or not yet confirmed — e.g., `[preliminary]`, `[preliminary, shared]`, "to be updated," "working estimate," "TBD" — treat this as a mandatory verification trigger. Fetch the referenced document and confirm the value matches what the document currently specifies. These cells are explicitly self-flagged as potentially wrong; reading the flag without verifying does not complete the check. File as Medium/D if the document gives a different value, High/D if the discrepancy is >5%.
 
 Do **not** treat "guess" or "best guess" as a verification trigger — this is transparent uncertainty documentation, not an error signal. These cells are already captured in the Hardcoded Values sheet for researcher review.

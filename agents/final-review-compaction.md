@@ -47,6 +47,7 @@ Check each row:
 - Findings sheet rows whose **sole** issue is citation format, link permissions, terminology, labeling, or style (no model impact) → move to Publication Readiness.
 - Findings sheet rows where **Estimated CE Impact (column H) is blank or "No CE impact"** AND the explanation describes only a documentation gap (missing source, missing cell note, missing label) → move to Publication Readiness. A finding that does not change CE and only recommends adding a note belongs in Publication Readiness regardless of how its Error Type is worded.
 - Publication Readiness sheet rows that affect model outputs or interpretation → move to Findings.
+- **Adjustment Issue and double-count findings always stay in Findings** — never route an `Adjustment Issue` finding to Publication Readiness on the basis of "No CE impact" or a blank CE impact column. Adjustment double-counts and scope errors are model-integrity issues by definition; their CE impact is often non-zero but hard to quantify at the time of filing. A blank CE impact column for an Adjustment Issue finding means the impact is unknown, not zero — leave it in Findings with "Direction unknown" in column H.
 - When in doubt, leave in Findings.
 
 **Column remapping when moving Findings → Publication Readiness**: The Findings sheet has 10 columns (A–J); the Publication Readiness sheet has exactly 6 (A–F). When moving a row, remap as follows — do not copy extra Findings columns into PR:
