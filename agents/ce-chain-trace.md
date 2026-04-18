@@ -140,6 +140,19 @@ If an input is described as coming from a source data tab (e.g., a WUENIC covera
 
 Flag as **High** if a formula that should reference a source data tab instead contains a hardcoded value, or references the wrong row.
 
+### 4d — Stale row reference check (cross-tab version drift)
+
+When a formula in the CE chain references a specific row in a source tab (e.g., `=RFMF!$B$10/1000000`), a newer version of the same concept may exist at a different row in that same tab — especially when source tabs are iteratively updated by adding revised calculations below or above the original block. This produces no syntax error and no `#REF!` — it silently reads from an outdated value.
+
+For every cross-sheet reference in the chain that points to a specific row in a source tab:
+
+1. Read the label of the referenced row (column A of the source tab at the referenced row).
+2. Read the labels of the 5 rows above and 5 rows below the referenced row in the source tab.
+3. Check whether any neighboring row describes the same concept. Common signals of version drift: a nearby row with a similar label but with "updated", "revised", "new", or a later year; or the referenced row belongs to a superseded block (e.g., rows 5–10 form an "Old RFMF" block while rows 17–22 form an "Updated RFMF" block).
+4. If a plausible newer version exists, read both values (UNFORMATTED_VALUE) and compare. If they differ by more than 5%, flag as **High/Formula Error**: "[chain cell] references [source tab]![stale row] (value: [X]). A likely updated version of the same concept exists at [source tab]![current row] (value: [Y]). Verify which row is correct and update the reference."
+
+This check applies to all cross-sheet row references in the chain — do not skip rows that appear recently entered. Version drift can occur in any iteratively revised tab.
+
 ---
 
 ## Step 5 — Check for dropped or added steps vs. program context

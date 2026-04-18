@@ -74,6 +74,22 @@ Coverage declaration: "Deduplication complete. [N] duplicates merged. No other d
 
 ---
 
+## Step 3.5 — Normalize category labels
+
+Before rewriting, scan every row in memory and normalize the Error Type/Issue field to the exact standard label. Agents frequently append descriptive text after the label (e.g., "Permission Issue — internal document may need publish access" or "Readability — duplicate header"). Strip everything after the first recognized label word.
+
+**Findings sheet column E** — replace any value that *starts with or contains* one of these labels with the label alone:
+- `Formula Error` | `Parameter Issue` | `Adjustment Issue` | `Assumption Issue` | `Structural Issue` | `Inconsistency`
+
+**Publication Readiness sheet column D** — replace any value that *starts with or contains* one of these labels with the label alone:
+- `Missing Source` | `Broken Link` | `Permission Issue` | `Readability` | `Terminology`
+
+If a value does not match any recognized label, keep it as-is and flag it in your coverage declaration so it can be reviewed.
+
+Coverage declaration: "Label normalization complete. Findings: [N] labels normalized. Publication Readiness: [M] labels normalized. Unrecognized labels: [list or 'none']."
+
+---
+
 ## Step 4 — Rewrite and sort both sheets
 
 Rewrite both sheets sequentially from row 2, closing all gaps left by Wave 2's pre-allocated row ranges.

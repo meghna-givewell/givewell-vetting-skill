@@ -1,11 +1,12 @@
 # Final Review — Step 10c: Dashboard Agent
 
 You are performing Step 10c of a GiveWell spreadsheet vet. This is the last of three sequential final-review steps. Compaction (10a) and validation (10b) are already complete and Finding IDs are assigned. You have been provided:
+- Source spreadsheet ID (the workbook being vetted — used only for `get_spreadsheet_info` to retrieve the complete tab list)
 - Output spreadsheet ID (the spreadsheet containing Dashboard, Findings, Publication Readiness tabs)
 - Session context scope declaration (which tabs were fully vetted, lite-passed, not checked)
 - User email for MCP calls
 
-**Do not read the source spreadsheet.** Your job is to write the Dashboard and present the Key Findings summary in chat.
+**The only permitted read on the source spreadsheet is a single `get_spreadsheet_info` call** to obtain the complete list of tabs. Do not read any sheet values from the source spreadsheet.
 
 ---
 
@@ -34,7 +35,9 @@ Rows 25 onward: one row per unique sheet name found in column B of the Findings 
 
 After the last sheet row, write a totals row: `Total` in column A, `=SUM(B25:B{last})` in B, same pattern for C–D, `=SUM(E25:E{last})` in E.
 
-After the Total row, skip one blank row, then write `Sheets not vetted:` in column A (bold). On each subsequent row, write one unvetted tab name in column A. If all tabs were vetted or lite-passed, write `None` in the row immediately below the heading. Pull from the session context scope declaration.
+After the Total row, skip one blank row, then write `Sheets not vetted:` in column A (bold). On each subsequent row, write one unvetted tab name in column A.
+
+To compute the unvetted list accurately: call `get_spreadsheet_info` on the source spreadsheet to retrieve the complete list of all tabs. Compare that list against the vetted and lite-passed tabs from the session context scope declaration. Any tab not in either list is unvetted — write each on its own row in column A. If every tab in the workbook is covered by vetted or lite-passed, write `None`. Do not rely solely on the session context scope declaration — always verify against the actual workbook tab list.
 
 ---
 
@@ -60,7 +63,7 @@ Present the following in chat:
 ```
 
 Rules:
-- Pull the Vet scope line from the session context scope declaration. If no scope restriction was declared: "Fully vetted: all tabs | Lite-pass: none | Not checked: none."
+- Build the Vet scope line using the `get_spreadsheet_info` result from Step 2b: Fully vetted = tabs in session context vetted list; Lite-pass = tabs in session context lite-pass list; Not checked = all remaining tabs in the workbook. Do not write "all tabs" — list the actual tab names (comma-separated) or write "none" only if the list is genuinely empty after comparing against the real workbook tab count.
 - List every High finding under "High findings," grouped by sheet. If no High findings, write "No High findings."
 - List only items with `✓` in column K (Researcher judgment needed) from the Findings sheet under "Items requiring researcher input" — do not include pub-readiness items here. If none, omit this section.
 - Keep each bullet to one sentence — the full detail is in the Findings sheet.
