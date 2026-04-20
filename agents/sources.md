@@ -27,7 +27,7 @@ For every hardcoded input across all columns of all vetted sheets, check all fou
 1. **Exists**: Does a source column entry or cell note exist?
 2. **Links**: If a URL is cited, does it link to a real, accessible document?
 3. **Functional**: Is the link working (not returning a 404)?
-4. **Matches**: Does the source actually substantiate the value — not the wrong organization, wrong year, or wrong metric? For epidemiological/mortality inputs, verify the source cites the exact metric used (e.g., neonatal mortality rate, not all-cause or under-5 mortality). A source that exists and links to a real document can still fail this check.
+4. **Matches**: Does the source actually substantiate the value — not the wrong organization, wrong year, or wrong metric? For epidemiological/mortality inputs, verify the source cites the exact metric used (e.g., neonatal mortality rate, not all-cause or under-5 mortality). A source that exists and links to a real document can still fail this check. **When check 4 fails but a hyperlink is present (checks 1–3 passed), do NOT file as "missing source" — file as Medium/H: "Row [ref] has a source link but it appears to point to [wrong metric or wrong concept from URL/title]. The row requires [expected metric]. Verify and update the link." The distinction matters: "missing source" implies no citation exists; "wrong source" is the correct finding when a link is present but points to the wrong data. For mortality rows, confirm the URL or linked document title references the same mortality metric as the row label — all-cause mortality, under-5 mortality, and neonatal mortality are commonly confused and a link may have been inherited from a different row without update.**
 
 Also flag:
 
