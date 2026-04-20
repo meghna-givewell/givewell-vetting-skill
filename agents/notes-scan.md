@@ -86,4 +86,18 @@ Use the 6-column Publication Readiness layout. Write exactly 6 values per row �
 
 **Do not mark Researcher judgment needed** for: missing "Calculation." notes, missing source annotations, template boilerplate, raw URLs, or first-person language. These have unambiguous fixes regardless of researcher intent.
 
+---
+
+## Final step — write completion marker
+
+After all findings are written and all other steps are complete, write ONE final row to the **Publication Readiness sheet** at the next available row within your allocated range (or at the first row of your allocated range if no findings were written). This is the absolute last action you take before finishing.
+
+Write the row with:
+- Column B: `notes-scan`
+- Column D: `AGENT_COMPLETE`
+- Column F: `Checked [N] rows across [sheet name(s)]. Filed [K] Publication Readiness rows. Row allocation: [start]–[end].`
+- All other columns: blank
+
+Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure.
+
 Use `modify_sheet_values` to write all findings in a single call. Include the sheet name in column B for every row.

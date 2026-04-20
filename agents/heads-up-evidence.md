@@ -134,3 +134,17 @@ Append findings to the Findings sheet using `modify_sheet_values`. **Your row st
 See `reference/output-format.md` for full column definitions. **Group findings by issue type**: when the same issue applies to multiple cells or parameters (e.g., multiple "Guess"-labeled parameters with no external anchor), file one finding listing all affected cells in column B, not one row per cell. Exhaustive checking is still required — find every instance — but write one consolidated row per issue type. **Publication-readiness findings — batch by issue type**: for publication-readiness findings (permission flags, broken links, citation format, terminology, style), file at most one row per issue type, listing all affected cells in column B.
 
 **Publication Readiness column layout differs**: When routing a finding to Publication Readiness (not Findings), use the 6-column A–F layout. Write exactly 6 values per row — no more. Do not include Severity, Status, Changes CE?, Estimated CE Impact, or Researcher judgment needed. Writing a 7th column will corrupt the sheet layout. A=Finding # (blank) | B=Sheet | C=Cell/Row | D=Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Missing Source | Broken Link | Permission Issue | Readability | Terminology) | E=Explanation | F=Recommended Fix.
+
+---
+
+## Final step — write completion marker
+
+After all findings are written and all other steps are complete, write ONE final row to the Findings sheet at the next available row within your allocated range (or at the first row of your allocated range if no findings were written). This is the absolute last action you take before finishing.
+
+Write the row with:
+- Column B: `heads-up-evidence`
+- Column D: `AGENT_COMPLETE`
+- Column F: `Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
+- All other columns: blank
+
+Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).

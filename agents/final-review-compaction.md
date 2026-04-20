@@ -24,6 +24,12 @@ This declaration serves as a checkpoint. If the rewrite step fails mid-execution
 
 ## Step 1 — Read all rows
 
+**Row filtering — apply while reading, before any further processing**: Two types of non-finding rows must be excluded from all subsequent steps (routing, deduplication, sorting, ID assignment). Filter them out as you read:
+1. **Divider rows**: column D is empty AND column B contains `───`
+2. **Completion marker rows**: column D = `AGENT_COMPLETE`
+
+Completion marker rows are written by Wave 2 agents as their final action to signal a clean run. They are metadata, not findings. Do not route, deduplicate, sort, or assign IDs to them — discard them entirely after noting their presence in your coverage declaration.
+
 Read the Findings sheet in **exactly five mandatory batches** — all five, regardless of whether any batch appears empty:
 1. `A2:J200`
 2. `A201:J400`
@@ -37,7 +43,7 @@ After each batch completes, write the line: `"Batch [N] (rows [start]–[end]): 
 
 Read the Publication Readiness sheet in three mandatory batches: `A2:F200`, then `A201:F400`, then `A401:F600`. All three are required regardless of empty batches.
 
-Coverage declaration: "Read complete. Findings: [N1] rows in batch 1, [N2] in batch 2, [N3] in batch 3, [N4] in batch 4, [N5] in batch 5. Total non-empty Findings rows: [N]. Publication Readiness: [M] total non-empty rows."
+Coverage declaration: "Read complete. Findings: [N1] rows in batch 1, [N2] in batch 2, [N3] in batch 3, [N4] in batch 4, [N5] in batch 5. Total non-empty Findings rows: [N] ([X] divider rows, [Y] AGENT_COMPLETE markers, [Z] finding rows). Completion markers present for: [list agent names or 'none found']. Publication Readiness: [M] total non-empty rows."
 
 ---
 

@@ -19,12 +19,17 @@ You have been provided:
 
 Count the non-empty rows in the A range. Count the non-empty rows in the B range. Also check the 20 rows beyond each stated range end (overflow from agents that exceeded their budget).
 
-**If either instance wrote fewer than 3 non-empty findings** in its range:
+**Completion marker check — do this for each instance**: Scan the last 10 rows of the A range AND the last 10 rows of the B range (including any overflow rows already checked) for a row where column D = `AGENT_COMPLETE`. This marker is written by each agent as its final action to signal it completed normally.
+
+- **Marker present**: the instance ran to completion. Note in the coverage declaration: "Completion marker: present."
+- **Marker absent**: the instance may have failed mid-run — even if it wrote several findings. Silent failures (auth timeout, context limit, API error) can occur after some findings are already written. Note "Completion marker: ABSENT" in the coverage declaration and treat this as a failure signal regardless of finding count.
+
+**If either instance wrote fewer than 3 non-empty findings OR its completion marker is absent:**
 - Do not treat this as "no findings" — treat it as a potential agent failure.
-- Add a High/H finding to the Findings sheet: "Possible agent failure — [A or B] instance for [pair name] wrote only [N] findings in its allocated range (rows [X]–[Y]). This may indicate a silent failure (auth timeout, context limit). Recommend re-running this agent before publishing." Mark Researcher judgment needed ✓.
+- Add a High/H finding to the Findings sheet: "Possible agent failure — [A or B] instance for [pair name] wrote only [N] findings in its allocated range (rows [X]–[Y]) and/or is missing its completion marker. This may indicate a silent failure (auth timeout, context limit). Recommend re-running this agent before publishing." Mark Researcher judgment needed ✓.
 - Proceed with reconciliation on the available findings, but note in the coverage declaration that one instance may be incomplete.
 
-Exception: plausibility-intervention and formula-check-structure may legitimately produce fewer than 3 findings if the intervention type or sheet structure doesn't trigger their checks — use judgment. If the sheet is a simple BOTEC and sources found 1 finding, that may be valid. If formula-check found 0 findings on a 100-row CEA, that is not plausible.
+Exception: plausibility-intervention and formula-check-structure may legitimately produce fewer than 3 findings if the intervention type or sheet structure doesn't trigger their checks — use judgment. If the sheet is a simple BOTEC and sources found 1 finding, that may be valid. If formula-check found 0 findings on a 100-row CEA, that is not plausible. The completion marker absence is a stronger signal than low finding count — always flag if the marker is absent.
 
 ---
 

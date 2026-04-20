@@ -89,10 +89,18 @@ Before checking formula logic, **produce an explicit enumeration of every hardco
 - **Note-formula inconsistency — determine fix direction before filing**: When a cell note and formula give conflicting values, do not assume the formula is wrong. Check for an adjacent changelog column, verify which direction is consistent with the model's logic, then recommend fixing the formula *or* the note.
 - Source completeness (missing citations, first-person voice) is handled by the sources and readability agents — do not duplicate those checks here.
 
-**Key parameter value cross-reference — mandatory for every vet**: When the hardcoded value enumeration encounters any parameter in `reference/key-parameters.md`, compare the stored value numerically against the entry in that file. Do not rely on source notes alone — a cell can cite the right source but store an outdated value. Specific patterns to flag:
+**Key parameter value cross-reference — mandatory active scan for every vet**: After completing the hardcoded value enumeration, perform a proactive key-parameters.md scan. Do not rely solely on encountering these parameters during the cell-by-cell read — the active scan must run regardless of what was found during enumeration.
+
+**Active scan procedure**: For each entry in `reference/key-parameters.md`, search column A of all vetted sheets for a row whose label matches or closely matches that parameter name. For each match found, read the cell value using `read_sheet_values` (UNFORMATTED_VALUE) and compare numerically to the key-parameters.md value. A cell can cite the right source but store an outdated value — always compare the raw stored number, not the note. Write a one-line coverage result for each key parameter before proceeding: `[parameter name]: [cell ref] = [value]. Key-parameters.md = [expected]. Match: YES/NO.`
+
+Specific required outputs for the following parameters (always produce these lines, even if no mismatch is found):
+- **GW benchmark**: `Benchmark row: [sheet]![cell]. UNFORMATTED_VALUE: [exact stored value]. Key-parameters.md value: 0.00333. Match: [YES/NO].` Any value around 0.00335–0.00336 is the stale pre-Nov 2025 benchmark — file as High/D if mismatch.
+- **Neonatal moral weight**: `Neonatal moral weight row: [sheet]![cell]. Label: [row label]. UNFORMATTED_VALUE: [exact stored value]. Key-parameters.md value: 84. Match: [YES/NO].` Any value significantly below 84 (e.g., 70) — file as High/D unless a cell note explicitly justifies the deviation with a documented rationale.
+- **Avert under-5 death**: `Moral weight row: [sheet]![cell]. Label: [row label]. UNFORMATTED_VALUE: [exact stored value]. Key-parameters.md expected: 116. Match: [YES/NO].` Values ≠ 116 (±5%) → High/D.
+- **Avert over-5 death (malaria)**: same format, expected 73 (±5%).
 - **Income effects (malaria programs)**: any row storing a value noticeably above 0.58088% is likely a stale pre-Nov 2025 figure — file as Medium/H with Researcher judgment needed ✓.
-- **GW benchmark**: any row storing a value around 0.00335–0.00336 is the stale pre-Nov 2025 benchmark — file as High/D; correct value is 0.00333. **Required output**: Write `Benchmark row: [sheet]![cell]. UNFORMATTED_VALUE: [exact stored value]. Key-parameters.md value: 0.00333. Match: [YES/NO].` Do not write "benchmark correct" without writing this line.
-- **Moral weights**: any row labeled "avert under-5 death" storing a value ≠ 116 (±5%) or "avert over-5 death (malaria)" ≠ 73 (±5%) — file as High/D. **Required output**: For each moral weight row found, write `Moral weight row: [sheet]![cell]. Label: [row label]. UNFORMATTED_VALUE: [exact stored value]. Key-parameters.md expected: [value]. Match: [YES/NO].`
+
+If a parameter from key-parameters.md has no matching row in any vetted sheet, write `[parameter name]: not found in vetted sheets — n/a.` and move on. Do not file a finding for parameters that are simply not used by this model type.
 
 **Asymmetric parameter updates across columns**: When a hardcoded value differs across columns representing parallel scenarios, verify the difference is documented. When you find an undocumented cross-column difference in a parameter with no structural reason to vary (a global adjustment factor, a moral weight, a program-level assumption), flag as Medium and ask the researcher to confirm.
 
@@ -151,5 +159,19 @@ Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row |
 Group findings where the same issue applies to multiple cells — aim for ~15–25 grouped findings, not one row per cell.
 
 **Publication Readiness column layout differs**: When routing a finding to Publication Readiness, use the 6-column A–F layout. Write exactly 6 values per row — no more. Do not include Severity, Status, Changes CE?, Estimated CE Impact, or Researcher judgment needed. Writing a 7th column will corrupt the sheet layout. A=Finding # (blank) | B=Sheet | C=Cell/Row | D=Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Missing Source | Broken Link | Permission Issue | Readability | Terminology) | E=Explanation | F=Recommended Fix.
+
+---
+
+## Final step — write completion marker
+
+After all findings are written and all other steps are complete, write ONE final row to the Findings sheet at the next available row within your allocated range (or at the first row of your allocated range if no findings were written). This is the absolute last action you take before finishing.
+
+Write the row with:
+- Column B: `formula-check-arithmetic`
+- Column D: `AGENT_COMPLETE`
+- Column F: `Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
+- All other columns: blank
+
+Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).
 
 **Severity guard for value-error claims**: Before filing a finding that classifies a specific hardcoded value as *wrong* (High/D), you must have done at least one of: (a) read the cell's linked source document and confirmed the value contradicts it, (b) verified against `reference/key-parameters.md`, or (c) confirmed via arithmetic that the value is internally inconsistent. Do not file a value-error High/D based solely on reasoning. If uncertain, downgrade to Medium/H with Researcher judgment needed ✓.
