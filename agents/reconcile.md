@@ -67,7 +67,7 @@ Then make one of three determinations:
 - You may mark a finding `Won't Fix` **only** if you can state the specific, affirmative reason the formula or value is correct — not merely that you couldn't confirm the issue.
 - Qualifying reasons: "The formula references cell D22 labeled 'Seasonal concentration (non-Sahel)' — the correct concept for this column." / "The declared-intentional deviation explicitly covers this parameter." / "The cell note explains this value is intentionally set at X because [reason the note gives], and the formula confirms this — it computes [X] by [formula structure consistent with the note's explanation]."
 - **Cell-note Won't Fix requires formula coherence**: When the basis for Won't Fix is a cell note explanation, you must also read the cell's formula (FORMULA mode) and confirm the formula actually implements what the note claims. A note that says "intentionally set to X to account for seasonal concentration" must be paired with a formula that plausibly computes a seasonal concentration adjustment — not just any formula. If the formula and note are inconsistent, the note may be stale; use **Needs researcher input** instead.
-- Non-qualifying reasons: "I couldn't reproduce the issue." / "It seems likely correct in context." / "The other agent's finding seems plausible." / "The value is close to what I'd expect." / "The cell has a note" (without verifying the note's explanation matches the formula).
+- Non-qualifying reasons: "I couldn't reproduce the issue." / "It seems likely correct in context." / "The other agent's finding seems plausible." / "The value is close to what I'd expect." / "The cell has a note" (without verifying the note's explanation matches the formula). / "The finding has no current numerical impact" — do not drop style or structural redundancy findings (e.g., unnecessary `SUM()` wrappers, redundant calculations, minor formula inconsistencies) solely because they have no CE impact. Retain these at Low/H severity — the researcher decides whether to act on them.
 - When marking Won't Fix: delete the row from the sheet.
 
 **Needs researcher input** (when validity depends on intent):
@@ -99,6 +99,7 @@ Net new findings added: [N]
 - **Never skip a divergence** — "it seems likely correct" does not substitute for re-reading the cell.
 - **Never merge distinct findings** — if A and B flagged the same cell for different issues (e.g., A: formula error; B: missing source note), keep both.
 - **Never mark Won't Fix without a specific affirmative reason** — retain by default.
+- **Never consolidate separate missing-source findings** — each hardcoded cell lacking a source citation is a distinct action item for the researcher. Do not bundle multiple missing-source findings for different cells into a single omnibus finding. Merge only when the exact same cell is flagged for the exact same issue by both A and B instances.
 
 ## Writing new findings
 

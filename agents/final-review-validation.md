@@ -24,6 +24,19 @@ Read all rows from row 2 onward on the Findings sheet using batched `read_sheet_
 
 ---
 
+## ID integrity check — run immediately after Step 1, before any other check
+
+Verify the Finding ID sequence is complete and non-duplicate across both sheets.
+
+1. From the rows collected in Step 1, extract all column A values from the Findings sheet (skip divider rows where column D is empty and column B contains `───`) and all column A values from the Publication Readiness sheet.
+2. **Presence check**: Every non-divider Findings row must have an ID matching `F-[0-9]{3}` or longer. Every Publication Readiness row must have an ID matching `PR-[0-9]{3}` or longer. Any row missing its ID is a compaction failure — file as **High/Structural Issue**: "Finding at row [N] (Sheet: [B], Cell: [C]) has no Finding ID assigned. This row was not correctly processed by the compaction agent. Assign the next sequential ID."
+3. **Uniqueness check**: No ID may appear more than once on the same sheet. If a duplicate ID is found, file as **High/Structural Issue** with Researcher judgment needed ✓: "Finding ID [ID] appears on rows [X] and [Y] of the [Findings / Publication Readiness] sheet — IDs must be unique. Determine which row holds the correct finding and reassign or remove the duplicate."
+4. **Sequence check**: The ID sequence must be gapless from F-001 through F-[N] and from PR-001 through PR-[M]. A gap in the sequence after compaction (e.g., F-003 present, F-004 missing, F-005 present) indicates a row was deleted after compaction ran — this is abnormal. File as **Medium/Structural Issue** with Researcher judgment needed ✓: "Finding ID sequence has a gap at [ID] — this position was present after compaction but is now missing. Verify no finding was inadvertently deleted."
+
+Coverage declaration: "ID integrity check complete. Findings IDs found: [N], sequence F-001–F-[NNN]. Missing IDs: [list or 'none']. Duplicate IDs: [list or 'none']. Publication Readiness IDs found: [M], sequence PR-001–PR-[MMM]. Missing: [list or 'none']. Duplicates: [list or 'none']. Status: [clean / issues filed]."
+
+---
+
 ## Check 0 — CE baseline re-verification
 
 Before computing or evaluating any CE impact estimate, independently re-read the CE baseline cell from the source spreadsheet. Do not rely solely on the pre-vet baseline from session context — that value was read at session start and could reflect a cell that was updated, or a pre-adjustment subtotal rather than the final model output.

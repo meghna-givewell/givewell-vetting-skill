@@ -16,6 +16,25 @@ Load CEA Consistency Guidance (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) v
 
 **Coverage mandate — no shortcuts**: Every check in this file applies exhaustively to all relevant rows, all columns, and all cell notes — no sampling, no "key cells only." When a check is triggered by intervention type (e.g., "when an SMC model..."), that condition governs whether to run the check, not how thoroughly to run it once triggered. For each triggered check: read every formula in the relevant rows in FORMULA mode, read every referenced cell's label, and check every column in multi-geography workbooks. **Finding the first instance of an issue type does not conclude that check** — continue checking all remaining rows and columns before writing findings. After completing each triggered check, write two coverage declarations before moving on: (1) "Checked [rows X–Y / all N columns]. Found issues at: [list]. No other issues of this type." (2) "Read notes for rows X–Y: [N] notes found, issues at [list or 'none']." An agent that stopped early cannot produce these declarations accurately — that is the point. Do not proceed to the next check until you can write both.
 
+## Step 0 — Identify intervention type
+
+Before running any intervention-specific checks, determine which intervention(s) this model covers. This step gates which named checks below apply.
+
+1. Read the workbook title from `get_spreadsheet_info` and the first 5 rows of the main CEA sheet using a targeted `read_sheet_values` call (FORMATTED_VALUE).
+2. Cross-reference with the program context provided in session context. Identify the primary intervention type from: VAS, SMC, ITN, malaria vaccine (RTS,S / R21), azithromycin aMDA, deworming, CMAM, HPV vaccination, IPTp, water quality / chlorination, New Incentives (CCT), TA grant, or other.
+3. For **TA grants**: read the first 15 rows of the main sheet and determine model type (Model 1 = new technology introduction, coverage today = 0%; Model 2 = improving existing coverage, coverage today > 0%; Model 3 = introduction + quality improvement).
+4. Write in your reasoning before proceeding:
+
+> **Intervention type identified**: [type(s)]
+> **Applicable checks**: [list every named check from this file that applies — be specific]
+> **Skipped checks**: [list every check that does not apply, with one-word reason: e.g., "VAS indirect deaths — not a VAS model"]
+
+**If no named check applies** (intervention type not covered by any check below): write "No intervention-specific named checks apply to this intervention type. Proceeding with bidirectional magnitude check and benefit completeness check only." Do not skip those two universal checks.
+
+**If the model covers multiple intervention types** (e.g., a combined SMC + VAS model, or a TA grant for an SMC program): run all applicable named checks for each type independently. Include the intervention type in each finding's Explanation so the researcher knows which component triggered it.
+
+---
+
 ## Intervention-Specific Plausibility Calibration
 
 **Bidirectional magnitude check — applies to all checks below**: For every adjustment or parameter labeled "Guess," "estimate," or "assumption" with no external source, check the magnitude in *both directions* — not only whether it is implausibly high (too optimistic) but also whether it is implausibly low (too conservative). A conservative-looking value is not automatically correct: an understated downward adjustment means CE is overstated, but an overstated downward adjustment means CE is understated and the program may appear less cost-effective than it is. Both directions affect funding allocation.
