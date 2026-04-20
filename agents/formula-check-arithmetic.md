@@ -89,18 +89,7 @@ Before checking formula logic, **produce an explicit enumeration of every hardco
 - **Note-formula inconsistency — determine fix direction before filing**: When a cell note and formula give conflicting values, do not assume the formula is wrong. Check for an adjacent changelog column, verify which direction is consistent with the model's logic, then recommend fixing the formula *or* the note.
 - Source completeness (missing citations, first-person voice) is handled by the sources and readability agents — do not duplicate those checks here.
 
-**Key parameter value cross-reference — mandatory active scan for every vet**: After completing the hardcoded value enumeration, perform a proactive key-parameters.md scan. Do not rely solely on encountering these parameters during the cell-by-cell read — the active scan must run regardless of what was found during enumeration.
-
-**Active scan procedure**: For each entry in `reference/key-parameters.md`, search column A of all vetted sheets for a row whose label matches or closely matches that parameter name. For each match found, read the cell value using `read_sheet_values` (UNFORMATTED_VALUE) and compare numerically to the key-parameters.md value. A cell can cite the right source but store an outdated value — always compare the raw stored number, not the note. Write a one-line coverage result for each key parameter before proceeding: `[parameter name]: [cell ref] = [value]. Key-parameters.md = [expected]. Match: YES/NO.`
-
-Specific required outputs for the following parameters (always produce these lines, even if no mismatch is found):
-- **GW benchmark**: `Benchmark row: [sheet]![cell]. UNFORMATTED_VALUE: [exact stored value]. Key-parameters.md value: 0.00333. Match: [YES/NO].` Any value around 0.00335–0.00336 is the stale pre-Nov 2025 benchmark — file as High/D if mismatch.
-- **Neonatal moral weight**: `Neonatal moral weight row: [sheet]![cell]. Label: [row label]. UNFORMATTED_VALUE: [exact stored value]. Key-parameters.md value: 84. Match: [YES/NO].` Any value significantly below 84 (e.g., 70) — file as High/D unless a cell note explicitly justifies the deviation with a documented rationale.
-- **Avert under-5 death**: `Moral weight row: [sheet]![cell]. Label: [row label]. UNFORMATTED_VALUE: [exact stored value]. Key-parameters.md expected: 116. Match: [YES/NO].` Values ≠ 116 (±5%) → High/D.
-- **Avert over-5 death (malaria)**: same format, expected 73 (±5%).
-- **Income effects (malaria programs)**: any row storing a value noticeably above 0.58088% is likely a stale pre-Nov 2025 figure — file as Medium/H with Researcher judgment needed ✓.
-
-If a parameter from key-parameters.md has no matching row in any vetted sheet, write `[parameter name]: not found in vetted sheets — n/a.` and move on. Do not file a finding for parameters that are simply not used by this model type.
+**Key parameter value cross-reference**: A dedicated **key-params-check** agent (Step 3e) performs the proactive scan for all GiveWell standard parameters — do not duplicate that work here. When the hardcoded value enumeration encounters a parameter that appears in `reference/key-parameters.md`, compare the stored value numerically against the entry in that file as a secondary safety net. A cell can cite the right source but store an outdated value — always compare the raw number, not the note. File any mismatch you encounter; severity and required output format are defined in `agents/key-params-check.md`.
 
 **Asymmetric parameter updates across columns**: When a hardcoded value differs across columns representing parallel scenarios, verify the difference is documented. When you find an undocumented cross-column difference in a parameter with no structural reason to vary (a global adjustment factor, a moral weight, a program-level assumption), flag as Medium and ask the researcher to confirm.
 

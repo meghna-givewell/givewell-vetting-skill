@@ -183,7 +183,7 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 
 **Each sub-agent must execute its full checklist exhaustively, on every row.** No check in any agent file is optional or skippable because the sheet is small or because a prior agent already noticed something nearby. The formula-check agent must audit every formula row against its label — not just rows that match a named pattern. The sources agent must complete the full column F text audit on every row. The readability agent must read every row label top-to-bottom. The consistency agent must compare against the VOI template structure row-by-row. A sub-agent that shortcuts because "this is a small BOTEC" will miss findings the same way inline execution does. **The named checks in each agent file are patterns to look for on top of the row-by-row baseline — they are not a substitute for it.**
 
-Agents run in three waves. Before spawning Wave 1, announce progress: `[Phase 1/4] Wave 1 starting — 14 agents (formula checks).`
+Agents run in three waves. Before spawning Wave 1, announce progress: `[Phase 1/4] Wave 1 starting — 16 agents (formula checks).`
 
 ---
 
@@ -215,6 +215,8 @@ Pre-allocate all row ranges before spawning:
 | 3b | `agents/formula-check-structure.md` | B | All rows | Start row 422 | 30 rows |
 | 4b | `agents/consistency-check.md` | A | All rows | Start row 462 | 30 rows |
 | 4b | `agents/consistency-check.md` | B | All rows | Start row 492 | 30 rows |
+| 3e | `agents/key-params-check.md` | A | All rows | Start row 532 | 20 rows |
+| 3e | `agents/key-params-check.md` | B | All rows | Start row 552 | 20 rows |
 
 10-row buffer zones: rows 82–91 (between formula-check-arithmetic A/B and C/D), rows 172–181 (between formula-check-arithmetic C/D and formula-check-data), rows 242–251 (between formula-check-data and formula-check-edge-cases), rows 312–321 (between formula-check-edge-cases and source-data-check), rows 382–391 (between source-data-check and formula-check-structure), rows 452–461 (between formula-check-structure and consistency-check), rows 522–531 (after consistency-check B — Wave 1 end buffer). Reconciliation agents writing net-new findings should use the buffer zone for their pair — see the reconciliation table below.
 
@@ -236,6 +238,8 @@ Pre-allocate all row ranges before spawning:
 | formula-check-structure B | 422–451 |
 | consistency-check A | 462–491 |
 | consistency-check B | 492–521 |
+| key-params-check A | 532–551 |
+| key-params-check B | 552–571 |
 
 Write header "Wave 1 Row Allocations (Findings sheet)" in A49. This log survives context compaction and lets reconciliation agents recover their pair ranges if the session is interrupted.
 
@@ -251,11 +255,11 @@ Append to source-data-check A and B session contexts (identical content except r
 > **Source data tabs**: `{comma-separated list from step above}`
 > **In-scope geographies**: `{list of countries and states from program context}`
 
-Do **not** tell A instances that B instances are running. For **B instances only** (formula-check-arithmetic B, formula-check-data B, formula-check-edge-cases B, source-data-check B, formula-check-structure B, consistency-check B), append the following adversarial preamble to the session context **before** the row allocation note:
+Do **not** tell A instances that B instances are running. For **B instances only** (formula-check-arithmetic B, formula-check-data B, formula-check-edge-cases B, source-data-check B, formula-check-structure B, consistency-check B, key-params-check B), append the following adversarial preamble to the session context **before** the row allocation note:
 
 > **Reviewer framing — B instance**: You are a skeptical second reviewer. A separate first reviewer has independently audited this same spreadsheet. Your job is to find what a thorough but reasonable reviewer would have rationalized away. Specifically: (a) assume the first reviewer accepted well-labeled rows as correct without verifying the referenced cells — challenge that instinct by reading the referenced cells themselves, not just their labels; (b) give extra attention to checks requiring you to read multiple tabs together, since cross-tab checks are harder and more likely to be shortcut; (c) when a formula looks correct at first glance, ask "am I pattern-matching on the label rather than actually reading the formula?" — then read the formula; (d) for every section where you find no issues, write one specific reason the section is clean before moving on. Do not read the Findings sheet. Do not tell the researcher you are a B instance.
 
-Wait for all 14 to complete before proceeding.
+Wait for all 16 to complete before proceeding.
 
 **Consistency-check always runs — including for BOTECs**: Do not skip the consistency-check agent for simple BOTECs, single-sheet models, or workbooks with no declared deviations. Every model uses moral weights, and moral weight drift is one of the most common silent errors. Pass this note in the consistency-check session context: "For simple BOTECs and non-standard models that lack VOI content: skip the VOI structural completeness check and the cross-cutting CEA parameters check. Always run the moral weights numeric verification regardless of model type."
 
@@ -339,11 +343,11 @@ For A instances, pass the standard session context only. The only difference bet
 
 ### Wave 2.5 — Reconciliation (after all Wave 2 agents complete)
 
-Announce before spawning: `[Phase 2/4 done → Phase 3/4] Wave 2 complete — starting reconciliation (15 agents).`
+Announce before spawning: `[Phase 2/4 done → Phase 3/4] Wave 2 complete — starting reconciliation (16 agents).`
 
 **Row allocation recovery — do this first if allocations are not in context**: If Wave 2 row allocations are not available in the current session context (e.g., context was compacted between Wave 2 and Wave 2.5), read Dashboard cells A49:B90 of the output spreadsheet to recover the full Wave 1 and Wave 2 allocation tables before computing the reconciliation ranges below. Do not skip Wave 2.5 due to missing row allocations — always recover from the Dashboard log.
 
-Spawn **15 reconciliation agents simultaneously**, one per A/B pair, using `agents/reconcile.md`. Each agent receives the standard session context plus its specific pair assignment. Do not tell any reconcile agent about the other pairs being processed.
+Spawn **16 reconciliation agents simultaneously**, one per A/B pair, using `agents/reconcile.md`. Each agent receives the standard session context plus its specific pair assignment. Do not tell any reconcile agent about the other pairs being processed.
 
 For each instance, append to session context:
 > **Pair to reconcile**: [pair name]
@@ -360,6 +364,7 @@ For each instance, append to session context:
 | source-data-check | rows 322–351 | rows 352–381 | rows 382–391 |
 | formula-check-structure | rows 392–421 | rows 422–451 | rows 452–461 |
 | consistency-check | rows 462–491 | rows 492–521 | rows 522–531 |
+| key-params-check | rows 532–551 | rows 552–571 | rows 572–581 |
 | sources | rows `last_row+1` to `last_row+50` | rows `last_row+51` to `last_row+90` | rows `last_row+91` to `last_row+100` |
 | heads-up-evidence | rows `last_row+101` to `last_row+150` | rows `last_row+151` to `last_row+190` | rows `last_row+191` to `last_row+200` |
 | heads-up-epi | rows `last_row+201` to `last_row+250` | rows `last_row+251` to `last_row+290` | rows `last_row+291` to `last_row+300` |
