@@ -1,12 +1,20 @@
-# Vetting Skill — Setup Guide
+# GiveWell Vetting Skill
 
-Invoke with:
+A Claude Code skill that runs a full audit of GiveWell cost-effectiveness spreadsheets. Checks formulas, parameters, sources, readability, and hardcoded values across multi-wave parallel agents. Outputs a structured Findings sheet with severity-classified findings and Finding IDs.
 
+## Install
+
+Clone this repo into your Claude Code skills directory:
+
+```bash
+git clone https://github.com/meghna-givewell/givewell-vetting-skill.git ~/.claude/skills/vetting
 ```
-/vetting <Google Sheets URL or local file path>
-```
 
-## One-Time Setup
+## Prerequisites
+
+**Hardened Google Workspace MCP** must be installed and authenticated. Follow setup instructions at [github.com/c0webster/hardened-google-workspace-mcp](https://github.com/c0webster/hardened-google-workspace-mcp).
+
+## Permissions
 
 Add the following to the `permissions.allow` array in your project's `.claude/settings.local.json` (or `~/.claude/settings.json` for global) to avoid per-call permission prompts:
 
@@ -17,35 +25,63 @@ Add the following to the `permissions.allow` array in your project's `.claude/se
 "mcp__hardened-workspace__*"
 ```
 
-## File Structure
+## Invoke
 
 ```
-skills/vetting/
-  SKILL.md                       # Main skill: session setup, Steps 0–2, agent orchestration
+/vetting <Google Sheets URL or local file path>
+```
+
+The skill will ask for your Google Workspace email address, authenticate, list the workbook's sheets, and ask which to vet and at what scope (full publication check or formula/heads-up only) before proceeding.
+
+## What it checks
+
+- **Wave 1** — Formula errors (arithmetic, structure, data verification, edge cases), cross-parameter consistency, source data tab audit
+- **Wave 2** — Data sources and citations, CE sanity and evidence quality, epidemiological plausibility, intervention-specific checks, leverage/funging, CE chain trace, readability, confidentiality flags, hardcoded values, leverage UoV references, notes quality
+- **Wave 2.5** — Reconciliation across parallel agent instances
+- **Wave 3** — Compaction (route, deduplicate, sort, assign Finding IDs), gap-fill, validation, dashboard
+
+## Output
+
+A Google Spreadsheet with five tabs:
+- **Findings** — model-integrity issues (formula errors, stale parameters, structural bugs) sorted High → Medium → Low with Finding IDs (F-001…)
+- **Publication Readiness** — pub-only issues (permission flags, broken links, citation format, terminology) with IDs (PR-001…)
+- **Hardcoded Values** — inventory of standalone hardcoded cells for researcher verification
+- **Confidentiality Flags** — named individuals, donor info, PII
+- **Dashboard** — summary counts by sheet, CE direction estimate, unvetted tab list
+
+## File structure
+
+```
+vetting/
+  SKILL.md                       # Main orchestrator: session setup, Steps 0–2, agent dispatch
   README.md                      # This file
+  extract.py                     # Local Excel extraction (use for .xlsx files before vetting)
   agents/
-    formula-check-arithmetic.md  # Step 3 (Wave 1): arithmetic, cell references, scalar multipliers — 4 instances (A/B rows 1→½, C/D rows ½→end)
-    formula-check-structure.md   # Step 3b (Wave 1): structural completeness, cross-column value checks, parallel scenario symmetry
-    formula-check-data.md        # Step 3d (Wave 1): external data verification — GBD, trial papers, cross-model values
-    formula-check-edge-cases.md  # Step 4 (Wave 1): zero denominators, blank refs, silenced errors, aggregation gaps
-    consistency-check.md         # Step 4b (Wave 1): cross-cutting parameter consistency, moral weights, study-derived parameter rows
-    source-data-check.md         # Wave 1: source data tab audit (coverage data, WUENIC, DHS, GBD, population tabs)
-    sources.md                   # Step 5 (Wave 2): data source audit, citation completeness, cost input row coverage
-    heads-up-evidence.md         # Step 6a (Wave 2): CE sanity check, top-5 interrogation, hyperlink audit, benefit streams, evidence quality
-    heads-up-epi.md              # Step 6b (Wave 2): epidemiological parameters, disease burden, model structure, leverage UoV references
-    heads-up-intervention.md     # Step 6c (Wave 2): intervention-specific plausibility checks
-    leverage-funging.md          # Step 6d (Wave 2): leverage/funging sign, direction, and double-count checks
-    ce-chain-trace.md            # Step 6e (Wave 2): full CE chain trace from output to source inputs, scenario UoV references
-    readability.md               # Step 7 (Wave 2): labels, section ordering, legibility
-    sensitivity-scan.md          # Step 8 (Wave 2): confidentiality flags — named individuals, donor info, PII
-    hardcoded-values.md          # Step 9 (Wave 2): hardcoded values inventory for researcher verification
-    notes-scan.md                # Step 7c (Wave 2): missing Calculation entries, boilerplate, raw URLs
-    reconcile.md                 # Wave 2.5: reconciles A/B instance divergences per agent pair
-    final-review-compaction.md   # Step 10a (Wave 3): route misrouted rows, deduplicate, sort, assign Finding IDs
-    final-review-validation.md   # Step 10b (Wave 3): fix-validation, confidence intervals, placeholder scan, CE impact
-    final-review-dashboard.md    # Step 10c (Wave 3): dashboard content, Key Findings summary in chat
+    formula-check-arithmetic.md  # Wave 1: arithmetic, cell references, scalar multipliers (4 parallel instances)
+    formula-check-structure.md   # Wave 1: structural completeness, cross-column value checks
+    formula-check-data.md        # Wave 1: external data verification — GBD, trial papers, cross-model values
+    formula-check-edge-cases.md  # Wave 1: zero denominators, blank refs, silenced errors, aggregation gaps
+    consistency-check.md         # Wave 1: cross-cutting parameter consistency, moral weights
+    source-data-check.md         # Wave 1: source data tab audit (coverage, WUENIC, DHS, GBD, population)
+    sources.md                   # Wave 2 Step 5: data source audit, citation completeness
+    heads-up-evidence.md         # Wave 2 Step 6a: CE sanity check, top-5 interrogation, evidence quality
+    heads-up-epi.md              # Wave 2 Step 6b: epidemiological parameters, disease burden
+    heads-up-intervention.md     # Wave 2 Step 6c: intervention-specific plausibility checks
+    leverage-funging.md          # Wave 2 Step 6d: leverage/funging sign, direction, double-count checks
+    leverage-uov-check.md        # Wave 2: leverage section UoV rate reference audit
+    ce-chain-trace.md            # Wave 2 Step 6e: full CE chain trace from output to source inputs
+    readability.md               # Wave 2 Step 7: labels, section ordering, legibility
+    notes-scan.md                # Wave 2 Step 7c: missing Calculation entries, boilerplate, raw URLs
+    sensitivity-scan.md          # Wave 2 Step 8: confidentiality flags — named individuals, donor info, PII
+    hardcoded-values.md          # Wave 2 Step 9: hardcoded values inventory
+    reconcile.md                 # Wave 2.5: reconciles divergences across parallel A/B agent instances
+    final-review-compaction.md   # Wave 3 Step 10a: route misrouted rows, deduplicate, sort, assign IDs
+    final-review-gap-fill.md     # Wave 3 Step 10b: fill blank CE impact cells, add missing severity labels
+    final-review-validation.md   # Wave 3 Step 10c: fix-validation, confidence intervals, placeholder scan
+    final-review-dashboard.md    # Wave 3 Step 10d: dashboard content, Key Findings summary in chat
   reference/
-    key-parameters.md            # Authoritative GiveWell parameter values
-    output-format.md             # Findings sheet column definitions and severity rules
-    output-setup.md              # Output spreadsheet creation: tabs, headers, formatting batch, dashboard cells
+    key-parameters.md            # Authoritative GiveWell parameter values (benchmark, moral weights, etc.)
+    output-format.md             # Findings and Publication Readiness column definitions and severity rules
+    output-setup.md              # Output spreadsheet creation: tabs, headers, formatting, dashboard cells
+    column-reference.md          # Canonical column specification referenced by all agents
 ```

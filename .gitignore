@@ -1,9 +1,10 @@
-# Sensitive data — do not commit
+# Workspace data — do not commit
 spreadsheets/
-output/*.txt
-output/*.md
-output/*.xlsx
-output/ir_summaries/
+output/
+reference_docs/
+
+# Personal Claude settings — do not commit
+.claude/
 
 # System files
 .DS_Store
