@@ -22,7 +22,7 @@ Load CEA Consistency Guidance (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) v
 
 Before reviewing specific parameters below, identify the 5 parameters with the largest impact on final CE. Use the benefit stream proportions row (if present) and work backwards through the formula chain from the CE output to find which hardcoded inputs drive the most value. For each of the top 5:
 
-1. **Sourced?** The sources agent (Step 5 in the current workflow) has already run before this agent. Check the existing Findings sheet for any citation findings on these cells before re-auditing sourcing from scratch — treat the findings sheet as the source of record for known citation gaps. If the sources agent has already flagged a cell, do not duplicate that finding; instead note the pre-existing finding in your reasoning and focus on questions 2 and 3.
+1. **Sourced?** Does the cell have a traceable external citation?
 2. **Verifiable?** Is the source external and independently checkable, or internal/judgment-based ("GW estimate," "our assumption," unpublished analysis)?
 3. **Plausible range?** Is the value within a reasonable range given the program type and context? Would a skeptical reader accept it without further explanation?
 
@@ -45,7 +45,7 @@ For each top-5 parameter that fails check 2 (internal/judgment-based source with
 | Deworming | ~5–10x SSA | |
 | Cash transfers (GiveDirectly) | 1x | Definition of benchmark |
 
-**Staleness note**: The benchmark ranges above were compiled in April 2026. If today's date is more than 3 months after that, load the current live top-charity CEAs via `read_sheet_values` to recalibrate before applying these ranges — CE estimates shift materially with parameter updates and should not be compared against stale baselines.
+**Staleness note**: The benchmark ranges above were compiled in April 2026. If today's date is more than 1 month after that, load the current live top-charity CEAs via `read_sheet_values` to recalibrate before applying these ranges — CE estimates shift materially with parameter updates and should not be compared against stale baselines.
 
 GiveWell's approach to uncertainty holds that stranger conclusions require stronger supporting evidence — a single high-magnitude but uncertain parameter should not be allowed to dominate the conclusion unchecked. If the model's CE is more than 2–3x above the upper bound of the typical range for the nearest comparable program (e.g., a malaria intervention showing 50x when comparable programs top out at ~20x), explicitly identify the specific model element(s) that account for the premium: e.g., higher burden geography, stronger trial evidence, lower delivery cost, broader benefit streams. Flag as Medium/H if no element clearly explains the premium at the claimed magnitude, or if the explanation rests on a single uncertain parameter (common pattern: a high-magnitude internal validity adjustment or an unusually optimistic coverage rate). Note: this check does not require the model to conform to benchmarks — genuinely exceptional programs exist — but it does require the model to be able to explain the deviation. Known legitimate outliers: Niger VAS (~95x) and certain Nigeria SMC states (~42x) are real; flag CE >50x in most other contexts unless geography/cost clearly justifies it.
 

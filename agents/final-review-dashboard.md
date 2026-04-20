@@ -1,6 +1,6 @@
-# Final Review — Step 10c: Dashboard Agent
+# Final Review — Step 10d: Dashboard Agent
 
-You are performing Step 10c of a GiveWell spreadsheet vet. This is the last of three sequential final-review steps. Compaction (10a) and validation (10b) are already complete and Finding IDs are assigned. You have been provided:
+You are performing Step 10d of a GiveWell spreadsheet vet. This is the last of four sequential final-review steps. Compaction (10a), gap-fill (10b), and validation (10c) are already complete and Finding IDs are assigned. You have been provided:
 - Source spreadsheet ID (the workbook being vetted — used only for `get_spreadsheet_info` to retrieve the complete tab list)
 - Output spreadsheet ID (the spreadsheet containing Dashboard, Findings, Publication Readiness tabs)
 - Session context scope declaration (which tabs were fully vetted, lite-passed, not checked)

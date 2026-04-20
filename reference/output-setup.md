@@ -40,7 +40,7 @@ Fire all formatting in a single parallel batch immediately after writing headers
 - `add_conditional_formatting`: Dashboard B24:D24 — `High` → `#FFB3B3`, `Medium` → `#FFE5B3`, `Low` → `#B3D9B3`
 - `format_sheet_range`: header row 1 on CE Baseline (A1:B1) — dark blue `#1F4E79`, white text, bold
 - `format_sheet_range`: header row 1 on Confidentiality Flags (A1:D1) — dark blue `#1F4E79`, white text, bold
-- `format_sheet_range`: column widths on Findings — A=80, B=120, C=120, D=100, E=140, F=220, G=400, H=150, I=100, J=120
+- `format_sheet_range`: column widths on Findings — A=80, B=120, C=120, D=100, E=140, F=290, G=400, H=150, I=100, J=120
 - `format_sheet_range`: column widths on Publication Readiness — A=80, B=120, C=120, D=140, E=220, F=300
 - `format_sheet_range`: text wrap on columns F, G of Findings; text wrap on columns E, F of Publication Readiness
 - `format_sheet_range`: row height rows 2:1000 on Findings → 80px; same on Publication Readiness

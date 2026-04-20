@@ -65,8 +65,9 @@ Then make one of three determinations:
 
 **Won't Fix** (high bar — requires specific affirmative evidence):
 - You may mark a finding `Won't Fix` **only** if you can state the specific, affirmative reason the formula or value is correct — not merely that you couldn't confirm the issue.
-- Qualifying reasons: "The formula references cell D22 labeled 'Seasonal concentration (non-Sahel)' — the correct concept for this column." / "The declared-intentional deviation explicitly covers this parameter." / "The cell note explains this value is intentionally set at X because [reason the note gives]."
-- Non-qualifying reasons: "I couldn't reproduce the issue." / "It seems likely correct in context." / "The other agent's finding seems plausible." / "The value is close to what I'd expect."
+- Qualifying reasons: "The formula references cell D22 labeled 'Seasonal concentration (non-Sahel)' — the correct concept for this column." / "The declared-intentional deviation explicitly covers this parameter." / "The cell note explains this value is intentionally set at X because [reason the note gives], and the formula confirms this — it computes [X] by [formula structure consistent with the note's explanation]."
+- **Cell-note Won't Fix requires formula coherence**: When the basis for Won't Fix is a cell note explanation, you must also read the cell's formula (FORMULA mode) and confirm the formula actually implements what the note claims. A note that says "intentionally set to X to account for seasonal concentration" must be paired with a formula that plausibly computes a seasonal concentration adjustment — not just any formula. If the formula and note are inconsistent, the note may be stale; use **Needs researcher input** instead.
+- Non-qualifying reasons: "I couldn't reproduce the issue." / "It seems likely correct in context." / "The other agent's finding seems plausible." / "The value is close to what I'd expect." / "The cell has a note" (without verifying the note's explanation matches the formula).
 - When marking Won't Fix: delete the row from the sheet.
 
 **Needs researcher input** (when validity depends on intent):

@@ -34,7 +34,9 @@ If multiple CE outputs exist (e.g., per intervention, per country, weighted aver
 
 Record: the cell reference, the label used, and its current displayed value.
 
-Coverage declaration: "Step 1 complete. Final CE cell: [ref]. Label: [label]. Value: [X]."
+**Required output**: Before writing the coverage declaration, quote the exact formula string of the final CE cell. Example: `=B94/B$33`. If the cell is hardcoded, write the raw value.
+
+Coverage declaration: "Step 1 complete. Final CE cell: [ref]. Label: [label]. Value: [X]. Formula: [exact formula string]."
 
 ### Step 1b — CE plausibility guard
 
@@ -150,8 +152,15 @@ For every cross-sheet reference in the chain that points to a specific row in a 
 2. Read the labels of the 5 rows above and 5 rows below the referenced row in the source tab.
 3. Check whether any neighboring row describes the same concept. Common signals of version drift: a nearby row with a similar label but with "updated", "revised", "new", or a later year; or the referenced row belongs to a superseded block (e.g., rows 5–10 form an "Old RFMF" block while rows 17–22 form an "Updated RFMF" block).
 4. If a plausible newer version exists, read both values (UNFORMATTED_VALUE) and compare. If they differ by more than 5%, flag as **High/Formula Error**: "[chain cell] references [source tab]![stale row] (value: [X]). A likely updated version of the same concept exists at [source tab]![current row] (value: [Y]). Verify which row is correct and update the reference."
+5. **Secondary full-tab scan (run when the ±5 check finds no version drift)**: Read all of column A for the source tab (single `read_sheet_values` call on column A). Split the referenced row's label into individual words (excluding common stop words: "the," "of," "a," "and," "for," "in," "per"). Scan every row label in column A for any row that shares more than 50% of those words with the referenced row's label AND is more than 5 rows away from the referenced row. If such a row is found, read its value (UNFORMATTED_VALUE) and compare to the referenced row's value. If they differ by more than 5%, flag as **High/Formula Error** using the same format as step 4 above, noting the row was found via label-similarity scan.
 
-This check applies to all cross-sheet row references in the chain — do not skip rows that appear recently entered. Version drift can occur in any iteratively revised tab.
+**Required output for each cross-reference checked** — write this line before moving on from any cross-sheet reference in the chain:
+
+`[formula cell] → [source tab]![row]. Referenced row label: [exact label text]. ±5 rows with drift signals: [list, or 'none']. Secondary label-scan match (>5 rows away): [row ref and label, or 'none']. Newer version detected: [YES / NO].`
+
+If you cannot write this line, you have not completed the check for that reference.
+
+This check applies to all cross-sheet row references in the chain — do not skip rows that appear recently entered. Version drift can occur in any iteratively revised tab, including cases where the source tab has been substantially reorganized.
 
 ---
 
@@ -162,21 +171,7 @@ Based on the program context and grant document (if provided):
 - Are there outcomes in the model not mentioned in the grant document that materially affect the CE estimate? Flag as Medium/H — may be intentional extensions, requires input.
 - Does the model's description of what it is computing (in cell notes, tab names, or row labels) match the actual formula structure? A label that says "coverage-adjusted deaths averted" should reference a coverage parameter in its formula.
 
----
-
-## Step 6 — Leverage/funging scenario rows
-
-For every row in the leverage/funging section (or embedded leverage block) that computes a CE multiple or units of value for a specific scenario, verify the formula references the **post-adjustment** units of value row — not a pre-adjustment intermediate (e.g., "Total units of value before adjustments" or "Direct benefits only").
-
-Common failure mode: scenario rows in the leverage/funging section are built by copying the direct-CE formula and referencing the unadjusted UoV subtotal, rather than the fully-adjusted UoV row that accounts for external validity, supplemental benefits, and other discounts applied earlier in the model. If a CE multiple row in the leverage section divides by cost but multiplies by a UoV figure from earlier in the chain than the final adjusted UoV, the CE multiples in every scenario will be systematically overstated or understated relative to the main CE estimate.
-
-Check each scenario CE row:
-1. Read the formula (FORMULA mode).
-2. Identify the UoV cell being referenced.
-3. Read the row label of that UoV cell and confirm it represents the *final* adjusted UoV — not an intermediate sum. The correct row is typically labeled "Total units of value (after all adjustments)" or "Adjusted units of value."
-4. If the referenced row is a pre-adjustment subtotal, flag as **High/Formula Error**: "Scenario CE row [ref] divides by cost but references [pre-adjustment UoV row label] instead of the final adjusted UoV row [correct ref]. All scenario CE multiples computed from this row are overstated/understated by the omitted adjustment factor."
-
-Coverage declaration: "Step 6 complete. Leverage/funging scenario UoV references checked: [N rows]. Issues found at: [list or 'none']."
+**Note**: Leverage section UoV reference checks (verifying that leverage scenario rows and intermediate `$ × UoV/$` calculations reference the post-supplemental rate) are handled by the `leverage-uov-check` agent running in parallel. Do not duplicate those checks here.
 
 ---
 

@@ -1,6 +1,6 @@
 # Final Review — Step 10b: Validation Agent
 
-You are performing Step 10b of a GiveWell spreadsheet vet. This step runs after the compaction agent (Step 10a) has sorted, deduplicated, and assigned Finding IDs. You have been provided:
+You are performing Step 10c of a GiveWell spreadsheet vet. This step runs after the gap-fill agent (Step 10b) has completed its cascade and coverage checks. You have been provided:
 - Spreadsheet ID (the **source** spreadsheet being vetted — you will read specific cells from it for fix-validation)
 - Findings sheet ID and Publication Readiness sheet ID (the output spreadsheet)
 - Pre-vet baseline CE from session context (needed for CE impact estimation)
@@ -14,13 +14,27 @@ You are performing Step 10b of a GiveWell spreadsheet vet. This step runs after 
 
 **Role calibration**: GiveWell does not treat cost-effectiveness estimates as literally true — deep uncertainty is inherent to all CEAs. Do not second-guess defensible modeling choices. Reserve new Medium and High findings for factual errors, internal inconsistencies, or missing required elements.
 
-**Coverage mandate — no shortcuts**: All four checks below apply to all finding rows without exception. After each check, write a coverage declaration before moving on: "Checked all [N] finding rows for [check type]. Found issues at: [list or 'none']. No other issues of this type." Do not proceed until you can write it.
+**Coverage mandate — no shortcuts**: All five checks below apply to all finding rows without exception. After each check, write a coverage declaration before moving on: "Checked all [N] finding rows for [check type]. Found issues at: [list or 'none']. No other issues of this type." Do not proceed until you can write it.
 
 ---
 
 ## Step 1 — Read all findings
 
 Read all rows from row 2 onward on the Findings sheet using batched `read_sheet_values` calls: A2:L200, then A201:L400, continuing until a batch returns no non-empty rows. Skip divider rows (column D empty, column B contains `───`). Collect all finding rows.
+
+---
+
+## Check 0 — CE baseline re-verification
+
+Before computing or evaluating any CE impact estimate, independently re-read the CE baseline cell from the source spreadsheet. Do not rely solely on the pre-vet baseline from session context — that value was read at session start and could reflect a cell that was updated, or a pre-adjustment subtotal rather than the final model output.
+
+1. Use `read_sheet_values` (FORMATTED_VALUE) on the cell identified as the CE baseline in session context. Read both the cell value and the row label in column A of the same row.
+2. Confirm the row label contains "final," "after adjustments," or an equivalent phrase that indicates this is the model's terminal CE output — not an intermediate calculation before adjustments are applied.
+3. Read the cell value (UNFORMATTED_VALUE) and compare to the session context baseline. If the stored value differs from the session context by more than 1%, file as **High/Formula Error**: "CE baseline cell [ref] currently stores [value], but session context baseline was [session value] — a [%] discrepancy. All CE impact estimates in this vet were computed against the session context value. Verify which value is correct and recompute any affected CE impacts."
+4. If the row label does not contain "final" or "after adjustments," or if it contains "before adjustments," "unadjusted," or "subtotal," flag as **Medium/Structural Issue** with Researcher judgment needed ✓: "Session context baseline was read from [ref], whose label reads '[label]' — this may be a pre-adjustment subtotal rather than the final CE output. Confirm the correct final CE cell and verify that all CE impact estimates in this vet reference it."
+5. If no discrepancy and row label is correct, write in your reasoning: "CE baseline verified: [ref] = [value] (matches session context within 1%, label confirms final output). Proceeding with confirmed baseline."
+
+Coverage declaration: "CE baseline re-verification complete. Cell read: [ref]. Stored value: [value]. Session context: [value]. Discrepancy: [% or 'none']. Row label: [label]. Status: [verified / discrepancy flagged / label concern flagged]."
 
 ---
 
@@ -49,7 +63,14 @@ Use `get_spreadsheet_info` to list all tabs in the source spreadsheet. Check whe
 
 If a prior agent already flagged this, verify the finding exists — do not duplicate.
 
-Coverage declaration: "Confidence intervals check complete. Sheet present: [yes/no]. Status: [populated / blank / absent]."
+**CI sheet cell-reference verification** (applies only when the CI sheet is present and populated): The CI sheet must draw its central CE estimate from the same terminal output cell as the pre-vet baseline — not from an intermediate pre-adjustment row.
+
+1. Read the CI sheet's CE output row using `read_sheet_values` (FORMULA mode). Look for a row labeled "central estimate," "best estimate," "CE," or equivalent.
+2. Confirm the formula in that row references the same cell you verified as the CE baseline in Check 0. If it references a different cell, read the row label of that different cell on the main CEA sheet to determine whether it is a pre-adjustment subtotal.
+3. If the CI sheet's central CE row references a pre-adjustment cell (row label contains "before adjustments," "unadjusted," "subtotal," or similar), file as **Medium/Formula Error**: "CI sheet's central estimate at [CI cell ref] references [main CEA cell], which is labeled '[label]' — a pre-adjustment value. The CI sheet should reference the final post-adjustment CE cell [baseline cell ref] so that confidence intervals reflect the fully adjusted model output."
+4. If the CI sheet references the correct final cell, write in your reasoning: "CI sheet cross-reference verified: [CI cell ref] → [main CEA cell ref] (confirmed final output)."
+
+Coverage declaration: "Confidence intervals check complete. Sheet present: [yes/no]. Status: [populated / blank / absent]. CI cell-reference: [verified / pre-adjustment ref flagged / not applicable]."
 
 ---
 
@@ -70,14 +91,16 @@ Coverage declaration: "Placeholder scan complete. Header rows and column A check
 
 ## Check 4 — CE impact completeness
 
-For every **High** finding in the Findings sheet with a blank Estimated CE Impact (column H):
+For every **High** finding and every **Medium** finding whose Error Type is `Formula Error`, `Parameter Issue`, or `Adjustment Issue` — where Estimated CE Impact (column H) is blank:
 - Compute the directional impact using the pre-vet baseline CE from session context.
-- Write using the standard format: `Raises CE — 8.7x → ~10.2x` or `Lowers CE — magnitude unknown` etc. Always lead with the standard phrase from output-format.md.
+- Write using the standard format: `Raises CE — 8.7x → ~10.2x` or `Lowers CE — magnitude unknown` etc. Always lead with the standard phrase from output-format.md. Use `Direction unknown` if the researcher's answer would determine the direction.
 - Update the finding in place using `modify_sheet_values`.
+
+Rationale: Medium Formula Error, Parameter Issue, and Adjustment Issue findings can affect CE even if their impact is below the High threshold. Researchers need the CE direction to triage them against High findings. `Assumption Issue`, `Structural Issue`, and `Inconsistency` at Medium severity often have no computable CE impact — leave those blank rather than writing "Direction unknown" unless you can clearly identify a direction.
 
 Do not modify any other columns of existing findings.
 
-Coverage declaration: "CE impact completeness check done. [N] High findings total. [M] had blank column J — filled in. [K] already had content."
+Coverage declaration: "CE impact completeness check done. High findings: [N total, M filled, K already had content]. Medium Formula/Parameter/Adjustment findings: [N total, M filled, K already had content]."
 
 ---
 
@@ -89,6 +112,45 @@ Before writing any new finding, confirm: (1) exact cell reference(s), (2) specif
 
 Assign the next sequential Finding ID continuing from where compaction left off (e.g., if last ID was F-015, write F-016).
 
-**Findings sheet** (A–L): A=Finding # | B=Sheet | C=Cell/Row | D=Severity | E=Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula Error | Parameter Issue | Adjustment Issue | Assumption Issue | Structural Issue | Inconsistency) | F=Explanation | G=Recommended Fix | H=Changes CE? (✓ if correcting changes CE) | I=Estimated CE Impact (use exactly one of: Raises CE — [estimate], Lowers CE — [estimate], Raises CE — magnitude unknown, Lowers CE — magnitude unknown, No CE impact, Direction unknown) | J=Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | K=Status (leave blank)
+**Findings sheet** (A–J): A=Finding # | B=Sheet | C=Cell/Row | D=Severity | E=Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula Error | Parameter Issue | Adjustment Issue | Assumption Issue | Structural Issue | Inconsistency) | F=Explanation | G=Recommended Fix | H=Estimated CE Impact (use exactly one of: Raises CE — [estimate], Lowers CE — [estimate], Raises CE — magnitude unknown, Lowers CE — magnitude unknown, No CE impact, Direction unknown) | I=Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | J=Status (leave blank)
 
 **Publication Readiness** (A–F): A=Finding # | B=Sheet | C=Cell/Row | D=Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Missing Source | Broken Link | Permission Issue | Readability | Terminology) | E=Explanation | F=Recommended Fix
+
+---
+
+## Step 2 — Hyperlink conversion (run last, after all checks and new findings are written)
+
+Convert every cell reference in column C of both the Findings sheet and Publication Readiness sheet into a clickable `=HYPERLINK(...)` formula that opens the referenced cell directly in the source spreadsheet.
+
+**Run this step only after all checks are complete and all new findings have been written.** Do not run it earlier — new findings written after this step would have plain-text column C values.
+
+1. **Get the GID mapping**: From the `get_spreadsheet_info` result already obtained in Check 2, extract the tab name → numeric GID mapping for every tab in the source spreadsheet (`sheetId` field in the sheets list).
+
+2. **Read all column C values**: Read Findings sheet columns A:C in batches until empty. Separately read Publication Readiness sheet columns A:C. Collect every non-divider, non-blank row with its sheet row number and current column C text.
+
+3. **Parse each column C value** to extract a sheet name and cell reference:
+   - **`SheetName!CellRef`** (e.g., `Main CEA!B47`) → sheet name = `Main CEA`, cell ref = `B47`
+   - **`CellRef` only** (e.g., `B47`, no `!`) → sheet name = primary vetted sheet from session context, cell ref = `B47`
+   - **`Row N` or `rows N–M`** (e.g., `Row 47`) → sheet name = value from column B of this finding row, cell ref = `A47` (first cell of that row)
+   - **Range** (e.g., `B47:C51`) → link to the first cell of the range (`B47`); keep the full range as the display text
+   - **`Multiple`** as the sheet name → skip; leave column C as plain text (no single target cell to link to)
+   - **Blank column C** → skip
+
+4. **Look up the GID** for the resolved sheet name in the mapping from step 1. If the sheet name is not found (e.g., a misspelling by an earlier agent), leave the cell as plain text — do not error or skip the entire batch.
+
+5. **Construct the HYPERLINK formula**:
+
+   ```
+   =HYPERLINK("https://docs.google.com/spreadsheets/d/{source_spreadsheet_id}/edit#gid={gid}&range={cell_ref}","{original_column_C_text}")
+   ```
+
+   Example: column C = `Main CEA!B47`, source ID = `1aBcDeFgH...`, Main CEA GID = `987654321`:
+   ```
+   =HYPERLINK("https://docs.google.com/spreadsheets/d/1aBcDeFgH.../edit#gid=987654321&range=B47","Main CEA!B47")
+   ```
+
+   The cell ref in the URL is the A1 notation **without** the sheet name prefix — just `B47`, not `Main CEA!B47`.
+
+6. **Write all hyperlinks** in a single `modify_sheet_values` call per sheet, targeting only column C, using `value_input_option: USER_ENTERED` so Google Sheets evaluates the formula. Do not overwrite any other columns.
+
+Coverage declaration: "Hyperlink conversion complete. Findings rows converted: [N]. Publication Readiness rows converted: [N]. Skipped (Multiple/blank): [N]. GID lookup failures (left as plain text): [N]."

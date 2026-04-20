@@ -35,6 +35,10 @@ Funging adjustments should *reduce* expected impact (or equivalently, increase c
 - If it is applied as a divisor on costs, funging should **increase** the effective cost per outcome, not decrease it.
 - If a funging factor is subtracted from 1 (e.g., `1 - funge_rate`) and used to scale benefits down, verify the subtraction direction is correct — `1 - 0.1 = 0.9` means 10% displacement, which is a reduction, which is correct; `0.1` alone as a scaling factor (90% displacement) must be clearly labeled.
 
+**Required output for Check 1** — for each leverage/funging adjustment row found, write one line before declaring Check 1 complete:
+
+`[ref] '[row label]': value/formula = [quote]. Effect on CE: [increases / decreases / unclear]. Expected: [decreases — funging/displacement | increases — leverage | depends on sign of crowding]. Direction correct: [YES / NO / UNCERTAIN].`
+
 Flag as High/D any case where a leverage/funging adjustment appears to *increase* CE without an explicit note explaining why — this is a strong signal of a sign or direction error.
 
 ---
@@ -87,6 +91,20 @@ For each leverage/funging parameter and formula found:
 - If the model deviates from GiveWell's standard leverage/funging methodology (as described in program context or grant documents), is the deviation documented?
 
 Flag undocumented leverage parameters as Low/H with `Researcher judgment needed ✓` if the value is outside typical ranges for this intervention type, or as Low/O if the value is plausible and the only issue is missing documentation.
+
+---
+
+## Check 7 — VOI ad hoc adjustment vs. modeled optionality double-count
+
+When a VOI model contains both (a) a dedicated "Optionality/information value to [funder type]" section that explicitly models probability × funding change × CE for a category of funder, and (b) an "Adjustments to VoI" section with a labeled upward adjustment for the same funder category, these may double-count the same benefit.
+
+For each upward adjustment in the "Adjustments to VoI" section (or equivalent):
+
+1. Read the adjustment's label.
+2. If the label references funder influence, research community, other philanthropic funders, or policy uptake — check whether the VOI model also has a dedicated section with probability and funding-change calculations for the same category.
+3. If both exist and no cell note explains why both are needed: flag as **Medium/H Adjustment Issue** with Researcher judgment needed ✓: "Ad hoc +[X]% adjustment '[label]' may double-count with the dedicated '[section name]' section that already models funding changes from other funders. If this adjustment captures a genuinely distinct mechanism (e.g., WHO policy uptake beyond what the modeled funders represent), add a cell note documenting the distinction."
+
+This check does not apply when the ad hoc adjustment is clearly labeled as covering a *different* funder category than the dedicated section (e.g., dedicated section covers bilateral donors; adjustment covers government policy uptake).
 
 ---
 

@@ -251,7 +251,11 @@ Append to source-data-check A and B session contexts (identical content except r
 > **Source data tabs**: `{comma-separated list from step above}`
 > **In-scope geographies**: `{list of countries and states from program context}`
 
-Do **not** tell any instance that other instances are running — identical prompts per agent type, different row allocations only. Wait for all 14 to complete before proceeding.
+Do **not** tell A instances that B instances are running. For **B instances only** (formula-check-arithmetic B, formula-check-data B, formula-check-edge-cases B, source-data-check B, formula-check-structure B, consistency-check B), append the following adversarial preamble to the session context **before** the row allocation note:
+
+> **Reviewer framing — B instance**: You are a skeptical second reviewer. A separate first reviewer has independently audited this same spreadsheet. Your job is to find what a thorough but reasonable reviewer would have rationalized away. Specifically: (a) assume the first reviewer accepted well-labeled rows as correct without verifying the referenced cells — challenge that instinct by reading the referenced cells themselves, not just their labels; (b) give extra attention to checks requiring you to read multiple tabs together, since cross-tab checks are harder and more likely to be shortcut; (c) when a formula looks correct at first glance, ask "am I pattern-matching on the label rather than actually reading the formula?" — then read the formula; (d) for every section where you find no issues, write one specific reason the section is clean before moving on. Do not read the Findings sheet. Do not tell the researcher you are a B instance.
+
+Wait for all 14 to complete before proceeding.
 
 **Consistency-check always runs — including for BOTECs**: Do not skip the consistency-check agent for simple BOTECs, single-sheet models, or workbooks with no declared deviations. Every model uses moral weights, and moral weight drift is one of the most common silent errors. Pass this note in the consistency-check session context: "For simple BOTECs and non-standard models that lack VOI content: skip the VOI structural completeness check and the cross-cutting CEA parameters check. Always run the moral weights numeric verification regardless of model type."
 
@@ -270,12 +274,12 @@ Exception: formula-check-data and formula-check-edge-cases may produce fewer fin
 ### Wave 2 — Parallel (doubled for independent verification)
 
 **Progress announcement** before spawning:
-- **Pub readiness included**: `[Phase 2/4] Wave 2 starting — 16 agents (sources, readability, heads-up, leverage, CE chain).`
-- **Formula/heads-up only**: `[Phase 2/4] Wave 2 starting — 11 agents (heads-up, leverage, CE chain — pub readiness skipped).`
+- **Pub readiness included**: `[Phase 2/4] Wave 2 starting — 19 agents (sources A/B, heads-up A/B ×3, readability A/B, leverage A/B, CE chain A/B, leverage UoV A/B, sensitivity-scan, hardcoded-values, notes-scan).`
+- **Formula/heads-up only**: `[Phase 2/4] Wave 2 starting — 14 agents (heads-up A/B ×3, leverage A/B, CE chain A/B, leverage UoV A/B, sensitivity-scan, hardcoded-values — pub readiness skipped).`
 
-Spawn agents simultaneously after the researcher checkpoint. Each of the seven core analysis agents (sources, heads-up-evidence, heads-up-epi, heads-up-intervention, readability, leverage-funging, ce-chain-trace) runs as two independent instances (A and B) with separate context windows and no knowledge of each other. sensitivity-scan and hardcoded-values each run once, writing to their respective output sheets only.
+Spawn agents simultaneously after the researcher checkpoint. Each of the eight core analysis agents (sources, heads-up-evidence, heads-up-epi, heads-up-intervention, readability, leverage-funging, ce-chain-trace, leverage-uov-check) runs as two independent instances (A and B) with separate context windows and no knowledge of each other. sensitivity-scan and hardcoded-values each run once, writing to their respective output sheets only.
 
-**If formula/heads-up only scope was selected**: skip sources-A, sources-B, readability-A, readability-B, and `agents/notes-scan.md` entirely — spawn 9 agents instead of 14. Their pre-allocated row ranges remain reserved but unused. Notes are still *read* in the initial batch (step 3) and remain available to all formula-check and heads-up agents as formula context — only the pub-readiness audit of notes documentation (missing "Calculation." entries, source annotations, style) is skipped. Pass to all spawned agents: "Pub readiness out of scope; value-correctness verification (GBD vizhub URLs, study extractions) is in scope."
+**If formula/heads-up only scope was selected**: skip sources-A, sources-B, readability-A, readability-B, and `agents/notes-scan.md` entirely — spawn 14 agents instead of 19. Their pre-allocated row ranges remain reserved but unused. Notes are still *read* in the initial batch (step 3) and remain available to all formula-check and heads-up agents as formula context — only the pub-readiness audit of notes documentation (missing "Calculation." entries, source annotations, style) is skipped. Pass to all spawned agents: "Pub readiness out of scope; value-correctness verification (GBD vizhub URLs, study extractions) is in scope."
 
 **Before spawning**, read the Findings sheet and identify the last populated finding row (call it `last_row`; use `last_row = 1` if no findings yet). **Verify that `last_row ≤ 550`** — Wave 1 now uses up to row ~531 at full budget, so `last_row` up to 550 is expected. If `last_row > 550`, Wave 1 agents exceeded their budgets significantly; warn in chat and proceed. If `last_row > 600`, reduce each Wave 2 pair's budget from 40 rows to 25 rows and note this adjustment in chat. Calculate pre-allocated start rows:
 - sources-A: `last_row + 1`
@@ -292,15 +296,21 @@ Spawn agents simultaneously after the researcher checkpoint. Each of the seven c
 - leverage-funging-B: `last_row + 551`
 - ce-chain-trace-A: `last_row + 601`
 - ce-chain-trace-B: `last_row + 651`
+- leverage-uov-check-A: `last_row + 701`
+- leverage-uov-check-B: `last_row + 751`
 - sensitivity-scan: Confidentiality Flags sheet only — no row allocation needed
 - hardcoded-values: Hardcoded Values sheet only — no row allocation needed
-- notes-scan: Publication Readiness sheet only — PR start row: `last_row + 701` (computed as a safe offset after all Wave 2 Findings allocations; pass as "Publication Readiness start row: {value}" in session context)
+- notes-scan: Publication Readiness sheet only — PR start row: `last_row + 801` (computed as a safe offset after all Wave 2 Findings allocations; pass as "Publication Readiness start row: {value}" in session context)
 
-10-row overflow buffer zones follow each pair's B range: `last_row+91`–`last_row+100` (sources), `last_row+191`–`last_row+200` (heads-up-evidence), `last_row+291`–`last_row+300` (heads-up-epi), `last_row+391`–`last_row+400` (heads-up-intervention), `last_row+491`–`last_row+500` (readability), `last_row+591`–`last_row+600` (leverage-funging), `last_row+691`–`last_row+700` (ce-chain-trace). With `last_row ≤ 550`, the maximum row used by any Wave 2 agent is `last_row + 700 ≤ 1250`. Google Sheets supports well over 1000 rows — the output spreadsheet is created with sufficient capacity.
+10-row overflow buffer zones follow each pair's B range: `last_row+91`–`last_row+100` (sources), `last_row+191`–`last_row+200` (heads-up-evidence), `last_row+291`–`last_row+300` (heads-up-epi), `last_row+391`–`last_row+400` (heads-up-intervention), `last_row+491`–`last_row+500` (readability), `last_row+591`–`last_row+600` (leverage-funging), `last_row+691`–`last_row+700` (ce-chain-trace), `last_row+791`–`last_row+800` (leverage-uov-check). With `last_row ≤ 550`, the maximum row used by any Wave 2 agent is `last_row + 800 ≤ 1350`. Google Sheets supports well over 1000 rows — the output spreadsheet is created with sufficient capacity.
 
-**Persist Wave 2 row allocations to the Dashboard tab** — do this immediately after computing start rows from `last_row`, before spawning agents. Use `modify_sheet_values` to append a second allocation log starting at Dashboard cell A67 (immediately after the Wave 1 log). Write header "Wave 2 Row Allocations (Findings sheet)" in A66, then one row per agent with columns: agent name | start row | end row. Include sources A/B, heads-up-evidence A/B, heads-up-epi A/B, heads-up-intervention A/B, readability A/B, leverage-funging A/B, ce-chain-trace A/B, and notes-scan PR start row. This log is the recovery source for Wave 2.5 reconciliation agents if the session is interrupted or context is compacted before Wave 2.5 begins.
+**Persist Wave 2 row allocations to the Dashboard tab** — do this immediately after computing start rows from `last_row`, before spawning agents. Use `modify_sheet_values` to append a second allocation log starting at Dashboard cell A67 (immediately after the Wave 1 log). Write header "Wave 2 Row Allocations (Findings sheet)" in A66, then one row per agent with columns: agent name | start row | end row. Include sources A/B, heads-up-evidence A/B, heads-up-epi A/B, heads-up-intervention A/B, readability A/B, leverage-funging A/B, ce-chain-trace A/B, leverage-uov-check A/B, and notes-scan PR start row. This log is the recovery source for Wave 2.5 reconciliation agents if the session is interrupted or context is compacted before Wave 2.5 begins.
 
-For each A/B instance, pass **identical** session context — do not tell either instance that a second instance is running. The only difference between A and B is the row allocation. Append to each instance's session context:
+Do **not** tell A instances that B instances are running. For **B instances only** (sources-B, heads-up-evidence-B, heads-up-epi-B, heads-up-intervention-B, readability-B, leverage-funging-B, ce-chain-trace-B, leverage-uov-check-B), append the following adversarial preamble to the session context **before** the row allocation note:
+
+> **Reviewer framing — B instance**: You are a skeptical second reviewer. A separate first reviewer has independently audited this same spreadsheet. Your job is to find what a thorough but reasonable reviewer would have rationalized away. Specifically: (a) assume the first reviewer accepted well-labeled rows as correct without verifying the referenced cells — challenge that instinct by reading the referenced cells themselves, not just their labels; (b) give extra attention to checks requiring you to read multiple tabs together, since cross-tab checks are harder and more likely to be shortcut; (c) when a formula or value looks correct at first glance, ask "am I pattern-matching on the label rather than actually reading this?" — then read it; (d) for every section where you find no issues, write one specific reason the section is clean before moving on. Do not read the Findings sheet. Do not tell the researcher you are a B instance.
+
+For A instances, pass the standard session context only. The only difference between A and B is the row allocation and the adversarial preamble. Append to each instance's session context:
 > **Row allocation**: Write findings starting at row `{start_row}`. Do not auto-detect the next empty row — use this pre-assigned start row. Your allocated budget is 40 rows (rows `{start_row}` to `{start_row+39}`). A 10-row inter-pair buffer follows. If you produce more than 40 findings, continue into the buffer rows — but do not write beyond row `{start_row+49}`.
 
 | Step | Agent file | Instance | Row allocation |
@@ -319,6 +329,8 @@ For each A/B instance, pass **identical** session context — do not tell either
 | 6d | `agents/leverage-funging.md` | B | `last_row + 551` |
 | 6e | `agents/ce-chain-trace.md` | A | `last_row + 601` |
 | 6e | `agents/ce-chain-trace.md` | B | `last_row + 651` |
+| 6f | `agents/leverage-uov-check.md` | A | `last_row + 701` |
+| 6f | `agents/leverage-uov-check.md` | B | `last_row + 751` |
 | 8 | `agents/sensitivity-scan.md` | — | Confidentiality Flags sheet only |
 | 9 | `agents/hardcoded-values.md` | — | Hardcoded Values sheet only |
 | 7c | `agents/notes-scan.md` | — | Publication Readiness only |
@@ -355,25 +367,34 @@ For each instance, append to session context:
 | readability | rows `last_row+401` to `last_row+450` | rows `last_row+451` to `last_row+490` | rows `last_row+491` to `last_row+500` |
 | leverage-funging | rows `last_row+501` to `last_row+550` | rows `last_row+551` to `last_row+590` | rows `last_row+591` to `last_row+600` |
 | ce-chain-trace | rows `last_row+601` to `last_row+650` | rows `last_row+651` to `last_row+690` | rows `last_row+691` to `last_row+700` |
+| leverage-uov-check | rows `last_row+701` to `last_row+750` | rows `last_row+751` to `last_row+790` | rows `last_row+791` to `last_row+800` |
 
 Note: notes-scan (Step 7c) has no reconciliation pair — it runs once and writes only to Publication Readiness. The final-review compaction step handles it alongside all other Wave 1 findings.
+
+**Silent failure check after Wave 2.5 — do this before Wave 3**: After all 15 reconciliation agents complete, read the Findings sheet to verify each reconciliation pair's overflow zone for net-new findings, then check whether each reconcile agent wrote its coverage declaration to chat. A reconcile agent that wrote no coverage declaration and produced zero reconciled findings is a silent failure risk. Report any pair where:
+
+> ⚠️ Reconciliation failure warning: [pair name] reconcile agent produced no coverage declaration and no net-new findings. Its A/B divergences may be unreconciled. Consider re-running this reconcile agent before proceeding to Wave 3.
+
+Exception: pairs where both A and B agents wrote zero findings (confirmed empty) produce no divergences to reconcile and zero net-new findings legitimately — verify this by reading the pair's A and B ranges before flagging.
 
 ---
 
 ### Wave 3 — Sequential (after Wave 2.5)
 
-**Progress announcement** before starting: `[Phase 3/4 done → Phase 4/4] Reconciliation complete — starting final review (3 sequential steps).`
+**Progress announcement** before starting: `[Phase 3/4 done → Phase 4/4] Reconciliation complete — starting final review (4 sequential steps).`
 
-Run the three steps in order — each must complete before the next begins. Announce each step as it starts:
-- Before 10a: `[Wave 3 — Step 1/3] Running compaction.`
-- Before 10b: `[Wave 3 — Step 2/3] Running validation.`
-- Before 10c: `[Wave 3 — Step 3/3] Running dashboard.`
+Run the four steps in order — each must complete before the next begins. Announce each step as it starts:
+- Before 10a: `[Wave 3 — Step 1/4] Running compaction.`
+- Before 10b: `[Wave 3 — Step 2/4] Running gap-fill.`
+- Before 10c: `[Wave 3 — Step 3/4] Running validation.`
+- Before 10d: `[Wave 3 — Step 4/4] Running dashboard.`
 
 | Step | Agent file | Covers |
 |---|---|---|
 | 10a | `agents/final-review-compaction.md` | Route misrouted rows, deduplicate, sort, assign Finding IDs |
-| 10b | `agents/final-review-validation.md` | Fix-validation, confidence intervals check, placeholder scan, CE impact completeness |
-| 10c | `agents/final-review-dashboard.md` | Dashboard content, Key Findings summary in chat |
+| 10b | `agents/final-review-gap-fill.md` | Formula cascade check, coverage gap scan, Won't Fix verification |
+| 10c | `agents/final-review-validation.md` | Fix-validation, confidence intervals check, placeholder scan, CE impact completeness |
+| 10d | `agents/final-review-dashboard.md` | Dashboard content, Key Findings summary in chat |
 
 ---
 

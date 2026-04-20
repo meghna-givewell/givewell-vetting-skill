@@ -96,7 +96,7 @@ Rewrite both sheets sequentially from row 2, closing all gaps left by Wave 2's p
 
 Sort all Findings rows in memory using three sort keys:
 1. **Primary**: Severity (High → Medium → Low)
-2. **Secondary**: Estimated CE Impact (column I) — within each severity tier, apply this order: numeric magnitude findings first (rows where column I contains a specific estimate, e.g., "Raises CE — 2.5x" or "Lowers CE — 1.3x"), then magnitude-unknown findings ("Raises CE — magnitude unknown", "Lowers CE — magnitude unknown"), then "Direction unknown", then "No CE impact", then blank
+2. **Secondary**: Estimated CE Impact (column H) — within each severity tier, apply this order: numeric magnitude findings first (rows where column H contains a specific estimate, e.g., "Raises CE — 2.5x" or "Lowers CE — 1.3x"), then magnitude-unknown findings ("Raises CE — magnitude unknown", "Lowers CE — magnitude unknown"), then "Direction unknown", then "No CE impact", then blank
 3. **Tertiary**: Error Type/Issue (column E, alphabetical)
 
 Then rewrite the Findings sheet from row 2 with section dividers:
