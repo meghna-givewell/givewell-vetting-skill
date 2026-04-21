@@ -98,11 +98,12 @@ Record the baseline table at the top of the Vetting Summary doc:
 
 ### Step 0.5 — Program Context
 
-The two questions below are asked in the **same message** as "which sheets to vet?" (Input Handling step 2) — do not ask them separately. Reads and literature searches fire in parallel once the user responds.
+The three questions below are asked in the **same message** as "which sheets to vet?" (Input Handling step 2) — do not ask them separately. Reads and literature searches fire in parallel once the user responds.
 1. "Is there a grant description, one-pager, or write-up I should read first?"
 2. "Have you deliberately set any parameters differently from GiveWell defaults? If so, list them so I don't flag them as errors."
+3. "Is there a GiveWell intervention analysis, internal research note, or prior-version CEA for this health area that establishes key parameter values — for example, a team-authored efficacy estimate, a meta-analysis working document, or an updated effectiveness calculation? If so, please share it so I can cross-reference the model's inputs against it."
 
-Once the user answers, record any declared intentional deviations and the grant document link (if provided). This context is passed to every sub-agent. If the user provided a grant document link, it is fetched in the same parallel batch as the spreadsheet reads (Input Handling step 3).
+Once the user answers, record any declared intentional deviations and any document links provided. This context is passed to every sub-agent. If the user provided any documents (grant write-up, internal analysis, prior CEA), fetch all of them in the same parallel batch as the spreadsheet reads (Input Handling step 3). Pass each document's key parameter values to sub-agents in the program context summary under "Internal reference values: [parameter name] = [value] per [document name]." The plausibility and CE chain trace agents compare model inputs against these values and flag discrepancies ≥5% as Medium/H with Researcher judgment needed ✓.
 
 **Declared-deviation verification**: After the parallel read batch, verify each declared-intentional deviation before passing it to sub-agents. Read each referenced cell using `read_sheet_values` (FORMULA mode) and confirm: (a) the cell exists, (b) the formula or value matches what the researcher described, and (c) the deviation is plausibly intentional (a cell note explains the reason, or the researcher's description is specific and unambiguous). Remove any deviation that cannot be confirmed and flag it to the researcher: "The declared deviation for [cell] could not be confirmed — [cell] shows [actual value/formula]. I will include this cell in the standard vet unless you clarify." Pass only confirmed deviations to sub-agents.
 
