@@ -136,6 +136,14 @@ Identify the last populated row. Summarize at the **section level** (e.g., Costs
 
 *Simple CEA section structure* (Low/O if sections appear in the wrong order — read column A of Simple CEA to locate section headers): Inputs → Direct CE calculation → Adjustments → Final CE. A final CE row appearing before adjustments, or inputs appearing after calculations that depend on them, is a structural inversion. This check applies to all Simple CEA tabs regardless of whether they are in primary vet scope — do not lite-pass section ordering on Simple CEA.
 
+**Vet complexity estimate**: Before presenting Steps 1–2 output for confirmation, note which conditional skips will apply based on `get_spreadsheet_info` results and the Step 2 populated row count:
+- *Source-data-check skip*: no source-data tabs detected (names containing Coverage Data, WUENIC, DHS, IHME, GBD, MICS, EPI, SAE, WorldPop, Population, Mortality, Subnational Data)
+- *Formula-check-arithmetic 2-instance mode*: primary sheet ≤ 80 populated rows (skips C and D instances)
+- *Key-params-check 1-instance mode*: primary sheet ≤ 80 populated rows (skips B instance)
+- *Leverage-uov-check skip*: no Leverage/Funging tab detected
+
+Include in your Steps 1–2 summary one line: `Pipeline estimate: ~[N] agents. Reduced pipeline: [list applicable skips, or "none"].`
+
 **After Steps 1–2, present output and ask**: "Does this match your understanding? Are there any misinterpretations before I proceed to error-checking?" Do not begin Step 3 until the user confirms.
 
 ---
@@ -197,13 +205,18 @@ Agents run in three waves. Before spawning Wave 1, announce progress: `[Phase 1/
 
 ### Wave 1 — Formula check
 
-**Before spawning Wave 1 agents**, compute two values from the Step 2 structure review:
+**Before spawning Wave 1 agents**, compute the following from the Step 2 structure review and `get_spreadsheet_info` results:
 
 1. **`split_row`**: `ceil(populated_rows / 2)` for the primary vetted sheet. Formula-check A and B audit spreadsheet rows 1–`split_row`; C and D audit rows `split_row+1` through the last populated row. This halves the per-agent context load while keeping independent verification on each half. For workbooks with multiple vetted sheets, use the largest sheet's populated row count to compute `split_row`. Pass the row range in each agent's session context.
 
 2. **Source data tabs list**: From the `get_spreadsheet_info` results already in hand, collect all tab names whose names contain (case-insensitive): `Coverage Data`, `WUENIC`, `DHS`, `IHME`, `IGME`, `GBD`, `MICS`, `EPI`, `SAE`, `WorldPop`, `Population`, `Mortality`, `Subnational Data`. Exclude section-divider tabs (names containing `-->`) and calculated/output tabs. Pass this list and the in-scope geographies to the source-data-check agent.
 
-#### Spawn all 18 Wave 1 agents simultaneously
+3. **Conditional skips** — evaluate before spawning:
+   - **Source-data-check skip**: If the source data tabs list is empty, skip source-data-check A and B. Announce: `⏭️ source-data-check: skipped — no source data tabs found.` Their pre-allocated row ranges (322–381) remain reserved but unused.
+   - **Formula-check-arithmetic 2-instance mode**: If `populated_rows ≤ 80` on the primary vetted sheet, skip instances C and D. A and B each audit **all rows** (1 through `populated_rows`). Announce: `⏭️ formula-check-arithmetic: 2-instance mode (≤80 rows) — C and D skipped.` In session context for A and B, replace the sheet row scope with: "Audit all rows 1 through {populated_rows}. No row-splitting applies." Their Findings row allocations are unchanged (A: rows 2–41, B: rows 42–81); C and D ranges (92–171) remain reserved but empty.
+   - **Key-params-check 1-instance mode**: If `populated_rows ≤ 80`, skip key-params-check B. A runs only. Announce: `⏭️ key-params-check: 1-instance mode (≤80 rows) — B skipped.` Row range 552–571 remains reserved but unused.
+
+#### Spawn Wave 1 agents simultaneously (up to 18; fewer based on conditional skips above)
 
 Pre-allocate all row ranges before spawning:
 
@@ -271,7 +284,7 @@ Do **not** tell A instances that B instances are running. For **B instances only
 
 > **Reviewer framing — B instance**: You are a skeptical second reviewer. A separate first reviewer has independently audited this same spreadsheet. Your job is to find what a thorough but reasonable reviewer would have rationalized away. Specifically: (a) assume the first reviewer accepted well-labeled rows as correct without verifying the referenced cells — challenge that instinct by reading the referenced cells themselves, not just their labels; (b) give extra attention to checks requiring you to read multiple tabs together, since cross-tab checks are harder and more likely to be shortcut; (c) when a formula looks correct at first glance, ask "am I pattern-matching on the label rather than actually reading the formula?" — then read the formula; (d) for every section where you find no issues, write one specific reason the section is clean before moving on. Do not read the Findings sheet. Do not tell the researcher you are a B instance.
 
-Wait for all 18 to complete before proceeding.
+Wait for all spawned Wave 1 agents to complete before proceeding.
 
 **Consistency-check always runs — including for BOTECs**: Do not skip the consistency-check agent for simple BOTECs, single-sheet models, or workbooks with no declared deviations. Every model uses moral weights, and moral weight drift is one of the most common silent errors. Pass this note in the consistency-check session context: "For simple BOTECs and non-standard models that lack VOI content: skip the VOI structural completeness check and the cross-cutting CEA parameters check. Always run the moral weights numeric verification regardless of model type."
 
@@ -292,16 +305,22 @@ Also check the Confidentiality Flags sheet and Hardcoded Values sheet: if sensit
 ### Wave 2 — Parallel (doubled for independent verification)
 
 **Progress announcement** before spawning:
-- **Pub readiness included (non-TA)**: `[Phase 2/4] Wave 2 starting — 17 agents (sources A/B, heads-up A/B ×3, readability A/B, leverage A/B, CE chain A/B, leverage UoV A/B, notes-scan).`
-- **Pub readiness included (TA BOTEC)**: `[Phase 2/4] Wave 2 starting — 19 agents (sources A/B, heads-up A/B ×3, heads-up-epi C/D on counterfactual burden tab, readability A/B, leverage A/B, CE chain A/B, leverage UoV A/B, notes-scan).`
-- **Formula/heads-up only (non-TA)**: `[Phase 2/4] Wave 2 starting — 12 agents (heads-up A/B ×3, leverage A/B, CE chain A/B, leverage UoV A/B — pub readiness skipped; sensitivity scan and hardcoded values already ran in Wave 1).`
-- **Formula/heads-up only (TA BOTEC)**: `[Phase 2/4] Wave 2 starting — 14 agents (heads-up A/B ×3, heads-up-epi C/D on counterfactual burden tab, leverage A/B, CE chain A/B, leverage UoV A/B — pub readiness skipped; sensitivity scan and hardcoded values already ran in Wave 1).`
+- **Pub readiness included (non-TA)**: `[Phase 2/4] Wave 2 starting — up to 17 agents (sources A/B, heads-up A/B ×3, readability A/B, leverage A/B, CE chain A/B, leverage UoV A/B, notes-scan).`
+- **Pub readiness included (TA BOTEC)**: `[Phase 2/4] Wave 2 starting — up to 19 agents (sources A/B, heads-up A/B ×3, heads-up-epi C/D on counterfactual burden tab, readability A/B, leverage A/B, CE chain A/B, leverage UoV A/B, notes-scan).`
+- **Formula/heads-up only (non-TA)**: `[Phase 2/4] Wave 2 starting — up to 12 agents (heads-up A/B ×3, leverage A/B, CE chain A/B, leverage UoV A/B — pub readiness skipped; sensitivity scan and hardcoded values already ran in Wave 1).`
+- **Formula/heads-up only (TA BOTEC)**: `[Phase 2/4] Wave 2 starting — up to 14 agents (heads-up A/B ×3, heads-up-epi C/D on counterfactual burden tab, leverage A/B, CE chain A/B, leverage UoV A/B — pub readiness skipped; sensitivity scan and hardcoded values already ran in Wave 1).`
+
+Subtract 2 from the announced count if leverage-uov-check is being skipped (no Leverage/Funging tab). State any skips in the announcement, e.g.: `[Phase 2/4] Wave 2 starting — 10 agents (leverage-uov-check skipped — no leverage tab).`
 
 Spawn agents simultaneously after the researcher checkpoint. Each of the eight core analysis agents (sources, heads-up-evidence, heads-up-epi, heads-up-intervention, readability, leverage-funging, ce-chain-trace, leverage-uov-check) runs as two independent instances (A and B) with separate context windows and no knowledge of each other. notes-scan runs once, writing to Publication Readiness only. sensitivity-scan and hardcoded-values have moved to Wave 1 and do not run here.
+
+**Leverage-uov-check skip condition**: Before spawning, check the tab list from `get_spreadsheet_info` for a Leverage/Funging tab (names containing `Leverage`, `Funging`, or `L/F`). If no such tab exists, skip leverage-uov-check A and B. Announce: `⏭️ leverage-uov-check A and B: skipped — no Leverage/Funging tab found.` Their pre-allocated row ranges remain reserved but unused. leverage-funging A and B still run — they check leverage treatment in the Main CEA regardless of tab structure.
 
 **If formula/heads-up only scope was selected**: skip sources-A, sources-B, readability-A, readability-B, and `agents/notes-scan.md` entirely — spawn 12 agents instead of 17. Their pre-allocated row ranges remain reserved but unused. Notes are still *read* in the initial batch (step 3) and remain available to all formula-check and heads-up agents as formula context — only the pub-readiness audit of notes documentation (missing "Calculation." entries, source annotations, style) is skipped. Pass to all spawned agents: "Pub readiness out of scope; value-correctness verification (GBD vizhub URLs, study extractions) is in scope."
 
 **Before spawning**, read the Findings sheet and identify the last populated finding row (call it `last_row`; use `last_row = 1` if no findings yet). **Verify that `last_row ≤ 550`** — Wave 1 now uses up to row ~531 at full budget, so `last_row` up to 550 is expected. If `last_row > 550`, Wave 1 agents exceeded their budgets significantly; warn in chat and proceed. If `last_row > 600`, reduce each Wave 2 pair's budget from 40 rows to 25 rows and note this adjustment in chat. Calculate pre-allocated start rows:
+
+**Row allocation safety check**: After computing all Wave 2 start rows, calculate `wave2_max_row = last_row + 950` (worst-case TA BOTEC allocation). If `wave2_max_row > 1950`, write a blank value to `Findings!A{wave2_max_row + 50}` using `modify_sheet_values` to expand the grid before spawning any agents. This handles edge cases where Wave 1 overflow caused `last_row` to be much larger than expected.
 - sources-A: `last_row + 1`
 - sources-B: `last_row + 51`
 - heads-up-evidence-A: `last_row + 101`

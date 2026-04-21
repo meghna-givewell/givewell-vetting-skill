@@ -25,14 +25,18 @@ Create six tabs with these header rows (row 1) before spawning agents:
 
 **Confidentiality Flags** — columns A–D: `Cell/Row | Content Found | Sensitivity Type | Recommended Action`
 
+## Pre-Expand Grid
+
+Immediately after writing headers, before the formatting batch, write a single blank value to `Findings!A2000` and `'Publication Readiness'!A2000` using `modify_sheet_values`. This forces both sheets to allocate 2000 rows and prevents `modify_sheet_values` silent failures when agents write findings beyond the Google Sheets default 1000-row grid.
+
 ## Formatting Batch
 
 Fire all formatting in a single parallel batch immediately after writing headers:
 
-- `add_conditional_formatting`: Severity D3:D1000 on Findings — High → `#FFB3B3`, Medium → `#FFE5B3`, Low → `#B3D9B3`
-- `add_conditional_formatting`: Researcher judgment needed I3:I1000 on Findings — if value = `✓`, background → `#FFFF99`
-- `add_conditional_formatting`: Status J3:J1000 on Findings — `Fixed` → `#B3D9B3`, `Won't Fix` → `#E0E0E0`
-- `add_conditional_formatting`: Section dividers A2:J1000 on Findings — CUSTOM_FORMULA `=ISNUMBER(SEARCH("───",$B2))`, background `#D9D9D9`
+- `add_conditional_formatting`: Severity D3:D2000 on Findings — High → `#FFB3B3`, Medium → `#FFE5B3`, Low → `#B3D9B3`
+- `add_conditional_formatting`: Researcher judgment needed I3:I2000 on Findings — if value = `✓`, background → `#FFFF99`
+- `add_conditional_formatting`: Status J3:J2000 on Findings — `Fixed` → `#B3D9B3`, `Won't Fix` → `#E0E0E0`
+- `add_conditional_formatting`: Section dividers A2:J2000 on Findings — CUSTOM_FORMULA `=ISNUMBER(SEARCH("───",$B2))`, background `#D9D9D9`
 - `format_sheet_range`: header row 1 on Findings (A1:J1) — dark blue `#1F4E79`, white text, bold; freeze row 1 and columns A–C
 - `format_sheet_range`: header row 1 on Publication Readiness (A1:F1) — dark blue `#1F4E79`, white text, bold; freeze row 1 and columns A–C
 - `format_sheet_range`: header row 1 on Hardcoded Values (A1:G1) — dark blue `#1F4E79`, white text, bold
@@ -43,7 +47,7 @@ Fire all formatting in a single parallel batch immediately after writing headers
 - `format_sheet_range`: column widths on Findings — A=80, B=120, C=120, D=100, E=140, F=290, G=400, H=150, I=100, J=120
 - `format_sheet_range`: column widths on Publication Readiness — A=80, B=120, C=120, D=140, E=220, F=300
 - `format_sheet_range`: text wrap on columns F, G of Findings; text wrap on columns E, F of Publication Readiness
-- `format_sheet_range`: row height rows 2:1000 on Findings → 80px; same on Publication Readiness
+- `format_sheet_range`: row height rows 2:2000 on Findings → 80px; same on Publication Readiness
 - Data validation (skip gracefully if unsupported): Severity D on Findings → dropdown `High,Medium,Low`; Error Type/Issue E on Findings → dropdown `Formula Error,Parameter Issue,Adjustment Issue,Assumption Issue,Structural Issue,Inconsistency`; Status J on Findings → dropdown `Open,Fixed,Won't Fix,Needs Discussion`; Error Type/Issue D on Publication Readiness → dropdown `Missing Source,Broken Link,Permission Issue,Readability,Terminology`
 - Tab colors (skip gracefully if unsupported): Dashboard → `#595959`, CE Baseline → `#7F7F7F`, Findings → `#C00000`, Publication Readiness → `#E6B800`, Hardcoded Values → `#2F75B6`, Confidentiality Flags → `#7030A0`
 
@@ -59,10 +63,10 @@ Write immediately after the formatting batch using `modify_sheet_values` (USER_E
 - A7: `High` | B7: `=COUNTIF(Findings!D:D,"High")`
 - A8: `Medium` | B8: `=COUNTIF(Findings!D:D,"Medium")`
 - A9: `Low` | B9: `=COUNTIF(Findings!D:D,"Low")`
-- A10: `Total findings` | B10: `=COUNTA(Findings!D2:D1000)`
+- A10: `Total findings` | B10: `=COUNTA(Findings!D2:D2000)`
 - A11: `Issues impacting bottom-line CE` | B11: `=COUNTIF(Findings!H:H,"Raises CE*")+COUNTIF(Findings!H:H,"Lowers CE*")+COUNTIF(Findings!H:H,"Direction unknown")` *(column H = Estimated CE Impact; excludes "No CE impact" and blank)*
 - A13: `PUBLICATION READINESS`
-- A14: `Total items` | B14: `=COUNTA('Publication Readiness'!B2:B1000)`
+- A14: `Total items` | B14: `=COUNTA('Publication Readiness'!B2:B2000)`
 - A15: `Missing Source` | B15: `=COUNTIF('Publication Readiness'!D:D,"Missing Source")`
 - A16: `Readability` | B16: `=COUNTIF('Publication Readiness'!D:D,"Readability")+COUNTIF('Publication Readiness'!D:D,"Template Language")`
 - A17: `Internal Reference` | B17: `=COUNTIF('Publication Readiness'!D:D,"Internal Reference")`
