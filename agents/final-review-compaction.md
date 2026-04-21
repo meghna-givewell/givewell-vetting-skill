@@ -82,7 +82,15 @@ Scan all rows across both sheets for duplicates — rows where Cell/Row (column 
 
 When duplicates are found: keep the finding with the more complete Explanation and Recommended Fix; merge any unique detail from the other row into the surviving row's Explanation field; mark the surviving row with "Merged with duplicate finding from parallel agent." Do not merge near-duplicates that are complementary — a broken link and a stale value at the same cell are distinct issues and should both be kept.
 
-Coverage declaration: "Deduplication complete. [N] duplicates merged. No other duplicates found."
+**Root-cause / symptom consolidation** — after the standard duplicate pass, apply a second pass:
+
+1. **Symptom absorbed by root cause**: If an `Inconsistency` finding and a `Structural Issue` or `Formula Error` finding both exist, AND the structural/formula finding's explanation identifies the formula-level cause of the discrepancy the `Inconsistency` finding describes, AND they reference overlapping or closely related cells: keep only the root-cause finding. Merge any output-level detail from the `Inconsistency` finding (e.g., "this causes X and Y to diverge by [amount]") into the root-cause finding's explanation if it adds specificity. Drop the `Inconsistency` finding. Rationale: fixing the root cause automatically resolves the symptom — a separate symptom finding adds no action item.
+
+2. **Same-parameter multi-cell consolidation**: If two or more `Parameter Issue` findings reference **different** cells but describe the same parameter (matching parameter name in the explanation AND the same recommended replacement value), consolidate them into a single finding: list all affected cells comma-separated in column C, write a unified explanation noting each cell and its current value, and write a single recommended fix that covers all cells. Apply the higher severity if they differ. Drop all but the consolidated finding.
+
+After this pass, write: "Semantic consolidation complete. [N] root-cause/symptom pairs consolidated. [M] same-parameter multi-cell groups consolidated."
+
+Coverage declaration: "Deduplication complete. [N] exact duplicates merged. [See semantic consolidation above.] No other duplicates found."
 
 ---
 
