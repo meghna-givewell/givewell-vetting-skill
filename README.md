@@ -16,13 +16,20 @@ git clone https://github.com/meghna-givewell/givewell-vetting-skill.git ~/.claud
 
 ## Permissions
 
-Add the following to the `permissions.allow` array in your project's `.claude/settings.local.json` (or `~/.claude/settings.json` for global) to avoid per-call permission prompts:
+Copy `.claude/settings.json` from this repository into your project's `.claude/` directory to pre-approve all required MCP tool calls and avoid per-call permission prompts during a vet:
 
-```json
-"Agent",
-"WebSearch",
-"WebFetch",
-"mcp__hardened-workspace__*"
+```bash
+cp ~/.claude/skills/vetting/.claude/settings.json <your-project>/.claude/settings.json
+```
+
+If your project already has a `.claude/settings.json`, merge the `allow` array entries from the skill's file into yours.
+
+## Keeping the skill up to date
+
+The agent prompts are updated after each completed vet based on post-vet analysis. Pull the latest version before running a vet to ensure you have current judgment-call calibrations and agent logic:
+
+```bash
+git -C ~/.claude/skills/vetting pull --rebase origin main
 ```
 
 ## Invoke

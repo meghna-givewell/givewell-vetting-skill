@@ -86,6 +86,8 @@ Parameters and their program-type applicability:
 
 Before filing, check whether the mismatch is covered by a declared-intentional deviation in session context. If it is, skip it — do not file.
 
+**Never downgrade on timing grounds**: Do not treat a stale benchmark or moral weight as a false positive because the pre-vet spreadsheet was built before the parameter update. key-parameters.md is authoritative for current correct values — the researcher's obligation is to use current values at publication time. Do not write "this may have been correct when the spreadsheet was built."
+
 **Severity**:
 - **High/Parameter Issue**: Benchmark, neonatal moral weight, under-5 moral weight, over-5 moral weight — specific authoritative values with documented update dates; a wrong value is a confirmed error
 - **Medium/Parameter Issue with Researcher judgment needed ✓**: income effects, long-term income ratio, years to benefits, VAS moral weight, maternal death moral weight, discount rate — more context-dependence; flag for researcher confirmation
