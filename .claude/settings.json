@@ -1,7 +1,20 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(*)"
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__hardened-workspace__read_sheet_values",
+      "mcp__hardened-workspace__read_sheet_notes",
+      "mcp__hardened-workspace__read_sheet_hyperlinks",
+      "mcp__hardened-workspace__get_spreadsheet_info",
+      "mcp__hardened-workspace__read_spreadsheet_comments",
+      "mcp__hardened-workspace__get_doc_content",
+      "mcp__hardened-workspace__start_google_auth",
+      "mcp__hardened-workspace__inspect_doc_structure",
+      "mcp__hardened-workspace__modify_sheet_values",
+      "mcp__hardened-workspace__add_conditional_formatting",
+      "mcp__hardened-workspace__format_sheet_range",
+      "mcp__hardened-workspace__create_spreadsheet"
     ]
   }
 }
