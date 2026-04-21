@@ -175,6 +175,25 @@ Based on the program context and grant document (if provided):
 
 ---
 
+## Step 5b — TA denominator consistency check (TA BOTECs only)
+
+Skip this step entirely if the program is not a TA BOTEC. Apply when program context or tab names indicate a TA grant.
+
+A TA BOTEC commonly defines two different cost figures:
+- **Grant amount**: funding requested for this grant period only (e.g., $4.9M for 1.5 years)
+- **Total cost of TA engagement**: full cost through TA exit across all grant periods (e.g., $11.4M)
+
+Both are defensible denominators. Using total engagement cost amortizes benefits across the full TA investment; using grant amount evaluates only this grant's marginal cost. Either is acceptable if used consistently and documented. The error pattern is **inconsistency between tabs**: the Main CEA uses one cost base while the Simple CEA uses another, making their CE multiples non-comparable without the reader knowing why they differ.
+
+1. Read the cost row formula (FORMULA mode) in the Main CEA tab. Identify the label of the cell it references — is it "grant amount," "total cost of engagement," or a hardcoded value?
+2. Read the cost row formula in the Simple CEA tab. Identify the same.
+3. If they reference different cost bases, file as **Medium/H Inconsistency** with Researcher judgment needed ✓: "[Main CEA cost row ref] references [label A = $X] while [Simple CEA cost row ref] uses [label B = $Y]. The two tabs use different cost denominators — CE multiples are not directly comparable. Confirm which cost base is intended for each tab and add a cell note documenting the choice."
+4. If both use the same cost base but no cell note explains the choice (total engagement vs. grant amount), file as **Low/H** with Researcher judgment needed ✓: "CE denominator uses [total cost of TA engagement / grant amount] — add a cell note explaining this choice and noting the alternative cost base so readers understand what CE the number represents."
+
+Coverage declaration: "TA denominator check complete. Main CEA cost: [ref] = [label]. Simple CEA cost: [ref] = [label]. Consistency: [match/mismatch]. Documentation: [present/absent]."
+
+---
+
 ## Writing findings
 
 Before writing any finding, confirm: (1) exact cell reference(s) for both the error and the correct source, (2) specific issue (which formula references the wrong cell, which units mismatch, which step is missing), (3) precise fix (e.g., "Change C47 formula from `=0.87*D23` to `=CoverageAssumptions!B12*D23`").
