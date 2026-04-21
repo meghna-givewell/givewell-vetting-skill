@@ -177,7 +177,7 @@ Based on the program context and grant document (if provided):
 
 ## Step 5b — TA denominator consistency check (TA BOTECs only)
 
-Skip this step entirely if the program is not a TA BOTEC. Apply when program context or tab names indicate a TA grant.
+**TA detection — apply this step if ANY of the following are true**: (a) session context identifies this as a TA grant, (b) any tab name contains "Counterfactual Burden," "CF Burden," "Counterfactual Prevalence," "Burden Projection," "TA Cost," or "TA Exit," or (c) any row label in the Main CEA tab contains "TA exit," "exit year," or "technical assistance." Do not rely solely on the researcher's Step 0.5 classification — these structural signals are authoritative. If none of the above apply, skip this step.
 
 A TA BOTEC commonly defines two different cost figures:
 - **Grant amount**: funding requested for this grant period only (e.g., $4.9M for 1.5 years)

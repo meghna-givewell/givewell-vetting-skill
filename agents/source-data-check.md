@@ -66,13 +66,25 @@ Do not flag differences that are plausibly real country-specific variation. Flag
 
 If the source tab includes multiple years for the same geography (common in IHME, WUENIC, GBD), compare the most recent in-scope row against the value 2–3 years prior for the same vaccine/indicator. A change of >30 percentage points in a single year without a changelog note or methodology flag is anomalous. Changes of 10–30pp are noteworthy but may be real (e.g., a coverage campaign); flag as Low/H if there is no cell note explaining the jump.
 
+### Check D — Sub-national aggregation consistency
+
+If a source tab contains both sub-national rows (states, provinces, districts) and a national or regional summary row for the same geography and year, verify the summary row value is consistent with the sub-national rows.
+
+1. Identify whether the summary row is a sum or a population-weighted average from its column header or a nearby note.
+2. Read all sub-national rows and the summary row (FORMATTED_VALUE mode).
+3. Compute the expected aggregate from the sub-national values and compare to the summary row.
+
+Flag as **High/D** if the discrepancy exceeds 2%: "National total [cell] = [X] but sum of sub-national rows [list] = [Y] — transposition or missing sub-region suspected." Flag as **Medium/H** with Researcher judgment needed ✓ if 1–2%: the discrepancy may reflect a legitimate scope difference (e.g., summary excludes a disputed territory) that should be documented.
+
+Skip this check if the tab contains sub-national rows only (no summary row) or if the summary row is labeled as a subset (e.g., "Northern states only").
+
 ---
 
 ## Coverage declaration
 
-After completing all three checks on all in-scope rows across all source tabs, write in your reasoning:
+After completing all four checks on all in-scope rows across all source tabs, write in your reasoning:
 
-> Source data check complete. Tabs checked: [list]. In-scope geographies located: [list]. Tabs where geographies not found in first 5,000 rows: [list or "none"]. Check A (co-vaccine ordering) issues: [list of cells or "none"]. Check B (adjacent transposition) issues: [list or "none"]. Check C (year-over-year >30pp) issues: [list or "none"].
+> Source data check complete. Tabs checked: [list]. In-scope geographies located: [list]. Tabs where geographies not found in first 5,000 rows: [list or "none"]. Check A (co-vaccine ordering) issues: [list of cells or "none"]. Check B (adjacent transposition) issues: [list or "none"]. Check C (year-over-year >30pp) issues: [list or "none"]. Check D (sub-national aggregation) issues: [list of cells or "none"].
 
 Do not proceed to Writing Findings until this declaration is complete.
 
