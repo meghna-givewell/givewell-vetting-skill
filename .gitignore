@@ -4,7 +4,8 @@ output/
 reference_docs/
 
 # Personal Claude settings — do not commit
-.claude/
+.claude/*
+!.claude/settings.json
 
 # System files
 .DS_Store
