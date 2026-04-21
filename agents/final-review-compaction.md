@@ -10,7 +10,7 @@ You are performing Step 10a of a GiveWell spreadsheet vet. This is the first of 
 
 Before reading or modifying anything, write the following in your reasoning:
 
-> Pre-compaction state: No rows have been read or modified yet. Will read Findings sheet in 5 batches (A2:J200, A201:J400, A401:J600, A601:J800, A801:J1000) and Publication Readiness in 3 batches (A2:F200, A201:F400, A401:F600). If compaction fails partway through, this declaration establishes the pre-compaction state.
+> Pre-compaction state: No rows have been read or modified yet. Will read Findings sheet in 50-row batches (A2:J51, A52:J101, A102:J151, … continuing until two consecutive empty batches) and Publication Readiness in 50-row batches (A2:F51, A52:F101, … continuing until two consecutive empty batches). If compaction fails partway through, this declaration establishes the pre-compaction state.
 
 This declaration serves as a checkpoint. If the rewrite step fails mid-execution (e.g., an MCP error after partial writes), it confirms that the original data had not yet been overwritten as of Step 0.
 
@@ -30,20 +30,15 @@ This declaration serves as a checkpoint. If the rewrite step fails mid-execution
 
 Completion marker rows are written by Wave 2 agents as their final action to signal a clean run. They are metadata, not findings. Do not route, deduplicate, sort, or assign IDs to them — discard them entirely after noting their presence in your coverage declaration.
 
-Read the Findings sheet in **exactly five mandatory batches** — all five, regardless of whether any batch appears empty:
-1. `A2:J200`
-2. `A201:J400`
-3. `A401:J600`
-4. `A601:J800`
-5. `A801:J1000`
+Read the Findings sheet in **50-row batches**: `A2:J51`, `A52:J101`, `A102:J151`, and so on in 50-row increments. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Continue until two consecutive batches return no non-empty rows.
 
-**Do not stop early.** Buffer zones between pre-allocated agent ranges produce empty batches in the middle of the sheet — an empty batch does NOT mean the sheet is fully read, because data may resume in a later batch. Read all five batches before drawing any conclusions.
+**Do not stop after one empty batch.** Buffer zones between pre-allocated agent ranges produce empty batches in the middle of the sheet — data may resume after a gap. Stop only after two consecutive empty batches.
 
-After each batch completes, write the line: `"Batch [N] (rows [start]–[end]): [X] non-empty rows found."` Do this before reading the next batch. If you proceed to processing without completing all five reads and all five per-batch declarations, you will silently miss findings — and GiveWell may act on an incomplete vet.
+After each batch completes, write the line: `"Batch [N] (rows [start]–[end]): [X] non-empty rows found."` Do this before reading the next batch. If you proceed to processing without reading until two consecutive empty batches, you will silently miss findings — and GiveWell may act on an incomplete vet.
 
-Read the Publication Readiness sheet in three mandatory batches: `A2:F200`, then `A201:F400`, then `A401:F600`. All three are required regardless of empty batches.
+Read the Publication Readiness sheet the same way: `A2:F51`, `A52:F101`, `A102:F151`, continuing in 50-row increments until two consecutive batches return no non-empty rows.
 
-Coverage declaration: "Read complete. Findings: [N1] rows in batch 1, [N2] in batch 2, [N3] in batch 3, [N4] in batch 4, [N5] in batch 5. Total non-empty Findings rows: [N] ([X] divider rows, [Y] AGENT_COMPLETE markers, [Z] finding rows). Completion markers present for: [list agent names or 'none found']. Publication Readiness: [M] total non-empty rows."
+Coverage declaration: "Read complete. Findings: [N] batches read, total non-empty rows: [N] ([X] divider rows, [Y] AGENT_COMPLETE markers, [Z] finding rows). Completion markers present for: [list agent names or 'none found']. Publication Readiness: [M] batches read, [M] total non-empty rows."
 
 ---
 

@@ -12,9 +12,9 @@ You are performing Step 10d of a GiveWell spreadsheet vet. This is the last of f
 
 ## Step 1 — Read findings for summary
 
-Read all non-divider rows from the Findings sheet (batched: A2:L200, A201:L400, continuing until empty). Collect: all High findings (for Key Findings summary), all findings with `✓` in column K (Researcher judgment needed), and the count of High/Medium/Low findings.
+Read all non-divider rows from the Findings sheet (batched: `A2:L51`, `A52:L101`, `A102:L151`, continuing in 50-row increments until two consecutive batches return no non-empty rows). **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Collect: all High findings (for Key Findings summary), all findings with `✓` in column K (Researcher judgment needed), and the count of High/Medium/Low findings.
 
-Read all rows from Publication Readiness (batched: A2:H200, continuing until empty). Collect the total count.
+Read all rows from Publication Readiness (batched: `A2:H51`, `A52:H101`, continuing in 50-row increments until two consecutive batches return no non-empty rows). Collect the total count.
 
 ---
 

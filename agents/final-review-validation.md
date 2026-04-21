@@ -20,7 +20,7 @@ You are performing Step 10c of a GiveWell spreadsheet vet. This step runs after 
 
 ## Step 1 — Read all findings
 
-Read all rows from row 2 onward on the Findings sheet using batched `read_sheet_values` calls: A2:L200, then A201:L400, continuing until a batch returns no non-empty rows. Skip divider rows (column D empty, column B contains `───`). Collect all finding rows.
+Read all rows from row 2 onward on the Findings sheet using batched `read_sheet_values` calls: `A2:L51`, then `A52:L101`, `A102:L151`, continuing in 50-row increments until two consecutive batches return no non-empty rows. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Skip divider rows (column D empty, column B contains `───`). Collect all finding rows.
 
 ---
 

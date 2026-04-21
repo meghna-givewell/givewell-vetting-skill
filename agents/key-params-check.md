@@ -34,7 +34,7 @@ These are the authoritative current values. They must match `reference/key-param
 
 ## Step 1 — Read columns A and B of all vetted sheets
 
-For each vetted sheet, call `read_sheet_values` (FORMATTED_VALUE) on columns A and B (range `A1:B300`, or until empty). Collect all row labels with their row numbers — check both columns, since many models place row labels in column B with row numbers or blank cells in column A.
+For each vetted sheet, read columns A and B in 50-row batches: `A1:B50`, `A51:B100`, `A101:B150`, continuing in 50-row increments until two consecutive batches return no non-empty rows. Use FORMATTED_VALUE mode. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Collect all row labels with their row numbers — check both columns, since many models place row labels in column B with row numbers or blank cells in column A.
 
 ---
 

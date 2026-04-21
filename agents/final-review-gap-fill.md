@@ -20,7 +20,7 @@ You are performing Step 10b of a GiveWell spreadsheet vet. This step runs after 
 
 ## Step 1 — Read all confirmed findings
 
-Read the Findings sheet in full using batched `read_sheet_values` calls: `A2:J200`, then `A201:J400`, continuing until a batch returns no non-empty rows. Skip divider rows (column D empty, column B contains `───`). Collect all finding rows with Finding IDs assigned.
+Read the Findings sheet in full using batched `read_sheet_values` calls: `A2:J51`, then `A52:J101`, `A102:J151`, continuing in 50-row increments until two consecutive batches return no non-empty rows. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Skip divider rows (column D empty, column B contains `───`). Collect all finding rows with Finding IDs assigned.
 
 Build a working list of:
 - **All High findings** with `Formula Error` in column E — these are the cascade candidates.

@@ -29,7 +29,7 @@ For each source tab:
 
 1. Read the header row (row 1) using `read_sheet_values` to understand column structure. Identify: (a) which column holds the geographic identifier (country, region, state name or ISO code — typically column A, B, or C), and (b) which columns hold data values.
 
-2. Scan the geographic identifier column in batches of 500 rows to locate rows matching in-scope geographies. Read column A only for the scan (`A1:A500`, then `A501:A1000`, etc.) — do not read full rows until you have located the target geography. Stop scanning after 5,000 rows if the geography is not found; note it and move to the next tab.
+2. Scan the geographic identifier column in batches of 50 rows to locate rows matching in-scope geographies. Read column A only for the scan (`A1:A50`, then `A51:A100`, `A101:A150`, etc.) — do not read full rows until you have located the target geography. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Stop scanning after 5,000 rows if the geography is not found; note it and move to the next tab.
 
 3. Once the target geography row(s) are located, read the full row including all data columns using a targeted `read_sheet_values` call.
 
