@@ -16,6 +16,17 @@ Load CEA Consistency Guidance (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) v
 
 **Coverage mandate — no shortcuts**: Every check in this file applies exhaustively to all relevant rows, all columns, and all cell notes — no sampling, no "key cells only." When a check is triggered by intervention type (e.g., "when an SMC model..."), that condition governs whether to run the check, not how thoroughly to run it once triggered. For each triggered check: read every formula in the relevant rows in FORMULA mode, read every referenced cell's label, and check every column in multi-geography workbooks. **Finding the first instance of an issue type does not conclude that check** — continue checking all remaining rows and columns before writing findings. After completing each triggered check, write two coverage declarations before moving on: (1) "Checked [rows X–Y / all N columns]. Found issues at: [list]. No other issues of this type." (2) "Read notes for rows X–Y: [N] notes found, issues at [list or 'none']." An agent that stopped early cannot produce these declarations accurately — that is the point. Do not proceed to the next check until you can write both.
 
+---
+
+## Instance scope
+
+This agent runs as two complementary instances covering distinct check sets. Check your instance scope in session context before starting:
+
+- **heads-up-intervention-A**: Run Step 0, the universal checks (bidirectional magnitude check, benefit completeness), and all **Section A — Intervention-Specific Checks** (VAS through New Incentives). Skip Section B (TA grant checks) entirely — heads-up-intervention-B covers those.
+- **heads-up-intervention-B**: Run Step 0 only to determine if this is a TA grant. If this is NOT a TA grant: write your AGENT_COMPLETE marker immediately and stop — no TA checks apply. If this IS a TA grant: run all checks under **Section B — TA Grant Checks**.
+
+---
+
 ## Step 0 — Identify intervention type
 
 Before running any intervention-specific checks, determine which intervention(s) this model covers. This step gates which named checks below apply.
@@ -36,6 +47,8 @@ Before running any intervention-specific checks, determine which intervention(s)
 ---
 
 ## Intervention-Specific Plausibility Calibration
+
+### Section A — Intervention-Specific Checks *(heads-up-intervention-A only)*
 
 **Bidirectional magnitude check — applies to all checks below**: For every adjustment or parameter labeled "Guess," "estimate," or "assumption" with no external source, check the magnitude in *both directions* — not only whether it is implausibly high (too optimistic) but also whether it is implausibly low (too conservative). A conservative-looking value is not automatically correct: an understated downward adjustment means CE is overstated, but an overstated downward adjustment means CE is understated and the program may appear less cost-effective than it is. Both directions affect funding allocation.
 
@@ -87,6 +100,12 @@ Run the checks in this section only when the intervention type matches. These ar
 - Self-report bias: −28% vs. BCG scar rate in RCT; ~+1% in scale-up settings
 - Program exit / withdrawal effect (~−10% to −30% in new operating states): incentive withdrawal reduces vaccination rates 1–3 pp
 - Fraud adjustment (~−12%: −10% double-enrollment + −2% other errors)
+
+---
+
+### Section B — TA Grant Checks *(heads-up-intervention-B only)*
+
+> **Non-TA fast exit**: If Step 0 identified this as a non-TA intervention, write your AGENT_COMPLETE marker now and stop. Do not run the checks below.
 
 **TA grants — model type and structural consistency**: TA grant BOTECs follow one of three model types; identify which and verify the model structure matches:
 - **Model 1** (accelerating introduction of a new technology — e.g. malaria vaccines, dual tests): coverage today = 0%; both "speed-up of introduction" and "speed-up of steady state" parameters should be present and non-zero.
