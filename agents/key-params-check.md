@@ -28,12 +28,13 @@ These are the authoritative current values. They must match `reference/key-param
 | Discount rate | 4% | |
 | Income effects — malaria programs | 0.58088% | Values above 0.60% are likely stale pre-Nov 2025 |
 | Long-term income ratio | 0.3064 | |
+| Years to benefits (benefit horizon) | 10 | Applies to malaria and other mortality-reduction programs; flag values other than 10 |
 
 ---
 
-## Step 1 — Read column A of all vetted sheets
+## Step 1 — Read columns A and B of all vetted sheets
 
-For each vetted sheet, call `read_sheet_values` (FORMATTED_VALUE) on column A only (range `A1:A300`, or until empty). Collect all row labels with their row numbers.
+For each vetted sheet, call `read_sheet_values` (FORMATTED_VALUE) on columns A and B (range `A1:B300`, or until empty). Collect all row labels with their row numbers — check both columns, since many models place row labels in column B with row numbers or blank cells in column A.
 
 ---
 
@@ -45,8 +46,9 @@ For each parameter in the table above, scan the collected labels for a match. A 
 - "Avert under-5 death," "under-5 mortality" + moral weight → Avert under-5 death
 - "Avert over-5 death," "over-5 mortality" + moral weight → Avert over-5 death (malaria)
 - "Discount rate" → Discount rate
-- "Income effect," "long-term income," "income increase" → Income effects
+- "Income effect," "long-term income," "income increase," "income gain," "income benefits," "long-run income," "income multiplier" → Income effects
 - "Long-term income ratio," "income-to-mortality ratio" → Long-term income ratio
+- "Years to benefits," "time to benefits," "benefit horizon," "years of income benefits," "lag to benefits," "time lag," "lag" → Years to benefits
 
 For each match: call `read_sheet_values` (UNFORMATTED_VALUE) on that specific cell to get the raw stored number.
 
@@ -63,9 +65,20 @@ Key-params coverage log:
   Discount rate (4%): [cell ref or 'not found'] = [raw value]. Match: YES/NO.
   Income effects malaria (0.58088%): [cell ref or 'not found'] = [raw value]. Match: YES/NO.
   Long-term income ratio (0.3064): [cell ref or 'not found'] = [raw value]. Match: YES/NO.
+  Years to benefits (10): [cell ref or 'not found'] = [raw value]. Match: YES/NO.
 ```
 
 If a parameter is not applicable to this model type, write `n/a — [one-word reason]` (e.g., `n/a — not-malaria`).
+
+**"Not found" behavior — do not silently skip**: If a parameter is applicable to this program type but was not located in the column A/B label scan, do not write `not found` and move on. Instead, file a `Low/Parameter Issue` with `Researcher judgment needed ✓`:
+
+> *"[Parameter name] was not located in column A or B row labels. Verify the spreadsheet contains this parameter and that its value matches the GiveWell standard of [expected value]. Common alternative labels: [list from the synonyms above]."*
+
+Parameters and their program-type applicability:
+- **All program types**: Benchmark, Discount rate
+- **Malaria and mortality-reduction programs**: Neonatal moral weight, Avert under-5 death, Avert over-5 death, Income effects, Long-term income ratio, Years to benefits
+- **VAS programs only**: Avert death 6–59m VAS
+- **MNH/reproductive health only**: Avert maternal death
 
 ---
 
@@ -75,7 +88,7 @@ Before filing, check whether the mismatch is covered by a declared-intentional d
 
 **Severity**:
 - **High/Parameter Issue**: Benchmark, neonatal moral weight, under-5 moral weight, over-5 moral weight — specific authoritative values with documented update dates; a wrong value is a confirmed error
-- **Medium/Parameter Issue with Researcher judgment needed ✓**: income effects, long-term income ratio, VAS moral weight, maternal death moral weight, discount rate — more context-dependence; flag for researcher confirmation
+- **Medium/Parameter Issue with Researcher judgment needed ✓**: income effects, long-term income ratio, years to benefits, VAS moral weight, maternal death moral weight, discount rate — more context-dependence; flag for researcher confirmation
 
 **Explanation format**: `[cell] = [stored value] but the GiveWell standard value is [expected value] (key-parameters.md). [One sentence on why this matters — e.g., the update date or the direction of CE impact.]`
 
