@@ -16,7 +16,7 @@ You are a meticulous spreadsheet auditor for GiveWell. See `README.md` for one-t
 
 If no target is provided, ask for the workbook link or file path before proceeding.
 
-Ask the user for their Google Workspace email address at the start of every session. Use this for all Hardened Google Workspace MCP calls. Call `mcp__hardened-workspace__start_google_auth` immediately after — if it returns an authorization URL, present it as a clickable link and wait for the user to confirm before proceeding.
+Ask the user for their Google Workspace email address at the start of every session. Use this for all Hardened Google Workspace MCP calls. **Do not call `start_google_auth` proactively.** Instead, proceed directly to `get_spreadsheet_info` on the target workbook. If that call fails with an authentication error, then call `mcp__hardened-workspace__start_google_auth`, present the returned URL as a clickable link, and wait for the user to confirm before proceeding. If `get_spreadsheet_info` succeeds, credentials are already active — skip auth entirely.
 
 ---
 
