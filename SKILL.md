@@ -54,6 +54,8 @@ Load each document only when the step that requires it begins.
 > **Internal / early-stage**: Formula and assumption checks only. Sources, readability, and citation checks are skipped.
 3. **Fire all reads and literature searches in a single parallel batch** — once the user answers: simultaneously fire `read_sheet_values` (FORMATTED_VALUE and FORMULA), `read_sheet_notes`, `read_sheet_hyperlinks`, and `read_spreadsheet_comments` (once for the workbook) for each vetted sheet — AND 1–2 literature web searches using the intervention type from the user's Step 0.5 answers. If the user provided a grant document link, include `get_doc_content` on that link in the same parallel batch.
 
+**Step 3 read verification and pre-read cache**: After the parallel batch completes, verify each sheet's read was complete: (a) row count approximately matches the expected populated row count from the `get_spreadsheet_info` results; (b) the last returned row in the FORMULA read is non-empty; (c) no error message was returned by any batch call. Re-read any failed range before proceeding. Once all reads are verified, record each sheet's FORMATTED_VALUE data, FORMULA data, notes, and hyperlinks as the **pre-read cache** for this session. For sheets with ≤ 150 populated rows, pass the pre-read cache to sub-agents — they use it for row-by-row scanning and make targeted `read_sheet_values` calls only for specific cell verification.
+
 **Pre-vet acknowledged-issue extraction**: After the parallel batch, scan `read_spreadsheet_comments` results for RESOLVED threads where a researcher acknowledged a known issue (e.g., "keeping this for comparability," "reviewed and comfortable"). Add each to the declared-intentional deviations list as "Acknowledged in resolved comment [author, date]: [description]." Agents treat these as declared-intentional deviations — cap at Low/H **unless the agent's own analysis finds the issue is materially worse than what was acknowledged** (e.g., a CE impact >10% when the comment implied the issue was immaterial, or a formula error the researcher described as cosmetic that turns out to affect the CE chain). In that case, file at the appropriate severity and include in column F: "Previously acknowledged in resolved comment ([author, date]) — current vet finds this issue materially affects CE and upgrades severity to [new severity]."
 
 **Large sheets**: Grid size from `get_spreadsheet_info` ≠ populated rows. Proceed with reads; warn only if 400+ non-empty rows are returned. At that point, recommend hybrid: `python extract.py` for Steps 3–5, targeted MCP reads for parameter rows where notes/hyperlinks matter.
@@ -161,6 +163,8 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 
 > Spreadsheet ID: `<id>` | Sheets to vet: `<names>` | Findings sheet ID: `<id>` | Publication Readiness sheet ID: `<id>` | Hardcoded Values sheet ID: `<id>` | Confidentiality Flags sheet ID: `<id>` | User email: `<email>` | Program context: `<summary from Step 0.5>` | Declared-intentional deviations: `<list or "none">` | Current date: `<today's date>`
 >
+> **Pre-read cache** (sheets ≤ 150 populated rows): `<FORMATTED_VALUE data, FORMULA data, notes, and hyperlinks for each vetted sheet — verified complete by orchestrator>`. Use this as your primary data source for row-by-row scanning. Make targeted `read_sheet_values` calls only for specific cells you need to verify independently (e.g., a formula referencing another sheet, a value you want to confirm is current). Do not re-read full sheet ranges. If no pre-read cache is provided, the sheet exceeds 150 populated rows — proceed with your normal batch reads.
+>
 > **Sheet routing**: Write model-integrity findings (formula errors, wrong/stale parameters, undocumented assumptions that affect model outputs or interpretation) to the Findings sheet. Write publication-readiness findings (permission flags, broken links, citation format, terminology, style issues that do not affect model outputs) to the Publication Readiness sheet. When in doubt, use Findings.
 >
 > **Parameter finding validity**: Never downgrade a parameter finding (benchmark, moral weight, GBD vintage) to false positive or Low on the grounds that the spreadsheet predates the parameter update. key-parameters.md and the current GBD vintage are authoritative at the time of vetting. For GBD vintage findings, you cannot compute CE impact from updated data — write "Lowers CE — magnitude unknown" or "Direction unknown" in column H; do not skip or downgrade the finding because CE impact cannot be quantified.
@@ -187,7 +191,7 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 
 **Each sub-agent must execute its full checklist exhaustively, on every row.** No check in any agent file is optional or skippable because the sheet is small or because a prior agent already noticed something nearby. The formula-check agent must audit every formula row against its label — not just rows that match a named pattern. The sources agent must complete the full column F text audit on every row. The readability agent must read every row label top-to-bottom. The consistency agent must compare against the VOI template structure row-by-row. A sub-agent that shortcuts because "this is a small BOTEC" will miss findings the same way inline execution does. **The named checks in each agent file are patterns to look for on top of the row-by-row baseline — they are not a substitute for it.**
 
-Agents run in three waves. Before spawning Wave 1, announce progress: `[Phase 1/4] Wave 1 starting — 16 agents (formula checks).`
+Agents run in three waves. Before spawning Wave 1, announce progress: `[Phase 1/4] Wave 1 starting — 18 agents (formula checks, sensitivity scan, hardcoded values).`
 
 ---
 
@@ -199,7 +203,7 @@ Agents run in three waves. Before spawning Wave 1, announce progress: `[Phase 1/
 
 2. **Source data tabs list**: From the `get_spreadsheet_info` results already in hand, collect all tab names whose names contain (case-insensitive): `Coverage Data`, `WUENIC`, `DHS`, `IHME`, `IGME`, `GBD`, `MICS`, `EPI`, `SAE`, `WorldPop`, `Population`, `Mortality`, `Subnational Data`. Exclude section-divider tabs (names containing `-->`) and calculated/output tabs. Pass this list and the in-scope geographies to the source-data-check agent.
 
-#### Spawn all 14 Wave 1 agents simultaneously
+#### Spawn all 18 Wave 1 agents simultaneously
 
 Pre-allocate all row ranges before spawning:
 
@@ -221,6 +225,8 @@ Pre-allocate all row ranges before spawning:
 | 4b | `agents/consistency-check.md` | B | All rows | Start row 492 | 30 rows |
 | 3e | `agents/key-params-check.md` | A | All rows | Start row 532 | 20 rows |
 | 3e | `agents/key-params-check.md` | B | All rows | Start row 552 | 20 rows |
+| 8 | `agents/sensitivity-scan.md` | — | All sheets | Confidentiality Flags sheet only | — |
+| 9 | `agents/hardcoded-values.md` | — | All sheets | Hardcoded Values sheet only | — |
 
 10-row buffer zones: rows 82–91 (between formula-check-arithmetic A/B and C/D), rows 172–181 (between formula-check-arithmetic C/D and formula-check-data), rows 242–251 (between formula-check-data and formula-check-edge-cases), rows 312–321 (between formula-check-edge-cases and source-data-check), rows 382–391 (between source-data-check and formula-check-structure), rows 452–461 (between formula-check-structure and consistency-check), rows 522–531 (after consistency-check B — Wave 1 end buffer). Reconciliation agents writing net-new findings should use the buffer zone for their pair — see the reconciliation table below.
 
@@ -244,6 +250,8 @@ Pre-allocate all row ranges before spawning:
 | consistency-check B | 492–521 |
 | key-params-check A | 532–551 |
 | key-params-check B | 552–571 |
+| sensitivity-scan | Confidentiality Flags sheet only |
+| hardcoded-values | Hardcoded Values sheet only |
 
 Write header "Wave 1 Row Allocations (Findings sheet)" in A49. This log survives context compaction and lets reconciliation agents recover their pair ranges if the session is interrupted.
 
@@ -263,7 +271,7 @@ Do **not** tell A instances that B instances are running. For **B instances only
 
 > **Reviewer framing — B instance**: You are a skeptical second reviewer. A separate first reviewer has independently audited this same spreadsheet. Your job is to find what a thorough but reasonable reviewer would have rationalized away. Specifically: (a) assume the first reviewer accepted well-labeled rows as correct without verifying the referenced cells — challenge that instinct by reading the referenced cells themselves, not just their labels; (b) give extra attention to checks requiring you to read multiple tabs together, since cross-tab checks are harder and more likely to be shortcut; (c) when a formula looks correct at first glance, ask "am I pattern-matching on the label rather than actually reading the formula?" — then read the formula; (d) for every section where you find no issues, write one specific reason the section is clean before moving on. Do not read the Findings sheet. Do not tell the researcher you are a B instance.
 
-Wait for all 16 to complete before proceeding.
+Wait for all 18 to complete before proceeding.
 
 **Consistency-check always runs — including for BOTECs**: Do not skip the consistency-check agent for simple BOTECs, single-sheet models, or workbooks with no declared deviations. Every model uses moral weights, and moral weight drift is one of the most common silent errors. Pass this note in the consistency-check session context: "For simple BOTECs and non-standard models that lack VOI content: skip the VOI structural completeness check and the cross-cutting CEA parameters check. Always run the moral weights numeric verification regardless of model type."
 
@@ -275,6 +283,8 @@ Wait for all 16 to complete before proceeding.
 
 Exception: formula-check-data and formula-check-edge-cases may produce fewer findings on simple BOTECs. Use judgment — 0 findings from formula-check-arithmetic on a 50-row CEA is not plausible; 0 findings from formula-check-data on a workbook with no external citations may be valid.
 
+Also check the Confidentiality Flags sheet and Hardcoded Values sheet: if sensitivity-scan wrote no rows and the spreadsheet has any populated cells, or if hardcoded-values wrote no rows and the spreadsheet has any non-formula input cells, flag as potential silent failures — a real spreadsheet will always have at least a few hardcoded values.
+
 **Researcher-confirm checkpoint**: After all Wave 1 agents complete and before spawning Wave 2, read the Findings sheet and collect all rows with `✓` in the **Researcher judgment needed** column (column K). If **no such rows exist**, skip this checkpoint entirely and proceed immediately to Wave 2. If flagged rows exist, present them to the user as a numbered list: cell reference, finding type, and the specific question. Explain that subsequent agents will proceed on current assumptions unless they respond. Then continue — do not wait indefinitely. This checkpoint exists so intent questions (e.g., "is this $0 intentional?") can be answered before plausibility and readability agents analyze the same cells. **For any checkpoint item that is High severity or tagged D**: add a sentence flagging that downstream agents will analyze this cell using the current (potentially wrong) value — if the researcher's answer changes the value, the plausibility findings for that section may need to be revisited.
 
 ---
@@ -282,14 +292,14 @@ Exception: formula-check-data and formula-check-edge-cases may produce fewer fin
 ### Wave 2 — Parallel (doubled for independent verification)
 
 **Progress announcement** before spawning:
-- **Pub readiness included (non-TA)**: `[Phase 2/4] Wave 2 starting — 19 agents (sources A/B, heads-up A/B ×3, readability A/B, leverage A/B, CE chain A/B, leverage UoV A/B, sensitivity-scan, hardcoded-values, notes-scan).`
-- **Pub readiness included (TA BOTEC)**: `[Phase 2/4] Wave 2 starting — 21 agents (sources A/B, heads-up A/B ×3, heads-up-epi C/D on counterfactual burden tab, readability A/B, leverage A/B, CE chain A/B, leverage UoV A/B, sensitivity-scan, hardcoded-values, notes-scan).`
-- **Formula/heads-up only (non-TA)**: `[Phase 2/4] Wave 2 starting — 14 agents (heads-up A/B ×3, leverage A/B, CE chain A/B, leverage UoV A/B, sensitivity-scan, hardcoded-values — pub readiness skipped).`
-- **Formula/heads-up only (TA BOTEC)**: `[Phase 2/4] Wave 2 starting — 16 agents (heads-up A/B ×3, heads-up-epi C/D on counterfactual burden tab, leverage A/B, CE chain A/B, leverage UoV A/B, sensitivity-scan, hardcoded-values — pub readiness skipped).`
+- **Pub readiness included (non-TA)**: `[Phase 2/4] Wave 2 starting — 17 agents (sources A/B, heads-up A/B ×3, readability A/B, leverage A/B, CE chain A/B, leverage UoV A/B, notes-scan).`
+- **Pub readiness included (TA BOTEC)**: `[Phase 2/4] Wave 2 starting — 19 agents (sources A/B, heads-up A/B ×3, heads-up-epi C/D on counterfactual burden tab, readability A/B, leverage A/B, CE chain A/B, leverage UoV A/B, notes-scan).`
+- **Formula/heads-up only (non-TA)**: `[Phase 2/4] Wave 2 starting — 12 agents (heads-up A/B ×3, leverage A/B, CE chain A/B, leverage UoV A/B — pub readiness skipped; sensitivity scan and hardcoded values already ran in Wave 1).`
+- **Formula/heads-up only (TA BOTEC)**: `[Phase 2/4] Wave 2 starting — 14 agents (heads-up A/B ×3, heads-up-epi C/D on counterfactual burden tab, leverage A/B, CE chain A/B, leverage UoV A/B — pub readiness skipped; sensitivity scan and hardcoded values already ran in Wave 1).`
 
-Spawn agents simultaneously after the researcher checkpoint. Each of the eight core analysis agents (sources, heads-up-evidence, heads-up-epi, heads-up-intervention, readability, leverage-funging, ce-chain-trace, leverage-uov-check) runs as two independent instances (A and B) with separate context windows and no knowledge of each other. sensitivity-scan and hardcoded-values each run once, writing to their respective output sheets only.
+Spawn agents simultaneously after the researcher checkpoint. Each of the eight core analysis agents (sources, heads-up-evidence, heads-up-epi, heads-up-intervention, readability, leverage-funging, ce-chain-trace, leverage-uov-check) runs as two independent instances (A and B) with separate context windows and no knowledge of each other. notes-scan runs once, writing to Publication Readiness only. sensitivity-scan and hardcoded-values have moved to Wave 1 and do not run here.
 
-**If formula/heads-up only scope was selected**: skip sources-A, sources-B, readability-A, readability-B, and `agents/notes-scan.md` entirely — spawn 14 agents instead of 19. Their pre-allocated row ranges remain reserved but unused. Notes are still *read* in the initial batch (step 3) and remain available to all formula-check and heads-up agents as formula context — only the pub-readiness audit of notes documentation (missing "Calculation." entries, source annotations, style) is skipped. Pass to all spawned agents: "Pub readiness out of scope; value-correctness verification (GBD vizhub URLs, study extractions) is in scope."
+**If formula/heads-up only scope was selected**: skip sources-A, sources-B, readability-A, readability-B, and `agents/notes-scan.md` entirely — spawn 12 agents instead of 17. Their pre-allocated row ranges remain reserved but unused. Notes are still *read* in the initial batch (step 3) and remain available to all formula-check and heads-up agents as formula context — only the pub-readiness audit of notes documentation (missing "Calculation." entries, source annotations, style) is skipped. Pass to all spawned agents: "Pub readiness out of scope; value-correctness verification (GBD vizhub URLs, study extractions) is in scope."
 
 **Before spawning**, read the Findings sheet and identify the last populated finding row (call it `last_row`; use `last_row = 1` if no findings yet). **Verify that `last_row ≤ 550`** — Wave 1 now uses up to row ~531 at full budget, so `last_row` up to 550 is expected. If `last_row > 550`, Wave 1 agents exceeded their budgets significantly; warn in chat and proceed. If `last_row > 600`, reduce each Wave 2 pair's budget from 40 rows to 25 rows and note this adjustment in chat. Calculate pre-allocated start rows:
 - sources-A: `last_row + 1`
@@ -349,25 +359,28 @@ For A instances, pass the standard session context only. The only difference bet
 | 6e | `agents/ce-chain-trace.md` | B | `last_row + 651` |
 | 6f | `agents/leverage-uov-check.md` | A | `last_row + 701` |
 | 6f | `agents/leverage-uov-check.md` | B | `last_row + 751` |
-| 8 | `agents/sensitivity-scan.md` | — | Confidentiality Flags sheet only |
-| 9 | `agents/hardcoded-values.md` | — | Hardcoded Values sheet only |
 | 7c | `agents/notes-scan.md` | — | Publication Readiness only |
 
 ---
 
 ### Wave 2.5 — Reconciliation (after all Wave 2 agents complete)
 
-Announce before spawning: `[Phase 2/4 done → Phase 3/4] Wave 2 complete — starting reconciliation (16 agents, or 17 if TA BOTEC).`
+Announce before spawning: `[Phase 2/4 done → Phase 3/4] Wave 2 complete — starting reconciliation (up to 15 agents, or 16 if TA BOTEC; fewer if empty pairs skipped in pre-flight check).`
 
 **Row allocation recovery — do this first if allocations are not in context**: If Wave 2 row allocations are not available in the current session context (e.g., context was compacted between Wave 2 and Wave 2.5), read Dashboard cells A49:B90 of the output spreadsheet to recover the full Wave 1 and Wave 2 allocation tables before computing the reconciliation ranges below. Do not skip Wave 2.5 due to missing row allocations — always recover from the Dashboard log.
 
-Spawn **16 reconciliation agents simultaneously**, one per A/B pair, using `agents/reconcile.md`. Each agent receives the standard session context plus its specific pair assignment. Do not tell any reconcile agent about the other pairs being processed.
+**Pre-flight empty pair check**: Before spawning, fire a parallel batch of `read_sheet_values` calls — one per pair — to check whether each pair's A and B ranges contain any non-empty rows. For any pair where **both** the A range and B range are confirmed completely empty: skip spawning that reconcile agent and announce: `⏭️ Skipping [pair name] reconcile — both A and B wrote zero findings.` Only skip when both ranges are confirmed empty; if either range has any non-empty row, spawn the reconcile agent as normal. Update the agent count in your announcement accordingly.
+
+Spawn **up to 15 reconciliation agents simultaneously** (consistency-check and key-params-check share one combined agent; fewer if empty pairs are skipped), using `agents/reconcile.md`. Each agent receives the standard session context plus its specific pair assignment. Do not tell any reconcile agent about the other pairs being processed.
 
 For each instance, append to session context:
 > **Pair to reconcile**: [pair name]
 > **A row range**: rows [start]–[end] on the Findings sheet (also check Publication Readiness sheet for sources and readability pairs)
 > **B row range**: rows [start]–[end] on the Findings sheet (same note)
 > **Overflow zone**: rows [start]–[end] — write net-new findings discovered during reconciliation investigation here, not beyond this range
+
+**Combined consistency-check + key-params-check agent**: For this pair only, pass the following session context instead of the standard single-pair format:
+> **Pairs to reconcile**: consistency-check AND key-params-check. Process sequentially in this order: (1) reconcile consistency-check A/B first — A range rows 462–491, B range rows 492–521, overflow zone rows 522–531; write any net-new findings to rows 522–531. (2) Then reconcile key-params-check A/B — A range rows 532–551, B range rows 552–571, overflow zone rows 572–581; write any net-new findings to rows 572–581. Complete consistency-check reconciliation fully before beginning key-params-check reconciliation. Write a coverage declaration after each pair.
 
 | Pair | A row range | B row range | Overflow zone |
 |---|---|---|---|
@@ -377,8 +390,7 @@ For each instance, append to session context:
 | formula-check-edge-cases | rows 252–281 | rows 282–311 | rows 312–321 |
 | source-data-check | rows 322–351 | rows 352–381 | rows 382–391 |
 | formula-check-structure | rows 392–421 | rows 422–451 | rows 452–461 |
-| consistency-check | rows 462–491 | rows 492–521 | rows 522–531 |
-| key-params-check | rows 532–551 | rows 552–571 | rows 572–581 |
+| consistency-check + key-params-check *(combined)* | consistency-check A: 462–491, B: 492–521; key-params-check A: 532–551, B: 552–571 | rows 522–531 (consistency overflow); rows 572–581 (key-params overflow) |
 | sources | rows `last_row+1` to `last_row+50` | rows `last_row+51` to `last_row+90` | rows `last_row+91` to `last_row+100` |
 | heads-up-evidence | rows `last_row+101` to `last_row+150` | rows `last_row+151` to `last_row+190` | rows `last_row+191` to `last_row+200` |
 | heads-up-epi | rows `last_row+201` to `last_row+250` | rows `last_row+251` to `last_row+290` | rows `last_row+291` to `last_row+300` |
@@ -391,7 +403,7 @@ For each instance, append to session context:
 
 Note: notes-scan (Step 7c) has no reconciliation pair — it runs once and writes only to Publication Readiness. The final-review compaction step handles it alongside all other Wave 1 findings. The heads-up-epi TA counterfactual burden pair also has no reconciliation pair for non-TA models — skip that row entirely when program context is not a TA BOTEC.
 
-**Silent failure check after Wave 2.5 — do this before Wave 3**: After all 15 reconciliation agents complete, read the Findings sheet to verify each reconciliation pair's overflow zone for net-new findings, then check whether each reconcile agent wrote its coverage declaration to chat. A reconcile agent that wrote no coverage declaration and produced zero reconciled findings is a silent failure risk. Report any pair where:
+**Silent failure check after Wave 2.5 — do this before Wave 3**: After all reconciliation agents complete, read the Findings sheet to verify each reconciliation pair's overflow zone for net-new findings, then check whether each reconcile agent wrote its coverage declaration to chat. (Pairs confirmed empty in the pre-flight check are exempt — their skipped status was already logged.) A reconcile agent that wrote no coverage declaration and produced zero reconciled findings is a silent failure risk. Report any pair where:
 
 > ⚠️ Reconciliation failure warning: [pair name] reconcile agent produced no coverage declaration and no net-new findings. Its A/B divergences may be unreconciled. Consider re-running this reconcile agent before proceeding to Wave 3.
 
