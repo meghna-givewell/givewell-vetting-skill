@@ -18,7 +18,20 @@ Load CEA Consistency Guidance (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) v
 
 **If a potential High finding depends on researcher intent** — whether a value is intentionally $0, whether a deviation is deliberate, or whether a cross-sheet reference pulls from the intended cell — stop and ask the researcher before filing the finding.
 
+## Instance scope
+
+This agent runs as two complementary instances covering distinct check sets. Check your instance scope in session context before starting:
+
+- **heads-up-epi-A**: Run **Section A — Epidemiological Parameter Checks** only. Skip Section B entirely.
+- **heads-up-epi-B**: Run **Section B — Model Structure & Timing Checks** only. Skip Section A entirely.
+
+The C and D instances (TA BOTEC counterfactual burden tab) run all applicable checks on that tab regardless of the A/B split.
+
+---
+
 ## Step 6b — Epidemiological Parameters & Model Structure
+
+### Section B — Model Structure & Timing Checks *(heads-up-epi-B only)*
 
 **Pre- vs. post-adjustment UoV**: Verify whether formulas use pre- or post-adjustment UoV. Rows appearing after adjustments should generally reference post-adjustment values unless documented otherwise. Flag any instance where the UoV referenced appears to be the unadjusted figure.
 
@@ -48,6 +61,8 @@ Load CEA Consistency Guidance (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) v
 
 **VOI wait-time plausibility**: When a VOI model includes a "wait time" parameter (years between completing the study and GiveWell updating its program recommendations), flag any value ≤2 years as potentially optimistic. Typical research-to-policy timelines at GiveWell span 2–4 years. A shorter wait time increases discounted VOI — flag as Low and ask the researcher to confirm the assumption is intentional rather than inherited from a template.
 
+### Section A — Epidemiological Parameter Checks *(heads-up-epi-A only)*
+
 **Disease burden multi-source check**: When a model's mortality burden estimate for a specific geography derives from a single source (IHME/GBD alone, or WHO alone), flag as Medium/H and recommend triangulation. IHME estimates have been found 2.5× lower than UN IGME for Chad malaria burden (correcting this enabled $28M+ in new grants), and negatively correlated with IGME in Nigerian states for New Incentives. The recommended approach is to use at least two of: GBD, UN IGME, DHS, and — where available — RCT control-arm data. If IHME and UN IGME estimates differ by more than ~30%, flag as Medium/H and recommend deeper investigation. Note on source quality: recent DHS full birth history surveys (2021+, nationally representative, 5,000–30,000 HHs) should receive at least as much weight as IHME or IGME; HMIS/DHIS2 surveillance data is generally unreliable in sub-Saharan Africa and should not be given significant weight unless independently validated. If the model uses GBD 2019 data without noting that GBD 2021 estimates may differ materially, flag as **Medium/H**. You cannot rerun the model with updated GBD data to estimate CE impact — write "Lowers CE — magnitude unknown" in column H (updated data typically shows higher burden, which raises CE; the direction is usually adverse to the model but magnitude is unquantifiable). Flagging the vintage mismatch and recommending an update is the correct and complete action; do not downgrade severity because CE impact cannot be quantified.
 
 **Indirect deaths multiplier cap**: When a model applies the standard GiveWell indirect deaths multiplier for malaria (×1.75 of direct malaria deaths — i.e., adding 75% more indirect deaths on top of direct), verify that total malaria-attributable mortality does not exceed 100% of all-cause mortality in the target age group. In high-direct-burden geographies where malaria directly accounts for >57% of under-5 deaths (e.g., Lagos, Chad, South Sudan), a blanket 75% indirect multiplier would produce implausible results (>100% of deaths from malaria). In these cases, the indirect deaths multiplier should be scaled down — for example, GiveWell used ~40% for Lagos (where direct share was ~50–55%), resulting in ~75% total malaria attribution. Flag as High/D if the model applies the standard 75% add-on in a geography where this would exceed 100% total attribution.
@@ -70,12 +85,11 @@ Load CEA Consistency Guidance (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) v
 
 **Population denominator accuracy**: When a model computes beneficiaries as `population × coverage rate`, verify the source of the population figure. If the denominator comes from grantee-provided lists, administrative registers, or projected government census data (especially projections >5 years from the last census), flag as Low/H with Researcher judgment needed ✓: "Population denominator for [geography] is sourced from [source] — administrative and projected counts commonly overstate actual populations in SSA, which inflates total beneficiaries. Confirm whether a downward adjustment for population inflation risk has been applied, or whether this is captured in the wastage/quality-of-M&E adjustment." Cross-check against WorldPop or UN Population Division estimates if available via WebSearch. If the grantee-sourced count exceeds a credible external estimate by >15%, upgrade to Medium/H.
 
-**Mandatory check log — write this before filing any findings.** For each item below, write `ran: [brief result or finding cell]` or `n/a: [one-word reason — e.g., no VOI model, not a top-charity malaria program]`. A blank or placeholder entry is not acceptable — it means the check was not considered. The log must be complete before any findings are written to the sheet.
+**Mandatory check log — write only the log for your instance scope before filing any findings.** For each item write `ran: [brief result or finding cell]` or `n/a: [one-word reason]`. A blank entry means the check was not considered — not acceptable.
 
+**heads-up-epi-A log** (Section A only):
 ```
-Heads-up epi check log:
-
-Epidemiological parameters:
+Heads-up epi-A check log — Epidemiological Parameter Checks:
   disease burden multi-source [___]
   indirect deaths multiplier cap [___]
   GBD vintage / intervention adjustment [___]
@@ -84,8 +98,11 @@ Epidemiological parameters:
   counterfactual coverage floor [___]
   program-reported vs. independent coverage [___]
   population denominator accuracy [___]
+```
 
-Model structure:
+**heads-up-epi-B log** (Section B only):
+```
+Heads-up epi-B check log — Model Structure & Timing Checks:
   pre/post-adjustment UoV [___]
   double-counting [___]
   adjustment combination method [___]
@@ -95,11 +112,10 @@ Model structure:
   cost denominator scope [___]
   benefit/cost allocation for leverage [___]
   Global Fund funging calculation [___]
-
-Timing and program-specific:
   cost estimate inflation adjustment [___]
   VOI wait-time plausibility [___]
   TA program duration [___]
+  TA benefit horizon — AVERAGE range endpoint [___]
   program interaction / overlap [___]
   multi-program substitution [___]
   selection into programs [___]
