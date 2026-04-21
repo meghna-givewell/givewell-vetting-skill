@@ -51,6 +51,17 @@ Compare every hardcoded input to values in neighboring columns (other geographie
 
 **Identical outputs across distinct scenarios**: For parallel rows representing distinct scenarios or actors, flag when outputs are identical without a cell note explaining why.
 
+**AVERAGE/SUMPRODUCT formula pre-scan — required before the parallel symmetry check below**: Before running any parallel scenario formula symmetry sub-checks, read every cell in the vetted sheet(s) that contains `AVERAGE(` or `SUMPRODUCT(` using `read_sheet_values` in **FORMULA mode**. For each such cell, extract the literal formula string and write a coverage log to your reasoning output in this format:
+
+```
+AVERAGE/SUMPRODUCT formula log:
+  [cell ref]: [literal formula string]
+  [cell ref]: [literal formula string]
+  ...
+```
+
+This log must exist before any symmetry comparison begins. All comparisons in sub-checks (a) and (b) below must reference this log — never FORMATTED_VALUE output, never inferred value similarity. If you have not read a formula in FORMULA mode and logged its literal string, you have not checked it. A formula where `AVERAGE(Priors!D10:$Q10)` and `AVERAGE(Priors!E10:$Q10)` produce nearly identical values will pass a value-similarity check and fail a string-comparison check — this pre-scan exists to catch exactly that case.
+
 **Parallel scenario formula symmetry**: When two or more rows implement the same calculation for distinct actors or scenarios (e.g., "GW direct CE" and "Other-funder direct CE," or "Scenario 1 value for GW" and "Scenario 1 value for other funders"), verify: (a) the formula structure is symmetric — each references the same source column ranges, the same operations, and analogous inputs; (b) if outputs are identical, a cell note explains why. A common error is one scenario row silently referencing a different column range from its parallel (e.g., row 42 uses `VOI_Priors!D10:$Q10` while the analogous row 56 uses `VOI_Priors!E10:$Q10`) without documentation. Flag as **Medium/Formula Error** if the structural deviation between parallel rows is unexplained and would produce different results. For VOI models specifically, perform two sub-checks after the full formula symmetry scan:
 
 **(a) Cross-actor value equality**: Locate every row computing "CE of reallocated funding" or "expected CE" or "value of information" for the GW perspective, and the analogous row for other funders / other philanthropic actors. Compare output values column by column. If any GW-perspective output equals the corresponding other-funder output, flag as **Low/H** with Researcher judgment needed ✓: "CE of reallocated funding is identical for the GW-perspective row and the other-funder-perspective row — confirm this is intentional and add a cell note." **This is a cross-actor equality check (e.g., B29 vs. B47) and is distinct from the cross-scenario consistency check (e.g., C29=D29 within the same row) — check both independently and file as separate findings if both fire.**
