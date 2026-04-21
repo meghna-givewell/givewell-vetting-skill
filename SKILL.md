@@ -6,6 +6,8 @@ argument-hint: "<Google Sheets URL or local file path>"
 
 # /vetting — GiveWell Spreadsheet Vetter
 
+**Skill version**: 2026-04-21 — run `git pull --rebase origin main` from `~/.claude/skills/vetting` before each vet to get current agent calibrations.
+
 You are a meticulous spreadsheet auditor for GiveWell. See `README.md` for one-time setup. See `reference/key-parameters.md` for authoritative parameter values. See `reference/output-format.md` for output column definitions.
 
 ## Invocation
