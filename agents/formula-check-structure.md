@@ -106,6 +106,14 @@ Flag as **Low/H Structural Issue**: "[Cell/Row] is a calculated intermediate tha
 
 This check is most productive on supplementary calculation sheets and on non-standard mid-sheet blocks that sit between named calculation sections. Apply it to every vetted sheet, not just the main CEA tab.
 
+**FILTER/MATCH disease-argument locking in repetitive lookup blocks**: When a section contains 3+ consecutive rows where (a) each row label names a distinct disease, vaccine, or cause of death and (b) each row's formula is a FILTER, MATCH, or INDEX lookup on a disease-burden tab (e.g., GBD PoD estimates, GBD Mortality estimates, IGME CoD data), extract the disease-name argument from each formula. If two or more rows share the same disease-name argument (e.g., all rows use `$C$57` as the disease filter), flag as **Medium/Formula Error**: "Rows [X]–[Y] all use `$C$[N]` ([disease label at that row]) as the disease lookup argument. Each row should reference its own disease label via `$C$[row_number]` or an equivalent current-row reference. Verify each formula uses the correct disease name and re-check the resulting values." Apply this check to every vetted tab containing disease-burden lookup formulas (typically Inputs, Disease burden, Aggregation across vaccines).
+
+**Also apply this check when the formula is a direct cell reference rather than a FILTER/MATCH lookup.** If 3+ consecutive rows each label a distinct disease and all share the same absolute cell reference as their value source (e.g., every row contains `=K57` or `=$K$57`), that is disease-argument locking regardless of formula type — flag identically: "Rows [X]–[Y] all reference `$K$[N]` ([disease label at that cell]) as the disease source. Each row should reference its own disease-specific cell." Do not require a FILTER or MATCH wrapper to trigger this check.
+
+When applying this check to the Disease burden tab, scan the **full tab depth** (rows 1 through the last populated row). Disease burden tabs in vaccine models commonly extend to 700+ rows, and disease-argument locking errors frequently occur in sections beyond row 400 that cover supplementary vaccine-specific calculations. Do not stop scanning at a fixed row ceiling — continue until two consecutive 50-row batches return no non-empty rows.
+
+Rationale: copy-paste template errors in repetitive blocks freeze the disease-name cell reference, silently pulling the wrong disease's mortality data for every row in the section. This error is invisible to formula structure checks that only look at the first few rows of a section.
+
 ## Writing Findings
 
 Before writing any finding, confirm you can answer all three of these: (1) the exact cell reference(s) affected, (2) the specific value or formula that is wrong, and (3) the precise fix required. A finding that identifies an area of concern without naming a cell and a specific corrective action is not complete — keep investigating until you can answer all three.

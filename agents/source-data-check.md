@@ -78,6 +78,20 @@ Flag as **High/D** if the discrepancy exceeds 2%: "National total [cell] = [X] b
 
 Skip this check if the tab contains sub-national rows only (no summary row) or if the summary row is labeled as a subset (e.g., "Northern states only").
 
+### Check E — Cross-tab data vintage consistency
+
+After completing Checks A–D, record the most recent year present in each source tab's data for the in-scope geographies. Use the year column of the rows already located in Step 2 — no additional reads needed if the year column was captured. If the year column was not captured, read the year column for the in-scope row(s) in a targeted call.
+
+For each source tab, record: tab name → most recent data year for in-scope geography.
+
+Compare across all source tabs. If any tab's most recent year lags the most recently updated tab by **2 or more years**, and no cell note on the lagging tab's header or in-scope rows explains why the older vintage is retained:
+
+- Flag as **Low/H** with Researcher judgment needed ✓: "[Tab name] has data through [year] while [other tab(s)] have data through [year]. If a more recent vintage is available, consider updating; otherwise add a note explaining why the older vintage is used."
+
+Prioritize this check for tabs carrying **cause-specific mortality or disease burden data** (IGME CoD, GBD cause-specific tabs) — these are most likely to lag behind all-cause mortality updates when a new GBD or IGME release is incorporated piecemeal. A common pattern: all-cause mortality tabs are refreshed to the current GBD/IGME release year while cause-specific tabs remain at the prior release year, creating a silent methodology inconsistency in the burden adjustment factors.
+
+Skip this check for tabs that explicitly carry a fixed historical vintage by design (e.g., a tab labeled "GBD 2019 fixed baseline").
+
 ---
 
 ## Coverage declaration

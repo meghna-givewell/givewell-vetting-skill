@@ -172,7 +172,7 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 
 > Spreadsheet ID: `<id>` | Sheets to vet: `<names>` | Findings sheet ID: `<id>` | Publication Readiness sheet ID: `<id>` | Hardcoded Values sheet ID: `<id>` | Confidentiality Flags sheet ID: `<id>` | User email: `<email>` | Program context: `<summary from Step 0.5>` | Declared-intentional deviations: `<list or "none">` | Current date: `<today's date>`
 >
-> **Pre-read cache** (sheets ≤ 150 populated rows): `<FORMATTED_VALUE data, FORMULA data, notes, and hyperlinks for each vetted sheet — verified complete by orchestrator>`. Use this as your primary data source for row-by-row scanning. Make targeted `read_sheet_values` calls only for specific cells you need to verify independently (e.g., a formula referencing another sheet, a value you want to confirm is current). Do not re-read full sheet ranges. If no pre-read cache is provided, the sheet exceeds 150 populated rows — proceed with your normal batch reads.
+> **Pre-read cache** (sheets ≤ 150 populated rows): Each agent receives a scoped subset — data modes and row range as specified in the **Cache scoping table** below (under "Analysis Steps — Sub-Agents" intro). Use the provided cache as your primary data source for row-by-row scanning. Make targeted `read_sheet_values` calls only for cells or data modes outside your cache scope (e.g., a formula referencing a row outside your assigned range, or a FORMULA-mode read not included in your cache). Do not re-read full sheet ranges. If no pre-read cache is provided, the sheet exceeds 150 populated rows — proceed with your normal batch reads.
 >
 > **Sheet routing**: Write model-integrity findings (formula errors, wrong/stale parameters, undocumented assumptions that affect model outputs or interpretation) to the Findings sheet. Write publication-readiness findings (permission flags, broken links, citation format, terminology, style issues that do not affect model outputs) to the Publication Readiness sheet. When in doubt, use Findings.
 >
@@ -195,6 +195,32 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 > **Formula Error sub-type**: When column E is `Formula Error`, begin the Explanation with a bracketed sub-type indicating the nature of the error. Use one of: `[Copy-paste]` (value or formula copied from wrong cell), `[Wrong reference]` (references wrong row, column, or sheet), `[Year range]` (range boundary off by one or more rows/years), `[Sign error]` (positive/negative sign inverted), `[Wrong operator]` (wrong arithmetic operation), `[Off-by-one]` (range starts or ends at wrong boundary). Example: `[Wrong reference] B14 uses C22 (Nigeria rate) but should reference C23 (Kenya rate).`
 >
 > **Coverage declarations**: After completing each named check or scan section, write a coverage declaration in this exact format: `COVERAGE | [agent name] | [check name] | [rows/cells checked] | issues found: [N] | status: complete`. Use this format — do not use free-form prose coverage declarations.
+
+**Cache scoping table** — When constructing the pre-read cache for each agent, include only the data modes and row range listed below. Agents that need data outside their scope make targeted `read_sheet_values` calls.
+
+| Agent | FORMATTED_VALUE | FORMULA | Notes | Hyperlinks | Row scope |
+|---|---|---|---|---|---|
+| formula-check-arithmetic A, B | ✓ | ✓ | ✓ | ✓ | Rows 1–`split_row` |
+| formula-check-arithmetic C, D | ✓ | ✓ | ✓ | ✓ | Rows `split_row+1`–end |
+| formula-check-data A, B | ✓ | ✓ | ✓ | ✓ | All rows |
+| formula-check-edge-cases A, B | ✓ | ✓ | ✓ | ✓ | All rows |
+| formula-check-structure A, B | ✓ | ✓ | ✓ | ✓ | All rows |
+| consistency-check A, B | ✓ | ✓ | ✓ | ✓ | All rows |
+| key-params-check A, B | ✓ | — | ✓ | — | All rows |
+| source-data-check A, B | ✓ | ✓ | ✓ | ✓ | Source tabs only |
+| hardcoded-values | ✓ | ✓ | ✓ | — | All rows |
+| sensitivity-scan | ✓ | — | ✓ | — | All rows |
+| sources A, B | ✓ | — | ✓ | ✓ | All rows |
+| heads-up-evidence A, B | ✓ | ✓ | ✓ | ✓ | All rows |
+| heads-up-epi A, B | ✓ | ✓ | ✓ | ✓ | All rows |
+| heads-up-intervention A, B | ✓ | ✓ | ✓ | ✓ | All rows |
+| readability A, B | ✓ | — | ✓ | — | All rows |
+| leverage-funging A, B | ✓ | ✓ | ✓ | — | All rows |
+| ce-chain-trace A, B | ✓ | ✓ | ✓ | — | All rows |
+| leverage-uov-check A, B | ✓ | ✓ | ✓ | — | All rows |
+| notes-scan | — | — | ✓ | — | All rows |
+
+---
 
 **Sub-agents are required for every vet, without exception — including small BOTECs and single-sheet optionality models.** There is no sheet-size threshold below which inline execution is acceptable. Inline execution causes anchoring: observations from Steps 0–2 contaminate later steps, and each subsequent "pass" becomes confirmation of what was already noticed rather than an independent exhaustive check. Every step must start with a clean context. If a sheet has only 10 rows, spawn sub-agents anyway — the exhaustiveness of the check matters more than the time saved by running inline.
 
@@ -272,6 +298,7 @@ Write header "Wave 1 Row Allocations (Findings sheet)" in A49. This log survives
 Append to each formula-check-arithmetic instance's session context:
 > **Row allocation**: Write findings starting at row `{start_row}`. Do not auto-detect the next empty row — use this pre-assigned start row. Your allocated budget is `{budget}` rows.
 > **Sheet row scope**: Audit only spreadsheet rows `{scope_start}` to `{scope_end}`. Do not read or audit rows outside this range.
+> **Pre-read cache scope**: FORMATTED_VALUE, FORMULA, notes, and hyperlinks for spreadsheet rows `{scope_start}` to `{scope_end}` only. For cells outside this range referenced in formulas (e.g., a formula in row 40 pointing to row 85), make targeted `read_sheet_values` calls to retrieve those values — do not assume the value from the cache.
 
 Append to formula-check-data and formula-check-edge-cases session contexts (A/B share the same prompt except row allocation — do not tell either instance that a second instance is running):
 > **Row allocation**: Write findings starting at row `{start_row}`. Budget: 30 rows.
