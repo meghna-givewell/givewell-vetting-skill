@@ -120,6 +120,19 @@ Verify the moral weight application step:
 
 Flag as **High** if moral weights are not applied at all (outcomes counted without normative weighting) or applied twice. Flag as **Medium** if an outcome is excluded without documentation.
 
+### 3e — Adjustments are applied, not merely defined
+
+For every named adjustment row in the model — Internal Validity, External Validity, leverage, funging, right-sizing, supplemental adjustments, dose-adjustment factors — verify that the cell containing the adjustment value is actually referenced in a downstream calculation formula. The error pattern is: an adjustment row exists and contains a value, but no formula in the sheet references it — the model computes the adjustment but silently omits it from the calculation chain.
+
+Check procedure:
+1. In FORMULA mode, search for the adjustment cell's address (e.g., `$E$46`, `E46`, `B47`) as a string appearing in any other formula in the vetted sheet(s).
+2. If the adjustment cell is referenced at least once in a downstream formula, the adjustment is applied — move on.
+3. Only file "adjustment not applied" after confirming step 2 found nothing: the cell address does not appear in any downstream formula.
+
+Flag as **High** if a named adjustment (IV, EV, leverage, funging) is absent from the CE chain. Flag as **Medium** if a supplemental or secondary adjustment is absent.
+
+**Do not file this finding based on a visual scan or the absence of an expected row label.** An adjustment that exists but is not referenced will always appear present on visual inspection — the error is only detectable by tracing the cell address forward through downstream formulas. Always read the formulas that consume the final CE output and trace back to confirm each adjustment is in the chain before claiming one is missing.
+
 ---
 
 ## Step 4 — Verify source inputs at the chain's roots
