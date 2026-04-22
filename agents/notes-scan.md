@@ -51,6 +51,12 @@ Check every row label — not just rows with unusual notes.
 **G. Stale year references in notes**
 Flag any Notes cell citing a specific year (e.g., "per 2022 WHO data," "from 2020 DHS survey") where that year is more than 2 years before the current date. Recommended fix: verify whether a more recent data vintage is available; if so, update both the value and the note. If the older vintage is intentional (e.g., for comparability), the researcher should add a sentence explaining why.
 
+**H. Internal-only rows flagged for deletion**
+Flag any row where the label (column A), notes cell, or a resolved spreadsheet comment indicates the content is internal-only and should be removed before publication. Indicators: label or note containing "internal," "delete before publishing," "not for publication," or "working notes only"; a resolved comment thread where a reviewer or researcher said "delete this," "remove before sharing," or "cut this section"; a label with a parenthetical qualifier like "(internal)" or "(draft)." Flag as Low/O with Readability type: "Row [ref] appears to be an internal working note — confirm whether it should be removed before publication." Do not flag rows where the internal-only status is structural and intentional (e.g., a Changelog tab that is consistently treated as internal).
+
+**I. Cell note contradicts cell value**
+For each row that has both a cell note (from `read_sheet_notes`) and a hardcoded numeric value: read the note text and ask whether it implies a specific numeric value. If the note's implied value conflicts with the cell's stored value — e.g., the note says "we set this to X" or "this implies a value of 1" but the cell stores a different number — flag as Low/O with Readability type: "Cell note at [ref] implies a value of [implied] but the cell stores [actual]. Update the note to reflect the current value, or confirm the note's reasoning still applies." Apply this check to hardcoded cells only (formula cells whose notes describe the formula's logic are out of scope).
+
 ---
 
 ## Step 3 — Mandatory declaration table
@@ -68,6 +74,8 @@ D. Raw URL notes / unlabeled hyperlinks: [list row references, or "none"]
 E. First-person language: [list row references, or "none"]
 F. Row labels flagged (redundant / misleading / wrong scope / vague): [list row references with label text, or "none"]
 G. Stale year references in notes: [list row references with cited year, or "none"]
+H. Internal-only rows flagged for deletion: [list row references, or "none"]
+I. Cell note contradicts cell value: [list row references with implied vs. actual value, or "none"]
 ```
 
 If any line is left blank or contains a placeholder, stop and complete the scan before proceeding.

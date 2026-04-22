@@ -24,9 +24,10 @@ This declaration serves as a checkpoint. If the rewrite step fails mid-execution
 
 ## Step 1 — Read all rows
 
-**Row filtering — apply while reading, before any further processing**: Two types of non-finding rows must be excluded from all subsequent steps (routing, deduplication, sorting, ID assignment). Filter them out as you read:
+**Row filtering — apply while reading, before any further processing**: Three types of non-finding rows must be excluded from all subsequent steps (routing, deduplication, sorting, ID assignment). Filter them out as you read:
 1. **Divider rows**: column D is empty AND column B contains `───`
 2. **Completion marker rows**: column D = `AGENT_COMPLETE`
+3. **Meta-findings about the vetting process**: Any row whose Explanation (column F) or Error Type (column E) references the vetting pipeline itself — e.g., "agent," "Instance A," "Instance B," "readability agent," "vetting process," "this agent," "pipeline," or any description whose subject is how the vet was conducted rather than the model being vetted. These are process quality observations, not model findings. Discard them entirely.
 
 Completion marker rows are written by Wave 2 agents as their final action to signal a clean run. They are metadata, not findings. Do not route, deduplicate, sort, or assign IDs to them — discard them entirely after noting their presence in your coverage declaration.
 

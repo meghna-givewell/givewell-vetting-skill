@@ -6,7 +6,7 @@ Flag deviations from these values unless the sheet provides an explicit document
 |---|---|---|
 | Benchmark (UoV per $) | **0.00333** | Updated Nov 2025; old value 0.003355 — flag if stale |
 | Neonatal moral weight (under 1 month) | **84** | 2020 update; source: GW Moral Weights and Discount Rate (document ID: 1GAcGQSyBQxcB6oGJFGGWCYqwY-jW7oahJJK-cTZOkMc). Values significantly below 84 (e.g., 70) are not valid age-weighted variants — flag as Parameter Issue unless the researcher provides an explicit documented rationale. |
-| Discount rate | **4%** | Components: 1.7% + 0.9% + 1.4%; pure time preference = 0% |
+| Discount rate | **4%** | Components: 1.7% + 0.9% + 1.4%; pure time preference = 0%. **Filing calibration**: if a model has a multi-year benefit stream (>3 years) and applies no discount rate, file as **Low/H with Researcher judgment needed ✓** — do not file as Medium or High. GiveWell intentionally omits time discounting in some newer-intervention CEA types. Escalate to Medium only if the researcher confirms discount rates should apply and they are absent. |
 | Avert under-5 death (malaria/vaccines) | **116 UoV** | |
 | Avert over-5 death (malaria) | **73 UoV** | = 63% of under-5 value |
 | Avert death, 6–59 month child (VAS) | **119 UoV** | |
