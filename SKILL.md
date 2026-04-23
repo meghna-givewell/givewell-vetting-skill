@@ -247,7 +247,7 @@ Agents run in three waves. Before spawning Wave 1, announce progress: `[Phase 1/
    - **Key-params-check 1-instance mode**: If `populated_rows ≤ 80`, skip key-params-check B. A runs only. Announce: `⏭️ key-params-check: 1-instance mode (≤80 rows) — B skipped.` Row range 552–571 remains reserved but unused.
    - **Formula-check-voi — always launch**: Do not skip formula-check-voi at spawn time, even if no VOI tab is detected by name. VOI content can appear within any CEA tab as an embedded section. The agent self-detects and exits cleanly (writing only an AGENT_COMPLETE marker) if no VOI content is found across any vetted sheet.
 
-#### Spawn Wave 1 agents simultaneously (up to 18; fewer based on conditional skips above)
+#### Spawn Wave 1 agents simultaneously (up to 20; fewer based on conditional skips above)
 
 Pre-allocate all row ranges before spawning:
 
@@ -345,12 +345,12 @@ Also check the Confidentiality Flags sheet and Hardcoded Values sheet: if sensit
 ### Wave 2 — Parallel (doubled for independent verification)
 
 **Progress announcement** before spawning:
-- **Pub readiness included (non-TA)**: `[Phase 2/4] Wave 2 starting — up to 17 agents (sources A/B, heads-up A/B ×3, readability A/B, leverage A/B, CE chain A/B, leverage UoV A/B, notes-scan).`
-- **Pub readiness included (TA BOTEC)**: `[Phase 2/4] Wave 2 starting — up to 19 agents (sources A/B, heads-up A/B ×3, heads-up-epi C/D on counterfactual burden tab, readability A/B, leverage A/B, CE chain A/B, leverage UoV A/B, notes-scan).`
-- **Formula/heads-up only (non-TA)**: `[Phase 2/4] Wave 2 starting — up to 12 agents (heads-up A/B ×3, leverage A/B, CE chain A/B, leverage UoV A/B — pub readiness skipped; sensitivity scan and hardcoded values already ran in Wave 1).`
-- **Formula/heads-up only (TA BOTEC)**: `[Phase 2/4] Wave 2 starting — up to 14 agents (heads-up A/B ×3, heads-up-epi C/D on counterfactual burden tab, leverage A/B, CE chain A/B, leverage UoV A/B — pub readiness skipped; sensitivity scan and hardcoded values already ran in Wave 1).`
+- **Pub readiness included (non-TA)**: `[Phase 2/4] Wave 2 starting — up to 19 agents (sources A/B, heads-up A/B ×3, readability A/B, leverage A/B, CE chain A/B, CE chain TA A/B, leverage UoV A/B, notes-scan).`
+- **Pub readiness included (TA BOTEC)**: `[Phase 2/4] Wave 2 starting — up to 21 agents (sources A/B, heads-up A/B ×3, heads-up-epi C/D on counterfactual burden tab, readability A/B, leverage A/B, CE chain A/B, CE chain TA A/B, leverage UoV A/B, notes-scan).`
+- **Formula/heads-up only (non-TA)**: `[Phase 2/4] Wave 2 starting — up to 14 agents (heads-up A/B ×3, leverage A/B, CE chain A/B, CE chain TA A/B, leverage UoV A/B — pub readiness skipped; sensitivity scan and hardcoded values already ran in Wave 1).`
+- **Formula/heads-up only (TA BOTEC)**: `[Phase 2/4] Wave 2 starting — up to 16 agents (heads-up A/B ×3, heads-up-epi C/D on counterfactual burden tab, leverage A/B, CE chain A/B, CE chain TA A/B, leverage UoV A/B — pub readiness skipped; sensitivity scan and hardcoded values already ran in Wave 1).`
 
-Subtract 2 from the announced count if leverage-uov-check is being skipped (no Leverage/Funging tab). State any skips in the announcement, e.g.: `[Phase 2/4] Wave 2 starting — 10 agents (leverage-uov-check skipped — no leverage tab).`
+Subtract 2 from the announced count if leverage-uov-check is being skipped (no Leverage/Funging tab). State any skips in the announcement, e.g.: `[Phase 2/4] Wave 2 starting — 17 agents (leverage-uov-check skipped — no leverage tab).` **CE chain TA (ce-chain-trace-ta) always launches** — never skip at spawn time. The agent self-detects TA signals and exits cleanly if none are found.
 
 Spawn agents simultaneously after the researcher checkpoint. Each of the eight core analysis agents (sources, heads-up-evidence, heads-up-epi, heads-up-intervention, readability, leverage-funging, ce-chain-trace, leverage-uov-check) runs as two independent instances (A and B) with separate context windows and no knowledge of each other. notes-scan runs once, writing to Publication Readiness only. sensitivity-scan and hardcoded-values have moved to Wave 1 and do not run here.
 
@@ -382,18 +382,24 @@ Spawn agents simultaneously after the researcher checkpoint. Each of the eight c
 - notes-scan: Publication Readiness sheet only — PR start row: `last_row + 801` (computed as a safe offset after all Wave 2 Findings allocations; pass as "Publication Readiness start row: {value}" in session context)
 - **TA BOTEC only** — heads-up-epi-C (counterfactual burden tab): `last_row + 851`
 - **TA BOTEC only** — heads-up-epi-D (counterfactual burden tab): `last_row + 901`
+- ce-chain-trace-ta-A: `last_row + 951`
+- ce-chain-trace-ta-B: `last_row + 1001`
 
 **TA BOTEC — counterfactual burden pair**: When program context indicates a TA BOTEC, identify the counterfactual burden or prevalence tab(s) during Step 0.5 program orientation (look for tabs named "Counterfactual Burden," "CF Burden," "Counterfactual Prevalence," "Burden Projection," or similar). Spawn two additional `heads-up-epi` instances (C and D) with that tab as the only vetted sheet in session context. Pass to both C and D instances: "**Counterfactual burden tab focus**: You are auditing the counterfactual burden/prevalence tab only (`{tab name}`). Apply all TA-specific checks in your prompt with particular attention to: (a) AVERAGE() range endpoints — verify they cover TA exit year + 5 years; (b) time series column headers — read them explicitly to confirm which year each column represents; (c) formula mode reads on every AVERAGE, OFFSET, or INDEX formula in the tab. Do not read other tabs except to verify cross-references. Do not read the Findings sheet." Apply the standard adversarial B-instance preamble to the D instance only. If the workbook has no identifiable counterfactual burden tab, skip the C/D pair and note this in chat.
 
-10-row overflow buffer zones follow each pair's B range: `last_row+91`–`last_row+100` (sources), `last_row+191`–`last_row+200` (heads-up-evidence), `last_row+291`–`last_row+300` (heads-up-epi), `last_row+391`–`last_row+400` (heads-up-intervention), `last_row+491`–`last_row+500` (readability), `last_row+591`–`last_row+600` (leverage-funging), `last_row+691`–`last_row+700` (ce-chain-trace), `last_row+791`–`last_row+800` (leverage-uov-check), `last_row+941`–`last_row+950` (heads-up-epi TA C/D — conditional). With `last_row ≤ 550`, the maximum row used by any Wave 2 agent (TA BOTEC case) is `last_row + 950 ≤ 1500`. Google Sheets supports well over 1000 rows — the output spreadsheet is created with sufficient capacity.
+10-row overflow buffer zones follow each pair's B range: `last_row+91`–`last_row+100` (sources), `last_row+191`–`last_row+200` (heads-up-evidence), `last_row+291`–`last_row+300` (heads-up-epi), `last_row+391`–`last_row+400` (heads-up-intervention), `last_row+491`–`last_row+500` (readability), `last_row+591`–`last_row+600` (leverage-funging), `last_row+691`–`last_row+700` (ce-chain-trace), `last_row+791`–`last_row+800` (leverage-uov-check), `last_row+941`–`last_row+950` (heads-up-epi TA C/D — conditional), `last_row+1041`–`last_row+1050` (ce-chain-trace-ta). With `last_row ≤ 670`, the maximum row used by any Wave 2 agent (ce-chain-trace-ta case) is `last_row + 1050 ≤ 1720`. Google Sheets supports well over 1000 rows — the output spreadsheet is created with sufficient capacity.
 
-**Persist Wave 2 row allocations to the Dashboard tab** — do this immediately after computing start rows from `last_row`, before spawning agents. Use `modify_sheet_values` to append a second allocation log starting at Dashboard cell A72 (immediately after the Wave 1 log). Write header "Wave 2 Row Allocations (Findings sheet)" in A71, then one row per agent with columns: agent name | start row | end row. Include sources A/B, heads-up-evidence A/B, heads-up-epi A/B, heads-up-intervention A/B, readability A/B, leverage-funging A/B, ce-chain-trace A/B, leverage-uov-check A/B, notes-scan PR start row, and (if TA BOTEC) heads-up-epi C/D counterfactual burden tab. This log is the recovery source for Wave 2.5 reconciliation agents if the session is interrupted or context is compacted before Wave 2.5 begins.
+**Persist Wave 2 row allocations to the Dashboard tab** — do this immediately after computing start rows from `last_row`, before spawning agents. Use `modify_sheet_values` to append a second allocation log starting at Dashboard cell A72 (immediately after the Wave 1 log). Write header "Wave 2 Row Allocations (Findings sheet)" in A71, then one row per agent with columns: agent name | start row | end row. Include sources A/B, heads-up-evidence A/B, heads-up-epi A/B, heads-up-intervention A/B, readability A/B, leverage-funging A/B, ce-chain-trace A/B, leverage-uov-check A/B, ce-chain-trace-ta A/B, notes-scan PR start row, and (if TA BOTEC) heads-up-epi C/D counterfactual burden tab. This log is the recovery source for Wave 2.5 reconciliation agents if the session is interrupted or context is compacted before Wave 2.5 begins.
 
 Do **not** tell A instances that B instances are running. **heads-up-epi — complementary split scope**: heads-up-epi uses a complementary split rather than adversarial duplication. Append to **heads-up-epi-A** session context (before row allocation): `Instance scope: Section A — Epidemiological Parameter Checks only. Run only the checks under "Section A" in the agent prompt. Skip Section B (model structure and timing checks) entirely — heads-up-epi-B covers those.` Append to **heads-up-epi-B** session context (instead of the adversarial preamble): `Instance scope: Section B — Model Structure & Timing Checks only. Run only the checks under "Section B" in the agent prompt. Skip Section A (epidemiological parameter checks) entirely — heads-up-epi-A covers those. Apply thorough, skeptical reasoning to each check in your scope.` Do not apply the adversarial B preamble below to heads-up-epi-B.
 
 **heads-up-intervention — complementary split scope**: heads-up-intervention uses a complementary split rather than adversarial duplication. Append to **heads-up-intervention-A** session context (before row allocation): `Instance scope: Section A — Intervention-Specific Checks only. Run Step 0, the universal checks, and all Section A named checks (VAS through New Incentives). Skip Section B (TA grant checks) entirely — heads-up-intervention-B covers those.` Append to **heads-up-intervention-B** session context (instead of the adversarial preamble): `Instance scope: Section B — TA Grant Checks only. Run Step 0 to determine if this is a TA grant. If NOT a TA grant, write AGENT_COMPLETE and stop. If IS a TA grant, run all Section B TA grant checks. Apply thorough, skeptical reasoning to each check.` Do not apply the adversarial B preamble below to heads-up-intervention-B.
 
-For **B instances only** (sources-B, heads-up-evidence-B, readability-B, leverage-funging-B, ce-chain-trace-B, leverage-uov-check-B), append the following adversarial preamble to the session context **before** the row allocation note:
+Append to ce-chain-trace-ta A and B session contexts (A/B share the same prompt except row allocation and the adversarial B preamble — do not tell either instance that a second instance is running):
+> **Row allocation**: Write findings starting at row `{start_row}`. Budget: 40 rows.
+> **Self-detection**: Check TA grant signals (session context TA classification, tab names, Main CEA row labels) before running the check. If no signals found, write your completion marker and stop.
+
+For **B instances only** (sources-B, heads-up-evidence-B, readability-B, leverage-funging-B, ce-chain-trace-B, ce-chain-trace-ta-B, leverage-uov-check-B), append the following adversarial preamble to the session context **before** the row allocation note:
 
 > **Reviewer framing — B instance**: You are a skeptical second reviewer. A separate first reviewer has independently audited this same spreadsheet. Your job is to find what a thorough but reasonable reviewer would have rationalized away. Specifically: (a) assume the first reviewer accepted well-labeled rows as correct without verifying the referenced cells — challenge that instinct by reading the referenced cells themselves, not just their labels; (b) give extra attention to checks requiring you to read multiple tabs together, since cross-tab checks are harder and more likely to be shortcut; (c) when a formula or value looks correct at first glance, ask "am I pattern-matching on the label rather than actually reading this?" — then read it; (d) for every section where you find no issues, write one specific reason the section is clean before moving on. Do not read the Findings sheet. Do not tell the researcher you are a B instance.
 
@@ -418,19 +424,21 @@ For A instances, pass the standard session context only. The only difference bet
 | 6e | `agents/ce-chain-trace.md` | B | `last_row + 651` |
 | 6f | `agents/leverage-uov-check.md` | A | `last_row + 701` |
 | 6f | `agents/leverage-uov-check.md` | B | `last_row + 751` |
+| 6e-ta | `agents/ce-chain-trace-ta.md` | A | `last_row + 951` |
+| 6e-ta | `agents/ce-chain-trace-ta.md` | B | `last_row + 1001` |
 | 7c | `agents/notes-scan.md` | — | Publication Readiness only |
 
 ---
 
 ### Wave 2.5 — Reconciliation (after all Wave 2 agents complete)
 
-Announce before spawning: `[Phase 2/4 done → Phase 3/4] Wave 2 complete — starting reconciliation (up to 16 agents, or 17 if TA BOTEC; fewer if empty pairs skipped in pre-flight check).`
+Announce before spawning: `[Phase 2/4 done → Phase 3/4] Wave 2 complete — starting reconciliation (up to 17 agents, or 18 if TA BOTEC; fewer if empty pairs skipped in pre-flight check).`
 
 **Row allocation recovery — do this first if allocations are not in context**: If Wave 2 row allocations are not available in the current session context (e.g., context was compacted between Wave 2 and Wave 2.5), read Dashboard cells A49:B90 of the output spreadsheet to recover the full Wave 1 and Wave 2 allocation tables before computing the reconciliation ranges below. Do not skip Wave 2.5 due to missing row allocations — always recover from the Dashboard log.
 
 **Pre-flight empty pair check**: Before spawning, fire a parallel batch of `read_sheet_values` calls — one per pair — to check whether each pair's A and B ranges contain any non-empty rows. For any pair where **both** the A range and B range are confirmed completely empty: skip spawning that reconcile agent and announce: `⏭️ Skipping [pair name] reconcile — both A and B wrote zero findings.` Only skip when both ranges are confirmed empty; if either range has any non-empty row, spawn the reconcile agent as normal. Update the agent count in your announcement accordingly.
 
-Spawn **up to 16 reconciliation agents simultaneously** (consistency-check and key-params-check share one combined agent; fewer if empty pairs are skipped), using `agents/reconcile.md`. Each agent receives the standard session context plus its specific pair assignment. Do not tell any reconcile agent about the other pairs being processed.
+Spawn **up to 17 reconciliation agents simultaneously** (consistency-check and key-params-check share one combined agent; fewer if empty pairs are skipped), using `agents/reconcile.md`. Each agent receives the standard session context plus its specific pair assignment. Do not tell any reconcile agent about the other pairs being processed.
 
 For each instance, append to session context:
 > **Pair to reconcile**: [pair name]
@@ -460,6 +468,7 @@ For each instance, append to session context:
 | ce-chain-trace | rows `last_row+601` to `last_row+650` | rows `last_row+651` to `last_row+690` | rows `last_row+691` to `last_row+700` |
 | leverage-uov-check | rows `last_row+701` to `last_row+750` | rows `last_row+751` to `last_row+790` | rows `last_row+791` to `last_row+800` |
 | **heads-up-epi (TA counterfactual burden)** *(TA BOTEC only)* | rows `last_row+851` to `last_row+900` | rows `last_row+901` to `last_row+940` | rows `last_row+941` to `last_row+950` |
+| ce-chain-trace-ta *(self-detecting TA check)* | rows `last_row+951` to `last_row+1000` | rows `last_row+1001` to `last_row+1040` | rows `last_row+1041` to `last_row+1050` |
 
 Note: notes-scan (Step 7c) has no reconciliation pair — it runs once and writes only to Publication Readiness. The final-review compaction step handles it alongside all other Wave 1 findings. The heads-up-epi TA counterfactual burden pair also has no reconciliation pair for non-TA models — skip that row entirely when program context is not a TA BOTEC.
 

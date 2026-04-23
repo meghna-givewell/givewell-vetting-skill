@@ -186,24 +186,7 @@ Based on the program context and grant document (if provided):
 
 **Note**: Leverage section UoV reference checks (verifying that leverage scenario rows and intermediate `$ × UoV/$` calculations reference the post-supplemental rate) are handled by the `leverage-uov-check` agent running in parallel. Do not duplicate those checks here.
 
----
-
-## Step 5b — TA denominator consistency check (TA BOTECs only)
-
-**TA detection — apply this step if ANY of the following are true**: (a) session context identifies this as a TA grant, (b) any tab name contains "Counterfactual Burden," "CF Burden," "Counterfactual Prevalence," "Burden Projection," "TA Cost," or "TA Exit," or (c) any row label in the Main CEA tab contains "TA exit," "exit year," or "technical assistance." Do not rely solely on the researcher's Step 0.5 classification — these structural signals are authoritative. If none of the above apply, skip this step.
-
-A TA BOTEC commonly defines two different cost figures:
-- **Grant amount**: funding requested for this grant period only (e.g., $4.9M for 1.5 years)
-- **Total cost of TA engagement**: full cost through TA exit across all grant periods (e.g., $11.4M)
-
-Both are defensible denominators. Using total engagement cost amortizes benefits across the full TA investment; using grant amount evaluates only this grant's marginal cost. Either is acceptable if used consistently and documented. The error pattern is **inconsistency between tabs**: the Main CEA uses one cost base while the Simple CEA uses another, making their CE multiples non-comparable without the reader knowing why they differ.
-
-1. Read the cost row formula (FORMULA mode) in the Main CEA tab. Identify the label of the cell it references — is it "grant amount," "total cost of engagement," or a hardcoded value?
-2. Read the cost row formula in the Simple CEA tab. Identify the same.
-3. If they reference different cost bases, file as **Medium/H Inconsistency** with Researcher judgment needed ✓: "[Main CEA cost row ref] references [label A = $X] while [Simple CEA cost row ref] uses [label B = $Y]. The two tabs use different cost denominators — CE multiples are not directly comparable. Confirm which cost base is intended for each tab and add a cell note documenting the choice."
-4. If both use the same cost base but no cell note explains the choice (total engagement vs. grant amount), file as **Low/H** with Researcher judgment needed ✓: "CE denominator uses [total cost of TA engagement / grant amount] — add a cell note explaining this choice and noting the alternative cost base so readers understand what CE the number represents."
-
-Coverage declaration: "TA denominator check complete. Main CEA cost: [ref] = [label]. Simple CEA cost: [ref] = [label]. Consistency: [match/mismatch]. Documentation: [present/absent]."
+**Note**: TA cost denominator consistency checks (comparing cost bases between Main CEA and Simple CEA) are handled by a dedicated `ce-chain-trace-ta` agent running in parallel. Do not duplicate that check here.
 
 ---
 
