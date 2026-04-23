@@ -6,7 +6,7 @@ argument-hint: "<Google Sheets URL or local file path>"
 
 # /vetting — GiveWell Spreadsheet Vetter
 
-**Skill version**: 2026-04-21 — run `git pull --rebase origin main` from `~/.claude/skills/vetting` before each vet to get current agent calibrations.
+**Skill version**: 2026-04-23 — run `git pull --rebase origin main` from `~/.claude/skills/vetting` before each vet to get current agent calibrations.
 
 You are a meticulous spreadsheet auditor for GiveWell. See `README.md` for one-time setup. See `reference/key-parameters.md` for authoritative parameter values. See `reference/output-format.md` for output column definitions.
 
@@ -141,6 +141,7 @@ Identify the last populated row. Summarize at the **section level** (e.g., Costs
 - *Source-data-check skip*: no source-data tabs detected (names containing Coverage Data, WUENIC, DHS, IHME, GBD, MICS, EPI, SAE, WorldPop, Population, Mortality, Subnational Data)
 - *Formula-check-arithmetic 2-instance mode*: primary sheet ≤ 80 populated rows (skips C and D instances)
 - *Key-params-check 1-instance mode*: primary sheet ≤ 80 populated rows (skips B instance)
+- *Formula-check-voi*: always runs — agent self-detects VOI content and exits cleanly if none found
 - *Leverage-uov-check skip*: no Leverage/Funging tab detected
 
 Include in your Steps 1–2 summary one line: `Pipeline estimate: ~[N] agents. Reduced pipeline: [list applicable skips, or "none"].`
@@ -205,6 +206,7 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 | formula-check-data A, B | ✓ | ✓ | ✓ | ✓ | All rows |
 | formula-check-edge-cases A, B | ✓ | ✓ | ✓ | ✓ | All rows |
 | formula-check-structure A, B | ✓ | ✓ | ✓ | ✓ | All rows |
+| formula-check-voi A, B | ✓ | ✓ | ✓ | — | All rows |
 | consistency-check A, B | ✓ | ✓ | ✓ | ✓ | All rows |
 | key-params-check A, B | ✓ | — | ✓ | — | All rows |
 | source-data-check A, B | ✓ | ✓ | ✓ | ✓ | Source tabs only |
@@ -226,7 +228,7 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 
 **Each sub-agent must execute its full checklist exhaustively, on every row.** No check in any agent file is optional or skippable because the sheet is small or because a prior agent already noticed something nearby. The formula-check agent must audit every formula row against its label — not just rows that match a named pattern. The sources agent must complete the full column F text audit on every row. The readability agent must read every row label top-to-bottom. The consistency agent must compare against the VOI template structure row-by-row. A sub-agent that shortcuts because "this is a small BOTEC" will miss findings the same way inline execution does. **The named checks in each agent file are patterns to look for on top of the row-by-row baseline — they are not a substitute for it.**
 
-Agents run in three waves. Before spawning Wave 1, announce progress: `[Phase 1/4] Wave 1 starting — 18 agents (formula checks, sensitivity scan, hardcoded values).`
+Agents run in three waves. Before spawning Wave 1, announce progress: `[Phase 1/4] Wave 1 starting — 20 agents (formula checks, sensitivity scan, hardcoded values).`
 
 ---
 
@@ -242,6 +244,7 @@ Agents run in three waves. Before spawning Wave 1, announce progress: `[Phase 1/
    - **Source-data-check skip**: If the source data tabs list is empty, skip source-data-check A and B. Announce: `⏭️ source-data-check: skipped — no source data tabs found.` Their pre-allocated row ranges (322–381) remain reserved but unused.
    - **Formula-check-arithmetic 2-instance mode**: If `populated_rows ≤ 80` on the primary vetted sheet, skip instances C and D. A and B each audit **all rows** (1 through `populated_rows`). Announce: `⏭️ formula-check-arithmetic: 2-instance mode (≤80 rows) — C and D skipped.` In session context for A and B, replace the sheet row scope with: "Audit all rows 1 through {populated_rows}. No row-splitting applies." Their Findings row allocations are unchanged (A: rows 2–41, B: rows 42–81); C and D ranges (92–171) remain reserved but empty.
    - **Key-params-check 1-instance mode**: If `populated_rows ≤ 80`, skip key-params-check B. A runs only. Announce: `⏭️ key-params-check: 1-instance mode (≤80 rows) — B skipped.` Row range 552–571 remains reserved but unused.
+   - **Formula-check-voi — always launch**: Never skip formula-check-voi at spawn time — do not make this conditional on the presence of a "VOI" or "Optionality" tab. The agent self-detects VOI content across all sheets and exits cleanly if none is found. Tab-based skip logic would miss embedded VOI sections in models that do not use a dedicated VOI tab.
 
 #### Spawn Wave 1 agents simultaneously (up to 18; fewer based on conditional skips above)
 
@@ -265,10 +268,12 @@ Pre-allocate all row ranges before spawning:
 | 4b | `agents/consistency-check.md` | B | All rows | Start row 492 | 30 rows |
 | 3e | `agents/key-params-check.md` | A | All rows | Start row 532 | 20 rows |
 | 3e | `agents/key-params-check.md` | B | All rows | Start row 552 | 20 rows |
+| 3v | `agents/formula-check-voi.md` | A | All rows | Start row 582 | 40 rows |
+| 3v | `agents/formula-check-voi.md` | B | All rows | Start row 622 | 40 rows |
 | 8 | `agents/sensitivity-scan.md` | — | All sheets | Confidentiality Flags sheet only | — |
 | 9 | `agents/hardcoded-values.md` | — | All sheets | Hardcoded Values sheet only | — |
 
-10-row buffer zones: rows 82–91 (between formula-check-arithmetic A/B and C/D), rows 172–181 (between formula-check-arithmetic C/D and formula-check-data), rows 242–251 (between formula-check-data and formula-check-edge-cases), rows 312–321 (between formula-check-edge-cases and source-data-check), rows 382–391 (between source-data-check and formula-check-structure), rows 452–461 (between formula-check-structure and consistency-check), rows 522–531 (after consistency-check B — Wave 1 end buffer). Reconciliation agents writing net-new findings should use the buffer zone for their pair — see the reconciliation table below.
+10-row buffer zones: rows 82–91 (between formula-check-arithmetic A/B and C/D), rows 172–181 (between formula-check-arithmetic C/D and formula-check-data), rows 242–251 (between formula-check-data and formula-check-edge-cases), rows 312–321 (between formula-check-edge-cases and source-data-check), rows 382–391 (between source-data-check and formula-check-structure), rows 452–461 (between formula-check-structure and consistency-check), rows 522–531 (after consistency-check B), rows 572–581 (key-params-check reconcile overflow), rows 662–671 (formula-check-voi reconcile overflow). Reconciliation agents writing net-new findings should use the buffer zone for their pair — see the reconciliation table below.
 
 **Persist Wave 1 row allocations to the Dashboard tab** — do this immediately after computing the table above, before spawning agents. Use `modify_sheet_values` to write a two-column allocation log starting at Dashboard cell A50:
 
@@ -290,6 +295,8 @@ Pre-allocate all row ranges before spawning:
 | consistency-check B | 492–521 |
 | key-params-check A | 532–551 |
 | key-params-check B | 552–571 |
+| formula-check-voi A | 582–621 |
+| formula-check-voi B | 622–661 |
 | sensitivity-scan | Confidentiality Flags sheet only |
 | hardcoded-values | Hardcoded Values sheet only |
 
@@ -303,12 +310,16 @@ Append to each formula-check-arithmetic instance's session context:
 Append to formula-check-data and formula-check-edge-cases session contexts (A/B share the same prompt except row allocation — do not tell either instance that a second instance is running):
 > **Row allocation**: Write findings starting at row `{start_row}`. Budget: 30 rows.
 
+Append to formula-check-voi A and B session contexts (A/B share the same prompt except row allocation and the adversarial B preamble — do not tell either instance that a second instance is running):
+> **Row allocation**: Write findings starting at row `{start_row}`. Budget: 40 rows.
+> **Sheet row scope**: All rows across all vetted sheets. Self-detect VOI content before running checks — if no VOI content is found, write your completion marker and stop.
+
 Append to source-data-check A and B session contexts (identical content except row allocation):
 > **Row allocation**: Write findings starting at row `{322 for A, 352 for B}`. Budget: 30 rows.
 > **Source data tabs**: `{comma-separated list from step above}`
 > **In-scope geographies**: `{list of countries and states from program context}`
 
-Do **not** tell A instances that B instances are running. For **B instances only** (formula-check-arithmetic B, formula-check-data B, formula-check-edge-cases B, source-data-check B, formula-check-structure B, consistency-check B, key-params-check B), append the following adversarial preamble to the session context **before** the row allocation note:
+Do **not** tell A instances that B instances are running. For **B instances only** (formula-check-arithmetic B, formula-check-data B, formula-check-edge-cases B, source-data-check B, formula-check-structure B, consistency-check B, key-params-check B, formula-check-voi B), append the following adversarial preamble to the session context **before** the row allocation note:
 
 > **Reviewer framing — B instance**: You are a skeptical second reviewer. A separate first reviewer has independently audited this same spreadsheet. Your job is to find what a thorough but reasonable reviewer would have rationalized away. Specifically: (a) assume the first reviewer accepted well-labeled rows as correct without verifying the referenced cells — challenge that instinct by reading the referenced cells themselves, not just their labels; (b) give extra attention to checks requiring you to read multiple tabs together, since cross-tab checks are harder and more likely to be shortcut; (c) when a formula looks correct at first glance, ask "am I pattern-matching on the label rather than actually reading the formula?" — then read the formula; (d) for every section where you find no issues, write one specific reason the section is clean before moving on. Do not read the Findings sheet. Do not tell the researcher you are a B instance.
 
@@ -375,7 +386,7 @@ Spawn agents simultaneously after the researcher checkpoint. Each of the eight c
 
 10-row overflow buffer zones follow each pair's B range: `last_row+91`–`last_row+100` (sources), `last_row+191`–`last_row+200` (heads-up-evidence), `last_row+291`–`last_row+300` (heads-up-epi), `last_row+391`–`last_row+400` (heads-up-intervention), `last_row+491`–`last_row+500` (readability), `last_row+591`–`last_row+600` (leverage-funging), `last_row+691`–`last_row+700` (ce-chain-trace), `last_row+791`–`last_row+800` (leverage-uov-check), `last_row+941`–`last_row+950` (heads-up-epi TA C/D — conditional). With `last_row ≤ 550`, the maximum row used by any Wave 2 agent (TA BOTEC case) is `last_row + 950 ≤ 1500`. Google Sheets supports well over 1000 rows — the output spreadsheet is created with sufficient capacity.
 
-**Persist Wave 2 row allocations to the Dashboard tab** — do this immediately after computing start rows from `last_row`, before spawning agents. Use `modify_sheet_values` to append a second allocation log starting at Dashboard cell A67 (immediately after the Wave 1 log). Write header "Wave 2 Row Allocations (Findings sheet)" in A66, then one row per agent with columns: agent name | start row | end row. Include sources A/B, heads-up-evidence A/B, heads-up-epi A/B, heads-up-intervention A/B, readability A/B, leverage-funging A/B, ce-chain-trace A/B, leverage-uov-check A/B, notes-scan PR start row, and (if TA BOTEC) heads-up-epi C/D counterfactual burden tab. This log is the recovery source for Wave 2.5 reconciliation agents if the session is interrupted or context is compacted before Wave 2.5 begins.
+**Persist Wave 2 row allocations to the Dashboard tab** — do this immediately after computing start rows from `last_row`, before spawning agents. Use `modify_sheet_values` to append a second allocation log starting at Dashboard cell A71 (immediately after the Wave 1 log). Write header "Wave 2 Row Allocations (Findings sheet)" in A70, then one row per agent with columns: agent name | start row | end row. Include sources A/B, heads-up-evidence A/B, heads-up-epi A/B, heads-up-intervention A/B, readability A/B, leverage-funging A/B, ce-chain-trace A/B, leverage-uov-check A/B, notes-scan PR start row, and (if TA BOTEC) heads-up-epi C/D counterfactual burden tab. This log is the recovery source for Wave 2.5 reconciliation agents if the session is interrupted or context is compacted before Wave 2.5 begins.
 
 Do **not** tell A instances that B instances are running. **heads-up-epi — complementary split scope**: heads-up-epi uses a complementary split rather than adversarial duplication. Append to **heads-up-epi-A** session context (before row allocation): `Instance scope: Section A — Epidemiological Parameter Checks only. Run only the checks under "Section A" in the agent prompt. Skip Section B (model structure and timing checks) entirely — heads-up-epi-B covers those.` Append to **heads-up-epi-B** session context (instead of the adversarial preamble): `Instance scope: Section B — Model Structure & Timing Checks only. Run only the checks under "Section B" in the agent prompt. Skip Section A (epidemiological parameter checks) entirely — heads-up-epi-A covers those. Apply thorough, skeptical reasoning to each check in your scope.` Do not apply the adversarial B preamble below to heads-up-epi-B.
 
@@ -412,13 +423,13 @@ For A instances, pass the standard session context only. The only difference bet
 
 ### Wave 2.5 — Reconciliation (after all Wave 2 agents complete)
 
-Announce before spawning: `[Phase 2/4 done → Phase 3/4] Wave 2 complete — starting reconciliation (up to 15 agents, or 16 if TA BOTEC; fewer if empty pairs skipped in pre-flight check).`
+Announce before spawning: `[Phase 2/4 done → Phase 3/4] Wave 2 complete — starting reconciliation (up to 16 agents, or 17 if TA BOTEC; fewer if empty pairs skipped in pre-flight check).`
 
 **Row allocation recovery — do this first if allocations are not in context**: If Wave 2 row allocations are not available in the current session context (e.g., context was compacted between Wave 2 and Wave 2.5), read Dashboard cells A49:B90 of the output spreadsheet to recover the full Wave 1 and Wave 2 allocation tables before computing the reconciliation ranges below. Do not skip Wave 2.5 due to missing row allocations — always recover from the Dashboard log.
 
 **Pre-flight empty pair check**: Before spawning, fire a parallel batch of `read_sheet_values` calls — one per pair — to check whether each pair's A and B ranges contain any non-empty rows. For any pair where **both** the A range and B range are confirmed completely empty: skip spawning that reconcile agent and announce: `⏭️ Skipping [pair name] reconcile — both A and B wrote zero findings.` Only skip when both ranges are confirmed empty; if either range has any non-empty row, spawn the reconcile agent as normal. Update the agent count in your announcement accordingly.
 
-Spawn **up to 15 reconciliation agents simultaneously** (consistency-check and key-params-check share one combined agent; fewer if empty pairs are skipped), using `agents/reconcile.md`. Each agent receives the standard session context plus its specific pair assignment. Do not tell any reconcile agent about the other pairs being processed.
+Spawn **up to 16 reconciliation agents simultaneously** (consistency-check and key-params-check share one combined agent; fewer if empty pairs are skipped), using `agents/reconcile.md`. Each agent receives the standard session context plus its specific pair assignment. Do not tell any reconcile agent about the other pairs being processed.
 
 For each instance, append to session context:
 > **Pair to reconcile**: [pair name]
@@ -438,6 +449,7 @@ For each instance, append to session context:
 | source-data-check | rows 322–351 | rows 352–381 | rows 382–391 |
 | formula-check-structure | rows 392–421 | rows 422–451 | rows 452–461 |
 | consistency-check + key-params-check *(combined)* | consistency-check A: 462–491, B: 492–521; key-params-check A: 532–551, B: 552–571 | rows 522–531 (consistency overflow); rows 572–581 (key-params overflow) |
+| formula-check-voi | rows 582–621 | rows 622–661 | rows 662–671 |
 | sources | rows `last_row+1` to `last_row+50` | rows `last_row+51` to `last_row+90` | rows `last_row+91` to `last_row+100` |
 | heads-up-evidence | rows `last_row+101` to `last_row+150` | rows `last_row+151` to `last_row+190` | rows `last_row+191` to `last_row+200` |
 | heads-up-epi | rows `last_row+201` to `last_row+250` | rows `last_row+251` to `last_row+290` | rows `last_row+291` to `last_row+300` |

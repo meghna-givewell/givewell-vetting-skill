@@ -55,6 +55,8 @@ Coverage declaration: "GBD vizhub check complete. Cells with vizhub URLs: [N]. U
 
 ## Check 3 — Cross-model value verification
 
+**Scope note**: The `sources` agent also scans cell notes for cross-model citations — overlap between the two agents is expected and harmless. Do not skip this check on the assumption that sources.md covers it. The sources agent flags citation quality (missing/broken links); this check verifies the value was transcribed correctly. They are complementary, not redundant.
+
 When a hardcoded cell note cites a specific GiveWell CEA or internal model as the source — e.g., "From MHI CEA," "Based on our Deworming CEA," "Copied from [model]" — treat this as a mandatory verification trigger. Load the referenced model via `read_sheet_values` and confirm the value matches the source model's calculation.
 
 - A value labeled "from [model]" that doesn't match the source calculation is **High/D**.
@@ -77,6 +79,24 @@ Common error: weighting by mortality ratios rather than prevalence shares when c
 This check applies especially to combined-protocol (MAM+SAM) or multi-geography aggregation formulas in ceiling analysis, plausibility, or summary tabs.
 
 Coverage declaration: "Downstream re-computation check complete. Summary/aggregate formulas reviewed: [N]. Weighting issues found: [list or 'none']. No other issues of this type."
+
+---
+
+## Check 3b — Implicit cross-model parameters (no explicit citation)
+
+Check 3 covers hardcoded cells that *explicitly* cite another GW model as the source. This check covers the complementary gap: parameters that commonly derive from another GW model or analysis but whose source notes do not say so.
+
+When scanning all hardcoded cells across all sheets, flag any row whose label contains any of the following terms where the Notes cell does NOT cite a specific GW model, analysis document, or external source:
+- "funging," "funge," or "fungibility" — when the value represents a program- or grantee-specific funging rate (not the standard GW-wide adjustment handled by key-params-check)
+- "income effect," "development effect," "income weight," "long-run income effect" — when the value uses a program-specific split (e.g., 70/30 across benefit streams) distinct from the standard key-parameters.md value
+- "crowding in," "crowding out," "leverage rate" — when the value represents a program-specific leverage estimate
+- "attribution factor," "proportion attributable" — when the value was determined in a separate analysis
+
+For each such row with no cross-model source note, file as **Low/H** with Researcher judgment needed ✓: "No cross-model source cited for [row label] = [value]. If this value is drawn from another GW model or analysis (e.g., [program] funging analysis, PrEP CEA income weights), add a cross-reference note citing the source model and confirm the value is current. If model-specific, document the basis in the Notes column." Write "Direction unknown" in column H.
+
+**Scope boundary**: Do not flag standard values already checked by key-params-check.md (GD benchmark, neonatal moral weight, death-aversion values, discount rates, standard income effects). Only flag program-specific variants where the derivation would require loading a separate GW model to verify.
+
+Coverage declaration: "Cross-model implicit parameter check complete. Funging/income-effect/leverage rows scanned: [N]. Rows missing cross-model citation: [list or 'none']."
 
 ---
 

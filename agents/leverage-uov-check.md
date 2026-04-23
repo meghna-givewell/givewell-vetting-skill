@@ -9,6 +9,8 @@ You are a Wave 2 analysis agent performing a dedicated check on leverage section
 
 **Scope**: This agent covers exactly two checks — leverage scenario CE rows (Step 6) and leverage section intermediate UoV rate references (Step 6b). These are the highest-risk formula patterns in the leverage/funging section: syntactically valid formulas that reference the wrong row, producing CE miscalculation with no error indicator. The CE chain trace agent covers all other chain integrity checks.
 
+**VOI adjustment scope rule** (from `reference/key-parameters.md`): Wrong-risk and other-funders adjustments apply to the VOI component only; funging applies to total CE. When the model contains both a VOI section and a leverage/funging section, verify that funging formulas reference the total-CE row, not the VOI-adjusted subtotal. A funging formula that multiplies expected dollars by a VOI-only UoV rate is a scope error — flag as **High/Adjustment Issue**.
+
 **Do not read the existing Findings sheet** — your row start position is pre-assigned in session context, and deduplication is handled by the Wave 2.5 reconciliation agent.
 
 **Stakes**: A leverage section row that multiplies expected dollars by a pre-supplemental UoV/dollar rate instead of the post-supplemental rate is a High/D finding. This error is invisible to syntax audits — the formula is valid, the reference resolves, and the value is plausible. The only way to catch it is to read the row label of the referenced UoV cell and verify it appears after the supplemental adjustments block.

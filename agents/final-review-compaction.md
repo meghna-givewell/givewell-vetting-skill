@@ -90,6 +90,25 @@ Coverage declaration: "Deduplication complete. [N] exact duplicates merged. [See
 
 ---
 
+## Step 3.3 — Researcher-to-confirm audit
+
+Count all rows with ✓ in column I. If the ✓ count exceeds 20% of all findings rows, apply the following triage pass before proceeding to Step 3.5.
+
+For each ✓ row, ask: **can this question be answered by (a) reading another cell or formula in the spreadsheet, (b) checking a cited URL, or (c) applying standard GW methodology documented in key-parameters.md or GW guidance?** If yes to any of these, the ✓ mark should not have been filed — the agent had enough information to either confirm or dismiss the finding without researcher input.
+
+Action for each ✓ row reviewed:
+- If the question is answerable from the spreadsheet → remove the ✓ mark. If the finding is still valid, it remains as a confirmed finding. If the finding was only a hypothesis that the spreadsheet contradicts, remove the entire row.
+- If the question genuinely requires the researcher to explain their analytical intent or confirm an assumption not determinable from the spreadsheet → retain ✓.
+- If uncertain, retain ✓ but add a note in the Explanation: "Researcher to confirm — [specific question]."
+
+Write: "Step 3.3 complete. ✓ findings before audit: [N]. ✓ marks removed (determinable from spreadsheet): [M]. Rows removed entirely: [K]. ✓ marks retained (genuine intent questions): [N-M-K]."
+
+Skip this step (write "Step 3.3: skipped — ✓ count [N] is ≤20% of total findings [T]") when ✓ count / total findings ≤ 20%.
+
+---
+
+---
+
 ## Step 3.5 — Normalize category labels
 
 Before rewriting, scan every row in memory and normalize the Error Type/Issue field to the exact standard label. Agents frequently append descriptive text after the label (e.g., "Permission Issue — internal document may need publish access" or "Readability — duplicate header"). Strip everything after the first recognized label word.
@@ -110,10 +129,11 @@ Coverage declaration: "Label normalization complete. Findings: [N] labels normal
 
 Rewrite both sheets sequentially from row 2, closing all gaps left by Wave 2's pre-allocated row ranges.
 
-Sort all Findings rows in memory using three sort keys:
+Sort all Findings rows in memory using four sort keys:
 1. **Primary**: Severity (High → Medium → Low)
 2. **Secondary**: Estimated CE Impact (column H) — within each severity tier, apply this order: numeric magnitude findings first (rows where column H contains a specific estimate, e.g., "Raises CE — 2.5x" or "Lowers CE — 1.3x"), then magnitude-unknown findings ("Raises CE — magnitude unknown", "Lowers CE — magnitude unknown"), then "Direction unknown", then "No CE impact", then blank
 3. **Tertiary**: Error Type/Issue (column E, alphabetical)
+4. **Quaternary**: Researcher judgment needed (column I) — within the same severity, CE impact tier, and error type, place findings WITHOUT ✓ before findings WITH ✓. Confirmed findings should appear before researcher-to-confirm items so reviewers encounter actionable findings first without having to skip over speculative ones.
 
 Then rewrite the Findings sheet from row 2 with section dividers:
 - Before the first High finding: divider row with column B = `─── High (N findings) ───`, all other columns blank.
