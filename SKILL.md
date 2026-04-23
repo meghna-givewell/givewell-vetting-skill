@@ -360,7 +360,7 @@ Spawn agents simultaneously after the researcher checkpoint. Each of the eight c
 
 **Before spawning**, read the Findings sheet and identify the last populated finding row (call it `last_row`; use `last_row = 1` if no findings yet). **Verify that `last_row ≤ 670`** — Wave 1 now uses up to row ~661 at full budget (including formula-check-voi A/B), so `last_row` up to 670 is expected. If `last_row > 670`, Wave 1 agents exceeded their budgets significantly; warn in chat and proceed. If `last_row > 750`, reduce each Wave 2 pair's budget from 40 rows to 25 rows and note this adjustment in chat. Calculate pre-allocated start rows:
 
-**Row allocation safety check**: After computing all Wave 2 start rows, calculate `wave2_max_row = last_row + 950` (worst-case TA BOTEC allocation). If `wave2_max_row > 1950`, write a blank value to `Findings!A{wave2_max_row + 50}` using `modify_sheet_values` to expand the grid before spawning any agents. This handles edge cases where Wave 1 overflow caused `last_row` to be much larger than expected.
+**Row allocation safety check**: After computing all Wave 2 start rows, calculate `wave2_max_row = last_row + 1050` (worst-case ce-chain-trace-ta allocation). If `wave2_max_row > 1950`, write a blank value to `Findings!A{wave2_max_row + 50}` using `modify_sheet_values` to expand the grid before spawning any agents. This handles edge cases where Wave 1 overflow caused `last_row` to be much larger than expected.
 - sources-A: `last_row + 1`
 - sources-B: `last_row + 51`
 - heads-up-evidence-A: `last_row + 101`
