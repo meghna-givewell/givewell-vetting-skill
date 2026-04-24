@@ -67,6 +67,35 @@ For every `PV()` formula in all VOI sections, inspect the `type` argument. `type
 
 ---
 
+## Check 6 — Scenario weight sum verification
+
+Locate the row that assigns probability weights to CE-bar scenarios — typically labeled "Weight on different scenario," "Scenario probability," "Probability weight," or any label containing "weight" combined with "scenario." Read all non-empty numeric values in data columns (typically columns B–E or B–F) for that row.
+
+Sum the values. If the sum deviates from 1.0 by more than 1%, flag as **High/Formula Error**: "[weight row ref] scenario weights sum to [X]% rather than 100%. The final weighted-average CE (typically `=SUMPRODUCT(CE_row, weight_row)`) will be scaled to [X]% of the correct value — verify that all scenario columns are included and weights were updated when scenarios were added or removed."
+
+Also check: if any scenario column in the weight row has a value of 0%, flag as **Low/Structural Issue**: "Scenario column [ref] has a weight of 0% — its CE calculations do not contribute to the weighted average. Remove the column if inactive, or set the weight to its intended value."
+
+Coverage declaration: `COVERAGE | formula-check-voi | scenario weight sum | [row ref] | sum: [X%] | issues found: [N] | status: complete`
+
+---
+
+## Check 7 — VOI CE reference source verification
+
+Two rows in any VOI model depend on referencing the *final post-adjustment* CE output from the main CEA: (1) the "best guess on CE of this reallocated funding" row (row 20 in the standard template), and (2) the "cost-effectiveness from the program itself during pilot/trial period" row (row 34 in the standard template). If either references a pre-adjustment CE subtotal, the VOI or direct-benefit calculation is systematically wrong.
+
+For each of these rows (locate by label: "best guess on CE," "cost-effectiveness from the program itself," "CE of reallocated funding," or semantic equivalents):
+
+1. Read the cell formula in FORMULA mode.
+2. If the formula is a plain hardcoded number: note as hardcoded in your coverage declaration; skip steps 3–5.
+3. If the formula contains a cross-sheet reference (e.g., `='Main CEA'!B48`): extract the referenced cell and read its row label using `read_sheet_values` (FORMATTED_VALUE, column A of the referenced row).
+4. Verify the row label contains "final," "after adjustments," "post-adjustment," or equivalent phrasing indicating this is the terminal CE output.
+5a. If the label contains "before adjustments," "unadjusted," "initial," or similar — or if the referenced row visually precedes the adjustments section — flag as **High/Formula Error**: "[VOI cell ref] references [source cell] (label: '[label]') — this appears to be a pre-adjustment CE value. The VOI benefit calculation should reference the final post-adjustment CE output."
+5b. If the label is ambiguous (neither clearly final nor clearly pre-adjustment), flag as **Medium/Formula Error** with Researcher judgment needed ✓: "[VOI cell ref] references [source cell] (label: '[label]') — confirm this is the final post-adjustment CE, not a pre-adjustment subtotal."
+
+Coverage declaration: `COVERAGE | formula-check-voi | CE reference source | [N rows checked] | cross-sheet refs: [N] | hardcoded: [N] | issues found: [N] | status: complete`
+
+---
+
 ## Writing Findings
 
 Before writing any finding, confirm: (1) exact cell reference(s), (2) specific formula or value issue, (3) precise fix.
