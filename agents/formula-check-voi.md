@@ -19,6 +19,24 @@ You are performing Step 3v of a GiveWell spreadsheet vet, focused exclusively on
 
 ---
 
+## Check 0 — VOI structural comparison vs. Optionality/VoI BOTEC Template
+
+Before running formula checks, load the Optionality/VoI BOTEC Template (doc #3, spreadsheet ID `1wYsQZGsavXJQFSGF6Ea1k-p55C6dMbLPHhb0LKgNDZc`) using `read_sheet_values` (FORMATTED_VALUE mode, `A1:A100`). Extract all non-empty row labels from column A.
+
+Compare against the target VOI model's row labels (already read during self-detection). Check for three deviation types:
+
+1. **Missing required concept-classes**: The following calculation concept-classes must be present in any GiveWell VOI model. For each absent class, flag as **Medium/H** Structural Issue with Researcher judgment needed ✓: "Required VOI concept '[class]' not found in model — confirm this calculation is handled elsewhere or add the missing row." Required classes: (a) probability of research updating recommendation, (b) expected CE if recommendation is updated, (c) expected CE if recommendation is not updated, (d) wait time / time to resolution, (e) discount rate applied to optionality value, (f) VOI/optionality CE output row (the row whose value feeds into the main CE chain).
+
+2. **Undocumented row additions**: For each row in the target model that has no semantic equivalent in the template and no cell note explaining the addition, flag as **Low/H** Structural Issue: "Row '[label]' is present in this model but has no equivalent in the standard VOI BOTEC Template — add a cell note confirming the addition is intentional and describing its purpose."
+
+3. **Semantically renamed rows**: For each template row concept that appears in the target model under a materially different label with no cell note, flag as **Low/H** Structural Issue: "Template row '[template label]' appears as '[model label]' in this model — confirm the concept is the same and add a note if the renaming is intentional." A material rename is one that changes the apparent scope or direction of the row (e.g., 'GiveWell opportunity cost CE' → 'CE of counterfactual across all funders').
+
+Skip this check if: (a) the researcher's Step 0.5 notes describe the VOI model as a standalone non-template-based model, or (b) the template read fails — note the failure in your coverage declaration and proceed to Check 1.
+
+Coverage declaration: `COVERAGE | formula-check-voi | template comparison | [N] template rows checked | missing required classes: [list or none] | undocumented additions: [K] | renamed rows: [L] | status: complete`
+
+---
+
 ## Check 1 — VOI/Optionality ad hoc adjustment scope
 
 Locate the row(s) where CE-from-optionality and CE-from-direct-benefits are combined into a total. Then find where ad hoc adjustments are applied in the model. Verify adjustments are applied ONLY to the VOI/optionality component — not to the aggregate total that includes direct benefits. If the adjustment formula multiplies the combined total CE rather than the VOI component alone, flag as **Medium/Adjustment Issue**: "[cell] applies [adjustment name] to the combined CE total (direct + optionality). This adjustment should apply only to the VOI/optionality component — applying it to the total double-adjusts the direct-benefits portion."

@@ -86,7 +86,9 @@ When duplicates are found: keep the finding with the more complete Explanation a
 
 After this pass, write: "Semantic consolidation complete. [N] root-cause/symptom pairs consolidated. [M] same-parameter multi-cell groups consolidated."
 
-Coverage declaration: "Deduplication complete. [N] exact duplicates merged. [See semantic consolidation above.] No other duplicates found."
+**Synthesis false-positive guard**: After deduplication and consolidation, scan for any finding whose Explanation (column F) contains language suggesting it was assembled by combining signals from two agents rather than directly observed — phrases like "both instances flagged," "A noted X while B noted Y," "combining these observations suggests," or any claim at High/D severity that is not supported by a specific cell value read in FORMULA or FORMATTED_VALUE mode. For each such finding: (a) if you can verify the claim by calling `read_sheet_values` on the referenced cell — do so now, and either confirm the finding (retain at its severity) or downgrade it; (b) if the claim cannot be verified without reading the source spreadsheet — downgrade to Medium/H with Researcher judgment needed ✓ and add to the Explanation: "Synthesized from two partial agent observations — researcher to confirm before treating as confirmed error." Do not retain a High/D synthesized finding that was not directly verified. Rationale: the compaction agent in a prior vet elevated a Low observation to High/D by combining two partial signals, producing a false positive that the human vet did not catch — and which caused the researcher to distrust the adjacent real findings.
+
+Coverage declaration: "Deduplication complete. [N] exact duplicates merged. [See semantic consolidation above.] Synthesis guard: [M] unverified High/D findings downgraded. No other duplicates found."
 
 ---
 

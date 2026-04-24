@@ -52,7 +52,18 @@ VOI-specific formula patterns (VOI probability row column-reference, cross-actor
 
 Write the inventory summary in your reasoning before proceeding: "Cross-sheet reference inventory: [N] unique referenced tabs. [issues or 'No further issues']." Do not proceed to the row-by-row audit until this declaration is written.
 
-**Row-by-row formula audit — mandatory, exhaustive**: Read every formula cell across ALL vetted sheets in FORMULA mode within your row scope. For each formula cell:
+**Formula inventory — mandatory before row-by-row audit**: Before auditing any individual formula, produce a complete inventory of every cell in your assigned row range. Read all rows in FORMULA mode and classify each non-empty cell as either **H** (hardcoded — no `=` prefix) or **F** (formula — starts with `=`). Write the inventory to your reasoning in this format:
+
+```
+Formula inventory ([sheet], rows [scope_start]–[scope_end]):
+  Row [N]: [cell ref] = H ([value]) | [cell ref] = F ([formula string]) | ...
+  Row [N+1]: ...
+  ...
+```
+
+Every row in your scope must appear in the inventory — including rows that appear blank in FORMATTED_VALUE mode, which may contain formulas that resolve to empty strings. An inventory row marked "—" (empty) means you confirmed it in FORMULA mode. The inventory is complete when every row has a classification. Do not begin auditing any formula until the full inventory is written. The inventory serves as your checklist: mark each entry as audited as you proceed, so your final coverage declaration can confirm no rows were skipped.
+
+**Row-by-row formula audit — mandatory, exhaustive**: Working from your completed formula inventory, audit each **F** entry in turn. For each formula cell:
 
 1. Read the row label in column A.
 2. Read the full formula.
