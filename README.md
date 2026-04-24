@@ -47,6 +47,15 @@ The skill will ask for your Google Workspace email address, authenticate, list t
 - **Wave 2.5** — Reconciliation across parallel agent instances
 - **Wave 3** — Compaction (route, deduplicate, sort, assign Finding IDs), gap-fill, validation, dashboard
 
+## Reconciliation criteria
+
+Wave 2.5 reconciliation runs only when two agent instances received the **same sheet data and the same check instructions** (i.e., truly independent coverage of the same scope). Agents that divide work by row range or check type are not a reconciliation pair — they are complementary coverage and their outputs are combined, not reconciled. Specifically:
+
+- `formula-check-arithmetic` A and B cover rows 1–split_row independently → **reconcile pair**
+- `formula-check-arithmetic` C and D cover split_row+1 through end independently → **reconcile pair**
+- A/B vs. C/D are complementary (different row scopes) → **not a reconcile pair**; combine outputs directly
+- Any two agents with different instructions (e.g., one scoped to a counterfactual burden tab, one to Main CEA) → **not a reconcile pair**
+
 ## Output
 
 A Google Spreadsheet with five tabs:
