@@ -53,6 +53,24 @@ Coverage declaration: "GBD vizhub check complete. Cells with vizhub URLs: [N]. U
 
 ---
 
+## Check 2b — GBD formula cell metric alignment
+
+When a formula cell (not a hardcoded cell) embeds numeric constants derived from GBD or other epidemiological data sources — e.g., `=27935.25*(28/365.25)/100` — and the cell note or an adjacent source column cites a GBD URL or data source, verify that the cited metric matches what the formula is computing.
+
+This check is necessary because the formula itself reveals the intended metric (e.g., `28/365.25` implies neonatal deaths — a neonatal time fraction), while the cited source may describe a broader or different metric (e.g., all-cause mortality rather than neonatal mortality rate).
+
+Procedure:
+1. For every formula cell containing embedded numeric literals (constants that appear to be epidemiological estimates), read the cell note and any adjacent source column entry.
+2. Infer the intended metric from the formula structure — e.g., `× (28/365.25)` signals neonatal period; `/ 100` signals per-100 rate; `/ 1000` signals per-1000 rate.
+3. Compare the inferred metric against the description in the cell note or the title/URL of the cited source. A neonatal-deaths formula citing an all-cause mortality URL is a metric mismatch.
+4. If the URL is inaccessible (403, paywall, or redirect), note what metric the formula requires based on formula structure and flag if the note description references a broader category.
+
+File as **Medium/H** with Researcher judgment needed ✓: "[cell] formula structure implies [inferred metric] (e.g., neonatal deaths) but the cited source at [URL/note text] appears to describe [broader metric]. Confirm the source provides the correct metric and update the note." Flag as **High/D** if the metric mismatch would materially affect the value (e.g., all-cause vs. neonatal mortality differ by 5–10× in typical SSA contexts).
+
+Coverage declaration: "GBD formula cell metric alignment check complete. Formula cells with embedded epidemiological constants: [N]. Metric mismatches found: [list or 'none']. No other issues of this type."
+
+---
+
 ## Check 3 — Cross-model value verification
 
 **Scope note**: The `sources` agent also scans cell notes for cross-model citations — overlap between the two agents is expected and harmless. Do not skip this check on the assumption that sources.md covers it. The sources agent flags citation quality (missing/broken links); this check verifies the value was transcribed correctly. They are complementary, not redundant.
