@@ -57,6 +57,8 @@ Flag any row where the label (column A), notes cell, or a resolved spreadsheet c
 **I. Cell note contradicts cell value**
 For each row that has both a cell note (from `read_sheet_notes`) and a hardcoded numeric value: read the note text and ask whether it implies a specific numeric value. If the note's implied value conflicts with the cell's stored value — e.g., the note says "we set this to X" or "this implies a value of 1" but the cell stores a different number — flag as Low/O with Readability type: "Cell note at [ref] implies a value of [implied] but the cell stores [actual]. Update the note to reflect the current value, or confirm the note's reasoning still applies." Apply this check to hardcoded cells only (formula cells whose notes describe the formula's logic are out of scope).
 
+Also apply this check to cell notes that make **qualitative weighting or emphasis claims** — e.g., "we put less weight on X than Y," "X is the preferred estimate," or "Y is downweighted relative to Z." For any such note, read the actual weights in the adjacent or referenced cells and check whether the numbers reflect the note's claimed hierarchy. If all weights are within 5 percentage points of each other when the note implies a clear directional preference, or if the "preferred" estimate's weight is lower than or equal to the "downweighted" estimate's weight, flag as Low/O: "Note at [ref] describes [qualitative claim] but actual weights are [X]% vs. [Y]% — update the note to accurately describe the weighting rationale, or adjust the weights to match the documented intent."
+
 ---
 
 ## Step 3 — Mandatory declaration table
