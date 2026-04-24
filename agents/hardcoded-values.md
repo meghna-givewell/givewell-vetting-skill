@@ -67,7 +67,7 @@ Use this consolidation only when all cells in the range share the same source an
 
 **Write all entries in a single `modify_sheet_values` call starting at row 2, with no blank rows.** Assemble every entry across all vetted sheets into one consecutive list before writing — do not write sheet by sheet in separate calls, as that causes gaps. Rows must be contiguous: row 2, row 3, row 4, … with no skipped rows between them.
 
-## Final step — apply conditional formatting
+## Step 2 — Apply conditional formatting
 
 After all rows are written, call `add_conditional_formatting` on the Hardcoded Values sheet to color column C (C2:C1000) by category:
 
@@ -77,3 +77,17 @@ After all rows are written, call `add_conditional_formatting` on the Hardcoded V
 - `Structural` → background `#EDEDED` (light grey)
 
 This step is required — do not skip it even if the output-setup step already attempted this formatting.
+
+---
+
+## Final step — write completion marker
+
+After all rows are written and conditional formatting is applied, add ONE final row to the Hardcoded Values sheet at the next available row after all enumerated entries. This is the absolute last action you take before finishing.
+
+Write the row with:
+- Column A: `AGENT_COMPLETE`
+- Column E: `hardcoded-values`
+- Column F: `Enumerated [N] hardcoded parameters across [sheet name(s)].`
+- All other columns: blank
+
+Use a single `modify_sheet_values` call. The reconciliation agent detects this row to confirm the agent completed normally. This row is excluded before presenting the sheet to researchers.

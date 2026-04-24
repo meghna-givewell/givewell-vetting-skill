@@ -23,7 +23,7 @@ Read all vetted sheets in a parallel batch: FORMATTED_VALUE mode and FORMULA mod
 
 ## Step 2 — Row-by-row Notes scan
 
-For each vetted sheet, scan every row from row 1 to the last populated row. For each row, check all seven categories below:
+For each vetted sheet, scan every row from row 1 to the last populated row. For each row, check all ten categories below:
 
 **A. Formula rows missing "Calculation." note**
 If the Notes cell is blank AND the corresponding data cell contains a formula (`=...`), record this row. GiveWell's convention is to write "Calculation." in the Notes column for every formula row without exception — even when the row label makes the calculation obvious. Do not skip rows because their labels seem self-explanatory. Every formula row. Every one.
@@ -61,6 +61,11 @@ Also apply this check to cell notes that make **qualitative weighting or emphasi
 
 Also apply this check to **scenario-label claims in cell notes**: when a cell note explicitly names a scenario, case, or column label — e.g., "Scenario 1," "Scenario 2," "low scenario," "high scenario," "base case," "DRC column," or any named geography or cohort — verify the label matches the cell's actual structural position in the model. Read the section header above the cell (column A labels) and the column header to determine which scenario or geography this cell belongs to. If the note names a different scenario or geography than the cell's actual position, flag as Low/O with Readability type: "Note at [ref] references '[stated label]' but this cell is in the '[actual label]' section — update the note to describe this cell's actual scenario/geography." This catches notes copied verbatim from a sibling row or column without updating the scenario reference.
 
+**J. Formula methodology asymmetry without documentation**
+Within any section where multiple adjacent rows compute the same type of quantity from a shared data source (e.g., disease-specific mortality rates by cause, vaccine efficacy by dose or year, coverage by antigen), compare the formula structure across rows. Flag any row whose formula uses a materially different aggregation or temporal method than all structurally analogous rows in that section — e.g., `AVERAGE()` or `AVERAGEIF()` when all adjacent rows reference a single year's value directly, or a multi-source `SUMPRODUCT(weights, values)` when peers use a simple lookup — AND whose Notes cell contains no explanation for the methodological difference. Flag as Low/O with Readability type: "Row [ref] uses [describe method, e.g., AVERAGE across N source cells/years] while all adjacent rows in this section use [describe peer method, e.g., a single year's value]; add a cell note explaining why this metric uses a different aggregation approach."
+
+Do not flag if: (a) the Notes cell or a nearby cell note already explains the rationale; (b) the row label itself makes the different method self-evident (e.g., a label reading "5-year average mortality" is self-documenting); (c) no consistent peer pattern exists in the section to compare against (all rows use different methods).
+
 ---
 
 ## Step 3 — Mandatory declaration table
@@ -80,6 +85,7 @@ F. Row labels flagged (redundant / misleading / wrong scope / vague): [list row 
 G. Stale year references in notes: [list row references with cited year, or "none"]
 H. Internal-only / pre-publication cleanup rows (incl. superseded, duplicate, error-only): [list row references, or "none"]
 I. Cell note contradicts cell value: [list row references with implied vs. actual value, or "none"]
+J. Formula methodology asymmetry without documentation: [list row references with description of the asymmetry, or "none"]
 ```
 
 If any line is left blank or contains a placeholder, stop and complete the scan before proceeding.

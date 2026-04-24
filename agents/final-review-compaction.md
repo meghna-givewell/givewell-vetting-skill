@@ -107,8 +107,6 @@ Skip this step (write "Step 3.3: skipped — ✓ count [N] is ≤20% of total fi
 
 ---
 
----
-
 ## Step 3.5 — Normalize category labels
 
 Before rewriting, scan every row in memory and normalize the Error Type/Issue field to the exact standard label. Agents frequently append descriptive text after the label (e.g., "Permission Issue — internal document may need publish access" or "Readability — duplicate header"). Strip everything after the first recognized label word.

@@ -94,7 +94,7 @@ Before filing, check whether the mismatch is covered by a declared-intentional d
 
 **Explanation format**: `[cell] = [stored value] but the GiveWell standard value is [expected value] (key-parameters.md). [One sentence on why this matters — e.g., the update date or the direction of CE impact.]`
 
-**Recommended Fix format**: `Update [cell] to [expected value].`
+**Recommended Fix format**: `Update [cell] to [expected value], OR if retaining the current value for cross-program comparability with prior analyses, add a cell note documenting the rationale and the date this was last reviewed.` GiveWell sometimes deliberately retains older parameter values for comparability — adding a rationale note is an equally valid resolution. Do not prescribe only a value update when a documentation note may be the researcher's preferred fix. This applies especially to the benchmark: the old value 0.003355 is stale, but if the model intentionally uses it for comparability with a prior vet, a note is sufficient.
 
 **CE Impact**: Estimate directionally — a stale benchmark or moral weight typically raises or lowers CE by a calculable multiple. Read the CE baseline cell from session context and compute the approximate impact.
 

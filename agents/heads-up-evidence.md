@@ -111,6 +111,7 @@ Benefit streams:
   resource sharing multiplier [___]
 
 Evidence quality:
+  cell note value consistency [___]
   study-derived effect sizes [___]
   hyperlink audit [see declaration above]
   study pathway directness [___]

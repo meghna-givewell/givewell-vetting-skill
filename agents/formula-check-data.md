@@ -67,21 +67,6 @@ Coverage declaration: "Cross-model verification complete. Cells citing another m
 
 ---
 
-## Check 4 — Downstream re-computation of upstream parameters
-
-When a summary or analysis tab (ceiling analysis, plausibility check, combined-protocol aggregate) contains a formula that re-aggregates parameters already computed in an upstream data tab, verify:
-
-1. **Weights are the correct type** for what is being combined — prevalence shares when aggregating ICFs or burden rates, population shares when aggregating costs, not mortality ratios or RR values.
-2. **The formula result matches** what manual calculation from the upstream inputs would give.
-
-Common error: weighting by mortality ratios rather than prevalence shares when computing a GAM (combined MAM+SAM) ICF, which overstates the GAM ICF by giving disproportionate weight to the higher-ICF/higher-mortality SAM group. Flag as **Medium/D** if the aggregation methodology differs from what the row label implies, or if the weighting factor cannot be clearly justified by the label.
-
-This check applies especially to combined-protocol (MAM+SAM) or multi-geography aggregation formulas in ceiling analysis, plausibility, or summary tabs.
-
-Coverage declaration: "Downstream re-computation check complete. Summary/aggregate formulas reviewed: [N]. Weighting issues found: [list or 'none']. No other issues of this type."
-
----
-
 ## Check 3b — Implicit cross-model parameters (no explicit citation)
 
 Check 3 covers hardcoded cells that *explicitly* cite another GW model as the source. This check covers the complementary gap: parameters that commonly derive from another GW model or analysis but whose source notes do not say so.
@@ -97,6 +82,21 @@ For each such row with no cross-model source note, file as **Low/H** with Resear
 **Scope boundary**: Do not flag standard values already checked by key-params-check.md (GD benchmark, neonatal moral weight, death-aversion values, discount rates, standard income effects). Only flag program-specific variants where the derivation would require loading a separate GW model to verify.
 
 Coverage declaration: "Cross-model implicit parameter check complete. Funging/income-effect/leverage rows scanned: [N]. Rows missing cross-model citation: [list or 'none']."
+
+---
+
+## Check 4 — Downstream re-computation of upstream parameters
+
+When a summary or analysis tab (ceiling analysis, plausibility check, combined-protocol aggregate) contains a formula that re-aggregates parameters already computed in an upstream data tab, verify:
+
+1. **Weights are the correct type** for what is being combined — prevalence shares when aggregating ICFs or burden rates, population shares when aggregating costs, not mortality ratios or RR values.
+2. **The formula result matches** what manual calculation from the upstream inputs would give.
+
+Common error: weighting by mortality ratios rather than prevalence shares when computing a GAM (combined MAM+SAM) ICF, which overstates the GAM ICF by giving disproportionate weight to the higher-ICF/higher-mortality SAM group. Flag as **Medium/D** if the aggregation methodology differs from what the row label implies, or if the weighting factor cannot be clearly justified by the label.
+
+This check applies especially to combined-protocol (MAM+SAM) or multi-geography aggregation formulas in ceiling analysis, plausibility, or summary tabs.
+
+Coverage declaration: "Downstream re-computation check complete. Summary/aggregate formulas reviewed: [N]. Weighting issues found: [list or 'none']. No other issues of this type."
 
 ---
 

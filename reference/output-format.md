@@ -52,8 +52,6 @@ Write findings starting at row 2.
 
 ---
 
----
-
 ## Publication Readiness Sheet — Sheet 2 (pub-only issues)
 
 6-column format (A–F) — streamlined for pub-readiness work. No Severity, Decision Relevance, Estimated CE Impact, or Current Formula/Value. Contains only issues that do not affect model outputs: permission flags, broken links, GBD/IHME citation completeness (text-only citations), personal names in notes, internal-only references, Box links, terminology (x cash → x benchmark), label/note style issues. Researchers working on model correctness can ignore this sheet entirely until the pre-publication checklist.

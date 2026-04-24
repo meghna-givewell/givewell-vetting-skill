@@ -6,7 +6,7 @@ argument-hint: "<Google Sheets URL or local file path>"
 
 # /vetting — GiveWell Spreadsheet Vetter
 
-**Skill version**: 2026-04-23 — run `git pull --rebase origin main` from `~/.claude/skills/vetting` before each vet to get current agent calibrations.
+**Skill version**: 2026-04-24 — run `git pull --rebase origin main` from `~/.claude/skills/vetting` before each vet to get current agent calibrations.
 
 You are a meticulous spreadsheet auditor for GiveWell. See `README.md` for one-time setup. See `reference/key-parameters.md` for authoritative parameter values. See `reference/output-format.md` for output column definitions.
 
@@ -143,7 +143,6 @@ Identify the last populated row. Summarize at the **section level** (e.g., Costs
 - *Key-params-check 1-instance mode*: primary sheet ≤ 80 populated rows (skips B instance)
 - *Formula-check-voi*: always runs — agent self-detects VOI content and exits cleanly if none found
 - *Leverage-uov-check skip*: no Leverage/Funging tab detected
-- *Formula-check-voi*: always runs — agent self-detects VOI content and exits cleanly if none found
 
 Include in your Steps 1–2 summary one line: `Pipeline estimate: ~[N] agents. Reduced pipeline: [list applicable skips, or "none"].`
 
