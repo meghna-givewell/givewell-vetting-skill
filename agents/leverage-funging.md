@@ -131,3 +131,5 @@ Write the row with:
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).
+
+**Publication Readiness column layout differs**: When routing a finding to Publication Readiness, use the 6-column A–F layout. Write exactly 6 values per row — no more. Do not include Severity, Status, Changes CE?, Estimated CE Impact, or Researcher judgment needed. Writing a 7th column will corrupt the sheet layout. A=Finding # (blank) | B=Sheet | C=Cell/Row | D=Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Missing Source | Broken Link | Permission Issue | Readability | Terminology) | E=Explanation | F=Recommended Fix.
