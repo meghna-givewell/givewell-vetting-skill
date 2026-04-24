@@ -96,6 +96,54 @@ Coverage declaration: `COVERAGE | formula-check-voi | CE reference source | [N r
 
 ---
 
+## Check 8 — P(wrong) parameter floor
+
+Locate the "probability we're wrong" row (row 28 in the standard template; also labeled "P(wrong)," "wrong-risk adjustment," "probability we make the wrong decision," or equivalent). Read its value in FORMATTED_VALUE mode.
+
+The GiveWell VOI guidance (Section 2.1.8) establishes explicit rules of thumb via Table 2: -10% for very precise/strongly significant (t≈3), -20% for quite precise/significant (t≈2), -30% for imprecise/weakly significant (t≈1.7), -50% for very imprecise/insignificant (t≈1.2). A value at or above 0% eliminates the wrong-risk penalty entirely, which the guidance does not permit for any study.
+
+1. If the value is **0% or positive**: flag as **High/Parameter Issue**: "P(wrong) = [value] — the GiveWell VOI guidance requires a negative downward adjustment for all studies (Table 2 floor: −10% even for a very precise trial). A value of 0% or higher eliminates the wrong-risk penalty entirely. Set to at least −10% and add a cell note if a deviation from the table is intentional."
+
+2. If the value is between **−1% and −9%** (exclusive): flag as **Medium/Parameter Issue** with Researcher judgment needed ✓: "P(wrong) = [value], which is smaller in magnitude than the guidance minimum of −10% (the floor for a very precise, strongly significant trial, t≈3). Values less negative than −10% are not supported by the documented rules-of-thumb — add a cell note if this deviation is intentional."
+
+Do not flag if a cell note documents why a less-negative value is appropriate, or if the researcher's Step 0.5 notes declare this as an intentional deviation.
+
+Coverage declaration: `COVERAGE | formula-check-voi | P(wrong) floor | [cell ref] | value: [X%] | issues found: [N] | status: complete`
+
+---
+
+## Check 9 — CE of reallocated funding vs. funding bar
+
+Locate the "CE of reallocated funding" row (row 20 in the standard template; also labeled "best guess CE of reallocated cash," "CE if we fund the program," or equivalent). Locate the "cost-effectiveness of counterfactual opportunity" / funding bar row (row 9 in the standard template). Read both values in FORMATTED_VALUE mode.
+
+The GiveWell VOI guidance (Section 2.1.6) states the conservative default is "1–2x above the given funding bar" (e.g., 11–12x for a 10x bar). If CE of reallocated funding ≤ funding bar, expected reallocated CE is no better than the counterfactual — the optionality value is directionally reversed and the BOTEC output is misleading. If CE of reallocated funding is >3x above the bar without documentation, it is materially outside the conservative default and should be explained.
+
+1. If **CE of reallocated funding ≤ funding bar**: flag as **High/Parameter Issue**: "CE of reallocated funding ([value]) is at or below the funding bar ([bar value]). The GiveWell VOI guidance (Section 2.1.6) requires this parameter to be above the bar — at or below the bar means expected reallocated CE is no better than the counterfactual, reversing the direction of optionality value. Set this to at least [bar + 1] (guidance conservative default: bar + 1 to bar + 2)."
+
+2. If **CE of reallocated funding > funding bar + 3**: flag as **Low/Parameter Issue** with Researcher judgment needed ✓: "CE of reallocated funding ([value]) is more than 3x above the funding bar ([bar value]). The GiveWell VOI guidance conservative default is 1–2x above bar — a larger premium is non-standard and should be documented. Add a cell note if this assumption is intentional."
+
+Do not flag either case if a cell note documents the assumption or if it appears in the researcher's Step 0.5 declared deviations.
+
+Coverage declaration: `COVERAGE | formula-check-voi | CE reallocated vs. bar | CE: [value] | bar: [value] | issues found: [N] | status: complete`
+
+---
+
+## Check 10 — SUMPRODUCT final CE range alignment
+
+Locate the row computing the final weighted-average CE — typically the last row in the VOI tab, using a formula like `=SUMPRODUCT(CE_row_range, weight_row_range)`. Read the formula in FORMULA mode.
+
+Extract both array arguments. Verify they reference exactly the same column span (e.g., both `B42:E42` and `B10:E10` — not `B42:F42` and `B10:E10`). A mismatch means the SUMPRODUCT operates over different column extents: if one range is wider, the extra column is paired with an implicit 0 from the shorter range, silently scaling the weighted-average CE down. If the ranges are different lengths, Sheets returns a `#VALUE!` error — but if they're the same length but reference different column positions, the error is silent.
+
+If the two ranges span different columns: flag as **High/Formula Error**: "SUMPRODUCT final CE formula at [cell] uses `[formula]` — the CE array `[range1]` and the weight array `[range2]` span different column extents. The weighted-average CE is computed over mismatched arrays. Align both ranges to cover the same scenario columns (e.g., both `B[r1]:E[r1]` and `B[r2]:E[r2]`)."
+
+Also check: if the CE row range and the weight row range do not span all active scenario columns (e.g., there are populated scenario columns beyond the range endpoint), flag as **Medium/Formula Error**: "SUMPRODUCT final CE formula omits scenario column [ref] — that column's CE and weight are excluded from the weighted average."
+
+Do not flag if the model uses a different aggregation pattern (e.g., an explicit `=B_CE*B_weight + C_CE*C_weight + ...` sum) — apply this check only to SUMPRODUCT formulas.
+
+Coverage declaration: `COVERAGE | formula-check-voi | SUMPRODUCT range alignment | [cell ref] | CE range: [range1] | weight range: [range2] | aligned: [yes/no] | issues found: [N] | status: complete`
+
+---
+
 ## Writing Findings
 
 Before writing any finding, confirm: (1) exact cell reference(s), (2) specific formula or value issue, (3) precise fix.
