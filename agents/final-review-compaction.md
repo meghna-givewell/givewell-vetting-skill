@@ -76,7 +76,7 @@ Coverage declaration: "Routing complete. [N] rows moved to Publication Readiness
 
 Scan all rows across both sheets for duplicates — rows where Cell/Row (column C) and Error Type/Issue (column E on Findings, column D on Publication Readiness) are substantively identical. Parallel Wave 2 agents cannot see each other's findings, so duplicates are most common between sources and readability (both check Notes columns) and between plausibility agents (both may flag the same cell).
 
-When duplicates are found: keep the finding with the more complete Explanation and Recommended Fix; merge any unique detail from the other row into the surviving row's Explanation field; mark the surviving row with "Merged with duplicate finding from parallel agent." Do not merge near-duplicates that are complementary — a broken link and a stale value at the same cell are distinct issues and should both be kept.
+When duplicates are found: keep the finding with the more complete Explanation and Recommended Fix; merge any unique detail from the other row into the surviving row's Explanation field. Do not merge near-duplicates that are complementary — a broken link and a stale value at the same cell are distinct issues and should both be kept.
 
 **Root-cause / symptom consolidation** — after the standard duplicate pass, apply a second pass:
 
