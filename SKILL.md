@@ -29,7 +29,7 @@ If no target is provided, ask for the workbook link or file path before proceedi
 > 2. Add the MCP server config to `~/.claude/settings.json` under `mcpServers` — contact Nicole Bouchard (nicole.bouchard@givewell.org) for the exact snippet used at GiveWell
 > 3. Restart Claude Code and try again
 >
-> **Alternative — local output mode**: If you cannot configure the MCP right now, you can still run a partial vet. Download the workbook as `.xlsx`, then reply: `no MCP — local output: <path to xlsx file>`. Claude will extract and analyze the file locally, write findings to CSV files you can import into a manually created Google Sheet, and skip checks that require MCP (sources, readability, notes-scan, and reference doc lookups).
+> **Alternative — local output mode**: If you cannot configure the MCP right now, you can still run a partial vet. Download the workbook as `.xlsx`, create an output Google Sheet, then reply with both (see the **No-MCP / Local output mode** section under Input Handling for exact steps and the required tab/header structure). Claude will extract and analyze the file locally, write findings to CSVs you import into the sheet, and skip checks that require MCP (sources, readability, notes-scan, and reference doc lookups).
 
 Wait for the user to respond before doing anything else. If they confirm MCP is now configured or choose local output mode, proceed accordingly. Do not attempt any MCP call until the user responds.
 
@@ -93,28 +93,58 @@ Produces `output/extracted_<filename>.txt` with the full workbook structure.
 
 ### No-MCP / Local output mode
 
-Triggered when the user responds `no MCP — local output: <path>`. This mode runs a condensed inline analysis on locally extracted content and writes findings to CSV files rather than Google Sheets. Sub-agents are not spawned — analysis runs inline in a single pass.
+Triggered when the user responds with `no MCP — local output: <path>` (optionally with an output sheet URL). This mode runs a condensed inline analysis on locally extracted content and writes findings to CSV files. Sub-agents are not spawned — analysis runs inline in a single pass.
 
-**Steps:**
-1. Run `python extract.py <path>` and read `output/extracted_<filename>.txt`
-2. Ask the Step 0.5 program context questions (no grant doc fetch — no MCP)
-3. Run Steps 0–2 (baseline CE, structure review) inline from the extracted text
-4. Run formula checks, key-params check, and heads-up checks inline — one section at a time. Skip: sources, readability, notes-scan, and all reference doc lookups (those require MCP to fetch Google Docs/Sheets). Announce this scope at the top of output.
-5. Write findings to local files using the Write tool:
+---
+
+**Instructions for the user: set up your output Google Sheet before starting**
+
+Go to [sheets.new](https://sheets.new) and create a blank spreadsheet. Create exactly six tabs in this order — right-click any tab to rename or insert:
+
+1. `Dashboard` — leave row 1 blank
+2. `CE Baseline` — enter these values across row 1, one per cell: `Geography/Scenario`, `Cost-Effectiveness`
+3. `Findings` — enter these values across row 1: `Finding #`, `Sheet`, `Cell/Row`, `Severity`, `Error Type/Issue`, `Explanation`, `Recommended Fix`, `Estimated CE Impact`, `Researcher judgment needed`, `Status`
+4. `Publication Readiness` — enter these values across row 1: `Finding #`, `Sheet`, `Cell/Row`, `Error Type/Issue`, `Explanation`, `Recommended Fix`
+5. `Hardcoded Values` — enter these values across row 1: `Sheet`, `Cell`, `Category`, `Current Value`, `Description`, `Source to Verify`, `Verified?`
+6. `Confidentiality Flags` — enter these values across row 1: `Cell/Row`, `Content Found`, `Sensitivity Type`, `Recommended Action`
+
+Copy the URL from your browser bar once the sheet is ready.
+
+**How to start the vet** — reply with the local `.xlsx` path and the output sheet URL together:
+
+```
+no MCP — local output: /path/to/file.xlsx | output sheet: https://docs.google.com/spreadsheets/d/...
+```
+
+If you haven't created the sheet yet, you can omit the URL and add it later:
+
+```
+no MCP — local output: /path/to/file.xlsx
+```
+
+---
+
+**What Claude does in this mode:**
+
+1. Record the output sheet URL (if provided) in session context; display it prominently in the final summary
+2. Run `python extract.py <path>` and read `output/extracted_<filename>.txt`
+3. Ask the Step 0.5 program context questions (grant doc fetch skipped — no MCP)
+4. Run Steps 0–2 inline (CE baseline, structure review) from the extracted text
+5. Run formula checks, key-params check, and heads-up checks inline — one section at a time. Announce at the start: "Scope: formula and heads-up checks only — sources, readability, notes-scan, and reference doc lookups skipped (require MCP)."
+6. Write findings to local files using the Write tool:
    - `output/findings.csv` — columns: Sheet, Cell/Row, Severity, Error Type, Explanation, Recommended Fix, Estimated CE Impact
    - `output/publication_readiness.csv` — columns: Sheet, Cell/Row, Issue Type, Explanation, Recommended Fix
    - `output/hardcoded_values.csv` — columns: Sheet, Cell, Category, Current Value, Description
 
-**After writing the CSVs**, tell the user:
+**After writing the CSVs**, show the user:
 
-> Findings written to `output/findings.csv`, `output/publication_readiness.csv`, and `output/hardcoded_values.csv`.
+> Local output complete. Import findings into your Google Sheet [link if `output_sheet_url` was provided]:
 >
-> **To use these in Google Sheets:**
-> 1. Create a new Google Sheet
-> 2. Create six tabs: `Dashboard`, `CE Baseline`, `Findings`, `Publication Readiness`, `Hardcoded Values`, `Confidentiality Flags`
-> 3. On each tab, add the header row from `reference/output-setup.md` (or ask Claude to print the headers)
-> 4. On each findings tab, use File → Import → Upload to import the corresponding CSV — choose "Append to current sheet" and select the tab
-> 5. Apply conditional formatting manually if desired (color coding is described in `reference/output-setup.md`)
+> 1. **Findings tab**: File → Import → Upload → select `output/findings.csv` → Import location: **Append to current sheet** → Import data
+> 2. **Publication Readiness tab**: repeat with `output/publication_readiness.csv`
+> 3. **Hardcoded Values tab**: repeat with `output/hardcoded_values.csv`
+>
+> Scope note: sources, readability, and notes-scan checks were skipped. To run a full vet, configure the Hardened Google Workspace MCP (see setup instructions above).
 
 ---
 
