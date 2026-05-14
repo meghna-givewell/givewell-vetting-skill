@@ -126,25 +126,105 @@ no MCP — local output: /path/to/file.xlsx
 
 **What Claude does in this mode:**
 
+Local output mode uses the **same wave-based sub-agent structure** as a standard vet — Wave 1, Wave 2, Wave 2.5 (reconciliation), and Wave 3 (final review) all run. Agents execute in parallel via the Agent tool exactly as in standard mode. The only differences are data transport: agents receive extracted spreadsheet content in their session context rather than reading via MCP, and output findings as prefixed lines in their response rather than calling `modify_sheet_values`. No agent files are modified — behavior is controlled entirely by what is appended to each agent's session context.
+
+**Step 1 — Extract and orient**
+
 1. Record the output sheet URL (if provided) in session context; display it prominently in the final summary
-2. Run `python extract.py <path>` and read `output/extracted_<filename>.txt`
-3. Ask the Step 0.5 program context questions (grant doc fetch skipped — no MCP)
-4. Run Steps 0–2 inline (CE baseline, structure review) from the extracted text
-5. Run formula checks, key-params check, and heads-up checks inline — one section at a time. Announce at the start: "Scope: formula and heads-up checks only — sources, readability, notes-scan, and reference doc lookups skipped (require MCP)."
-6. Write findings to local files using the Write tool:
-   - `output/findings.csv` — columns: Sheet, Cell/Row, Severity, Error Type, Explanation, Recommended Fix, Estimated CE Impact
-   - `output/publication_readiness.csv` — columns: Sheet, Cell/Row, Issue Type, Explanation, Recommended Fix
-   - `output/hardcoded_values.csv` — columns: Sheet, Cell, Category, Current Value, Description
+2. Run `python extract.py <path>` and read `output/extracted_<filename>.txt` in full — this is the pre-read cache for all agents
+3. Announce once: "Local output mode — cell notes and hyperlinks are not available from .xlsx extraction; checks requiring them will be skipped or flagged for manual review"
+4. Ask the Step 0.5 program context questions (grant doc fetch skipped — reference docs require MCP)
+5. Run Steps 0–2 inline (CE baseline, structure review) from the extracted text
+
+**Step 2 — Local mode session context block (append to every sub-agent)**
+
+Append the following block to every sub-agent's session context, after the standard context and before the agent prompt content. Replace `[EXTRACTED TEXT]` with the full content of `output/extracted_<filename>.txt`.
+
+> **Output mode: LOCAL — no MCP available.** Do not call `modify_sheet_values`, `read_sheet_values`, `read_sheet_notes`, `read_sheet_hyperlinks`, `read_spreadsheet_comments`, `create_spreadsheet`, `get_spreadsheet_info`, or any other MCP tool. If your instructions say to call one of these, substitute a lookup in the pre-read cache below, or skip if the data is unavailable.
+>
+> **Cell lookup**: When instructions say "read cell X in FORMULA mode," find that cell reference in the pre-read cache. Format: `B14=[formula](value)` for formula cells, `B14='value'` for hardcoded cells.
+>
+> **Notes unavailable**: Skip any check that requires verifying a cell note. For hardcoded-values: write "Note unavailable (xlsx)" in the Description field. For sources: flag any cell value or formula containing a URL string, noting that hyperlink metadata is unavailable.
+>
+> **Output format**: Run your full analysis normally. At the END of your response, output all findings as a block of prefixed pipe-delimited lines. Every finding must appear in this structured block — do not omit any finding from it even if you discussed it in prose:
+> - `FINDING|Sheet|Cell/Row|Severity|Error Type|Explanation|Recommended Fix|CE Impact|Researcher judgment needed`
+> - `PUBREADY|Sheet|Cell/Row|Issue Type|Explanation|Recommended Fix`
+> - `HARDCODED|Sheet|Cell|Category|Value|Description`
+> - `CONFLAG|Cell/Row|Content Found|Sensitivity Type|Recommended Action`
+> - `COVERAGE|agent|check|scope|issues found: N|status: complete`
+> - `AGENT_COMPLETE|`
+>
+> Use `|` as the delimiter. If any field value itself contains `|`, replace it with `;`.
+>
+> **Row allocation**: Ignore all row allocation and budget instructions — there is no Google Sheet to write to. Output all findings sequentially with no limit.
+>
+> **Pre-read cache** (values and formulas from .xlsx extraction — cell notes and hyperlinks not available):
+> [EXTRACTED TEXT]
+
+**Step 3 — Waves 1 and 2: run same wave tables as standard mode**
+
+Spawn agents using the same wave tables from the Analysis Steps section. Skip or adjust:
+
+- **notes-scan**: Skip entirely — notes not available from .xlsx extraction
+- **sources A/B**: Run, but skip hyperlink verification. For any row whose value or formula contains a URL string, output: `PUBREADY|<sheet>|<cell>|Missing Source|URL present in formula/value but hyperlink metadata unavailable in .xlsx extraction — verify manually|Confirm source hyperlink is correctly attached to this cell`
+- **Reference doc lookups**: Skip fetching Google Docs/Sheets reference documents (requires MCP). key-params-check runs from `reference/key-parameters.md` already in its context; consistency-check moral weights check runs from values declared in session context
+
+Wait for all Wave 1 agents to complete before spawning Wave 2. Wait for all Wave 2 agents to complete before Wave 2.5.
+
+**Step 4 — Collect findings after each wave**
+
+After Wave 1 completes and again after Wave 2, parse all agent responses:
+- Lines beginning `FINDING|` → append to findings collection
+- Lines beginning `PUBREADY|` → append to pub readiness collection
+- Lines beginning `HARDCODED|` → append to hardcoded values collection
+- Lines beginning `CONFLAG|` → append to confidentiality flags collection
+- Check each response for `AGENT_COMPLETE|` — flag any agent missing this marker as a potential silent failure, same as standard mode
+
+**Step 5 — Wave 2.5 reconciliation: pass A/B finding lines directly**
+
+Reconcile agents still run for every pair. Instead of reading row ranges from a Google Sheet, each reconcile agent receives the A and B instance finding lines directly. Append the following to each reconcile agent's session context (in addition to the standard local mode block from Step 2):
+
+> **Local mode reconciliation**: A and B instance finding lines are provided below — do not attempt to read a Google Sheet. Parse `FINDING|`, `PUBREADY|`, and `HARDCODED|` lines from each. Identify divergences (lines present in one instance but not the other). For each divergence, verify by looking up the referenced cell in the pre-read cache. Output reconciled and net-new findings as prefixed lines in the same format.
+>
+> **Instance A findings:**
+> [paste all `FINDING|`, `PUBREADY|`, `HARDCODED|` lines from the A response]
+>
+> **Instance B findings:**
+> [paste all `FINDING|`, `PUBREADY|`, `HARDCODED|` lines from the B response]
+
+Collect reconcile agent responses and add any new lines to the collections.
+
+**Step 6 — Wave 3 final review: pass aggregated lines**
+
+Final review agents (compaction, gap-fill, validation, dashboard) receive all collected findings from all prior waves as prefixed lines. Append to each final review agent's session context (in addition to the local mode block from Step 2):
+
+> **Local mode final review**: All prior findings are provided below as prefixed lines — do not attempt to read a Google Sheet. Process them per your agent instructions. Output the final processed set as prefixed lines. Do not call any MCP tools.
+>
+> **All collected findings:**
+> [paste all `FINDING|`, `PUBREADY|`, `HARDCODED|`, `CONFLAG|` lines collected across all waves and reconciliation]
+
+The compaction agent de-duplicates, sorts, and assigns Finding IDs in the prefixed lines. The gap-fill agent adds cascade findings as new `FINDING|` lines. The validation agent checks completeness. The dashboard agent outputs its summary as plain text to chat (it cannot write to a Google Sheet tab in local mode) — include High/Medium/Low counts and all High findings listed.
+
+**Step 7 — Write CSV files**
+
+After Wave 3, write four local files using the Write tool, using `|` as the column separator:
+
+- `output/findings.csv` — all final `FINDING|` lines, header: `Finding #|Sheet|Cell/Row|Severity|Error Type/Issue|Explanation|Recommended Fix|Estimated CE Impact|Researcher judgment needed|Status`
+- `output/publication_readiness.csv` — all `PUBREADY|` lines, header: `Finding #|Sheet|Cell/Row|Error Type/Issue|Explanation|Recommended Fix`
+- `output/hardcoded_values.csv` — all `HARDCODED|` lines, header: `Sheet|Cell|Category|Current Value|Description|Source to Verify|Verified?`
+- `output/confidentiality_flags.csv` — all `CONFLAG|` lines, header: `Cell/Row|Content Found|Sensitivity Type|Recommended Action`
 
 **After writing the CSVs**, show the user:
 
-> Local output complete. Import findings into your Google Sheet [link if `output_sheet_url` was provided]:
+> Local output complete. [N] findings: [H]H / [M]M / [L]L.
+> Files written to `output/` — import into your Google Sheet [link to `output_sheet_url` if provided]:
 >
-> 1. **Findings tab**: File → Import → Upload → select `output/findings.csv` → Import location: **Append to current sheet** → Import data
+> 1. **Findings tab**: File → Import → Upload → select `output/findings.csv` → Separator type: **Custom** → enter `|` → Import location: **Append to current sheet** → Import data
 > 2. **Publication Readiness tab**: repeat with `output/publication_readiness.csv`
 > 3. **Hardcoded Values tab**: repeat with `output/hardcoded_values.csv`
+> 4. **Confidentiality Flags tab**: repeat with `output/confidentiality_flags.csv`
 >
-> Scope note: sources, readability, and notes-scan checks were skipped. To run a full vet, configure the Hardened Google Workspace MCP (see setup instructions above).
+> Scope note: notes-scan and source hyperlink verification skipped (not available in .xlsx). All other checks — formula, CE chain, leverage, readability, key params, consistency, hardcoded values, sensitivity scan, heads-up — ran at full quality with independent A/B verification. To run a complete vet including notes and hyperlinks, configure the Hardened Google Workspace MCP (see setup instructions above).
 
 ---
 
