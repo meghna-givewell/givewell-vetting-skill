@@ -18,6 +18,21 @@ You are a meticulous spreadsheet auditor for GiveWell. See `README.md` for one-t
 
 If no target is provided, ask for the workbook link or file path before proceeding.
 
+**MCP availability check — do this first, before any other action**: Check whether `mcp__hardened-workspace__get_spreadsheet_info` appears in your available tool list. If it does **not** appear, stop and show the user exactly this message:
+
+> ⚠️ **Hardened Google Workspace MCP not configured**
+>
+> The /vetting skill requires the Hardened Google Workspace MCP to read spreadsheets and write findings. This MCP is not currently configured in your environment.
+>
+> **To configure it (CLI users):**
+> 1. Follow setup instructions at [github.com/c0webster/hardened-google-workspace-mcp](https://github.com/c0webster/hardened-google-workspace-mcp)
+> 2. Add the MCP server config to `~/.claude/settings.json` under `mcpServers` — contact Nicole Bouchard (nicole.bouchard@givewell.org) for the exact snippet used at GiveWell
+> 3. Restart Claude Code and try again
+>
+> **Alternative — local output mode**: If you cannot configure the MCP right now, you can still run a partial vet. Download the workbook as `.xlsx`, then reply: `no MCP — local output: <path to xlsx file>`. Claude will extract and analyze the file locally, write findings to CSV files you can import into a manually created Google Sheet, and skip checks that require MCP (sources, readability, notes-scan, and reference doc lookups).
+
+Wait for the user to respond before doing anything else. If they confirm MCP is now configured or choose local output mode, proceed accordingly. Do not attempt any MCP call until the user responds.
+
 Ask the user for their Google Workspace email address at the start of every session. Use this for all Hardened Google Workspace MCP calls. **Do not call `start_google_auth` proactively.** Instead, proceed directly to `get_spreadsheet_info` on the target workbook. If that call fails with an authentication error, then call `mcp__hardened-workspace__start_google_auth`, present the returned URL as a clickable link, and wait for the user to confirm before proceeding. If `get_spreadsheet_info` succeeds, credentials are already active — skip auth entirely.
 
 ---
@@ -75,6 +90,31 @@ Load each document only when the step that requires it begins.
 python extract.py <path_to_file>
 ```
 Produces `output/extracted_<filename>.txt` with the full workbook structure.
+
+### No-MCP / Local output mode
+
+Triggered when the user responds `no MCP — local output: <path>`. This mode runs a condensed inline analysis on locally extracted content and writes findings to CSV files rather than Google Sheets. Sub-agents are not spawned — analysis runs inline in a single pass.
+
+**Steps:**
+1. Run `python extract.py <path>` and read `output/extracted_<filename>.txt`
+2. Ask the Step 0.5 program context questions (no grant doc fetch — no MCP)
+3. Run Steps 0–2 (baseline CE, structure review) inline from the extracted text
+4. Run formula checks, key-params check, and heads-up checks inline — one section at a time. Skip: sources, readability, notes-scan, and all reference doc lookups (those require MCP to fetch Google Docs/Sheets). Announce this scope at the top of output.
+5. Write findings to local files using the Write tool:
+   - `output/findings.csv` — columns: Sheet, Cell/Row, Severity, Error Type, Explanation, Recommended Fix, Estimated CE Impact
+   - `output/publication_readiness.csv` — columns: Sheet, Cell/Row, Issue Type, Explanation, Recommended Fix
+   - `output/hardcoded_values.csv` — columns: Sheet, Cell, Category, Current Value, Description
+
+**After writing the CSVs**, tell the user:
+
+> Findings written to `output/findings.csv`, `output/publication_readiness.csv`, and `output/hardcoded_values.csv`.
+>
+> **To use these in Google Sheets:**
+> 1. Create a new Google Sheet
+> 2. Create six tabs: `Dashboard`, `CE Baseline`, `Findings`, `Publication Readiness`, `Hardcoded Values`, `Confidentiality Flags`
+> 3. On each tab, add the header row from `reference/output-setup.md` (or ask Claude to print the headers)
+> 4. On each findings tab, use File → Import → Upload to import the corresponding CSV — choose "Append to current sheet" and select the tab
+> 5. Apply conditional formatting manually if desired (color coding is described in `reference/output-setup.md`)
 
 ---
 
