@@ -4,11 +4,28 @@ A Claude Code skill that runs a full audit of GiveWell cost-effectiveness spread
 
 ## Install
 
+This repo ships the vetting skill two ways. Pick one.
+
+### Option A — Install as a plugin (recommended, works in cowork / Claude.ai)
+
+The repo is also a Claude Code plugin marketplace, so you can install it from GitHub without cloning. In Claude Code (CLI, desktop, or cowork on the web):
+
+```
+/plugin marketplace add meghna-givewell/givewell-vetting-skill
+/plugin install givewell-vetting@givewell-skills
+```
+
+Invoke it as `/givewell-vetting:vetting <Google Sheets URL or local file path>`. Update later with `/plugin marketplace update givewell-skills`.
+
+### Option B — Install as a standalone skill (clone)
+
 Clone this repo into your Claude Code skills directory:
 
 ```bash
 git clone https://github.com/meghna-givewell/givewell-vetting-skill.git ~/.claude/skills/vetting
 ```
+
+Invoke it as `/vetting <Google Sheets URL or local file path>`. The repo-root `SKILL.md`, `agents/`, `reference/`, and `extract.py` are symlinks into `plugin/skills/vetting/`, so the clone resolves the skill at `~/.claude/skills/vetting/SKILL.md` automatically.
 
 ## Prerequisites
 
@@ -26,16 +43,16 @@ If your project already has a `.claude/settings.json`, merge the `allow` array e
 
 ## Keeping the skill up to date
 
-The agent prompts are updated after each completed vet based on post-vet analysis. Pull the latest version before running a vet to ensure you have current judgment-call calibrations and agent logic:
+The agent prompts are updated after each completed vet based on post-vet analysis. Update before running a vet to ensure you have current judgment-call calibrations and agent logic:
 
-```bash
-git -C ~/.claude/skills/vetting pull --rebase origin main
-```
+- **Plugin install**: `/plugin marketplace update givewell-skills`
+- **Standalone install**: `git -C ~/.claude/skills/vetting pull --rebase origin main`
 
 ## Invoke
 
 ```
-/vetting <Google Sheets URL or local file path>
+/vetting <Google Sheets URL or local file path>                  # standalone install
+/givewell-vetting:vetting <Google Sheets URL or local file path> # plugin install
 ```
 
 The skill will ask for your Google Workspace email address, authenticate, list the workbook's sheets, and ask which to vet and at what scope (full publication check or formula/heads-up only) before proceeding.
@@ -67,12 +84,19 @@ A Google Spreadsheet with five tabs:
 
 ## File structure
 
+The repo doubles as a Claude Code **plugin** (in `plugin/`) and a single-plugin **marketplace** (`.claude-plugin/marketplace.json`). The canonical skill files live once in `plugin/skills/vetting/`; the repo-root `SKILL.md`, `agents/`, `reference/`, and `extract.py` are symlinks into that folder so the standalone clone-install keeps working. **Edit the real files under `plugin/skills/vetting/`, never the root symlinks.**
+
 ```
-vetting/
-  SKILL.md                       # Main orchestrator: session setup, Steps 0–2, agent dispatch
-  README.md                      # This file
-  extract.py                     # Local Excel extraction (use for .xlsx files before vetting)
-  agents/
+givewell-vetting-skill/
+  .claude-plugin/
+    marketplace.json             # Marketplace catalog: lists the givewell-vetting plugin
+  plugin/
+    .claude-plugin/
+      plugin.json                # Plugin manifest (name, version, author)
+    skills/vetting/              # Canonical skill files (real)
+      SKILL.md                   # Main orchestrator: session setup, Steps 0–2, agent dispatch
+      extract.py                 # Local Excel extraction (use for .xlsx files before vetting)
+      agents/
     formula-check-arithmetic.md  # Wave 1: arithmetic, cell references, scalar multipliers (4 parallel instances)
     formula-check-structure.md   # Wave 1: structural completeness, cross-column value checks
     formula-check-data.md        # Wave 1: external data verification — GBD, trial papers, cross-model values
@@ -95,11 +119,15 @@ vetting/
     final-review-gap-fill.md     # Wave 3 Step 10b: fill blank CE impact cells, add missing severity labels
     final-review-validation.md   # Wave 3 Step 10c: fix-validation, confidence intervals, placeholder scan
     final-review-dashboard.md    # Wave 3 Step 10d: dashboard content, Key Findings summary in chat
-  reference/
-    key-parameters.md            # Authoritative GiveWell parameter values (benchmark, moral weights, etc.)
-    output-format.md             # Findings and Publication Readiness column definitions and severity rules
-    output-setup.md              # Output spreadsheet creation: tabs, headers, formatting, dashboard cells
-    column-reference.md          # Canonical column specification referenced by all agents
+      reference/
+        key-parameters.md        # Authoritative GiveWell parameter values (benchmark, moral weights, etc.)
+        output-format.md         # Findings and Publication Readiness column definitions and severity rules
+        output-setup.md          # Output spreadsheet creation: tabs, headers, formatting, dashboard cells
+        column-reference.md      # Canonical column specification referenced by all agents
+  SKILL.md   agents/   reference/   extract.py   # symlinks → plugin/skills/vetting/ (standalone clone compat)
+  README.md  CLAUDE.md  CONTRIBUTING.md  LICENSE
+  .github/CODEOWNERS             # Auto-requests review from the owner on PRs
+  .claude/commands/done.md       # /done — commit, push, open/update PR at session end
 ```
 
 ## Shared repo
