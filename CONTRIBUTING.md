@@ -10,7 +10,7 @@ Slack the owner with questions; open a GitHub issue for proposed changes.
 
 ## Editing the skill
 
-The skill files live at the repo root: `SKILL.md` (orchestrator), `agents/` (per-wave agent prompts), `reference/` (parameter values and output-format specs), and `extract.py`. The agent prompts are refined after each completed vet based on post-vet analysis — keep changes scoped and explain the calibration in the commit message.
+The canonical skill files live once in `plugin/skills/vetting/` (`SKILL.md` orchestrator, `agents/` per-wave agent prompts, `reference/` parameter values and output-format specs, `extract.py`). The matching entries at the repo root are **symlinks** into that folder, kept so the standalone clone-into-`~/.claude/skills/vetting` install keeps working. Always edit the real files under `plugin/skills/vetting/` — never the root symlinks. The agent prompts are refined after each completed vet based on post-vet analysis — keep changes scoped and explain the calibration in the commit message. After changing the skill, bump `version` in both `plugin/.claude-plugin/plugin.json` and the plugin entry in `.claude-plugin/marketplace.json` so plugin users receive the update.
 
 ## Workflow
 
