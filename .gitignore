@@ -3,9 +3,11 @@ spreadsheets/
 output/
 reference_docs/
 
-# Personal Claude settings — do not commit
+# Personal Claude settings — do not commit, but keep shared config and commands
 .claude/*
 !.claude/settings.json
+!.claude/commands/
+!.claude/commands/**
 
 # System files
 .DS_Store

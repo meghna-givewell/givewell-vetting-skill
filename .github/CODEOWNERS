@@ -1,0 +1,7 @@
+# CODEOWNERS — auto-requests review when PRs are opened to the default branch.
+# Reference: https://docs.github.com/en/repositories/managing-your-repositories-settings-and-customizations/customizing-your-repository/about-code-owners
+#
+# Format: <path-pattern>    <reviewer1> <reviewer2>
+
+# Default owner — reviews any PR not matched by a more specific rule below.
+*    @meghna-givewell
