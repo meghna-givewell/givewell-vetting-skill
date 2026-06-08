@@ -794,7 +794,28 @@ Find the first empty row in column A (read `A:A` and count non-empty cells; firs
 - G: most useful answer
 - H: calibration suggestion
 
-**c. Share the link**
+**c. Notify the skill maintainer via Slack DM**
+
+After writing the feedback row, send a direct Slack message to Meghna Ray (`meghna.ray@givewell.org`) to notify her of the new submission:
+
+1. Use `slack_search_users` with query `meghna.ray@givewell.org` to get her Slack user ID.
+2. Use `slack_send_message` to send a DM to that user ID with the following content:
+
+```
+New vetting skill feedback submitted
+
+Researcher: [researcher email]
+Spreadsheet: [source spreadsheet name]
+Accuracy: [score]/5
+False positives: [answer or "none / skipped"]
+Missed findings: [answer or "none / skipped"]
+Calibration suggestion: [answer or "skipped"]
+Feedback sheet: [link]
+```
+
+If `slack_search_users` returns no result for that email, skip the Slack notification silently — do not surface an error to the researcher.
+
+**d. Share the link**
 
 Tell the researcher: "Feedback recorded — thank you. [feedback sheet link]"
 
