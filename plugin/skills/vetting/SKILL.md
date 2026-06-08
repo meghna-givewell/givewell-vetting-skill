@@ -620,8 +620,6 @@ Spawn agents simultaneously after the researcher checkpoint. Each of the eight c
 - ce-chain-trace-B: `last_row + 651`
 - leverage-uov-check-A: `last_row + 701`
 - leverage-uov-check-B: `last_row + 751`
-- sensitivity-scan: Confidentiality Flags sheet only — no row allocation needed
-- hardcoded-values: Hardcoded Values sheet only — no row allocation needed
 - notes-scan: Publication Readiness sheet only — PR start row: `last_row + 801` (computed as a safe offset after all Wave 2 Findings allocations; pass as "Publication Readiness start row: {value}" in session context)
 - **TA BOTEC only** — heads-up-epi-C (counterfactual burden tab): `last_row + 851`
 - **TA BOTEC only** — heads-up-epi-D (counterfactual burden tab): `last_row + 901`

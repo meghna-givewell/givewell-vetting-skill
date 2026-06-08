@@ -65,5 +65,5 @@ Present the following in chat:
 Rules:
 - Build the Vet scope line using the `get_spreadsheet_info` result from Step 2b: Fully vetted = tabs in session context vetted list; Lite-pass = tabs in session context lite-pass list; Not checked = all remaining tabs in the workbook. Do not write "all tabs" — list the actual tab names (comma-separated) or write "none" only if the list is genuinely empty after comparing against the real workbook tab count.
 - List every High finding under "High findings," grouped by sheet. If no High findings, write "No High findings."
-- List only items with `✓` in column K (Researcher judgment needed) from the Findings sheet under "Items requiring researcher input" — do not include pub-readiness items here. If none, omit this section.
+- List only items with `✓` in column I (Researcher judgment needed) from the Findings sheet under "Items requiring researcher input" — do not include pub-readiness items here. If none, omit this section.
 - Keep each bullet to one sentence — the full detail is in the Findings sheet.
