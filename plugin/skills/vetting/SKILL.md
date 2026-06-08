@@ -387,6 +387,8 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 > **Formula Error sub-type**: When column E is `Formula Error`, begin the Explanation with a bracketed sub-type indicating the nature of the error. Use one of: `[Copy-paste]` (value or formula copied from wrong cell), `[Wrong reference]` (references wrong row, column, or sheet), `[Year range]` (range boundary off by one or more rows/years), `[Sign error]` (positive/negative sign inverted), `[Wrong operator]` (wrong arithmetic operation), `[Off-by-one]` (range starts or ends at wrong boundary). Example: `[Wrong reference] B14 uses C22 (Nigeria rate) but should reference C23 (Kenya rate).`
 >
 > **Coverage declarations**: After completing each named check or scan section, write a coverage declaration in this exact format: `COVERAGE | [agent name] | [check name] | [rows/cells checked] | issues found: [N] | status: complete`. Use this format — do not use free-form prose coverage declarations.
+>
+> **Known calibrations**: Before starting your checks, read `reference/pitfalls.md`. It records false positive patterns, false negative patterns, and severity calibrations from prior vets. Apply every entry that is relevant to your agent's checks.
 
 **Cache scoping table** — When constructing the pre-read cache for each agent, include only the data modes and row range listed below. Agents that need data outside their scope make targeted `read_sheet_values` calls.
 
@@ -755,3 +757,45 @@ This gives any future reader of the source workbook immediate context about what
 **Findings Sheet (Google Sheet):** [link]
 
 One-line count: e.g., "13 findings: 2 High, 6 Medium, 5 Low — 4 require researcher input"
+
+**Step 3 — Collect pilot feedback**
+
+Ask the researcher the following five questions. Present them as a labelled block so they are easy to copy and answer:
+
+```
+Vetting skill feedback — 5 quick questions (answers go into a shared log to improve the skill):
+
+1. Accuracy — How accurate was this vet overall? (1 = many errors / 5 = nearly perfect)
+2. False positives — Were any findings things Claude flagged that were not real issues? If so, which Finding IDs and briefly why they were wrong.
+3. Missed findings — Did Claude miss anything significant you had to catch yourself? Briefly describe.
+4. Most useful — Which part of the output was most useful to you?
+5. Calibration suggestion — Is there one thing you'd like Claude to do differently next time?
+
+(You can skip any question — just reply with the numbers you want to answer.)
+```
+
+After the researcher responds, record their answers in the shared pilot feedback log:
+
+**a. Find or create the feedback sheet**
+
+Search Google Drive for a file named `Vetting Skill Pilot Feedback` using `search_drive_files` with query `name = 'Vetting Skill Pilot Feedback' and mimeType = 'application/vnd.google-apps.spreadsheet'`.
+- **If found**: use the first result's file ID as the feedback spreadsheet ID.
+- **If not found**: create a new Google Sheet named `Vetting Skill Pilot Feedback` using `create_spreadsheet`. Then write a header row to Sheet1 at `A1:H1` with values: `Date | Researcher | Spreadsheet vetted | Accuracy (1–5) | False positives | Missed findings | Most useful | Calibration suggestion`.
+
+**b. Append the feedback row**
+
+Find the first empty row in column A (read `A:A` and count non-empty cells; first empty = that count + 2, accounting for the header). Write one row at that position:
+- A: today's date (ISO format: YYYY-MM-DD)
+- B: researcher email (from session context)
+- C: source spreadsheet name (from `get_spreadsheet_info` results)
+- D: accuracy score (or blank if skipped)
+- E: false positives answer (truncated to 500 characters if longer)
+- F: missed findings answer
+- G: most useful answer
+- H: calibration suggestion
+
+**c. Share the link**
+
+Tell the researcher: "Feedback recorded — thank you. [feedback sheet link]"
+
+If the researcher skips all five questions, record a blank row for the date and spreadsheet name only, and do not prompt again.
