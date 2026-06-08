@@ -66,7 +66,7 @@ Do not write column G or beyond in Publication Readiness under any circumstances
 
 1. Scan all remaining Findings rows for any whose Error Type (column E) is `Missing Source`, `Broken Link`, `Permission Issue`, `Readability`, or `Terminology` AND whose Estimated CE Impact (column H) is blank or "No CE impact" — these are candidates that should have been moved to Publication Readiness. Move any found.
 2. Scan all Publication Readiness rows for any whose Explanation (column E) describes a formula error, parameter mismatch, or value that affects CE — these belong in Findings. Move any found, writing all ten columns.
-3. **Adjustment Issue audit**: Confirm zero `Adjustment Issue` rows remain in Publication Readiness. If any are found, move them to Findings unconditionally — adjustment scope errors are model-integrity issues regardless of whether their CE impact appears zero.
+3. **Adjustment Issue audit**: Confirm zero `Adjustment Issue` rows remain in Publication Readiness. If any are found, move them to Findings unconditionally — adjustment scope errors are model-integrity issues regardless of whether their CE impact appears zero. Also check for rows in Publication Readiness whose Explanation (column E) contains "adjustment" or "double-count" regardless of the Error Type label — a prior agent may have filed an Adjustment Issue as `Inconsistency` which then got routed to PR. Move any such rows to Findings and reclassify Error Type as `Adjustment Issue`.
 
 Coverage declaration: "Routing complete. [N] rows moved to Publication Readiness. [M] rows moved to Findings. Routing audit: [K] additional moves after spot-check. Adjustment Issue rows in PR after audit: 0. No other misrouted rows."
 

@@ -22,7 +22,7 @@ Read all rows from Publication Readiness (batched: `A2:H51`, `A52:H101`, continu
 
 Use `modify_sheet_values` (USER_ENTERED) on the Dashboard tab.
 
-**a. CE estimate direction (cell B22)**: Review Estimated CE Impact (column I) for all High findings and write one short phrase: `Likely overstated (~1.4x)`, `Likely understated (CE may rise from 8.7x to ~10x)`, `Mixed`, or `Not quantified (no High findings)`. If magnitude is unknown: `Likely overstated (magnitude unclear — see High findings)`.
+**a. CE estimate direction (cell B22)**: Review Estimated CE Impact (column H) for all High findings and write one short phrase: `Likely overstated (~1.4x)`, `Likely understated (CE may rise from 8.7x to ~10x)`, `Mixed`, or `Not quantified (no High findings)`. If magnitude is unknown: `Likely overstated (magnitude unclear — see High findings)`.
 
 **b. Findings by sheet table and Sheets not vetted (rows 24 onward)**:
 

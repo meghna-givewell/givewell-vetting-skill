@@ -95,7 +95,7 @@ When scanning all hardcoded cells across all sheets, flag any row whose label co
 - "crowding in," "crowding out," "leverage rate" — when the value represents a program-specific leverage estimate
 - "attribution factor," "proportion attributable" — when the value was determined in a separate analysis
 
-For each such row with no cross-model source note, file as **Low/H** with Researcher judgment needed ✓: "No cross-model source cited for [row label] = [value]. If this value is drawn from another GW model or analysis (e.g., [program] funging analysis, PrEP CEA income weights), add a cross-reference note citing the source model and confirm the value is current. If model-specific, document the basis in the Notes column." Write "Direction unknown" in column H.
+For each such row with no cross-model source note, file as **Low/H** (`Inconsistency`) with Researcher judgment needed ✓: "No cross-model source cited for [row label] = [value]. If this value is drawn from another GW model or analysis (e.g., [program] funging analysis, PrEP CEA income weights), add a cross-reference note citing the source model and confirm the value is current. If model-specific, document the basis in the Notes column." Write "Direction unknown" in column H.
 
 **Scope boundary**: Do not flag standard values already checked by key-params-check.md (GD benchmark, neonatal moral weight, death-aversion values, discount rates, standard income effects). Only flag program-specific variants where the derivation would require loading a separate GW model to verify.
 

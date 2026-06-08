@@ -458,7 +458,7 @@ This restriction applies to MCP tools and external search/fetch tools only. Buil
 
 **Each sub-agent must execute its full checklist exhaustively, on every row.** No check in any agent file is optional or skippable because the sheet is small or because a prior agent already noticed something nearby. The formula-check agent must audit every formula row against its label — not just rows that match a named pattern. The sources agent must complete the full column F text audit on every row. The readability agent must read every row label top-to-bottom. The consistency agent must compare against the VOI template structure row-by-row. A sub-agent that shortcuts because "this is a small BOTEC" will miss findings the same way inline execution does. **The named checks in each agent file are patterns to look for on top of the row-by-row baseline — they are not a substitute for it.**
 
-Agents run in five phases: Wave 1, Wave 1.5, Wave 2, Wave 2.5, and Wave 3. Before spawning Wave 1, announce progress: `[Phase 1/4] Wave 1 starting — 20 agents (formula checks, sensitivity scan, hardcoded values).`
+Agents run in four phases (Wave 1, Wave 2, Wave 2.5, Wave 3) with Wave 1.5 as a conditional sub-phase between Waves 1 and 2. Progress announcements use Phase 1/4, 1.5/4, 2/4, 3/4, 4/4 accordingly. Before spawning Wave 1, announce progress: `[Phase 1/4] Wave 1 starting — 20 agents (formula checks, sensitivity scan, hardcoded values).`
 
 ---
 
@@ -601,7 +601,7 @@ Spawn agents simultaneously after the researcher checkpoint. Each of the eight c
 
 **Leverage-uov-check skip condition**: Before spawning, check the tab list from `get_spreadsheet_info` for a Leverage/Funging tab (names containing `Leverage`, `Funging`, or `L/F`). If no such tab exists, skip leverage-uov-check A and B. Announce: `⏭️ leverage-uov-check A and B: skipped — no Leverage/Funging tab found.` Their pre-allocated row ranges remain reserved but unused. leverage-funging A and B still run — they check leverage treatment in the Main CEA regardless of tab structure.
 
-**If formula/heads-up only scope was selected**: skip sources-A, sources-B, readability-A, readability-B, and `agents/notes-scan.md` entirely — spawn 12 agents instead of 17. Their pre-allocated row ranges remain reserved but unused. Notes are still *read* in the initial batch (step 3) and remain available to all formula-check and heads-up agents as formula context — only the pub-readiness audit of notes documentation (missing "Calculation." entries, source annotations, style) is skipped. Pass to all spawned agents: "Pub readiness out of scope; value-correctness verification (GBD vizhub URLs, study extractions) is in scope."
+**If formula/heads-up only scope was selected**: skip sources-A, sources-B, readability-A, readability-B, and `agents/notes-scan.md` entirely — spawn 14 agents instead of 19. Their pre-allocated row ranges remain reserved but unused. Notes are still *read* in the initial batch (step 3) and remain available to all formula-check and heads-up agents as formula context — only the pub-readiness audit of notes documentation (missing "Calculation." entries, source annotations, style) is skipped. Pass to all spawned agents: "Pub readiness out of scope; value-correctness verification (GBD vizhub URLs, study extractions) is in scope."
 
 **Before spawning**, read the Findings sheet and identify the last populated finding row (call it `last_row`; use `last_row = 1` if no findings yet). **Verify that `last_row ≤ 670`** — Wave 1 now uses up to row ~661 at full budget (including formula-check-voi A/B), so `last_row` up to 670 is expected. If `last_row > 670`, Wave 1 agents exceeded their budgets significantly; warn in chat and proceed. If `last_row > 750`, reduce each Wave 2 pair's budget from 40 rows to 25 rows and note this adjustment in chat. Calculate pre-allocated start rows:
 
@@ -798,8 +798,8 @@ Find the first empty row in column A (read `A:A` and count non-empty cells; firs
 
 After writing the feedback row, send a direct Slack message to Meghna Ray (`meghna.ray@givewell.org`) to notify her of the new submission:
 
-1. Use `slack_search_users` with query `meghna.ray@givewell.org` to get her Slack user ID.
-2. Use `slack_send_message` to send a DM to that user ID with the following content:
+1. Use `mcp__claude_ai_Slack__slack_search_users` with query `meghna.ray@givewell.org` to get her Slack user ID.
+2. Use `mcp__claude_ai_Slack__slack_send_message` to send a DM to that user ID with the following content:
 
 ```
 New vetting skill feedback submitted
@@ -813,7 +813,7 @@ Calibration suggestion: [answer or "skipped"]
 Feedback sheet: [link]
 ```
 
-If `slack_search_users` returns no result for that email, skip the Slack notification silently — do not surface an error to the researcher.
+If `mcp__claude_ai_Slack__slack_search_users` returns no result for that email, skip the Slack notification silently — do not surface an error to the researcher.
 
 **d. Share the link**
 

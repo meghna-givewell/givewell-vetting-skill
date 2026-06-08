@@ -70,7 +70,7 @@ Write immediately after the formatting batch using `modify_sheet_values` (USER_E
 - A14: `Total items` | B14: `=COUNTA('Publication Readiness'!B2:B2000)`
 - A15: `Missing Source` | B15: `=COUNTIF('Publication Readiness'!D:D,"Missing Source")`
 - A16: `Readability` | B16: `=COUNTIF('Publication Readiness'!D:D,"Readability")+COUNTIF('Publication Readiness'!D:D,"Template Language")`
-- A17: `Internal Reference` | B17: `=COUNTIF('Publication Readiness'!D:D,"Internal Reference")`
+- A17: `Permission Issue` | B17: `=COUNTIF('Publication Readiness'!D:D,"Permission Issue")`
 - A19: `CONFIDENTIALITY FLAGS`
 - A20: `Total items` | B20: `=COUNTA('Confidentiality Flags'!A2:A1000)`
 - A22: `CE estimate direction:` *(leave B22 blank — final-review-dashboard writes here)*

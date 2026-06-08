@@ -96,9 +96,9 @@ Skip this check for tabs that explicitly carry a fixed historical vintage by des
 
 ## Coverage declaration
 
-After completing all four checks on all in-scope rows across all source tabs, write in your reasoning:
+After completing all five checks on all in-scope rows across all source tabs, write in your reasoning:
 
-> Source data check complete. Tabs checked: [list]. In-scope geographies located: [list]. Tabs where geographies not found in first 5,000 rows: [list or "none"]. Check A (co-vaccine ordering) issues: [list of cells or "none"]. Check B (adjacent transposition) issues: [list or "none"]. Check C (year-over-year >30pp) issues: [list or "none"]. Check D (sub-national aggregation) issues: [list of cells or "none"].
+> Source data check complete. Tabs checked: [list]. In-scope geographies located: [list]. Tabs where geographies not found in first 5,000 rows: [list or "none"]. Check A (co-vaccine ordering) issues: [list of cells or "none"]. Check B (adjacent transposition) issues: [list or "none"]. Check C (year-over-year >30pp) issues: [list or "none"]. Check D (sub-national aggregation) issues: [list of cells or "none"]. Check E (cross-tab data vintage) issues: [list or "none"].
 
 Do not proceed to Writing Findings until this declaration is complete.
 

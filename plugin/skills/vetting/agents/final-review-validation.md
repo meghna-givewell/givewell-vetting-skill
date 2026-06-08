@@ -131,7 +131,7 @@ Assign the next sequential Finding ID continuing from where compaction left off 
 
 ---
 
-## Step 2 — Hyperlink conversion (run last, after all checks and new findings are written)
+## Final step — Hyperlink conversion (run last, after all checks and new findings are written)
 
 Convert every cell reference in column C of both the Findings sheet and Publication Readiness sheet into a clickable `=HYPERLINK(...)` formula that opens the referenced cell directly in the source spreadsheet.
 
