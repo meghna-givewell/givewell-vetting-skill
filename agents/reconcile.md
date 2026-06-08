@@ -26,7 +26,8 @@ Count the non-empty rows in the A range. Count the non-empty rows in the B range
 
 **If either instance wrote fewer than 3 non-empty findings OR its completion marker is absent:**
 - Do not treat this as "no findings" — treat it as a potential agent failure.
-- Add a High/H finding to the Findings sheet: "Possible agent failure — [A or B] instance for [pair name] wrote only [N] findings in its allocated range (rows [X]–[Y]) and/or is missing its completion marker. This may indicate a silent failure (auth timeout, context limit). Recommend re-running this agent before publishing." Mark Researcher judgment needed ✓.
+- Do NOT file a finding. The orchestrator's pre-reconcile silent failure check (in SKILL.md Wave 2.5) will have already attempted auto-respawn of any failed Wave 2 agent before this reconcile agent ran. Your role is to document the gap and proceed on whatever output exists.
+- In your coverage declaration, write: `Completion marker: ABSENT — [A or B] instance may have failed. Reconciliation proceeding on available findings only.`
 - Proceed with reconciliation on the available findings, but note in the coverage declaration that one instance may be incomplete.
 
 Exception: plausibility-intervention and formula-check-structure may legitimately produce fewer than 3 findings if the intervention type or sheet structure doesn't trigger their checks — use judgment. If the sheet is a simple BOTEC and sources found 1 finding, that may be valid. If formula-check found 0 findings on a 100-row CEA, that is not plausible. The completion marker absence is a stronger signal than low finding count — always flag if the marker is absent.
@@ -67,6 +68,8 @@ Then make one of three determinations:
 - If the finding is already on the sheet (from the A instance): leave the Explanation unchanged.
 - If the finding is not yet on the sheet (B-only and A wrote nothing): add it as a new row on the correct sheet (Findings for model-integrity findings; Publication Readiness for publication-readiness findings). Write all columns; do not add any meta-commentary to the Explanation.
 - **When in doubt, retain. The cost of a false positive is one minute of researcher review. The cost of a false Won't Fix is a missed error in a published CEA.**
+
+**Before classifying any finding as Won't Fix**: Write in your reasoning the strongest single argument for why this finding could be valid — i.e., why the cell might genuinely be wrong as the filing agent claimed. Only after articulating that argument, test it against the cell data you have read. If the argument fails the test, proceed to Won't Fix. If the argument holds up even partially, use Retain or Needs researcher input instead. Skipping this step defeats the purpose of independent review — a Won't Fix reached without genuinely considering the case for the finding is a motivated dismissal, not a reasoned conclusion.
 
 **Won't Fix** (high bar — requires specific affirmative evidence):
 - You may mark a finding `Won't Fix` **only** if you can state the specific, affirmative reason the formula or value is correct — not merely that you couldn't confirm the issue.

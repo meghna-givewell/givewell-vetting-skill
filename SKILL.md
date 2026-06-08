@@ -6,7 +6,7 @@ argument-hint: "<Google Sheets URL or local file path>"
 
 # /vetting — GiveWell Spreadsheet Vetter
 
-**Skill version**: 2026-04-23 — run `git pull --rebase origin main` from `~/.claude/skills/vetting` before each vet to get current agent calibrations.
+**Skill version**: 2026-06-08 — run `git pull --rebase origin main` from `~/.claude/skills/vetting` before each vet to get current agent calibrations.
 
 You are a meticulous spreadsheet auditor for GiveWell. See `README.md` for one-time setup. See `reference/key-parameters.md` for authoritative parameter values. See `reference/output-format.md` for output column definitions.
 
@@ -47,7 +47,7 @@ Load each document only when the step that requires it begins.
 
 ### Google Sheets link
 1. Extract the spreadsheet ID from the URL (long string between `/d/` and `/edit` or `/view`)
-2. Use `get_spreadsheet_info` to list all sheet names. In a **single message**, ask: (a) which sheets to vet, (b) the two Step 0.5 program context questions (see Step 0.5 below), and (c) "Is this headed toward publication or external review, or is it internal/early-stage?" Combining all three into one ask means the user responds once and reads + literature searches can fire in parallel immediately after. Present only sheet names — do not display grid dimensions (rows × cols), as these reflect allocated space, not actual data, and will mislead the user about sheet size.
+2. Use `get_spreadsheet_info` to list all sheet names. In a **single message**, ask: (a) which sheets to vet, (b) the two Step 0.5 program context questions (see Step 0.5 below), (c) "Is this headed toward publication or external review, or is it internal/early-stage?", and (d) "Should I run source citation verification for Study-Derived and Org-Reported hardcoded inputs? This pre-fills the Verified? and Auto-check evidence columns in the Hardcoded Values sheet using the Anthropic Citations API — each value gets a matched/contradicted/could-not-verify verdict plus the verbatim sentence from the source. GiveWell parameter consistency is always checked regardless. [Yes / No]" Combining all four into one ask means the user responds once and reads + literature searches can fire in parallel immediately after. Present only sheet names — do not display grid dimensions (rows × cols), as these reflect allocated space, not actual data, and will mislead the user about sheet size.
 
 > **Publication / external review** (default): Full checks — formula errors, assumptions, sources, readability, and citations.
 >
@@ -78,6 +78,41 @@ Produces `output/extracted_<filename>.txt` with the full workbook structure.
 
 ---
 
+## Startup: Freshness gate
+
+**Run this before anything else — before reading the spreadsheet, before asking any questions.**
+
+### Primary check — git
+
+Run these two Bash commands:
+
+```bash
+git -C ~/.claude/skills/vetting fetch origin main --quiet 2>/dev/null; echo "fetch_done"
+git -C ~/.claude/skills/vetting rev-list HEAD..origin/main --count 2>/dev/null
+```
+
+- **Count = 0**: skill is current. Proceed silently.
+- **Count = N (N > 0)**: print `⚠️ SKILL OUT OF DATE — [N] commit(s) available on origin/main that are not in your local copy. Run \`git pull --rebase origin main\` in \`~/.claude/skills/vetting\` and restart before proceeding. To skip the update and proceed with this version anyway, type SKIP (this will be noted in the Vetting Summary).` Then **stop and wait**.
+- **Either command fails** (network error, no remote configured, directory not found): fall through to the date fallback below.
+
+If the researcher types `SKIP`: proceed and add to the Vetting Summary doc: `⚠️ Skill freshness: researcher skipped a [N]-commit update on [today's date]. Vetting ran on version [VERSION_DATE].`
+
+### Fallback — date (if git check fails)
+
+Read the skill version date from this file's header (`**Skill version**: YYYY-MM-DD`). Compare it against today's date.
+
+| Days since version date | Action |
+|---|---|
+| ≤ 60 | Proceed silently. |
+| 61–90 | Print: `⚠️ SKILL MAY BE OUT OF DATE (git check unavailable) — last updated [VERSION_DATE] ([N] days ago). Confirm you are running the current version before proceeding. Continuing automatically.` |
+| > 90 | Print: `🛑 SKILL BLOCKED (git check unavailable) — last updated [VERSION_DATE] ([N] days ago). Type CONFIRM to override and proceed with this version.` Then **stop and wait**. |
+
+If the researcher types `CONFIRM` after a block: proceed and add to the Vetting Summary doc: `⚠️ Skill freshness: git check unavailable; researcher confirmed version [VERSION_DATE] ([N] days old) on [today's date].`
+
+**When to update the version date**: Bump the `**Skill version**:` date at the top of this file whenever any agent file, SKILL.md, or `reference/` file changes. This keeps the date fallback calibrated.
+
+---
+
 ## Steps 0–2: Orientation
 
 **Ask questions when uncertain.** Do not silently make assumptions. If a formula's intent is unclear or a parameter seems implausible but could be intentional, ask before filing a finding.
@@ -96,6 +131,8 @@ Record the baseline table at the top of the Vetting Summary doc:
 |---|---|---|
 | Nigeria | B48 | 7.8x |
 
+**CE baseline is not a quality signal**: Record this figure as a reference point for CE impact calculations only. Do not let the headline CE number prime the vet — a model showing 5x and one showing 40x both receive the same level of scrutiny. A surprising CE in either direction is a reason to look more carefully at the inputs, not a reason to adjust the threshold for filing findings.
+
 ### Step 0.5 — Program Context
 
 The three questions below are asked in the **same message** as "which sheets to vet?" (Input Handling step 2) — do not ask them separately. Reads and literature searches fire in parallel once the user responds.
@@ -106,6 +143,8 @@ The three questions below are asked in the **same message** as "which sheets to 
 Once the user answers, record any declared intentional deviations and any document links provided. This context is passed to every sub-agent. If the user provided any documents (grant write-up, internal analysis, prior CEA), fetch all of them in the same parallel batch as the spreadsheet reads (Input Handling step 3). Pass each document's key parameter values to sub-agents in the program context summary under "Internal reference values: [parameter name] = [value] per [document name]." The plausibility and CE chain trace agents compare model inputs against these values and flag discrepancies ≥5% as Medium/H with Researcher judgment needed ✓.
 
 **Declared-deviation verification**: After the parallel read batch, verify each declared-intentional deviation before passing it to sub-agents. Read each referenced cell using `read_sheet_values` (FORMULA mode) and confirm: (a) the cell exists, (b) the formula or value matches what the researcher described, and (c) the deviation is plausibly intentional (a cell note explains the reason, or the researcher's description is specific and unambiguous). Remove any deviation that cannot be confirmed and flag it to the researcher: "The declared deviation for [cell] could not be confirmed — [cell] shows [actual value/formula]. I will include this cell in the standard vet unless you clarify." Pass only confirmed deviations to sub-agents.
+
+**Researcher declaration ≠ correctness**: Pass confirmed deviations to sub-agents with this note: "The researcher has declared these deviations intentional — meaning they are aware of them, not that the values are correct. If a declared deviation appears materially wrong given the model context or intervention literature, file at appropriate severity and note the researcher's acknowledgment in column F. Do not treat a declared deviation as immune from substantive challenge."
 
 **Intervention-area literature scan**: Up to 4 targeted web searches fire in the same parallel batch as the spreadsheet reads (Input Handling step 3), not after:
 1. `"[intervention type] effectiveness systematic review"` — external literature calibration
@@ -196,6 +235,8 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 >
 > **Formula Error sub-type**: When column E is `Formula Error`, begin the Explanation with a bracketed sub-type indicating the nature of the error. Use one of: `[Copy-paste]` (value or formula copied from wrong cell), `[Wrong reference]` (references wrong row, column, or sheet), `[Year range]` (range boundary off by one or more rows/years), `[Sign error]` (positive/negative sign inverted), `[Wrong operator]` (wrong arithmetic operation), `[Off-by-one]` (range starts or ends at wrong boundary). Example: `[Wrong reference] B14 uses C22 (Nigeria rate) but should reference C23 (Kenya rate).`
 >
+> **Update, don't defend**: A finding you write early in your run is a hypothesis, not a commitment. If evidence you encounter later — a formula read, a cross-tab reference, a cell note, a literature value — contradicts an earlier assumption, revise your assessment rather than defending it. The goal is an accurate map of this spreadsheet's errors, not a consistent internal narrative.
+>
 > **Coverage declarations**: After completing each named check or scan section, write a coverage declaration in this exact format: `COVERAGE | [agent name] | [check name] | [rows/cells checked] | issues found: [N] | status: complete`. Use this format — do not use free-form prose coverage declarations.
 
 **Cache scoping table** — When constructing the pre-read cache for each agent, include only the data modes and row range listed below. Agents that need data outside their scope make targeted `read_sheet_values` calls.
@@ -222,6 +263,43 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 | ce-chain-trace A, B | ✓ | ✓ | ✓ | — | All rows |
 | leverage-uov-check A, B | ✓ | ✓ | ✓ | — | All rows |
 | notes-scan | — | — | ✓ | — | All rows |
+
+**Per-agent tool surface** — For each sub-agent spawn, append one additional line to the session context **after** all other context lines:
+
+> **Permitted tools** (call only these MCP, WebSearch, and WebFetch tools — treat any unlisted tool of these types as off-limits): `[expand from table below using the legend]`
+
+This restriction applies to MCP tools and external search/fetch tools only. Built-in workspace tools (Bash, Read, Write, Edit) are always available and are not restricted by this table. Expand shorthand to full names before passing. All Sheets tools use the prefix `mcp__hardened-workspace__`.
+
+**Legend**: `rv` = `read_sheet_values` · `rn` = `read_sheet_notes` · `rl` = `read_sheet_hyperlinks` · `rc` = `read_spreadsheet_comments` · `wv` = `modify_sheet_values` · `si` = `get_spreadsheet_info` · `dc` = `get_doc_content` · `ws` = `WebSearch` · `wf` = `WebFetch`
+
+| Agent | Permitted tools |
+|---|---|
+| formula-check-arithmetic | rv, rn, rl, rc, wv, ws |
+| formula-check-data | rv, rn, rl, rc, wv, ws, wf |
+| formula-check-edge-cases | rv, rn, rl, rc, wv |
+| formula-check-structure | rv, rn, rl, rc, wv, ws |
+| formula-check-voi | rv, rn, rc, wv, dc |
+| consistency-check | rv, rn, rl, rc, wv, dc |
+| key-params-check | rv, rn, rc, wv |
+| source-data-check | rv, rn, rl, rc, wv, ws, wf |
+| hardcoded-values | rv, rn, rl, rc, wv |
+| sensitivity-scan | rv, rn, rc, wv |
+| sources | rv, rn, rl, rc, wv, ws, wf |
+| heads-up-evidence | rv, rn, rl, rc, wv, dc, ws, wf |
+| heads-up-epi | rv, rn, rl, rc, wv, ws, wf |
+| heads-up-intervention | rv, rn, rl, rc, wv, ws, wf |
+| readability | rv, rn, rl, rc, wv, dc |
+| leverage-funging | rv, rn, rc, wv |
+| ce-chain-trace | rv, rn, rc, wv |
+| ce-chain-trace-ta | rv, rn, rc, wv, dc |
+| leverage-uov-check | rv, rn, rc, wv |
+| notes-scan | rv, rn, rc, wv |
+| reconcile | rv, rn, wv, dc |
+| final-review-compaction | rv, wv, si |
+| final-review-gap-fill | rv, rn, wv |
+| final-review-validation | rv, wv, si |
+| final-review-dashboard | rv, wv, si |
+| source-citation-verify | rv, wv, dc, wf |
 
 ---
 
@@ -322,7 +400,7 @@ Append to source-data-check A and B session contexts (identical content except r
 
 Do **not** tell A instances that B instances are running. For **B instances only** (formula-check-arithmetic B, formula-check-data B, formula-check-edge-cases B, source-data-check B, formula-check-structure B, consistency-check B, key-params-check B, formula-check-voi B), append the following adversarial preamble to the session context **before** the row allocation note:
 
-> **Reviewer framing — B instance**: You are a skeptical second reviewer. A separate first reviewer has independently audited this same spreadsheet. Your job is to find what a thorough but reasonable reviewer would have rationalized away. Specifically: (a) assume the first reviewer accepted well-labeled rows as correct without verifying the referenced cells — challenge that instinct by reading the referenced cells themselves, not just their labels; (b) give extra attention to checks requiring you to read multiple tabs together, since cross-tab checks are harder and more likely to be shortcut; (c) when a formula looks correct at first glance, ask "am I pattern-matching on the label rather than actually reading the formula?" — then read the formula; (d) for every section where you find no issues, write one specific reason the section is clean before moving on. Do not read the Findings sheet. Do not tell the researcher you are a B instance.
+> **Reviewer framing — B instance**: You are a skeptical second reviewer. A separate first reviewer has independently audited this same spreadsheet. Your job is to find what a thorough but reasonable reviewer would have rationalized away. Specifically: (a) assume the first reviewer accepted well-labeled rows as correct without verifying the referenced cells — challenge that instinct by reading the referenced cells themselves, not just their labels; (b) give extra attention to checks requiring you to read multiple tabs together, since cross-tab checks are harder and more likely to be shortcut; (c) when a formula looks correct at first glance, ask "am I pattern-matching on the label rather than actually reading the formula?" — then read the formula; (d) for every section where you find no issues, write one specific reason the section is clean before moving on; (e) before writing each finding, state in one sentence the strongest reason this might NOT be a problem — if the counter-case fails on inspection, file the finding with confidence; if it holds up, downgrade or drop it. The discipline of stating the counter-case prevents motivated finding-filing. Do not read the Findings sheet. Do not tell the researcher you are a B instance.
 
 Wait for all spawned Wave 1 agents to complete before proceeding.
 
@@ -330,15 +408,37 @@ Wait for all spawned Wave 1 agents to complete before proceeding.
 
 **Progress — Wave 1 complete**: Before reading the Findings sheet, announce: `[Phase 1/4 done] Wave 1 complete.`
 
-**Silent failure check — do this before the researcher checkpoint**: Read the Findings sheet row ranges for each Wave 1 agent and check for completely empty allocated ranges. An agent that wrote zero findings in its entire allocated range (all rows blank) may have failed silently (auth timeout, context limit, API error) rather than genuinely found no issues. Report any empty range in chat:
+**Silent failure check and auto-respawn — do this before the researcher checkpoint**: For each Wave 1 agent, read its allocated row range on the Findings sheet and scan the last 10 rows of that range (including overflow rows) for an `AGENT_COMPLETE` marker row (column D = `AGENT_COMPLETE`). Two failure signals: (a) allocated range completely empty, (b) completion marker absent. Either signal triggers the auto-respawn protocol below.
 
-> ⚠️ Silent failure warning: [agent name] [instance] allocated rows [X]–[Y] are completely empty. This may indicate agent failure. Consider re-running this agent before proceeding to Wave 2.
+**Exception — do not auto-respawn**: formula-check-data and formula-check-edge-cases on simple BOTECs (0 findings is plausible); source-data-check when the source data tabs list is empty.
 
-Exception: formula-check-data and formula-check-edge-cases may produce fewer findings on simple BOTECs. Use judgment — 0 findings from formula-check-arithmetic on a 50-row CEA is not plausible; 0 findings from formula-check-data on a workbook with no external citations may be valid.
+**Auto-respawn protocol** (applies identically to Wave 1, Wave 2, and Wave 2.5 reconcile agents — defined once here, referenced below):
+1. Announce: `⚠️ Auto-respawning [agent name] [instance] — empty range or completion marker absent.`
+2. Re-spawn the agent with the same prompt, row allocation, and session context (including pre-read cache) as the original.
+3. After re-spawn completes, re-read the allocated range. If now populated and completion marker present — proceed normally, no finding filed.
+4. If still failing after one re-spawn: announce `⚠️ [agent name] [instance] failed twice — proceeding without this output. Researcher should review rows [X]–[Y] manually.` Do not file a finding; do not block further progress.
 
-Also check the Confidentiality Flags sheet and Hardcoded Values sheet: if sensitivity-scan wrote no rows and the spreadsheet has any populated cells, or if hardcoded-values wrote no rows and the spreadsheet has any non-formula input cells, flag as potential silent failures — a real spreadsheet will always have at least a few hardcoded values.
+Also apply auto-respawn to: sensitivity-scan if the Confidentiality Flags sheet has no rows and the spreadsheet has populated cells; hardcoded-values if the Hardcoded Values sheet has no rows and the spreadsheet has non-formula input cells.
 
 **Researcher-confirm checkpoint**: After all Wave 1 agents complete and before spawning Wave 2, read the Findings sheet and collect all rows with `✓` in the **Researcher judgment needed** column (column K). If **no such rows exist**, skip this checkpoint entirely and proceed immediately to Wave 2. If flagged rows exist, present them to the user as a numbered list: cell reference, finding type, and the specific question. Explain that subsequent agents will proceed on current assumptions unless they respond. Then continue — do not wait indefinitely. This checkpoint exists so intent questions (e.g., "is this $0 intentional?") can be answered before plausibility and readability agents analyze the same cells. **For any checkpoint item that is High severity or tagged D**: add a sentence flagging that downstream agents will analyze this cell using the current (potentially wrong) value — if the researcher's answer changes the value, the plausibility findings for that section may need to be revisited.
+
+**Researcher confirmation ≠ correctness**: When a researcher responds to a checkpoint question confirming a value is intentional, pass their response to Wave 2 agents with this framing: "The researcher has confirmed [value/cell] is intentional — this indicates awareness, not that the value is correct. Plausibility and heads-up agents should still assess it against literature ranges and program context and file at appropriate severity if the value is materially questionable."
+
+---
+
+### Wave 1.5 — Source citation verification
+
+**Skip if the researcher declined source citation verification at startup** (announce: `⏭️ Wave 1.5 skipped — source citation verification declined by researcher.`). GiveWell parameter consistency (key-params-check, Wave 1) always runs regardless of this choice.
+
+**Progress announcement**: `[Phase 1.5/4] Source citation verification starting — pre-filling Hardcoded Values sheet.`
+
+Spawn one `source-citation-verify` agent. Pass: Hardcoded Values sheet ID and user email. This agent uses the Anthropic Citations API to pre-fill the **Verified?** (column G) and **Auto-check evidence** (column H) columns for every `Study-Derived` and `Org-Reported` row that cites an accessible source URL.
+
+**The agent requires Bash and Write built-in tools** (to write and run the verification script) in addition to its MCP tools. Ensure these are available in its spawned context.
+
+Wait for this agent to complete before announcing Wave 2. After it completes, if the coverage declaration lists any `Contradicted ✗` rows, surface them to the researcher before proceeding: "Source citation check found [N] contradicted value(s): [list]. Review column H for the verbatim sentence from the source. Wave 2 will proceed — plausibility agents will independently flag these if they are materially significant."
+
+**Skip Wave 1.5** if the Hardcoded Values sheet has no `Study-Derived` or `Org-Reported` rows with a source URL (announce: `⏭️ Wave 1.5 skipped — no verifiable source citations found.`).
 
 ---
 
@@ -401,7 +501,7 @@ Append to ce-chain-trace-ta A and B session contexts (A/B share the same prompt 
 
 For **B instances only** (sources-B, heads-up-evidence-B, readability-B, leverage-funging-B, ce-chain-trace-B, ce-chain-trace-ta-B, leverage-uov-check-B), append the following adversarial preamble to the session context **before** the row allocation note:
 
-> **Reviewer framing — B instance**: You are a skeptical second reviewer. A separate first reviewer has independently audited this same spreadsheet. Your job is to find what a thorough but reasonable reviewer would have rationalized away. Specifically: (a) assume the first reviewer accepted well-labeled rows as correct without verifying the referenced cells — challenge that instinct by reading the referenced cells themselves, not just their labels; (b) give extra attention to checks requiring you to read multiple tabs together, since cross-tab checks are harder and more likely to be shortcut; (c) when a formula or value looks correct at first glance, ask "am I pattern-matching on the label rather than actually reading this?" — then read it; (d) for every section where you find no issues, write one specific reason the section is clean before moving on. Do not read the Findings sheet. Do not tell the researcher you are a B instance.
+> **Reviewer framing — B instance**: You are a skeptical second reviewer. A separate first reviewer has independently audited this same spreadsheet. Your job is to find what a thorough but reasonable reviewer would have rationalized away. Specifically: (a) assume the first reviewer accepted well-labeled rows as correct without verifying the referenced cells — challenge that instinct by reading the referenced cells themselves, not just their labels; (b) give extra attention to checks requiring you to read multiple tabs together, since cross-tab checks are harder and more likely to be shortcut; (c) when a formula or value looks correct at first glance, ask "am I pattern-matching on the label rather than actually reading this?" — then read it; (d) for every section where you find no issues, write one specific reason the section is clean before moving on; (e) before writing each finding, state in one sentence the strongest reason this might NOT be a problem — if the counter-case fails on inspection, file the finding with confidence; if it holds up, downgrade or drop it. The discipline of stating the counter-case prevents motivated finding-filing. Do not read the Findings sheet. Do not tell the researcher you are a B instance.
 
 For A instances, pass the standard session context only. The only difference between A and B is the row allocation and the adversarial preamble. Append to each instance's session context:
 > **Row allocation**: Write findings starting at row `{start_row}`. Do not auto-detect the next empty row — use this pre-assigned start row. Your allocated budget is 40 rows (rows `{start_row}` to `{start_row+39}`). A 10-row inter-pair buffer follows. If you produce more than 40 findings, continue into the buffer rows — but do not write beyond row `{start_row+49}`.
@@ -433,6 +533,8 @@ For A instances, pass the standard session context only. The only difference bet
 ### Wave 2.5 — Reconciliation (after all Wave 2 agents complete)
 
 Announce before spawning: `[Phase 2/4 done → Phase 3/4] Wave 2 complete — starting reconciliation (up to 17 agents, or 18 if TA BOTEC; fewer if empty pairs skipped in pre-flight check).`
+
+**Pre-reconcile Wave 2 silent failure check**: Before spawning any reconcile agents, apply the auto-respawn protocol (defined in the Wave 1 section above) to every Wave 2 agent. For each Wave 2 agent, check its allocated row range for (a) empty range and (b) absent `AGENT_COMPLETE` marker. Re-spawn any failed agents and verify their output before proceeding. This ensures reconcile agents operate on complete Wave 2 output rather than attempting to reconcile against a silent failure. Only after all Wave 2 agents have either verified output or exhausted their two-attempt limit should reconciliation begin.
 
 **Row allocation recovery — do this first if allocations are not in context**: If Wave 2 row allocations are not available in the current session context (e.g., context was compacted between Wave 2 and Wave 2.5), read Dashboard cells A49:B90 of the output spreadsheet to recover the full Wave 1 and Wave 2 allocation tables before computing the reconciliation ranges below. Do not skip Wave 2.5 due to missing row allocations — always recover from the Dashboard log.
 
@@ -472,11 +574,7 @@ For each instance, append to session context:
 
 Note: notes-scan (Step 7c) has no reconciliation pair — it runs once and writes only to Publication Readiness. The final-review compaction step handles it alongside all other Wave 1 findings. The heads-up-epi TA counterfactual burden pair also has no reconciliation pair for non-TA models — skip that row entirely when program context is not a TA BOTEC.
 
-**Silent failure check after Wave 2.5 — do this before Wave 3**: After all reconciliation agents complete, read the Findings sheet to verify each reconciliation pair's overflow zone for net-new findings, then check whether each reconcile agent wrote its coverage declaration to chat. (Pairs confirmed empty in the pre-flight check are exempt — their skipped status was already logged.) A reconcile agent that wrote no coverage declaration and produced zero reconciled findings is a silent failure risk. Report any pair where:
-
-> ⚠️ Reconciliation failure warning: [pair name] reconcile agent produced no coverage declaration and no net-new findings. Its A/B divergences may be unreconciled. Consider re-running this reconcile agent before proceeding to Wave 3.
-
-Exception: pairs where both A and B agents wrote zero findings (confirmed empty) produce no divergences to reconcile and zero net-new findings legitimately — verify this by reading the pair's A and B ranges before flagging.
+**Silent failure check after Wave 2.5 — do this before Wave 3**: After all reconciliation agents complete, read the Findings sheet to verify each reconciliation pair's overflow zone for net-new findings, then check whether each reconcile agent wrote its coverage declaration to chat. (Pairs confirmed empty in the pre-flight check are exempt — their skipped status was already logged.) A reconcile agent that wrote no coverage declaration and produced zero reconciled findings may have failed silently — apply the auto-respawn protocol to any such agent before proceeding to Wave 3. Exception: pairs where both A and B agents wrote zero findings (confirmed empty) produce no divergences to reconcile and zero net-new findings legitimately — verify this by reading the pair's A and B ranges before triggering respawn.
 
 ---
 

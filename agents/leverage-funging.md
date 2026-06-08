@@ -41,6 +41,8 @@ Funging adjustments should *reduce* expected impact (or equivalently, increase c
 
 Flag as High/D any case where a leverage/funging adjustment appears to *increase* CE without an explicit note explaining why — this is a strong signal of a sign or direction error.
 
+**Before flagging**: First, write in your reasoning the mechanically correct formula structure that would justify a >1 multiplier for this row type — for example: "If this is a leverage benefit multiplier, the correct form would be `=CE_without_leverage × (1 + leverage_ratio)`, which produces a value >1 when leverage_ratio > 0." Then explicitly read the cell note (via `read_sheet_notes` if not already in the pre-read cache) and the row labels immediately above and below the flagged row. Only if the note's stated mechanism AND the formula structure both match the form you wrote down is the >1 multiplier justified — a note mentioning "leverage" without specifying the formula convention is not sufficient; the formula structure must also match. If formula and note are both consistent with your written form, this is not an error. If no note is present, or the note's mechanism or formula structure diverges from your written form, file as **Medium/H with Researcher judgment needed ✓** asking the researcher to confirm the sign convention, rather than immediately filing High/D.
+
 ---
 
 ## Check 2 — Multiplicative vs. additive application

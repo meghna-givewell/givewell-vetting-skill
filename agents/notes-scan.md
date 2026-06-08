@@ -23,6 +23,8 @@ Read all vetted sheets in a parallel batch: FORMATTED_VALUE mode and FORMULA mod
 
 ## Step 2 — Row-by-row Notes scan
 
+**Notes calibration**: Notes that explicitly acknowledge uncertainty or limitation — "rough estimate," "GW judgment call," "no external source available," "conservative assumption" — are positive signal. A researcher who documents what they don't know is being transparent, not less rigorous. Do not flag these as documentation problems. The concern is the *absence* of any note on a judgment-based value, not the presence of honest uncertainty language.
+
 For each vetted sheet, scan every row from row 1 to the last populated row. For each row, check all seven categories below:
 
 **A. Formula rows missing "Calculation." note**

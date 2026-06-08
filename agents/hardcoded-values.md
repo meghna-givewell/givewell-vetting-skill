@@ -35,7 +35,7 @@ Exclude:
 
 ## Writing to the Hardcoded Values sheet
 
-Write the header row first if the sheet is empty: `Sheet | Cell | Category | Current Value | Description | Source to Verify | Verified?`
+Write the header row first if the sheet is empty: `Sheet | Cell | Category | Current Value | Description | Source to Verify | Verified? | Auto-check evidence`
 
 Columns:
 - **A (Sheet)**: Tab name only (e.g., `Main CEA`)
@@ -44,7 +44,8 @@ Columns:
 - **D (Current Value)**: The hardcoded value as it appears in FORMATTED_VALUE mode
 - **E (Description)**: The row/column label describing what this parameter represents — pull from adjacent column A label or column header (e.g., "Coverage rate — Penta3, Nigeria, 2022"). If no label is present, write "Unlabeled — [sheet row context]"
 - **F (Source to Verify)**: If a source is cited in a cell note or adjacent cell, write it here. Otherwise write "No source cited."
-- **G (Verified?)**: Leave blank — the researcher fills this in (Yes / No / In Progress)
+- **G (Verified?)**: Leave blank — filled by the source-citation-verify agent (Wave 1.5) after you complete
+- **H (Auto-check evidence)**: Leave blank — filled by the source-citation-verify agent
 
 **Category values**:
 - `GiveWell Parameter` — must match a value in key-parameters.md (moral weights, discount rate, income elasticity, value of a life saved, benchmark CEA). Use this if the value is a GiveWell cross-cutting input that should be consistent across models.

@@ -76,9 +76,10 @@ Columns (A–F): Finding # | Sheet | Cell/Row | Error Type / Issue | Explanation
 
 ## Hardcoded Values Sheet — Sheet 3
 
-Columns (A–G): Sheet | Cell | Category | Current Value | Description | Source to Verify | Verified?
+Columns (A–H): Sheet | Cell | Category | Current Value | Description | Source to Verify | Verified? | Auto-check evidence
 
-- **Verified?** (G): Left blank by Claude. The researcher fills this in (Yes / No / In Progress) after checking each entry against its source.
+- **Verified?** (G): Pre-filled by the source-citation-verify agent with one of: `Matched ✓` / `Contradicted ✗` / `Could not verify`. Researcher confirms or overrides (Yes / No / In Progress) after reviewing the auto-check evidence.
+- **Auto-check evidence** (H): The verbatim sentence extracted from the source document via the Anthropic Citations API, or the reason verification was not possible (e.g., "source not accessible", "PDF not text-extractable"). Left blank by hardcoded-values agent; filled by source-citation-verify agent.
 
 ---
 

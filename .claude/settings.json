@@ -14,7 +14,29 @@
       "mcp__hardened-workspace__modify_sheet_values",
       "mcp__hardened-workspace__add_conditional_formatting",
       "mcp__hardened-workspace__format_sheet_range",
-      "mcp__hardened-workspace__create_spreadsheet"
+      "mcp__hardened-workspace__create_spreadsheet",
+      "Bash(git -C /Users/mray/.claude rev-parse --is-inside-work-tree)",
+      "Bash(git -C /Users/mray/.claude/skills/vetting log --oneline -5)",
+      "Bash(git -C /Users/mray/.claude/skills/vetting add agents/final-review-compaction.md)",
+      "Bash(git -C /Users/mray/.claude/skills/vetting commit -m ' *)",
+      "Edit(~/.claude/skills/vetting/**)",
+      "Read(//Users/mray/.claude/**)",
+      "Edit(~/.claude/skills/link-update/**)",
+      "Bash(git --version)",
+      "Bash(git -C /tmp/IR-link-update log --oneline -5)",
+      "Bash(cp /Users/mray/.claude/skills/link-update/SKILL.md /tmp/IR-link-update/SKILL.md)",
+      "Bash(cp /Users/mray/.claude/skills/link-update/USER-GUIDE.md /tmp/IR-link-update/USER-GUIDE.md)",
+      "Edit(~/.claude/skills/grant-page-drafting/**)",
+      "Bash(git -C /Users/mray/.claude/skills/grant-page-drafting status)",
+      "Bash(git config *)",
+      "Bash(git ls-remote *)",
+      "Bash(git clone *)",
+      "Bash(cp /Users/mray/.claude/skills/grant-page-drafting/SKILL.md /tmp/grant-page-drafter/)",
+      "Bash(mkdir -p /tmp/grant-page-drafter/reference_docs)",
+      "Bash(cp /Users/mray/.claude/skills/grant-page-drafting/reference_docs/LINKS.md /tmp/grant-page-drafter/reference_docs/)"
+    ],
+    "additionalDirectories": [
+      "/Users/mray/.claude/skills/grant-page-drafting"
     ]
   }
 }
