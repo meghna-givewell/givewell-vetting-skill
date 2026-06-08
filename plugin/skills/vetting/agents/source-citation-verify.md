@@ -204,7 +204,7 @@ if __name__ == "__main__":
 
 ## Step 2 — Read Hardcoded Values sheet
 
-Read `A2:F500` from the Hardcoded Values sheet (extend range if needed; stop when two consecutive rows are empty). For each non-empty row record:
+Read `A2:G500` from the Hardcoded Values sheet (extend range if needed; stop when two consecutive rows are empty). For each non-empty row record:
 - `row_num`: spreadsheet row number
 - `category`: column C
 - `value`: column D
@@ -216,8 +216,9 @@ Read `A2:F500` from the Hardcoded Values sheet (extend range if needed; stop whe
 - Column C is `GiveWell Parameter` (key-params-check handles these against internal references)
 - Column C is `Structural` (model constants — no external source)
 - Column F is a Google Sheets URL (not accepted as a document block — write `Could not verify — source is a spreadsheet` for these rows)
+- Column G is already non-empty (e.g., `Matched ✓`, `Contradicted ✗`, `Could not verify`) — row was verified in a prior run; do not overwrite
 
-Eligible rows: category is `Study-Derived` or `Org-Reported` AND column F contains an accessible URL.
+Eligible rows: category is `Study-Derived` or `Org-Reported` AND column F contains an accessible URL AND column G is blank.
 
 ---
 

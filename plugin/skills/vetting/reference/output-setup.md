@@ -17,11 +17,12 @@ Create six tabs with these header rows (row 1) before spawning agents:
 **Publication Readiness** — columns A–F: `Finding # | Sheet | Cell/Row | Error Type/Issue | Explanation | Recommended Fix`
 - Column A (`Finding #`): left blank by agents — assigned by final-review-compaction
 
-**Hardcoded Values** — columns A–G: `Sheet | Cell | Category | Current Value | Description | Source to Verify | Verified?`
+**Hardcoded Values** — columns A–H: `Sheet | Cell | Category | Current Value | Description | Source to Verify | Verified? | Auto-check evidence`
 - Column A (`Sheet`): tab name only (e.g., `Main CEA`)
 - Column B (`Cell`): cell reference only (e.g., `C14`)
 - Column C (`Category`): one of `GiveWell Parameter`, `Study-Derived`, `Org-Reported`, `Structural`
-- Column G (`Verified?`): left blank — researcher fills in (Yes / No / In Progress)
+- Column G (`Verified?`): pre-filled by source-citation-verify agent (Wave 1.5) with `Matched ✓` / `Contradicted ✗` / `Could not verify`; researcher confirms or overrides
+- Column H (`Auto-check evidence`): verbatim sentence from source via Citations API, or reason verification was not possible; filled by source-citation-verify agent
 
 **Confidentiality Flags** — columns A–D: `Cell/Row | Content Found | Sensitivity Type | Recommended Action`
 
@@ -39,7 +40,7 @@ Fire all formatting in a single parallel batch immediately after writing headers
 - `add_conditional_formatting`: Section dividers A2:J2000 on Findings — CUSTOM_FORMULA `=ISNUMBER(SEARCH("───",$B2))`, background `#D9D9D9`
 - `format_sheet_range`: header row 1 on Findings (A1:J1) — dark blue `#1F4E79`, white text, bold; freeze row 1 and columns A–C
 - `format_sheet_range`: header row 1 on Publication Readiness (A1:F1) — dark blue `#1F4E79`, white text, bold; freeze row 1 and columns A–C
-- `format_sheet_range`: header row 1 on Hardcoded Values (A1:G1) — dark blue `#1F4E79`, white text, bold
+- `format_sheet_range`: header row 1 on Hardcoded Values (A1:H1) — dark blue `#1F4E79`, white text, bold
 - `add_conditional_formatting`: Category C2:C1000 on Hardcoded Values — `GiveWell Parameter` → `#D9E1F2`, `Study-Derived` → `#E2EFDA`, `Org-Reported` → `#FFF2CC`, `Structural` → `#EDEDED`
 - `add_conditional_formatting`: Dashboard B24:D24 — `High` → `#FFB3B3`, `Medium` → `#FFE5B3`, `Low` → `#B3D9B3`
 - `format_sheet_range`: header row 1 on CE Baseline (A1:B1) — dark blue `#1F4E79`, white text, bold

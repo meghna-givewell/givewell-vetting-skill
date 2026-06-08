@@ -80,7 +80,7 @@ Reconciliation agents delete rows they mark Won't Fix. The only evidence a Won't
 
 1. From the ID gaps identified in Step 1, there is no way to recover the deleted findings directly — they are gone from the sheet. However, you can infer what they likely covered from context: the surrounding findings in the same row range identify which agent pair produced them, and the pair's source agent file identifies its check patterns.
 
-2. For each ID gap, identify the agent pair it came from (use the Dashboard's row allocation log at A49:B90). Then: read the rows of the source spreadsheet covered by that pair and ask — is there a cell in this range that was flagged by one instance but cleared by reconciliation that, on reflection, is plausibly a genuine finding?
+2. For each ID gap, identify the agent pair it came from (use the Dashboard's row allocation log at A49:B100). Then: read the rows of the source spreadsheet covered by that pair and ask — is there a cell in this range that was flagged by one instance but cleared by reconciliation that, on reflection, is plausibly a genuine finding?
 
 3. This check is intentionally light — you cannot re-run the full agent. Focus only on: (a) any cell in the pair's row range that appears in the program context as a known parameter (moral weight, benchmark, cross-cutting parameter), and (b) any formula row where the formula and row label diverge in a way that would be obvious on visual inspection.
 

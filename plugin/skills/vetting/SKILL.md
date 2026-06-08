@@ -435,8 +435,8 @@ This restriction applies to MCP tools and external search/fetch tools only. Buil
 | sensitivity-scan | rv, rn, rc, wv |
 | sources | rv, rn, rl, rc, wv, ws, wf |
 | heads-up-evidence | rv, rn, rl, rc, wv, dc, ws, wf |
-| heads-up-epi | rv, rn, rl, rc, wv, ws, wf |
-| heads-up-intervention | rv, rn, rl, rc, wv, ws, wf |
+| heads-up-epi | rv, rn, rl, rc, wv, dc, ws, wf |
+| heads-up-intervention | rv, rn, rl, rc, wv, dc, ws, wf |
 | readability | rv, rn, rl, rc, wv, dc |
 | leverage-funging | rv, rn, rc, wv |
 | ce-chain-trace | rv, rn, rc, wv |
@@ -456,7 +456,7 @@ This restriction applies to MCP tools and external search/fetch tools only. Buil
 
 **Each sub-agent must execute its full checklist exhaustively, on every row.** No check in any agent file is optional or skippable because the sheet is small or because a prior agent already noticed something nearby. The formula-check agent must audit every formula row against its label — not just rows that match a named pattern. The sources agent must complete the full column F text audit on every row. The readability agent must read every row label top-to-bottom. The consistency agent must compare against the VOI template structure row-by-row. A sub-agent that shortcuts because "this is a small BOTEC" will miss findings the same way inline execution does. **The named checks in each agent file are patterns to look for on top of the row-by-row baseline — they are not a substitute for it.**
 
-Agents run in three waves. Before spawning Wave 1, announce progress: `[Phase 1/4] Wave 1 starting — 20 agents (formula checks, sensitivity scan, hardcoded values).`
+Agents run in five phases: Wave 1, Wave 1.5, Wave 2, Wave 2.5, and Wave 3. Before spawning Wave 1, announce progress: `[Phase 1/4] Wave 1 starting — 20 agents (formula checks, sensitivity scan, hardcoded values).`
 
 ---
 
@@ -565,7 +565,7 @@ Exception: formula-check-data and formula-check-edge-cases may produce fewer fin
 
 Also check the Confidentiality Flags sheet and Hardcoded Values sheet: if sensitivity-scan wrote no rows and the spreadsheet has any populated cells, or if hardcoded-values wrote no rows and the spreadsheet has any non-formula input cells, flag as potential silent failures — a real spreadsheet will always have at least a few hardcoded values.
 
-**Researcher-confirm checkpoint**: After all Wave 1 agents complete and before spawning Wave 2, read the Findings sheet and collect all rows with `✓` in the **Researcher judgment needed** column (column K). If **no such rows exist**, skip this checkpoint entirely and proceed immediately to Wave 2. If flagged rows exist, present them to the user as a numbered list: cell reference, finding type, and the specific question. Explain that subsequent agents will proceed on current assumptions unless they respond. Then continue — do not wait indefinitely. This checkpoint exists so intent questions (e.g., "is this $0 intentional?") can be answered before plausibility and readability agents analyze the same cells. **For any checkpoint item that is High severity or tagged D**: add a sentence flagging that downstream agents will analyze this cell using the current (potentially wrong) value — if the researcher's answer changes the value, the plausibility findings for that section may need to be revisited.
+**Researcher-confirm checkpoint**: After all Wave 1 agents complete and before spawning Wave 2, read the Findings sheet and collect all rows with `✓` in the **Researcher judgment needed** column (column I). If **no such rows exist**, skip this checkpoint entirely and proceed immediately to Wave 2. If flagged rows exist, present them to the user as a numbered list: cell reference, finding type, and the specific question. Explain that subsequent agents will proceed on current assumptions unless they respond. Then continue — do not wait indefinitely. This checkpoint exists so intent questions (e.g., "is this $0 intentional?") can be answered before plausibility and readability agents analyze the same cells. **For any checkpoint item that is High severity or tagged D**: add a sentence flagging that downstream agents will analyze this cell using the current (potentially wrong) value — if the researcher's answer changes the value, the plausibility findings for that section may need to be revisited.
 
 ---
 

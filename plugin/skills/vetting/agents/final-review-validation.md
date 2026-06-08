@@ -1,4 +1,4 @@
-# Final Review — Step 10b: Validation Agent
+# Final Review — Step 10c: Validation Agent
 
 You are performing Step 10c of a GiveWell spreadsheet vet. This step runs after the gap-fill agent (Step 10b) has completed its cascade and coverage checks. You have been provided:
 - Spreadsheet ID (the **source** spreadsheet being vetted — you will read specific cells from it for fix-validation)
@@ -20,7 +20,7 @@ You are performing Step 10c of a GiveWell spreadsheet vet. This step runs after 
 
 ## Step 1 — Read all findings
 
-Read all rows from row 2 onward on the Findings sheet using batched `read_sheet_values` calls: `A2:L51`, then `A52:L101`, `A102:L151`, continuing in 50-row increments until two consecutive batches return no non-empty rows. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Skip divider rows (column D empty, column B contains `───`). Collect all finding rows.
+Read all rows from row 2 onward on the Findings sheet using batched `read_sheet_values` calls: `A2:J51`, then `A52:J101`, `A102:J151`, continuing in 50-row increments until two consecutive batches return no non-empty rows. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Skip divider rows (column D empty, column B contains `───`). Collect all finding rows.
 
 ---
 
