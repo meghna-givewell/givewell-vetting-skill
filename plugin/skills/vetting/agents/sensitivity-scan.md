@@ -46,3 +46,17 @@ Columns:
 - **B (Content Found)**: The sensitive content found — quote it directly, or describe it if quoting would itself be a risk
 - **C (Sensitivity Type)**: `PII` | `Donor Info` | `Salary/Compensation` | `Unpublished Strategy` | `Contact Info` | `Other`
 - **D (Recommended Action)**: Specific instruction (e.g., "Remove name — replace with role title", "Delete row before publication", "Move to internal-only version")
+
+---
+
+## Final step — write completion marker
+
+After all flags are written (or if no flags were found), write ONE final row to the Confidentiality Flags sheet at the next available row. This is the absolute last action you take before finishing.
+
+Write the row with:
+- Column A: `AGENT_COMPLETE`
+- Column B: `sensitivity-scan`
+- Column D: `Scanned [N] rows across [sheet name(s)]. Filed [K] flags.`
+- All other columns: blank
+
+Use a single `modify_sheet_values` call. This marker lets the pipeline confirm this agent completed normally without a silent failure (auth timeout, context limit, API error).

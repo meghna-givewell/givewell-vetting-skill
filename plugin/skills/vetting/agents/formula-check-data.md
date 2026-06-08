@@ -53,6 +53,24 @@ Coverage declaration: "GBD vizhub check complete. Cells with vizhub URLs: [N]. U
 
 ---
 
+## Check 2b — GBD formula cell metric alignment
+
+When a formula cell (not a hardcoded cell) embeds numeric constants derived from GBD or other epidemiological data sources — e.g., `=27935.25*(28/365.25)/100` — and the cell note or an adjacent source column cites a GBD URL or data source, verify that the cited metric matches what the formula is computing.
+
+This check is necessary because the formula itself reveals the intended metric (e.g., `28/365.25` implies neonatal deaths — a neonatal time fraction), while the cited source may describe a broader or different metric (e.g., all-cause mortality rather than neonatal mortality rate).
+
+Procedure:
+1. For every formula cell containing embedded numeric literals (constants that appear to be epidemiological estimates), read the cell note and any adjacent source column entry.
+2. Infer the intended metric from the formula structure — e.g., `× (28/365.25)` signals neonatal period; `/ 100` signals per-100 rate; `/ 1000` signals per-1000 rate.
+3. Compare the inferred metric against the description in the cell note or the title/URL of the cited source. A neonatal-deaths formula citing an all-cause mortality URL is a metric mismatch.
+4. If the URL is inaccessible (403, paywall, or redirect), note what metric the formula requires based on formula structure and flag if the note description references a broader category.
+
+File as **Medium/H** with Researcher judgment needed ✓: "[cell] formula structure implies [inferred metric] (e.g., neonatal deaths) but the cited source at [URL/note text] appears to describe [broader metric]. Confirm the source provides the correct metric and update the note." Flag as **High/D** if the metric mismatch would materially affect the value (e.g., all-cause vs. neonatal mortality differ by 5–10× in typical SSA contexts).
+
+Coverage declaration: "GBD formula cell metric alignment check complete. Formula cells with embedded epidemiological constants: [N]. Metric mismatches found: [list or 'none']. No other issues of this type."
+
+---
+
 ## Check 3 — Cross-model value verification
 
 **Scope note**: The `sources` agent also scans cell notes for cross-model citations — overlap between the two agents is expected and harmless. Do not skip this check on the assumption that sources.md covers it. The sources agent flags citation quality (missing/broken links); this check verifies the value was transcribed correctly. They are complementary, not redundant.
@@ -64,21 +82,6 @@ When a hardcoded cell note cites a specific GiveWell CEA or internal model as th
 - This check is especially important for DALY estimates, BOTEC adjustment factors, and structural parameters commonly copied between models.
 
 Coverage declaration: "Cross-model verification complete. Cells citing another model: [N]. Models loaded and verified: [N]. Discrepancies found: [list or 'none']. No other issues of this type."
-
----
-
-## Check 4 — Downstream re-computation of upstream parameters
-
-When a summary or analysis tab (ceiling analysis, plausibility check, combined-protocol aggregate) contains a formula that re-aggregates parameters already computed in an upstream data tab, verify:
-
-1. **Weights are the correct type** for what is being combined — prevalence shares when aggregating ICFs or burden rates, population shares when aggregating costs, not mortality ratios or RR values.
-2. **The formula result matches** what manual calculation from the upstream inputs would give.
-
-Common error: weighting by mortality ratios rather than prevalence shares when computing a GAM (combined MAM+SAM) ICF, which overstates the GAM ICF by giving disproportionate weight to the higher-ICF/higher-mortality SAM group. Flag as **Medium/D** if the aggregation methodology differs from what the row label implies, or if the weighting factor cannot be clearly justified by the label.
-
-This check applies especially to combined-protocol (MAM+SAM) or multi-geography aggregation formulas in ceiling analysis, plausibility, or summary tabs.
-
-Coverage declaration: "Downstream re-computation check complete. Summary/aggregate formulas reviewed: [N]. Weighting issues found: [list or 'none']. No other issues of this type."
 
 ---
 
@@ -97,6 +100,21 @@ For each such row with no cross-model source note, file as **Low/H** with Resear
 **Scope boundary**: Do not flag standard values already checked by key-params-check.md (GD benchmark, neonatal moral weight, death-aversion values, discount rates, standard income effects). Only flag program-specific variants where the derivation would require loading a separate GW model to verify.
 
 Coverage declaration: "Cross-model implicit parameter check complete. Funging/income-effect/leverage rows scanned: [N]. Rows missing cross-model citation: [list or 'none']."
+
+---
+
+## Check 4 — Downstream re-computation of upstream parameters
+
+When a summary or analysis tab (ceiling analysis, plausibility check, combined-protocol aggregate) contains a formula that re-aggregates parameters already computed in an upstream data tab, verify:
+
+1. **Weights are the correct type** for what is being combined — prevalence shares when aggregating ICFs or burden rates, population shares when aggregating costs, not mortality ratios or RR values.
+2. **The formula result matches** what manual calculation from the upstream inputs would give.
+
+Common error: weighting by mortality ratios rather than prevalence shares when computing a GAM (combined MAM+SAM) ICF, which overstates the GAM ICF by giving disproportionate weight to the higher-ICF/higher-mortality SAM group. Flag as **Medium/D** if the aggregation methodology differs from what the row label implies, or if the weighting factor cannot be clearly justified by the label.
+
+This check applies especially to combined-protocol (MAM+SAM) or multi-geography aggregation formulas in ceiling analysis, plausibility, or summary tabs.
+
+Coverage declaration: "Downstream re-computation check complete. Summary/aggregate formulas reviewed: [N]. Weighting issues found: [list or 'none']. No other issues of this type."
 
 ---
 

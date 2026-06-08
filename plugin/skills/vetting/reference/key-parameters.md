@@ -20,7 +20,7 @@ Flag deviations from these values unless the sheet provides an explicit document
 | VOI — probability we influence other funders | Default **20%** | Highly speculative; adjust based on total RFMF landscape and whether the study is answering a field-relevant question |
 | VOI — probability we're wrong (t-stat rules of thumb) | t≥3: **−10%**; t≈2: **−20%**; t≈1.7: **−30%**; t≈1.2: **−50%** | Downward adjustment to VOI for risk of acting on a biased/noisy trial result; larger penalty for less precise trials |
 | VOI — how long we fund after study | Default **10 years** | Highly speculative; update downward if program has a clearly finite implementation window |
-| VOI — CE of reallocated funding | Default **1–2× above bar** | E.g., if bar is 10×, assume program is 11–12×; conservative assumption |
+| VOI — CE of reallocated funding | Default **1–2× above bar** | E.g., if bar is 6×, assume program is 7–8×; conservative assumption |
 | Discount rate — income benefits | **4%** per year | Standard for income/consumption benefits over any time horizon |
 | Discount rate — long-term health benefits | **0.5%** per year | Only for health benefits spanning several decades or more; do not discount near-term health benefits |
 | Resource sharing multiplier — household income effect | **×5** (typical household size) | Use when relying on household income/consumption effects |

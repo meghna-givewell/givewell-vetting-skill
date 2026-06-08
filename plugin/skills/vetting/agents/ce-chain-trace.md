@@ -137,6 +137,30 @@ Flag as **High** if a named adjustment (IV, EV, leverage, funging) is absent fro
 
 ---
 
+### 3f — Semantic reference verification in high-risk sections
+
+Three sections of a GiveWell CEA are especially prone to "wrong row" or "wrong column" errors that are syntactically valid but semantically incorrect — the formula resolves to a plausible number from the wrong source cell. These errors are invisible to syntax audits and only surface by reading the label at the referenced address.
+
+**1. Indirect effects section**: For every formula in rows labeled "indirect effects," "indirect benefit," "indirect mortality," or similar, read the row label of the referenced upstream cell and verify it describes an indirect-effects-specific source. A copy-paste from the direct benefits section commonly leaves the indirect effects formula referencing a direct-effects row.
+
+**2. External validity adjustments by cohort, round, or geography**: When the model applies EV adjustments across multiple cohorts, rounds, or geographies, verify that each column's EV formula references the column-appropriate row in the source — not a single shared row or another column's row. Read the referenced row label for each column.
+
+**3. All-cause mortality and disease burden inputs**: For every cross-sheet formula pulling mortality rates or disease burden figures, verify both: (a) the row label at the referenced cell describes the correct mortality concept (e.g., under-5 ACM, not all-ages), and (b) the column at the referenced cell corresponds to the correct geography for the formula's context.
+
+For each section, produce a mandatory verification table before filing or declining to file:
+
+| Section | Formula cell | Referenced cell | Referenced row label | Referenced col header | Semantically correct? |
+|---|---|---|---|---|---|
+| Indirect effects | [ref] | [source ref] | [label] | [header] | YES/NO |
+| EV by cohort | [ref] | [source ref] | [label] | [header] | YES/NO |
+| ACM/burden | [ref] | [source ref] | [label] | [header] | YES/NO |
+
+If a section does not exist in the model, write "not present" for that section's rows. A row absent from the table has not been checked. File any "NO" as **High/Formula Error**: "[cell] references [source ref] (label: '[referenced label]') but this formula computes [intended concept] for [intended geography/cohort]. Change the reference to [correct cell]."
+
+Coverage declaration: "Step 3f complete. Indirect effects references checked: [N]. EV cohort references checked: [N]. ACM/burden references checked: [N]. Issues: [list or 'none']."
+
+---
+
 ## Step 4 — Verify source inputs at the chain's roots
 
 For the terminal inputs at the bottom of the chain (cost per treatment, efficacy/effect size, coverage rate, population figures), verify:
@@ -186,6 +210,8 @@ Based on the program context and grant document (if provided):
 - Are there outcomes in the model not mentioned in the grant document that materially affect the CE estimate? Flag as Medium/H — may be intentional extensions, requires input.
 - Does the model's description of what it is computing (in cell notes, tab names, or row labels) match the actual formula structure? A label that says "coverage-adjusted deaths averted" should reference a coverage parameter in its formula.
 
+**VOI_Priors cross-row column-range consistency** (run when the model contains a VOI tab): When the CE chain passes through a VOI section that references a VOI_Priors tab (or equivalent Bayesian priors tab), identify all rows in the VOI tab whose formulas reference that priors tab. For each pair of rows that compute analogous quantities — e.g., two rows both computing "probability that [outcome] changes CE for [funder type]" or two rows both computing expected CE for different scenarios — compare the column range each formula references from the priors tab. If row A references `VOI_Priors!$B$5` (single column) and row B references `VOI_Priors!$B$5:$C$5` (wider range) for a structurally analogous calculation, flag as **Medium/Formula Error** with Researcher judgment needed ✓: "Row [A ref] and row [B ref] both compute [analogous concept] but reference different column ranges from VOI_Priors (`[formula A]` vs. `[formula B]`). If both rows model the same type of calculation, they should reference the same column range — verify which is correct and apply consistently." Do not flag where a cell note documents why one row has a wider or narrower reference than its analogue.
+
 **Note**: Leverage section UoV reference checks (verifying that leverage scenario rows and intermediate `$ × UoV/$` calculations reference the post-supplemental rate) are handled by the `leverage-uov-check` agent running in parallel. Do not duplicate those checks here.
 
 **Note**: TA cost denominator consistency checks (comparing cost bases between Main CEA and Simple CEA) are handled by a dedicated `ce-chain-trace-ta` agent running in parallel. Do not duplicate that check here.
@@ -213,5 +239,7 @@ Write the row with:
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).
+
+**Publication Readiness column layout differs**: When routing a finding to Publication Readiness, use the 6-column A–F layout. Write exactly 6 values per row — no more. Do not include Severity, Status, Changes CE?, Estimated CE Impact, or Researcher judgment needed. Writing a 7th column will corrupt the sheet layout. A=Finding # (blank) | B=Sheet | C=Cell/Row | D=Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Missing Source | Broken Link | Permission Issue | Readability | Terminology) | E=Explanation | F=Recommended Fix.
 
 See `reference/output-format.md` for full column definitions.

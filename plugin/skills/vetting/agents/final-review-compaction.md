@@ -76,7 +76,7 @@ Coverage declaration: "Routing complete. [N] rows moved to Publication Readiness
 
 Scan all rows across both sheets for duplicates — rows where Cell/Row (column C) and Error Type/Issue (column E on Findings, column D on Publication Readiness) are substantively identical. Parallel Wave 2 agents cannot see each other's findings, so duplicates are most common between sources and readability (both check Notes columns) and between plausibility agents (both may flag the same cell).
 
-When duplicates are found: keep the finding with the more complete Explanation and Recommended Fix; merge any unique detail from the other row into the surviving row's Explanation field; mark the surviving row with "Merged with duplicate finding from parallel agent." Do not merge near-duplicates that are complementary — a broken link and a stale value at the same cell are distinct issues and should both be kept.
+When duplicates are found: keep the finding with the more complete Explanation and Recommended Fix; merge any unique detail from the other row into the surviving row's Explanation field. Do not merge near-duplicates that are complementary — a broken link and a stale value at the same cell are distinct issues and should both be kept.
 
 **Root-cause / symptom consolidation** — after the standard duplicate pass, apply a second pass:
 
@@ -86,7 +86,9 @@ When duplicates are found: keep the finding with the more complete Explanation a
 
 After this pass, write: "Semantic consolidation complete. [N] root-cause/symptom pairs consolidated. [M] same-parameter multi-cell groups consolidated."
 
-Coverage declaration: "Deduplication complete. [N] exact duplicates merged. [See semantic consolidation above.] No other duplicates found."
+**Synthesis false-positive guard**: After deduplication and consolidation, scan for any finding whose Explanation (column F) contains language suggesting it was assembled by combining signals from two agents rather than directly observed — phrases like "both instances flagged," "A noted X while B noted Y," "combining these observations suggests," or any claim at High/D severity that is not supported by a specific cell value read in FORMULA or FORMATTED_VALUE mode. For each such finding: (a) if you can verify the claim by calling `read_sheet_values` on the referenced cell — do so now, and either confirm the finding (retain at its severity) or downgrade it; (b) if the claim cannot be verified without reading the source spreadsheet — downgrade to Medium/H with Researcher judgment needed ✓ and add to the Explanation: "Synthesized from two partial agent observations — researcher to confirm before treating as confirmed error." Do not retain a High/D synthesized finding that was not directly verified. Rationale: the compaction agent in a prior vet elevated a Low observation to High/D by combining two partial signals, producing a false positive that the human vet did not catch — and which caused the researcher to distrust the adjacent real findings.
+
+Coverage declaration: "Deduplication complete. [N] exact duplicates merged. [See semantic consolidation above.] Synthesis guard: [M] unverified High/D findings downgraded. No other duplicates found."
 
 ---
 
@@ -104,8 +106,6 @@ Action for each ✓ row reviewed:
 Write: "Step 3.3 complete. ✓ findings before audit: [N]. ✓ marks removed (determinable from spreadsheet): [M]. Rows removed entirely: [K]. ✓ marks retained (genuine intent questions): [N-M-K]."
 
 Skip this step (write "Step 3.3: skipped — ✓ count [N] is ≤20% of total findings [T]") when ✓ count / total findings ≤ 20%.
-
----
 
 ---
 
