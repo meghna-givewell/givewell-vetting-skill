@@ -63,7 +63,7 @@ At the start of each vet, Claude will ask:
 
 ## What it checks
 
-- **Wave 1** — Formula errors (arithmetic, structure, data verification, edge cases), cross-parameter consistency, source data tab audit, key-parameter values, VOI checks, confidentiality flags, hardcoded values inventory
+- **Wave 1** — Formula errors (arithmetic, structure, data verification, edge cases), parameter value accuracy (SUMIFS staleness, stale vintages, country mismatches), cross-parameter consistency, source data tab audit, key-parameter values, VOI checks, confidentiality flags, hardcoded values inventory
 - **Wave 1.5** *(optional, if researcher opts in)* — Source citation verification: fetches each cited source and uses the Anthropic Citations API to check whether Study-Derived and Org-Reported hardcoded values are supported by their sources. Pre-fills `Verified?` and `Auto-check evidence` columns in the Hardcoded Values sheet.
 - **Wave 2** — Data sources and citations, CE sanity and evidence quality, epidemiological plausibility, intervention-specific checks, leverage/funging, CE chain trace, readability, leverage UoV references, notes quality
 - **Wave 2.5** — Reconciliation across parallel agent instances
@@ -107,6 +107,7 @@ givewell-vetting-skill/
       extract.py                 # Local Excel extraction (use for .xlsx files before vetting)
       agents/
         formula-check-arithmetic.md  # Wave 1: arithmetic, cell references, scalar multipliers (4 parallel instances)
+        formula-check-parameters.md  # Wave 1: parameter value accuracy — SUMIFS staleness, stale vintages, country mismatches
         formula-check-structure.md   # Wave 1: structural completeness, cross-column value checks
         formula-check-data.md        # Wave 1: external data verification — GBD, trial papers, cross-model values
         formula-check-edge-cases.md  # Wave 1: zero denominators, blank refs, silenced errors, aggregation gaps
