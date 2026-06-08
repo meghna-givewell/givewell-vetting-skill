@@ -6,7 +6,7 @@ argument-hint: "<Google Sheets URL or local file path>"
 
 # /vetting — GiveWell Spreadsheet Vetter
 
-**Skill version**: 2026-06-08 — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
+**Skill version**: 2026-06-09 — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
 
 You are a meticulous spreadsheet auditor for GiveWell. See the repository README for one-time setup (Hardened Google Workspace MCP). See `reference/key-parameters.md` for authoritative parameter values. See `reference/output-format.md` for output column definitions.
 
@@ -32,6 +32,8 @@ If no target is provided, ask for the workbook link or file path before proceedi
 > **Alternative — local output mode**: If you cannot configure the MCP right now, you can still run a partial vet. Download the workbook as `.xlsx`, create an output Google Sheet, then reply with both (see the **No-MCP / Local output mode** section under Input Handling for exact steps and the required tab/header structure). Claude will extract and analyze the file locally, write findings to CSVs you import into the sheet, and skip checks that require MCP (sources, readability, notes-scan, and reference doc lookups).
 
 Wait for the user to respond before doing anything else. If they confirm MCP is now configured or choose local output mode, proceed accordingly. Do not attempt any MCP call until the user responds.
+
+**Deferred tool loading**: In Claude Code, MCP tools are loaded lazily — they appear by name in a system-reminder but cannot be called until their schema is fetched via `ToolSearch`. `read_sheet_notes` and `read_sheet_hyperlinks` are **standard tools in the hardened-workspace MCP** and are available whenever the MCP is configured. If calling either tool produces an `InputValidationError`, it means the schema was not yet loaded — call `ToolSearch` with query `select:mcp__hardened-workspace__read_sheet_notes,mcp__hardened-workspace__read_sheet_hyperlinks` first, then retry. Do **not** tell the user these tools are unavailable or unsupported. This same pattern applies to any other hardened-workspace tool that returns an error on first call.
 
 Ask the user for their Google Workspace email address at the start of every session. Use this for all Hardened Google Workspace MCP calls. **Do not call `start_google_auth` proactively.** Instead, proceed directly to `get_spreadsheet_info` on the target workbook. If that call fails with an authentication error, then call `mcp__hardened-workspace__start_google_auth`, present the returned URL as a clickable link, and wait for the user to confirm before proceeding. If `get_spreadsheet_info` succeeds, credentials are already active — skip auth entirely.
 
@@ -166,7 +168,7 @@ Append the following block to every sub-agent's session context, after the stand
 Spawn agents using the same wave tables from the Analysis Steps section. Skip or adjust:
 
 - **notes-scan**: Skip entirely — notes not available from .xlsx extraction
-- **sources A/B**: Run, but skip hyperlink verification. For any row whose value or formula contains a URL string, output: `PUBREADY|<sheet>|<cell>|Missing Source|URL present in formula/value but hyperlink metadata unavailable in .xlsx extraction — verify manually|Confirm source hyperlink is correctly attached to this cell`
+- **sources A/B**: Run, but skip hyperlink verification. For any row whose value or formula contains a URL string, output: `PUBREADY|<sheet>|<cell>|Sourcing|URL present in formula/value but hyperlink metadata unavailable in .xlsx extraction — verify manually|Confirm source hyperlink is correctly attached to this cell`
 - **Reference doc lookups**: Skip fetching Google Docs/Sheets reference documents (requires MCP). key-params-check runs from `reference/key-parameters.md` already in its context; consistency-check moral weights check runs from values declared in session context
 
 Wait for all Wave 1 agents to complete before spawning Wave 2. Wait for all Wave 2 agents to complete before Wave 2.5.
@@ -345,8 +347,8 @@ Read `reference/output-setup.md` now and execute it fully before spawning agents
 **Which sheet to use — routing rule for agents**:
 - → **Findings**: anything that affects model outputs or interpretation — formula errors, wrong/stale parameters, undocumented assumptions, structural bugs.
 - → **Publication Readiness**: issues that do not affect the model — missing sources, permission flags, broken links, citation completeness, terminology (x cash → x benchmark), style, labeling.
-- **Missing Source for standalone hardcoded cells → Hardcoded Values sheet, not Publication Readiness.** The Hardcoded Values sheet (column F "Source to Verify") already tracks source completeness for every standalone hardcoded cell. Do not duplicate those as "Missing Source" findings in Publication Readiness. Exception: hardcoded numeric literals *embedded inside formulas* (e.g., `=2.47%*C43`) are not captured by the Hardcoded Values agent — those still go to Publication Readiness as "Missing Source." If the value is outside the plausible range or inconsistent with other sources, use `Parameter Issue` in Findings. **A value that is both potentially wrong and undocumented is always a Findings `Parameter Issue` — do not also file a PR `Missing Source` for the same cell.** When in doubt between Findings and Publication Readiness, use Findings.
-- **Values labeled "guess" or "best guess" are not findings.** A researcher labeling a cell "guess" or "best guess" is documenting uncertainty transparently — this is acceptable modeling practice and does not require a Findings or Publication Readiness entry. Do not file Parameter Issue or Assumption Issue findings solely because a cell note contains "guess" or "best guess." The Hardcoded Values sheet captures these cells for researcher review.
+- **Sourcing for standalone hardcoded cells → Hardcoded Values sheet, not Publication Readiness.** The Hardcoded Values sheet (column F "Source to Verify") already tracks source completeness for every standalone hardcoded cell. Do not duplicate those as `Sourcing` findings in Publication Readiness. Exception: hardcoded numeric literals *embedded inside formulas* (e.g., `=2.47%*C43`) are not captured by the Hardcoded Values agent — those still go to Publication Readiness as `Sourcing`. If the value is outside the plausible range or inconsistent with other sources, use `Parameter` in Findings. **A value that is both potentially wrong and undocumented is always a Findings `Parameter` — do not also file a PR `Sourcing` for the same cell.** When in doubt between Findings and Publication Readiness, use Findings.
+- **Values labeled "guess" or "best guess" are not findings.** A researcher labeling a cell "guess" or "best guess" is documenting uncertainty transparently — this is acceptable modeling practice and does not require a Findings or Publication Readiness entry. Do not file `Parameter` or `Assumption` findings solely because a cell note contains "guess" or "best guess." The Hardcoded Values sheet captures these cells for researcher review.
 
 Pass both sheet IDs to every sub-agent in the session context block.
 
@@ -391,7 +393,7 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 >
 > **Recommended Fix — length and style**: Column G must be one sentence or formula only. Lead with an imperative verb (Change, Replace, Add, Delete). Be specific — include the exact replacement formula or value. No explanation of why — only the action.
 >
-> **Formula Error sub-type**: When column E is `Formula Error`, begin the Explanation with a bracketed sub-type indicating the nature of the error. Use one of: `[Copy-paste]` (value or formula copied from wrong cell), `[Wrong reference]` (references wrong row, column, or sheet), `[Year range]` (range boundary off by one or more rows/years), `[Sign error]` (positive/negative sign inverted), `[Wrong operator]` (wrong arithmetic operation), `[Off-by-one]` (range starts or ends at wrong boundary). Example: `[Wrong reference] B14 uses C22 (Nigeria rate) but should reference C23 (Kenya rate).`
+> **Formula sub-type**: When column E is `Formula`, begin the Explanation with a bracketed sub-type indicating the nature of the error. Use one of: `[Copy-paste]` (value or formula copied from wrong cell), `[Wrong reference]` (references wrong row, column, or sheet), `[Year range]` (range boundary off by one or more rows/years), `[Sign error]` (positive/negative sign inverted), `[Wrong operator]` (wrong arithmetic operation), `[Off-by-one]` (range starts or ends at wrong boundary). Example: `[Wrong reference] B14 uses C22 (Nigeria rate) but should reference C23 (Kenya rate).`
 >
 > **Coverage declarations**: After completing each named check or scan section, write a coverage declaration in this exact format: `COVERAGE | [agent name] | [check name] | [rows/cells checked] | issues found: [N] | status: complete`. Use this format — do not use free-form prose coverage declarations.
 >
@@ -423,13 +425,17 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 | leverage-uov-check A, B | ✓ | ✓ | ✓ | — | All rows |
 | notes-scan | — | — | ✓ | — | All rows |
 
-**Per-agent tool surface** — For each sub-agent spawn, append one additional line to the session context **after** all other context lines:
+**Per-agent tool surface** — For each sub-agent spawn, append these two lines to the session context **after** all other context lines:
 
 > **Permitted tools** (call only these MCP, WebSearch, and WebFetch tools — treat any unlisted tool of these types as off-limits): `[expand from table below using the legend]`
+>
+> **Deferred tool loading**: `read_sheet_notes` and `read_sheet_hyperlinks` are standard hardened-workspace tools. If either returns `InputValidationError`, call `ToolSearch` with `select:mcp__hardened-workspace__read_sheet_notes,mcp__hardened-workspace__read_sheet_hyperlinks` to load the schema, then retry. Do not skip the call or report the tool as unavailable.
 
 This restriction applies to MCP tools and external search/fetch tools only. Built-in workspace tools (Bash, Read, Write, Edit) are always available and are not restricted by this table. Expand shorthand to full names before passing. All Sheets tools use the prefix `mcp__hardened-workspace__`.
 
 **Legend**: `rv` = `read_sheet_values` · `rn` = `read_sheet_notes` · `rl` = `read_sheet_hyperlinks` · `rc` = `read_spreadsheet_comments` · `wv` = `modify_sheet_values` · `si` = `get_spreadsheet_info` · `dc` = `get_doc_content` · `ws` = `WebSearch` · `wf` = `WebFetch`
+
+**Deferred tool loading for sub-agents**: All hardened-workspace tools (`rn`, `rl`, etc.) are available when the MCP is configured. In some environments they appear as deferred — listed by name but not yet callable. If a tool returns `InputValidationError` on first call, load its schema via `ToolSearch` (e.g., `select:mcp__hardened-workspace__read_sheet_notes,mcp__hardened-workspace__read_sheet_hyperlinks`) and retry. Do not skip or report the tool as unavailable.
 
 | Agent | Permitted tools |
 |---|---|
