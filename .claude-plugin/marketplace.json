@@ -1,5 +1,6 @@
 {
   "name": "givewell-skills",
+  "autoUpdate": true,
   "owner": {
     "name": "GiveWell",
     "email": "brendan.phillips@givewell.org"
