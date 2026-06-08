@@ -55,6 +55,15 @@ The agent prompts are updated after each completed vet based on post-vet analysi
 /givewell-vetting:vetting <Google Sheets URL or local file path> # plugin install
 ```
 
+If the main vet session is interrupted before Wave 3 (final review) completes, resume it with:
+
+```
+/vetting-finalize                        # standalone install
+/givewell-vetting:vetting-finalize       # plugin install
+```
+
+The finalize skill asks for the output spreadsheet URL and source spreadsheet URL, reads the vet scope from the Dashboard, and runs the 4 Wave 3 steps (compaction → gap-fill → validation → dashboard) in a fresh session.
+
 At the start of each vet, Claude will ask:
 1. Your Google Workspace email address
 2. Which sheets to vet and at what scope (full publication check or formula/heads-up only)
@@ -140,6 +149,8 @@ givewell-vetting-skill/
         column-reference.md      # Canonical column specification referenced by all agents
         pitfalls.md              # Known calibrations: false positive patterns, false negative patterns,
                                  # severity adjustments from prior vets — every agent reads this at startup
+    vetting-finalize/
+      SKILL.md               # Wave 3 standalone: run after session interruption or for re-runs
   SKILL.md   agents/   reference/   extract.py   # symlinks → plugin/skills/vetting/ (standalone clone compat)
   README.md  CLAUDE.md  CONTRIBUTING.md  LICENSE
   .github/CODEOWNERS             # Auto-requests review from the owner on PRs

@@ -350,6 +350,13 @@ Read `reference/output-setup.md` now and execute it fully before spawning agents
 
 Pass both sheet IDs to every sub-agent in the session context block.
 
+**Write vet metadata to Dashboard** — do this immediately after output setup completes, before spawning any agents. Use `modify_sheet_values` (USER_ENTERED) to write the following to the Dashboard tab. This block is read by `/vetting-finalize` to recover Wave 3 if the session is interrupted:
+
+- A150: `VET METADATA — for /vetting-finalize recovery`
+- A151: `Fully vetted tabs` | B151: comma-separated list of fully vetted tab names
+- A152: `Lite-pass tabs` | B152: comma-separated list of lite-pass tab names, or `none`
+- A153: `Vet scope` | B153: `full` or `formula-only`
+
 ---
 
 ## Analysis Steps — Sub-Agents
@@ -733,7 +740,7 @@ Exception: pairs where both A and B agents wrote zero findings (confirmed empty)
 
 ### Wave 3 — Sequential (after Wave 2.5)
 
-**Progress announcement** before starting: `[Phase 3/4 done → Phase 4/4] Reconciliation complete — starting final review (4 sequential steps).`
+**Progress announcement** before starting: `[Phase 3/4 done → Phase 4/4] Reconciliation complete — starting final review (4 sequential steps). If this session is interrupted before Wave 3 completes, run /givewell-vetting:vetting-finalize (plugin) or /vetting-finalize (standalone) with the output and source spreadsheet URLs to resume.`
 
 Run the four steps in order — each must complete before the next begins. Announce each step as it starts:
 - Before 10a: `[Wave 3 — Step 1/4] Running compaction.`

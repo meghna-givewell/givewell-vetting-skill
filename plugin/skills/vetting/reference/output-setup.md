@@ -77,3 +77,5 @@ Write immediately after the formatting batch using `modify_sheet_values` (USER_E
 - *(rows 24 onward reserved — final-review-dashboard writes the findings-by-sheet table, then `Sheets not vetted:` two rows below the Total row)*
 
 Then format the Dashboard: bold A1, A6, A13, A19, A22; column A width 260, column B width 80. Static background colors: A7 `#FFB3B3`, A8 `#FFE5B3`, A9 `#B3D9B3`.
+
+**Reserved — vet metadata block (rows 150–153)**: Do not write anything to these rows during output setup. They are written by the orchestrator after Step 2 (see SKILL.md "Write vet metadata") and read by the `/vetting-finalize` skill for Wave 3 recovery. Row 150 = header; B151 = fully vetted tabs; B152 = lite-pass tabs; B153 = vet scope.
