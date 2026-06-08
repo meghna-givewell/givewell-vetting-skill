@@ -15,7 +15,7 @@ The repo is also a Claude Code plugin marketplace, so you can install it from Gi
 /plugin install givewell-vetting@givewell-skills
 ```
 
-Invoke it as `/givewell-vetting:vetting <Google Sheets URL or local file path>`. Update later with `/plugin marketplace update givewell-skills`.
+Invoke it as `/givewell-vetting:vetting <Google Sheets URL or local file path>`. The marketplace has `autoUpdate` enabled — Claude Code refreshes to the latest version on startup automatically. To pull an update immediately: `/plugin marketplace update givewell-skills`.
 
 ### Option B — Install as a standalone skill (clone)
 
@@ -43,9 +43,9 @@ If your project already has a `.claude/settings.json`, merge the `allow` array e
 
 ## Keeping the skill up to date
 
-The agent prompts are updated after each completed vet based on post-vet analysis. Update before running a vet to ensure you have current judgment-call calibrations and agent logic:
+The agent prompts are updated after each completed vet based on post-vet analysis and pilot feedback. Update before running a vet to ensure you have current judgment-call calibrations and agent logic:
 
-- **Plugin install**: `/plugin marketplace update givewell-skills`
+- **Plugin install**: auto-updates on startup. To pull immediately: `/plugin marketplace update givewell-skills`
 - **Standalone install**: `git -C ~/.claude/skills/vetting pull --rebase origin main`
 
 ## Invoke
@@ -55,12 +55,17 @@ The agent prompts are updated after each completed vet based on post-vet analysi
 /givewell-vetting:vetting <Google Sheets URL or local file path> # plugin install
 ```
 
-The skill will ask for your Google Workspace email address, authenticate, list the workbook's sheets, and ask which to vet and at what scope (full publication check or formula/heads-up only) before proceeding.
+At the start of each vet, Claude will ask:
+1. Your Google Workspace email address
+2. Which sheets to vet and at what scope (full publication check or formula/heads-up only)
+3. Program context questions (grant doc, prior CEA, declared intentional deviations)
+4. Whether to run source citation verification for Study-Derived and Org-Reported hardcoded values (GiveWell parameter consistency is always checked regardless)
 
 ## What it checks
 
-- **Wave 1** — Formula errors (arithmetic, structure, data verification, edge cases), cross-parameter consistency, source data tab audit
-- **Wave 2** — Data sources and citations, CE sanity and evidence quality, epidemiological plausibility, intervention-specific checks, leverage/funging, CE chain trace, readability, confidentiality flags, hardcoded values, leverage UoV references, notes quality
+- **Wave 1** — Formula errors (arithmetic, structure, data verification, edge cases), cross-parameter consistency, source data tab audit, key-parameter values, VOI checks, confidentiality flags, hardcoded values inventory
+- **Wave 1.5** *(optional, if researcher opts in)* — Source citation verification: fetches each cited source and uses the Anthropic Citations API to check whether Study-Derived and Org-Reported hardcoded values are supported by their sources. Pre-fills `Verified?` and `Auto-check evidence` columns in the Hardcoded Values sheet.
+- **Wave 2** — Data sources and citations, CE sanity and evidence quality, epidemiological plausibility, intervention-specific checks, leverage/funging, CE chain trace, readability, leverage UoV references, notes quality
 - **Wave 2.5** — Reconciliation across parallel agent instances
 - **Wave 3** — Compaction (route, deduplicate, sort, assign Finding IDs), gap-fill, validation, dashboard
 
@@ -78,9 +83,13 @@ Wave 2.5 reconciliation runs only when two agent instances received the **same s
 A Google Spreadsheet with five tabs:
 - **Findings** — model-integrity issues (formula errors, stale parameters, structural bugs) sorted High → Medium → Low with Finding IDs (F-001…)
 - **Publication Readiness** — pub-only issues (permission flags, broken links, citation format, terminology) with IDs (PR-001…)
-- **Hardcoded Values** — inventory of standalone hardcoded cells for researcher verification
+- **Hardcoded Values** — inventory of standalone hardcoded cells for researcher verification; columns G (`Verified?`) and H (`Auto-check evidence`) pre-filled by Wave 1.5 when source citation verification is enabled
 - **Confidentiality Flags** — named individuals, donor info, PII
 - **Dashboard** — summary counts by sheet, CE direction estimate, unvetted tab list
+
+## Pilot feedback
+
+At the end of each vet, Claude asks five short feedback questions (accuracy rating, false positives, missed findings, most useful part, calibration suggestions). Answers are recorded in a shared Google Sheet (`Vetting Skill Pilot Feedback`) and a Slack DM is sent to the skill maintainer. This powers the `reference/pitfalls.md` calibration file, which every agent reads before starting its checks.
 
 ## File structure
 
@@ -89,7 +98,7 @@ The repo doubles as a Claude Code **plugin** (in `plugin/`) and a single-plugin 
 ```
 givewell-vetting-skill/
   .claude-plugin/
-    marketplace.json             # Marketplace catalog: lists the givewell-vetting plugin
+    marketplace.json             # Marketplace catalog: lists givewell-vetting plugin; autoUpdate: true
   plugin/
     .claude-plugin/
       plugin.json                # Plugin manifest (name, version, author)
@@ -97,33 +106,39 @@ givewell-vetting-skill/
       SKILL.md                   # Main orchestrator: session setup, Steps 0–2, agent dispatch
       extract.py                 # Local Excel extraction (use for .xlsx files before vetting)
       agents/
-    formula-check-arithmetic.md  # Wave 1: arithmetic, cell references, scalar multipliers (4 parallel instances)
-    formula-check-structure.md   # Wave 1: structural completeness, cross-column value checks
-    formula-check-data.md        # Wave 1: external data verification — GBD, trial papers, cross-model values
-    formula-check-edge-cases.md  # Wave 1: zero denominators, blank refs, silenced errors, aggregation gaps
-    consistency-check.md         # Wave 1: cross-cutting parameter consistency, moral weights
-    source-data-check.md         # Wave 1: source data tab audit (coverage, WUENIC, DHS, GBD, population)
-    sources.md                   # Wave 2 Step 5: data source audit, citation completeness
-    heads-up-evidence.md         # Wave 2 Step 6a: CE sanity check, top-5 interrogation, evidence quality
-    heads-up-epi.md              # Wave 2 Step 6b: epidemiological parameters, disease burden
-    heads-up-intervention.md     # Wave 2 Step 6c: intervention-specific plausibility checks
-    leverage-funging.md          # Wave 2 Step 6d: leverage/funging sign, direction, double-count checks
-    leverage-uov-check.md        # Wave 2: leverage section UoV rate reference audit
-    ce-chain-trace.md            # Wave 2 Step 6e: full CE chain trace from output to source inputs
-    readability.md               # Wave 2 Step 7: labels, section ordering, legibility
-    notes-scan.md                # Wave 2 Step 7c: missing Calculation entries, boilerplate, raw URLs
-    sensitivity-scan.md          # Wave 2 Step 8: confidentiality flags — named individuals, donor info, PII
-    hardcoded-values.md          # Wave 2 Step 9: hardcoded values inventory
-    reconcile.md                 # Wave 2.5: reconciles divergences across parallel A/B agent instances
-    final-review-compaction.md   # Wave 3 Step 10a: route misrouted rows, deduplicate, sort, assign IDs
-    final-review-gap-fill.md     # Wave 3 Step 10b: fill blank CE impact cells, add missing severity labels
-    final-review-validation.md   # Wave 3 Step 10c: fix-validation, confidence intervals, placeholder scan
-    final-review-dashboard.md    # Wave 3 Step 10d: dashboard content, Key Findings summary in chat
+        formula-check-arithmetic.md  # Wave 1: arithmetic, cell references, scalar multipliers (4 parallel instances)
+        formula-check-structure.md   # Wave 1: structural completeness, cross-column value checks
+        formula-check-data.md        # Wave 1: external data verification — GBD, trial papers, cross-model values
+        formula-check-edge-cases.md  # Wave 1: zero denominators, blank refs, silenced errors, aggregation gaps
+        formula-check-voi.md         # Wave 1: VOI/option-value model checks
+        consistency-check.md         # Wave 1: cross-cutting parameter consistency, moral weights
+        source-data-check.md         # Wave 1: source data tab audit (coverage, WUENIC, DHS, GBD, population)
+        key-params-check.md          # Wave 1: GiveWell parameter values (benchmark, moral weights, discount rate)
+        sensitivity-scan.md          # Wave 1: confidentiality flags — named individuals, donor info, PII
+        hardcoded-values.md          # Wave 1: hardcoded values inventory
+        source-citation-verify.md    # Wave 1.5 (optional): Citations API source verification for hardcoded values
+        sources.md                   # Wave 2 Step 5: data source audit, citation completeness
+        heads-up-evidence.md         # Wave 2 Step 6a: CE sanity check, top-5 interrogation, evidence quality
+        heads-up-epi.md              # Wave 2 Step 6b: epidemiological parameters, disease burden
+        heads-up-intervention.md     # Wave 2 Step 6c: intervention-specific plausibility checks
+        leverage-funging.md          # Wave 2 Step 6d: leverage/funging sign, direction, double-count checks
+        leverage-uov-check.md        # Wave 2: leverage section UoV rate reference audit
+        ce-chain-trace.md            # Wave 2 Step 6e: full CE chain trace from output to source inputs
+        ce-chain-trace-ta.md         # Wave 2: TA BOTEC denominator and counterfactual burden checks
+        readability.md               # Wave 2 Step 7: labels, section ordering, legibility
+        notes-scan.md                # Wave 2 Step 7c: missing Calculation entries, boilerplate, raw URLs
+        reconcile.md                 # Wave 2.5: reconciles divergences across parallel A/B agent instances
+        final-review-compaction.md   # Wave 3 Step 10a: route misrouted rows, deduplicate, sort, assign IDs
+        final-review-gap-fill.md     # Wave 3 Step 10b: cascade check, coverage gap scan, Won't Fix verification
+        final-review-validation.md   # Wave 3 Step 10c: fix-validation, confidence intervals, placeholder scan
+        final-review-dashboard.md    # Wave 3 Step 10d: dashboard content, Key Findings summary in chat
       reference/
         key-parameters.md        # Authoritative GiveWell parameter values (benchmark, moral weights, etc.)
         output-format.md         # Findings and Publication Readiness column definitions and severity rules
         output-setup.md          # Output spreadsheet creation: tabs, headers, formatting, dashboard cells
         column-reference.md      # Canonical column specification referenced by all agents
+        pitfalls.md              # Known calibrations: false positive patterns, false negative patterns,
+                                 # severity adjustments from prior vets — every agent reads this at startup
   SKILL.md   agents/   reference/   extract.py   # symlinks → plugin/skills/vetting/ (standalone clone compat)
   README.md  CLAUDE.md  CONTRIBUTING.md  LICENSE
   .github/CODEOWNERS             # Auto-requests review from the owner on PRs
