@@ -86,7 +86,16 @@ Parameters and their program-type applicability:
 
 ## Step 3 — File findings for mismatches
 
-**Read cell note before filing any moral weight mismatch**: For any cell where the stored moral weight value does not match the expected value, call `read_sheet_notes` on that specific cell before writing the finding. If the note contains an explanation for using a non-standard value — e.g., a rationale for applying a vaccine-preventable-disease weight to a malaria BOTEC, a cross-comparability justification, or a documented researcher decision — downgrade severity from High to **Medium** and mark Researcher judgment needed ✓. Include the note text verbatim in the Explanation field. The finding should still be filed — a non-standard value with a documented rationale still needs researcher confirmation — but severity reflects a deliberate choice rather than an oversight. If the note is absent or contains no rationale (e.g., only a source citation with no explanation of why the value was chosen), file at the standard severity.
+**Read cell note before filing any parameter mismatch**: For every cell where the stored value does not match the expected standard, call `read_sheet_notes` on that specific cell before writing the finding. Then apply the following logic:
+
+- **Note contains a rationale** — an explanation of why the non-standard value was intentionally chosen (e.g., "using 0.003355 for comparability with prior vet from 2024," "applying vaccine-preventable-disease weight because this program is closer to NI than malaria," "discount rate set to 3% per funder requirement," "10-year horizon extended to 15 because this is infrastructure") — downgrade severity by one level and mark Researcher judgment needed ✓:
+  - High → **Medium**
+  - Medium → **Low**
+  Include the note text verbatim in the Explanation field so the researcher can confirm the rationale is still current.
+- **Note contains only a source citation** with no explanation of why the non-standard value was chosen (e.g., "per WHO 2022" with no explanation of why it differs from the GW standard) — file at the standard severity. A source citation without a rationale does not constitute a documented deliberate choice.
+- **Note is absent** — file at the standard severity.
+
+The finding should always be filed when a value differs from the standard, regardless of note content — a documented rationale still needs researcher confirmation that the reasoning still holds. The note check governs severity only.
 
 Before filing, check whether the mismatch is covered by a declared-intentional deviation in session context. If it is, skip it — do not file.
 
