@@ -49,7 +49,7 @@ Fire all formatting in a single parallel batch immediately after writing headers
 - `format_sheet_range`: column widths on Publication Readiness — A=80, B=120, C=120, D=140, E=220, F=300
 - `format_sheet_range`: text wrap on columns F, G of Findings; text wrap on columns E, F of Publication Readiness
 - `format_sheet_range`: row height rows 2:2000 on Findings → 80px; same on Publication Readiness
-- Data validation (skip gracefully if unsupported): Severity D on Findings → dropdown `High,Medium,Low`; Error Type/Issue E on Findings → dropdown `Formula Error,Parameter Issue,Adjustment Issue,Assumption Issue,Structural Issue,Inconsistency`; Status J on Findings → dropdown `Open,Fixed,Won't Fix,Needs Discussion`; Error Type/Issue D on Publication Readiness → dropdown `Missing Source,Broken Link,Permission Issue,Readability,Terminology`
+- Data validation (skip gracefully if unsupported): Severity D on Findings → dropdown `High,Medium,Low`; Error Type/Issue E on Findings → dropdown `Formula,Parameter,Adjustment,Assumption,Inconsistency,Legibility`; Status J on Findings → dropdown `Open,Fixed,Won't Fix,Needs Discussion`; Error Type/Issue D on Publication Readiness → dropdown `Sourcing,Box Link,Legibility`
 - Tab colors (skip gracefully if unsupported): Dashboard → `#595959`, CE Baseline → `#7F7F7F`, Findings → `#C00000`, Publication Readiness → `#E6B800`, Hardcoded Values → `#2F75B6`, Confidentiality Flags → `#7030A0`
 
 ## Dashboard Content
@@ -68,9 +68,9 @@ Write immediately after the formatting batch using `modify_sheet_values` (USER_E
 - A11: `Issues impacting bottom-line CE` | B11: `=COUNTIF(Findings!H:H,"Raises CE*")+COUNTIF(Findings!H:H,"Lowers CE*")+COUNTIF(Findings!H:H,"Direction unknown")` *(column H = Estimated CE Impact; excludes "No CE impact" and blank)*
 - A13: `PUBLICATION READINESS`
 - A14: `Total items` | B14: `=COUNTA('Publication Readiness'!B2:B2000)`
-- A15: `Missing Source` | B15: `=COUNTIF('Publication Readiness'!D:D,"Missing Source")`
-- A16: `Readability` | B16: `=COUNTIF('Publication Readiness'!D:D,"Readability")+COUNTIF('Publication Readiness'!D:D,"Template Language")`
-- A17: `Permission Issue` | B17: `=COUNTIF('Publication Readiness'!D:D,"Permission Issue")`
+- A15: `Sourcing` | B15: `=COUNTIF('Publication Readiness'!D:D,"Sourcing")`
+- A16: `Legibility` | B16: `=COUNTIF('Publication Readiness'!D:D,"Legibility")`
+- A17: `Box Link` | B17: `=COUNTIF('Publication Readiness'!D:D,"Box Link")`
 - A19: `CONFIDENTIALITY FLAGS`
 - A20: `Total items` | B20: `=COUNTA('Confidentiality Flags'!A2:A1000)`
 - A22: `CE estimate direction:` *(leave B22 blank — final-review-dashboard writes here)*

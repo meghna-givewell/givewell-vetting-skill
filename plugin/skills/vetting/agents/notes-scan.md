@@ -104,7 +104,7 @@ If any line is left blank or contains a placeholder, stop and complete the scan 
 
 Use the 6-column Publication Readiness layout. Write exactly 6 values per row — no more. **Do not include Severity, Status, Changes CE?, Estimated CE Impact, or Researcher judgment needed** — these are Findings-only columns. Writing a 7th column will corrupt the sheet layout.
 
-**A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Error Type/Issue (use exactly one of: Missing Source, Broken Link, Permission Issue, Readability, Terminology) | **E** Explanation | **F** Recommended Fix
+**A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Error Type/Issue (use exactly one of: Sourcing, Box Link, Legibility) | **E** Explanation | **F** Recommended Fix
 
 **Batch by issue type**: For each issue type (e.g., "Missing 'Calculation.' note"), file one finding row listing all affected rows in column C — do not write one row per instance. Exception: if meaningfully different recommended fixes are required for different rows, file them separately.
 

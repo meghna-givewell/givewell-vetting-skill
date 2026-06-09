@@ -49,7 +49,7 @@ Check each row:
 - Findings sheet rows whose **sole** issue is citation format, link permissions, terminology, labeling, or style (no model impact) → move to Publication Readiness.
 - Findings sheet rows where **Estimated CE Impact (column H) is blank or "No CE impact"** AND the explanation describes only a documentation gap (missing source, missing cell note, missing label) → move to Publication Readiness. A finding that does not change CE and only recommends adding a note belongs in Publication Readiness regardless of how its Error Type is worded.
 - Publication Readiness sheet rows that affect model outputs or interpretation → move to Findings.
-- **Adjustment Issue and double-count findings always stay in Findings** — never route an `Adjustment Issue` finding to Publication Readiness on the basis of "No CE impact" or a blank CE impact column. Adjustment double-counts and scope errors are model-integrity issues by definition; their CE impact is often non-zero but hard to quantify at the time of filing. A blank CE impact column for an Adjustment Issue finding means the impact is unknown, not zero — leave it in Findings with "Direction unknown" in column H.
+- **Adjustment and double-count findings always stay in Findings** — never route an `Adjustment` finding to Publication Readiness on the basis of "No CE impact" or a blank CE impact column. Adjustment double-counts and scope errors are model-integrity issues by definition; their CE impact is often non-zero but hard to quantify at the time of filing. A blank CE impact column for an Adjustment finding means the impact is unknown, not zero — leave it in Findings with "Direction unknown" in column H.
 - When in doubt, leave in Findings.
 
 **Column remapping when moving Findings → Publication Readiness**: The Findings sheet has 10 columns (A–J); the Publication Readiness sheet has exactly 6 (A–F). When moving a row, remap as follows — do not copy extra Findings columns into PR:
@@ -64,11 +64,11 @@ Do not write column G or beyond in Publication Readiness under any circumstances
 
 **Routing audit — after all moves are complete**: Before writing the coverage declaration, perform three explicit spot-checks:
 
-1. Scan all remaining Findings rows for any whose Error Type (column E) is `Missing Source`, `Broken Link`, `Permission Issue`, `Readability`, or `Terminology` AND whose Estimated CE Impact (column H) is blank or "No CE impact" — these are candidates that should have been moved to Publication Readiness. Move any found.
+1. Scan all remaining Findings rows for any whose Error Type (column E) is `Sourcing`, `Sourcing`, `Sourcing`, `Legibility`, or `Legibility` AND whose Estimated CE Impact (column H) is blank or "No CE impact" — these are candidates that should have been moved to Publication Readiness. Move any found.
 2. Scan all Publication Readiness rows for any whose Explanation (column E) describes a formula error, parameter mismatch, or value that affects CE — these belong in Findings. Move any found, writing all ten columns.
-3. **Adjustment Issue audit**: Confirm zero `Adjustment Issue` rows remain in Publication Readiness. If any are found, move them to Findings unconditionally — adjustment scope errors are model-integrity issues regardless of whether their CE impact appears zero. Also check for rows in Publication Readiness whose Explanation (column E) contains "adjustment" or "double-count" regardless of the Error Type label — a prior agent may have filed an Adjustment Issue as `Inconsistency` which then got routed to PR. Move any such rows to Findings and reclassify Error Type as `Adjustment Issue`.
+3. **Adjustment audit**: Confirm zero `Adjustment` rows remain in Publication Readiness. If any are found, move them to Findings unconditionally — adjustment scope errors are model-integrity issues regardless of whether their CE impact appears zero. Also check for rows in Publication Readiness whose Explanation (column E) contains "adjustment" or "double-count" regardless of the Error Type label — a prior agent may have filed an Adjustment as `Inconsistency` which then got routed to PR. Move any such rows to Findings and reclassify Error Type as `Adjustment`.
 
-Coverage declaration: "Routing complete. [N] rows moved to Publication Readiness. [M] rows moved to Findings. Routing audit: [K] additional moves after spot-check. Adjustment Issue rows in PR after audit: 0. No other misrouted rows."
+Coverage declaration: "Routing complete. [N] rows moved to Publication Readiness. [M] rows moved to Findings. Routing audit: [K] additional moves after spot-check. Adjustment rows in PR after audit: 0. No other misrouted rows."
 
 ---
 
@@ -80,9 +80,9 @@ When duplicates are found: keep the finding with the more complete Explanation a
 
 **Root-cause / symptom consolidation** — after the standard duplicate pass, apply a second pass:
 
-1. **Symptom absorbed by root cause**: If an `Inconsistency` finding and a `Structural Issue` or `Formula Error` finding both exist, AND the structural/formula finding's explanation identifies the formula-level cause of the discrepancy the `Inconsistency` finding describes, AND they reference overlapping or closely related cells: keep only the root-cause finding. Merge any output-level detail from the `Inconsistency` finding (e.g., "this causes X and Y to diverge by [amount]") into the root-cause finding's explanation if it adds specificity. Drop the `Inconsistency` finding. Rationale: fixing the root cause automatically resolves the symptom — a separate symptom finding adds no action item.
+1. **Symptom absorbed by root cause**: If an `Inconsistency` finding and a `Legibility` or `Formula` finding both exist, AND the structural/formula finding's explanation identifies the formula-level cause of the discrepancy the `Inconsistency` finding describes, AND they reference overlapping or closely related cells: keep only the root-cause finding. Merge any output-level detail from the `Inconsistency` finding (e.g., "this causes X and Y to diverge by [amount]") into the root-cause finding's explanation if it adds specificity. Drop the `Inconsistency` finding. Rationale: fixing the root cause automatically resolves the symptom — a separate symptom finding adds no action item.
 
-2. **Same-parameter multi-cell consolidation**: If two or more `Parameter Issue` findings reference **different** cells but describe the same parameter (matching parameter name in the explanation AND the same recommended replacement value), consolidate them into a single finding: list all affected cells comma-separated in column C, write a unified explanation noting each cell and its current value, and write a single recommended fix that covers all cells. Apply the higher severity if they differ. Drop all but the consolidated finding.
+2. **Same-parameter multi-cell consolidation**: If two or more `Parameter` findings reference **different** cells but describe the same parameter (matching parameter name in the explanation AND the same recommended replacement value), consolidate them into a single finding: list all affected cells comma-separated in column C, write a unified explanation noting each cell and its current value, and write a single recommended fix that covers all cells. Apply the higher severity if they differ. Drop all but the consolidated finding.
 
 After this pass, write: "Semantic consolidation complete. [N] root-cause/symptom pairs consolidated. [M] same-parameter multi-cell groups consolidated."
 
@@ -111,13 +111,13 @@ Skip this step (write "Step 3.3: skipped — ✓ count [N] is ≤20% of total fi
 
 ## Step 3.5 — Normalize category labels
 
-Before rewriting, scan every row in memory and normalize the Error Type/Issue field to the exact standard label. Agents frequently append descriptive text after the label (e.g., "Permission Issue — internal document may need publish access" or "Readability — duplicate header"). Strip everything after the first recognized label word.
+Before rewriting, scan every row in memory and normalize the Error Type/Issue field to the exact standard label. Agents frequently append descriptive text after the label (e.g., "Sourcing — internal document may need publish access" or "Legibility — duplicate header"). Strip everything after the first recognized label word.
 
 **Findings sheet column E** — replace any value that *starts with or contains* one of these labels with the label alone:
-- `Formula Error` | `Parameter Issue` | `Adjustment Issue` | `Assumption Issue` | `Structural Issue` | `Inconsistency`
+- `Formula` | `Parameter` | `Adjustment` | `Assumption` | `Legibility` | `Inconsistency`
 
 **Publication Readiness sheet column D** — replace any value that *starts with or contains* one of these labels with the label alone:
-- `Missing Source` | `Broken Link` | `Permission Issue` | `Readability` | `Terminology`
+- `Sourcing` | `Box Link` | `Legibility`
 
 If a value does not match any recognized label, keep it as-is and flag it in your coverage declaration so it can be reviewed.
 

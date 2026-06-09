@@ -4,8 +4,8 @@
 
 - **Findings** — model-integrity issues: formula errors, stale/wrong parameters, structural bugs, undocumented assumptions that affect CE or model interpretation.
 - **Publication Readiness** — issues that don't affect the model: missing sources, permission flags, broken links, citation format, terminology, style, labeling, personal names in notes, internal-only references.
-- **Missing Source for standalone hardcoded cells → Hardcoded Values sheet** (not Publication Readiness) — the Hardcoded Values sheet already tracks source completeness in column F. Exception: hardcoded literals embedded *inside* formulas still go to Publication Readiness. If the value is outside the plausible range or inconsistent with other sources, file it as `Parameter Issue` in Findings. **A value that is both potentially wrong and undocumented is always `Parameter Issue` in Findings — do not also file `Missing Source` in Publication Readiness for the same cell.**
-- **Values labeled "guess" or "best guess" are not findings** — this is acceptable uncertainty documentation. Do not file Parameter Issue or Assumption Issue entries for these.
+- **Sourcing for standalone hardcoded cells → Hardcoded Values sheet** (not Publication Readiness) — the Hardcoded Values sheet already tracks source completeness in column F. Exception: hardcoded literals embedded *inside* formulas still go to Publication Readiness as `Sourcing`. If the value is outside the plausible range or inconsistent with other sources, file it as `Parameter` in Findings. **A value that is both potentially wrong and undocumented is always `Parameter` in Findings — do not also file `Sourcing` in Publication Readiness for the same cell.**
+- **Values labeled "guess" or "best guess" are not findings** — this is acceptable uncertainty documentation. Do not file `Parameter` or `Assumption` entries for these.
 - When in doubt between Findings and Publication Readiness, use Findings.
 
 ---
@@ -19,12 +19,12 @@ Columns (A–J): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
 - **Cell/Row** (C): Exact location (e.g., `B14`). For grouped findings, list all affected cells (e.g., `B14, B18, B22`).
 - **Severity** (D): `High`, `Medium`, or `Low`. Color-coded — see Severity Rules below.
 - **Error Type / Issue** (E): Use exactly one of the six standard categories below:
-  - `Formula Error` — wrong cell reference, wrong range, broken logic, incorrect operator. When filing a Formula Error, include a bracketed sub-type at the start of the Explanation: `[Copy-paste]`, `[Wrong reference]`, `[Year range]`, `[Sign error]`, `[Wrong operator]`, or `[Off-by-one]`.
-  - `Parameter Issue` — hardcoded value is stale/outdated, or conflicts with a GW cross-cutting standard (moral weight, benchmark, discount rate)
-  - `Adjustment Issue` — an adjustment (IV, EV, leverage, funging, supplemental) is absent, has the wrong sign, wrong base, or is multiplicative vs. additive incorrectly
-  - `Assumption Issue` — key assumption lacks a source, explanation, or is an unacknowledged edge case
-  - `Structural Issue` — tab ordering, section ordering, missing required tab, inverted section structure
+  - `Formula` — wrong cell reference, wrong range, broken logic, incorrect operator. When filing a Formula, include a bracketed sub-type at the start of the Explanation: `[Copy-paste]`, `[Wrong reference]`, `[Year range]`, `[Sign error]`, `[Wrong operator]`, or `[Off-by-one]`.
+  - `Parameter` — hardcoded value is stale/outdated, or conflicts with a GW cross-cutting standard (moral weight, benchmark, discount rate)
+  - `Adjustment` — an adjustment (IV, EV, leverage, funging, supplemental) is absent, has the wrong sign, wrong base, or is multiplicative vs. additive incorrectly
+  - `Assumption` — key assumption lacks a source, explanation, or is an unacknowledged edge case; also covers structural model issues (missing required tab, inverted section structure that affects CE interpretation)
   - `Inconsistency` — values that should match across sheets or within the model don't
+  - `Legibility` — tab ordering, section ordering, unclear or stale labels, terminology errors (e.g., "x cash" instead of "x benchmark"), placeholder text
 - **Explanation** (F): 1–2 sentences maximum. Lead with the specific problem — not background. Make a specific, falsifiable claim and include the actual value or formula fragment (e.g., "B14 = 0.87 but C22 = 0.79"). Plain language a non-expert can understand. Do not hedge what you can confirm. No chain traces, no reasoning.
 - **Recommended Fix** (G): One sentence or formula only. Lead with an imperative verb (Change, Replace, Add, Delete). Include the exact replacement formula or value. No explanation of why — only the action.
 - **Estimated CE Impact** (H): Always begin with one of these standard phrases, then append a magnitude note if known:
@@ -85,12 +85,10 @@ Columns (A–F): Finding # | Sheet | Cell/Row | Error Type / Issue | Explanation
 - **Finding #** (A): Sequential ID assigned by final-review (e.g., `PR-001`, `PR-002`). Left blank by agents.
 - **Sheet** (B): Sheet name the finding applies to.
 - **Cell/Row** (C): Exact cell or row reference.
-- **Error Type / Issue** (D): Use exactly one of the five standard categories below:
-  - `Missing Source` — no citation for a value or claim
-  - `Broken Link` — dead link, HTTP instead of HTTPS, or inaccessible URL
-  - `Permission Issue` — file needs publish permission, or links to an internal-only GiveWell doc
-  - `Readability` — unclear/stale labels, placeholder text, formatting that impedes comprehension
-  - `Terminology` — wrong term (e.g., "x cash" instead of "x benchmark", outdated program names)
+- **Error Type / Issue** (D): Use exactly one of the three standard categories below:
+  - `Sourcing` — missing citation, broken link, dead URL, HTTP instead of HTTPS, inaccessible document, or file needing publish permission
+  - `Box Link` — Box.com URL present in a cell note or citation field (not appropriate for published spreadsheets; remove or replace with a public link)
+  - `Legibility` — unclear/stale labels, placeholder text, terminology errors (e.g., "x cash" instead of "x benchmark"), formatting that impedes comprehension
 - **Explanation** (E): One short sentence (≤25 words) describing what is wrong in plain language. No chain trace, no internal doc IDs, no references to skill files or .md files. Write for a researcher, not for debugging output.
 - **Recommended Fix** (F): Short imperative action — what to do, not why. E.g., "Add source note to B14" or "Change 'x cash' to 'x benchmark' in B6."
 
