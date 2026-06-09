@@ -61,7 +61,7 @@ For each key parameter ask: Is the assumption reasonable given program context? 
 
 **Cell note value consistency**: For every cell note citing a specific number, verify it matches the formula value. Flag any mismatch.
 
-**Study-derived effect sizes**: For any hardcoded value drawn from a specific study — mortality reduction percentages, RCT multipliers, epidemiological rates — verify the number against the cited source. Transcription errors are common. A cell showing 45% while the cited study reports 46% is a Medium finding.
+**Study-derived effect sizes**: For any hardcoded value drawn from a specific study — mortality reduction percentages, RCT multipliers, epidemiological rates — verify the number against the cited source. Transcription errors are common. A cell showing 45% while the cited study reports 46% is a Medium finding. **Rounding tolerance**: a value that differs from the study's reported figure by ≤15% relative (e.g., 25% vs 22.5% = 11%) AND has CE impact <2% is a Low, not Medium — it is a rounded approximation, not a transcription error. Medium requires either a >15% relative deviation, ≥2% CE impact, or a conceptually wrong value.
 
 **Cell note hyperlink audit**: For every hyperlink found in cell notes across all vetted sheets (use the `read_sheet_hyperlinks` results already in your parallel read batch), attempt to fetch each URL using `WebFetch`. This is an exhaustive check — do not skip any link because the cell "looks fine" or the parameter seems minor. For each successfully fetched source, check all of the following:
 

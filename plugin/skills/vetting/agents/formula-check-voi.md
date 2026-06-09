@@ -31,9 +31,21 @@ Compare against the target VOI model's row labels (already read during self-dete
 
 3. **Semantically renamed rows**: For each template row concept that appears in the target model under a materially different label with no cell note, flag as **Low/H** Structural Issue: "Template row '[template label]' appears as '[model label]' in this model — confirm the concept is the same and add a note if the renaming is intentional." A material rename is one that changes the apparent scope or direction of the row (e.g., 'GiveWell opportunity cost CE' → 'CE of counterfactual across all funders').
 
-Skip this check if: (a) the researcher's Step 0.5 notes describe the VOI model as a standalone non-template-based model, or (b) the template read fails — note the failure in your coverage declaration and proceed to Check 1.
+Skip this check if: (a) the researcher's Step 0.5 notes describe the VOI model as a standalone non-template-based model, or (b) the template read fails — note the failure in your coverage declaration and proceed to Check 0.5. **A Check 0 failure does not reduce your obligation to run Checks 0.5 through 10 at full coverage.**
 
 Coverage declaration: `COVERAGE | formula-check-voi | template comparison | [N] template rows checked | missing required classes: [list or none] | undocumented additions: [K] | renamed rows: [L] | status: complete`
+
+---
+
+## Check 0.5 — Grant cost logical consistency
+
+Locate the row for total grant cost — label typically contains "total grant cost," "grant size," "total program cost," "cost of grant," or equivalent. Locate the row for direct benefit cost — label typically contains "grant cost going toward direct benefit," "direct benefit cost," "cost toward direct benefits," or equivalent. Read both cells in UNFORMATTED_VALUE mode.
+
+If direct benefit cost > total grant cost: flag as **High/Structural Issue**: "[direct benefit cell ref] = [value] exceeds [total grant cell ref] = [value] — a direct-benefit sub-component cannot exceed the total grant cost. This is likely a stale template value not updated for this specific grant. The VOI direct-benefit CE calculation is materially overstated. Change [direct benefit cell ref] to a value ≤ [total grant cell ref], updated to reflect the actual grant amount."
+
+If either row is not found: write "not found" in your coverage declaration and continue — do not file a finding for a missing row. Not all VOI models include an explicit direct-benefit cost row.
+
+Coverage declaration: `COVERAGE | formula-check-voi | grant cost consistency | total grant: [ref or not found] = [value] | direct benefit: [ref or not found] = [value] | logical: [consistent / VIOLATION: direct benefit exceeds total] | issues found: [N] | status: complete`
 
 ---
 

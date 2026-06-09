@@ -45,6 +45,8 @@ For each parameter in the table above, scan the collected labels for a match. A 
 - "Neonatal," "under 1 month," "newborn" + moral weight → Neonatal moral weight
 - "Avert under-5 death," "under-5 mortality" + moral weight → Avert under-5 death
 - "Avert over-5 death," "over-5 mortality" + moral weight → Avert over-5 death (malaria)
+- "5-14 deaths," "5-14 year," "age 5-14," "5 to 14," "five to fourteen" + moral weight → Avert over-5 death (malaria) — treat as a disaggregated over-5 sub-group; apply the Age-band moral weight handling rule in Step 3
+- "o14," "over 14," "over-14," "older than 14," "adult deaths" + moral weight → Avert over-5 death (malaria) — treat as a disaggregated over-5 sub-group; apply the Age-band moral weight handling rule in Step 3
 - "Discount rate" → Discount rate
 - "Income effect," "long-term income," "income increase," "income gain," "income benefits," "long-run income," "income multiplier" → Income effects
 - "Long-term income ratio," "income-to-mortality ratio" → Long-term income ratio
@@ -88,9 +90,13 @@ Before filing, check whether the mismatch is covered by a declared-intentional d
 
 **Never downgrade on timing grounds**: Do not treat a stale benchmark or moral weight as a false positive because the pre-vet spreadsheet was built before the parameter update. key-parameters.md is authoritative for current correct values — the researcher's obligation is to use current values at publication time. Do not write "this may have been correct when the spreadsheet was built."
 
+**Age-band moral weight handling**: When a model contains **separate rows for 5-14 and over-14 moral weights** rather than a single over-5 row, do not compare each age-band cell to the aggregate over-5 standard (73) and state they should both be 73. The 73 value is the aggregate — not a per-band standard. Instead: (a) identify the source cited in each cell's note; (b) determine whether the source is a GiveWell malaria source or a different disease area (vaccines, nutrition); (c) if non-malaria, file as High: "B[X] = [value] citing [non-malaria source] — use a GiveWell malaria-specific age-band weight or document the derivation from the 73 aggregate." The explanation must describe the source mismatch (wrong disease area), not assert that the individual band value should be 73.
+
 **Severity**:
 - **High/Parameter Issue**: Benchmark, neonatal moral weight, under-5 moral weight, over-5 moral weight — specific authoritative values with documented update dates; a wrong value is a confirmed error
 - **Medium/Parameter Issue with Researcher judgment needed ✓**: income effects, long-term income ratio, years to benefits, VAS moral weight, maternal death moral weight, discount rate — more context-dependence; flag for researcher confirmation
+
+**Explanation discipline — do not read source documents**: Do not navigate to or read any URL found in a cell note to characterize what the source document says. Your determination of whether a value is wrong is based solely on comparing the stored value to key-parameters.md — not on interpreting the source document's contents. If you need to describe the source, use only the text already present in the cell note (e.g., "cell note cites 'Moral weights [2020, Tool]_New Incentives CEA'"). Do not write "conflating," "misidentifying," or other language that characterizes what a source document contains. The explanation is always: "[cell] = [stored value] but key-parameters.md specifies [expected value]."
 
 **Explanation format**: `[cell] = [stored value] but the GiveWell standard value is [expected value] (key-parameters.md). [One sentence on why this matters — e.g., the update date or the direction of CE impact.]`
 

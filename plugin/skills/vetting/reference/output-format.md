@@ -43,6 +43,10 @@ Columns (A–J): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
 - **Medium**: Affects interpretation, methodology, or parameter accuracy but does not directly change the calculated CE — stale parameters, missing sources, undocumented assumptions.
 - **Low**: Cosmetic or labeling issues with no calculation impact.
 
+**Additive vs multiplicative adjustment composition**: File as **Medium**, not High, unless the two conventions produce a CE difference exceeding 5%. The researcher likely understands the distinction; this is a consistency/documentation issue, not a directional factual error.
+
+**Rounding tolerance**: A parameter that differs from a study's reported value by ≤15% relative (e.g., 25% vs 22.5% = 11% relative difference) **AND** has estimated CE impact <2% should be filed as **Low**, not Medium. Medium requires either (a) relative deviation >15%, (b) CE impact ≥2%, or (c) a conceptually wrong value (wrong quantity or wrong study), not merely a rounded approximation of the correct one.
+
 ### Grouping and Sorting
 Sort by sheet (column B), then row number. Where the same issue applies to multiple cells, **group into a single finding** listing all affected cells (e.g., "B14, B18, B22"). Only create separate rows when the issue, explanation, or recommended fix differs meaningfully. Aim for ~15–25 grouped findings rather than 50+ individual entries.
 

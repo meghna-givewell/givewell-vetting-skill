@@ -104,16 +104,23 @@ Coverage declaration: "Placeholder scan complete. Header rows and column A check
 
 ## Check 4 — CE impact completeness
 
-For every **High** finding and every **Medium** finding whose Error Type is `Formula Error`, `Parameter Issue`, or `Adjustment Issue` — where Estimated CE Impact (column H) is blank:
-- Compute the directional impact using the pre-vet baseline CE from session context.
-- Write using the standard format: `Raises CE — 8.7x → ~10.2x` or `Lowers CE — magnitude unknown` etc. Always lead with the standard phrase from output-format.md. Use `Direction unknown` if the researcher's answer would determine the direction.
-- Update the finding in place using `modify_sheet_values`.
+**Pass A — fill blanks**: For every **High** finding and every **Medium** finding whose Error Type is `Formula Error`, `Parameter Issue`, or `Adjustment Issue` — where Estimated CE Impact (column H) is blank — compute the directional impact using the pre-vet baseline CE from session context. Write using the standard format: `Raises CE — 8.7x → ~10.2x` or `Lowers CE — magnitude unknown` etc. Always lead with the standard phrase from output-format.md. Use `Direction unknown` if the researcher's answer would determine the direction. Update the finding in place using `modify_sheet_values`.
 
 Rationale: Medium Formula Error, Parameter Issue, and Adjustment Issue findings can affect CE even if their impact is below the High threshold. Researchers need the CE direction to triage them against High findings. `Assumption Issue`, `Structural Issue`, and `Inconsistency` at Medium severity often have no computable CE impact — leave those blank rather than writing "Direction unknown" unless you can clearly identify a direction.
 
+**Pass B — quantify High "magnitude unknown"**: For every **High** finding where column H contains "magnitude unknown" (i.e., already filled but not quantified):
+
+1. Read the cell(s) referenced in column C of that finding using `read_sheet_values` (UNFORMATTED_VALUE) on the source spreadsheet.
+2. Read the CE baseline cell (verified in Check 0) in UNFORMATTED_VALUE mode.
+3. Attempt to compute: what is the CE multiple if this finding is resolved as recommended? If the referenced cell directly multiplies into the CE chain (e.g., a moral weight, a benchmark value, an adjustment factor), the impact is computable — calculate and replace "magnitude unknown" with the numerical estimate, e.g., `Lowers CE — 9.3x → ~9.0x`.
+4. If computation is genuinely not possible without assumptions the researcher must supply (e.g., the fix requires knowing a correct parameter value that doesn't exist in the model), retain "magnitude unknown" but append a brief reason in parentheses: `Lowers CE — magnitude unknown (requires researcher to supply replacement value for [parameter])`.
+5. If the cell is not in the CE chain (e.g., a labeling issue or structural issue that doesn't affect computation), change to `No CE impact` if that is accurate.
+
+The goal is that no High finding exits validation with a bare "magnitude unknown" — every High finding should either have a numerical estimate or a specific stated reason why one cannot be computed.
+
 Do not modify any other columns of existing findings.
 
-Coverage declaration: "CE impact completeness check done. High findings: [N total, M filled, K already had content]. Medium Formula/Parameter/Adjustment findings: [N total, M filled, K already had content]."
+Coverage declaration: "CE impact completeness check done. Pass A — High findings: [N total, M filled, K already had content]. Medium Formula/Parameter/Adjustment findings: [N total, M filled, K already had content]. Pass B — High 'magnitude unknown' findings reviewed: [N], quantified: [M], retained with reason: [K], changed to No CE impact: [J]."
 
 ---
 

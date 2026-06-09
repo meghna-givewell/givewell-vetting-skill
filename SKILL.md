@@ -1,1 +1,0 @@
-plugin/skills/vetting/SKILL.md
