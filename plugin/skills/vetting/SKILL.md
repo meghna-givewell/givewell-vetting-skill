@@ -819,27 +819,28 @@ One-line count: e.g., "13 findings: 2 High, 6 Medium, 5 Low — 4 require resear
 
 **Step 3 — Collect pilot feedback**
 
-Ask the researcher the following five questions. Present them as a labelled block so they are easy to copy and answer:
+Ask the researcher the following six questions. Present them as a labelled block so they are easy to copy and answer:
 
 ```
-Vetting skill feedback — 5 quick questions (answers go into a shared log to improve the skill):
+Vetting skill feedback — 6 quick questions (answers go into a shared log to improve the skill):
 
-1. Accuracy — How accurate was this vet overall? (1 = many errors / 5 = nearly perfect)
-2. False positives — Were any findings things Claude flagged that were not real issues? If so, which Finding IDs and briefly why they were wrong.
-3. Missed findings — Did Claude miss anything significant you had to catch yourself? Briefly describe.
-4. Most useful — Which part of the output was most useful to you?
-5. Calibration suggestion — Is there one thing you'd like Claude to do differently next time?
+1. False positives — Were any findings things Claude flagged that were not real issues? If so, which Finding IDs and briefly why they were wrong.
+2. Missed findings — Did Claude miss anything significant you had to catch yourself? Briefly describe.
+3. Most useful — Which part of the output was most useful to you?
+4. Calibration suggestion — Is there one thing you'd like Claude to do differently next time?
+5. Confidentiality flags — Did Claude miss any cells or sections that should have been flagged as potentially confidential? If so, briefly describe.
+6. Box links — Did Claude miss any Box links in the spreadsheet that should have been flagged?
 
 (You can skip any question — just reply with the numbers you want to answer.)
 ```
 
 After the researcher responds, record their answers in the shared pilot feedback log:
 
-**a. Find or create the feedback sheet**
+**a. Use the canonical feedback sheet**
 
-Search Google Drive for a file named `Vetting Skill Pilot Feedback` using `search_drive_files` with query `name = 'Vetting Skill Pilot Feedback' and mimeType = 'application/vnd.google-apps.spreadsheet'`.
-- **If found**: use the first result's file ID as the feedback spreadsheet ID.
-- **If not found**: create a new Google Sheet named `Vetting Skill Pilot Feedback` using `create_spreadsheet`. Then write a header row to Sheet1 at `A1:H1` with values: `Date | Researcher | Spreadsheet vetted | Accuracy (1–5) | False positives | Missed findings | Most useful | Calibration suggestion`.
+The feedback sheet is always: `https://docs.google.com/spreadsheets/d/1Ees1qo3N5SSTzo6MDDrCpvJEVrgANCTqRET6ak3glWM/`
+
+Use spreadsheet ID `1Ees1qo3N5SSTzo6MDDrCpvJEVrgANCTqRET6ak3glWM` for all writes. Do not search for or create a new sheet.
 
 **b. Append the feedback row**
 
@@ -847,11 +848,12 @@ Find the first empty row in column A (read `A:A` and count non-empty cells; firs
 - A: today's date (ISO format: YYYY-MM-DD)
 - B: researcher email (from session context)
 - C: source spreadsheet name (from `get_spreadsheet_info` results)
-- D: accuracy score (or blank if skipped)
-- E: false positives answer (truncated to 500 characters if longer)
-- F: missed findings answer
-- G: most useful answer
-- H: calibration suggestion
+- D: false positives answer (truncated to 500 characters if longer)
+- E: missed findings answer
+- F: most useful answer
+- G: calibration suggestion
+- H: confidentiality flags missed answer
+- I: Box links missed answer
 
 **c. Notify the skill maintainer via Slack DM**
 
@@ -865,10 +867,11 @@ New vetting skill feedback submitted
 
 Researcher: [researcher email]
 Spreadsheet: [source spreadsheet name]
-Accuracy: [score]/5
 False positives: [answer or "none / skipped"]
 Missed findings: [answer or "none / skipped"]
 Calibration suggestion: [answer or "skipped"]
+Confidentiality flags missed: [answer or "none / skipped"]
+Box links missed: [answer or "none / skipped"]
 Feedback sheet: [link]
 ```
 
@@ -878,4 +881,4 @@ If `mcp__claude_ai_Slack__slack_search_users` returns no result for that email, 
 
 Tell the researcher: "Feedback recorded — thank you. [feedback sheet link]"
 
-If the researcher skips all five questions, record a blank row for the date and spreadsheet name only, and do not prompt again.
+If the researcher skips all six questions, record a blank row for the date and spreadsheet name only, and do not prompt again.
