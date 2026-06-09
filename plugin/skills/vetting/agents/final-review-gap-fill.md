@@ -23,24 +23,24 @@ You are performing Step 10b of a GiveWell spreadsheet vet. This step runs after 
 Read the Findings sheet in full using batched `read_sheet_values` calls: `A2:J51`, then `A52:J101`, `A102:J151`, continuing in 50-row increments until two consecutive batches return no non-empty rows. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Skip divider rows (column D empty, column B contains `───`). Collect all finding rows with Finding IDs assigned.
 
 Build a working list of:
-- **All High findings** with `Formula Error` in column E — these are the cascade candidates.
+- **All High findings** with `Formula` in column E — these are the cascade candidates.
 - **All rows in the source spreadsheet explicitly referenced** in any confirmed finding (from column C across all findings). This is your "already-examined" cell set.
 - **All Won't Fix decisions made by reconciliation agents** — these appear as gaps in Finding IDs (e.g., if IDs jump from F-003 to F-005, F-004 was deleted by a Won't Fix decision).
 
-Coverage declaration: "Read complete. Total findings: [N]. High/Formula Error findings: [N]. Already-examined cells: [list]. ID gaps (Won't Fix candidates): [list of gaps or 'none']."
+Coverage declaration: "Read complete. Total findings: [N]. High/Formula findings: [N]. Already-examined cells: [list]. ID gaps (Won't Fix candidates): [list of gaps or 'none']."
 
 ---
 
 ## Check 1 — Formula cascade check
 
-For every **High Formula Error** finding:
+For every **High Formula** finding:
 
 1. Read the flagged cell's formula (FORMULA mode) on the source spreadsheet to confirm its current formula.
 2. Identify downstream cells — cells whose formula in the source spreadsheet directly references the flagged cell. To find these: read the sheet in FORMULA mode, scan for any formula containing the flagged cell reference (e.g., if the flagged cell is `Main CEA!B14`, search formulas for `B14`).
 3. For each downstream cell found, ask: if the flagged cell's formula is corrected as recommended, will this downstream cell still compute correctly? Check:
    - Does the downstream formula use the flagged cell's *value* in a way that would silently propagate the error even after the fix? (e.g., a SUM that was correct assuming the old wrong value, but wrong after correction)
    - Does the downstream formula reference the flagged cell by absolute reference — meaning the fix won't automatically cascade — and the downstream cell's own logic may need updating?
-4. **If a downstream cell would remain wrong after the fix**, file as **Medium/Formula Error**: "[Downstream cell] references [flagged cell], which is the subject of finding [ID]. If [flagged cell] is corrected per that finding's fix, [downstream cell]'s formula `[exact formula]` will [describe the new wrong result]. Verify and update [downstream cell] at the same time." Include the CE impact if computable.
+4. **If a downstream cell would remain wrong after the fix**, file as **Medium/Formula**: "[Downstream cell] references [flagged cell], which is the subject of finding [ID]. If [flagged cell] is corrected per that finding's fix, [downstream cell]'s formula `[exact formula]` will [describe the new wrong result]. Verify and update [downstream cell] at the same time." Include the CE impact if computable.
 
 **Limit scope**: Check at most 2 hops downstream from the flagged cell. Do not trace the entire dependency tree — the CE chain trace agent already traced the primary chain. You are looking for cells *adjacent* to confirmed errors that weren't in the original chain trace.
 
@@ -49,7 +49,7 @@ For every **High Formula Error** finding:
 - The downstream cell is a display-only row (pure pass-through `=above_cell` with no arithmetic).
 - The downstream cell references the flagged cell inside an IFERROR or similar wrapper that would mask rather than propagate the error.
 
-Coverage declaration: "Cascade check complete. High/Formula Error findings reviewed: [N]. Downstream cells examined: [N total]. New cascade findings filed: [N]. Cells already covered by prior findings (skipped): [N]."
+Coverage declaration: "Cascade check complete. High/Formula findings reviewed: [N]. Downstream cells examined: [N total]. New cascade findings filed: [N]. Cells already covered by prior findings (skipped): [N]."
 
 ---
 
@@ -98,6 +98,6 @@ Before writing any finding, confirm: (1) exact cell reference(s), (2) specific i
 
 Assign new Finding IDs continuing sequentially from the last ID assigned by compaction (e.g., if compaction assigned through F-018, write F-019, F-020, …). Insert new findings at the appropriate severity tier — after the last finding of that tier and before the next tier divider — using `modify_sheet_values`. Update the divider row count accordingly (e.g., if a new High finding is added, change `─── High (4 findings) ───` to `─── High (5 findings) ───`).
 
-Column reference: **A** Finding # | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text; choose one of: Formula Error | Parameter Issue | Adjustment Issue | Assumption Issue | Structural Issue | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; include the actual value or formula; plain language; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb) | **H** Estimated CE Impact (use exactly one of: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown) | **I** Researcher judgment needed (✓ only for intent/decision questions) | **J** Status (leave blank)
+Column reference: **A** Finding # | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; include the actual value or formula; plain language; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb) | **H** Estimated CE Impact (use exactly one of: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown) | **I** Researcher judgment needed (✓ only for intent/decision questions) | **J** Status (leave blank)
 
 **Do not write pass notes, verification notes, or "no issues found" summaries to the Findings sheet.** Coverage declarations belong in your chat output, not in the sheet.

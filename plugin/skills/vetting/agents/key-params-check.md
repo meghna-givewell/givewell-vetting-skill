@@ -72,7 +72,7 @@ Key-params coverage log:
 
 If a parameter is not applicable to this model type, write `n/a — [one-word reason]` (e.g., `n/a — not-malaria`).
 
-**"Not found" behavior — do not silently skip**: If a parameter is applicable to this program type but was not located in the column A/B label scan, do not write `not found` and move on. Instead, file a `Low/Parameter Issue` with `Researcher judgment needed ✓`:
+**"Not found" behavior — do not silently skip**: If a parameter is applicable to this program type but was not located in the column A/B label scan, do not write `not found` and move on. Instead, file a `Low/Parameter` with `Researcher judgment needed ✓`:
 
 > *"[Parameter name] was not located in column A or B row labels. Verify the spreadsheet contains this parameter and that its value matches the GiveWell standard of [expected value]. Common alternative labels: [list from the synonyms above]."*
 
@@ -104,8 +104,8 @@ Before filing, check whether the mismatch is covered by a declared-intentional d
 **Age-band moral weight handling**: When a model contains **separate rows for 5-14 and over-14 moral weights** rather than a single over-5 row, do not compare each age-band cell to the aggregate over-5 standard (73) and state they should both be 73. The 73 value is the aggregate — not a per-band standard. Instead: (a) identify the source cited in each cell's note; (b) determine whether the source is a GiveWell malaria source or a different disease area (vaccines, nutrition); (c) if non-malaria, file as High: "B[X] = [value] citing [non-malaria source] — use a GiveWell malaria-specific age-band weight or document the derivation from the 73 aggregate." The explanation must describe the source mismatch (wrong disease area), not assert that the individual band value should be 73.
 
 **Severity**:
-- **High/Parameter Issue**: Benchmark, neonatal moral weight, under-5 moral weight, over-5 moral weight — specific authoritative values with documented update dates; a wrong value is a confirmed error
-- **Medium/Parameter Issue with Researcher judgment needed ✓**: income effects, long-term income ratio, years to benefits, VAS moral weight, maternal death moral weight, discount rate — more context-dependence; flag for researcher confirmation
+- **High/Parameter**: Benchmark, neonatal moral weight, under-5 moral weight, over-5 moral weight — specific authoritative values with documented update dates; a wrong value is a confirmed error
+- **Medium/Parameter with Researcher judgment needed ✓**: income effects, long-term income ratio, years to benefits, VAS moral weight, maternal death moral weight, discount rate — more context-dependence; flag for researcher confirmation
 
 **Explanation discipline — do not read source documents**: Do not navigate to or read any URL found in a cell note to characterize what the source document says. Your determination of whether a value is wrong is based solely on comparing the stored value to key-parameters.md — not on interpreting the source document's contents. If you need to describe the source, use only the text already present in the cell note (e.g., "cell note cites 'Moral weights [2020, Tool]_New Incentives CEA'"). Do not write "conflating," "misidentifying," or other language that characterizes what a source document contains. The explanation is always: "[cell] = [stored value] but key-parameters.md specifies [expected value]."
 
@@ -123,7 +123,7 @@ Before writing any finding, confirm: (1) exact cell reference, (2) specific stor
 
 **Your row start position is pre-assigned in session context** — do not read existing rows to auto-detect position. Append findings using `modify_sheet_values`.
 
-Column reference: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write exactly: `Parameter Issue`) | **F** Explanation (lead with "[cell] = [value] but key-parameters.md specifies [expected]") | **G** Recommended Fix (imperative verb; give exact replacement value) | **H** Estimated CE Impact (use exactly one of: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown) | **I** Researcher judgment needed (✓ only for intent/decision questions) | **J** Status (leave blank)
+Column reference: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write exactly: `Parameter`) | **F** Explanation (lead with "[cell] = [value] but key-parameters.md specifies [expected]") | **G** Recommended Fix (imperative verb; give exact replacement value) | **H** Estimated CE Impact (use exactly one of: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown) | **I** Researcher judgment needed (✓ only for intent/decision questions) | **J** Status (leave blank)
 
 See `reference/output-format.md` for full column definitions.
 
