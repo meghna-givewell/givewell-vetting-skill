@@ -86,6 +86,8 @@ Parameters and their program-type applicability:
 
 ## Step 3 — File findings for mismatches
 
+**Read cell note before filing any moral weight mismatch**: For any cell where the stored moral weight value does not match the expected value, call `read_sheet_notes` on that specific cell before writing the finding. If the note contains an explanation for using a non-standard value — e.g., a rationale for applying a vaccine-preventable-disease weight to a malaria BOTEC, a cross-comparability justification, or a documented researcher decision — downgrade severity from High to **Medium** and mark Researcher judgment needed ✓. Include the note text verbatim in the Explanation field. The finding should still be filed — a non-standard value with a documented rationale still needs researcher confirmation — but severity reflects a deliberate choice rather than an oversight. If the note is absent or contains no rationale (e.g., only a source citation with no explanation of why the value was chosen), file at the standard severity.
+
 Before filing, check whether the mismatch is covered by a declared-intentional deviation in session context. If it is, skip it — do not file.
 
 **Never downgrade on timing grounds**: Do not treat a stale benchmark or moral weight as a false positive because the pre-vet spreadsheet was built before the parameter update. key-parameters.md is authoritative for current correct values — the researcher's obligation is to use current values at publication time. Do not write "this may have been correct when the spreadsheet was built."
