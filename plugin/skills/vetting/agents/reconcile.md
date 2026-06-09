@@ -48,7 +48,13 @@ Two findings **match** if they reference the same cell or overlapping row range 
 
 ## Step 3 — Classify
 
-- **Confirmed**: both A and B caught it → keep the version with more complete Explanation and Recommended Fix. If A and B assigned different severities, retain the higher severity silently — do not note the discrepancy in the Explanation. Do not append any meta-commentary (e.g., "Confirmed by both independent agents", "Two independent agents assessed this at different severities") to the surviving row's Explanation.
+- **Confirmed**: both A and B caught it → keep the version with more complete Explanation and Recommended Fix. If A and B assigned different severities, **apply the severity decision tree from `reference/output-format.md`** to determine the correct severity:
+  1. Re-read the referenced cell in FORMULA mode if not already in context.
+  2. Work through the High → Medium → Low decision tree using the actual cell data and the criteria in `output-format.md` (confirmed factual error / CE impact ≥2% / silent omission → High; plausibly affects CE / documented deviation / undocumented assumption → Medium; no CE impact / within rounding tolerance → Low).
+  3. Use the severity the decision tree produces — this may match A, may match B, or may match neither.
+  4. Only if the decision tree is genuinely ambiguous after re-reading the cell, fall back to the higher of A and B as a conservative default.
+
+  Do not note the severity comparison in the Explanation. Do not append any meta-commentary (e.g., "Confirmed by both independent agents", "Two independent agents assessed this at different severities") to the surviving row's Explanation.
 - **A-only**: A caught it, B did not → investigate (Step 4).
 - **B-only**: B caught it, A did not → investigate (Step 4).
 

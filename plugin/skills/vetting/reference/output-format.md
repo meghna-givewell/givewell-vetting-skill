@@ -39,13 +39,26 @@ Columns (A–J): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
 - **Status** (J): Left blank by Claude. The researcher fills this in: `Open` / `Fixed` / `Won't Fix` / `Needs Discussion`. Do not write to this column.
 
 ### Severity Rules
-- **High**: Materially affects bottom-line CE — formula errors, structural omissions, adjustments calculated but not applied. Ask: does correcting this change the number a decision-maker sees? If yes, it's High.
-- **Medium**: Affects interpretation, methodology, or parameter accuracy but does not directly change the calculated CE — stale parameters, missing sources, undocumented assumptions.
-- **Low**: Cosmetic or labeling issues with no calculation impact.
 
-**Additive vs multiplicative adjustment composition**: File as **Medium**, not High, unless the two conventions produce a CE difference exceeding 5%. The researcher likely understands the distinction; this is a consistency/documentation issue, not a directional factual error.
+Apply the decision tree below in order — stop at the first rule that matches.
 
-**Rounding tolerance**: A parameter that differs from a study's reported value by ≤15% relative (e.g., 25% vs 22.5% = 11% relative difference) **AND** has estimated CE impact <2% should be filed as **Low**, not Medium. Medium requires either (a) relative deviation >15%, (b) CE impact ≥2%, or (c) a conceptually wrong value (wrong quantity or wrong study), not merely a rounded approximation of the correct one.
+**High** — file as High if ANY of the following are true:
+1. **Confirmed factual error against an authoritative standard**: A GW standard parameter (benchmark, moral weight, discount rate) deviates from `key-parameters.md` with no cell note rationale; a formula is confirmed (FORMULA mode) to reference a demonstrably wrong cell or deleted range; a logical impossibility (direct benefit cost > total grant cost; probability > 100%; deaths averted > all-cause deaths in the target population).
+2. **Estimated CE impact ≥2%**: You have estimated the CE impact of correcting the finding and it is at or above 2%. When impact is unknown but the affected parameter sits in the confirmed direct CE calculation chain, treat as High.
+3. **Silent omission**: An adjustment was calculated in the model but is confirmed absent from the CE chain.
+
+**Medium** — none of the High conditions apply, and ANY of the following are true:
+1. The finding plausibly affects CE but direction or magnitude requires researcher judgment (column H would be "Direction unknown").
+2. A GW standard parameter deviates from `key-parameters.md` with a documented cell note rationale — confirmed deliberate, but requires researcher reconfirmation.
+3. A key input in the direct CE calculation chain lacks an external source or explanation, and the value's correctness cannot be independently verified.
+4. A formula inconsistency (e.g., additive vs multiplicative adjustment composition) doesn't currently affect CE but would produce a ≥2% CE difference if the inconsistency were triggered by changed inputs.
+
+**Low** — none of the above apply:
+- Documentation, labeling, or structural issues with no CE calculation impact.
+- Rounding differences within tolerance: ≤15% relative deviation from the source value AND estimated CE impact <2%.
+- Hidden rows/columns with no active formula dependencies in visible cells.
+
+**Tie-breaker**: When the decision tree is genuinely ambiguous between two levels, ask: "Would a researcher triaging by severity want to see this in their first pass?" If yes, use the higher level.
 
 ### Grouping and Sorting
 Sort by sheet (column B), then row number. Where the same issue applies to multiple cells, **group into a single finding** listing all affected cells (e.g., "B14, B18, B22"). Only create separate rows when the issue, explanation, or recommended fix differs meaningfully. Aim for ~15–25 grouped findings rather than 50+ individual entries.
