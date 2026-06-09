@@ -397,6 +397,8 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 >
 > **Coverage declarations**: After completing each named check or scan section, write a coverage declaration in this exact format: `COVERAGE | [agent name] | [check name] | [rows/cells checked] | issues found: [N] | status: complete`. Use this format — do not use free-form prose coverage declarations.
 >
+> **Analysis order**: Process rows top-to-bottom within your assigned row scope. Do not reorganize, jump ahead to "interesting" sections, or skip early rows in order to reach later ones faster. Top-to-bottom order ensures that every row in your scope receives equivalent analytical attention regardless of context state when you reach it. If your scope is a bottom-half band (rows `split_row+1`–end), process those rows top-to-bottom within that band.
+>
 > **Known calibrations**: Before starting your checks, read `reference/pitfalls.md`. It records false positive patterns, false negative patterns, and severity calibrations from prior vets. Apply every entry that is relevant to your agent's checks.
 
 **Cache scoping table** — When constructing the pre-read cache for each agent, include only the data modes and row range listed below. Agents that need data outside their scope make targeted `read_sheet_values` calls.
@@ -490,6 +492,46 @@ Agents run in four phases (Wave 1, Wave 2, Wave 2.5, Wave 3) with Wave 1.5 as a 
    - **Formula-check-arithmetic 2-instance mode**: If `populated_rows ≤ 80` on the primary vetted sheet, skip instances C and D. A and B each audit **all rows** (1 through `populated_rows`). Announce: `⏭️ formula-check-arithmetic: 2-instance mode (≤80 rows) — C and D skipped.` In session context for A and B, replace the sheet row scope with: "Audit all rows 1 through {populated_rows}. No row-splitting applies." Their Findings row allocations are unchanged (A: rows 2–41, B: rows 42–81); C and D ranges (92–171) remain reserved but empty.
    - **Key-params-check 1-instance mode**: If `populated_rows ≤ 80`, skip key-params-check B. A runs only. Announce: `⏭️ key-params-check: 1-instance mode (≤80 rows) — B skipped.` Row range 552–571 remains reserved but unused.
    - **Formula-check-voi — always launch**: Do not skip formula-check-voi at spawn time, even if no VOI tab is detected by name. VOI content can appear within any CEA tab as an embedded section. The agent self-detects and exits cleanly (writing only an AGENT_COMPLETE marker) if no VOI content is found across any vetted sheet.
+
+4. **Large sheet band-split protocol** (`populated_rows > 150`) — evaluate before spawning:
+
+   When the primary vetted sheet has more than 150 populated rows, context pressure causes later rows to receive less thorough analysis than earlier rows. Mitigate this by adding C/D band instances that cover rows `split_row+1`–end for agents that scan rows sequentially. Formula-check-arithmetic already does this (items 1 and 3 above); this protocol extends the same approach to additional agents.
+
+   **Announce when triggered**: `⚠️ Large sheet: [N] populated rows > 150 threshold. Band-split protocol active — adding C/D instances for [list of agents] in Wave 1 and [list] in Wave 2. This adds up to [N] agents.`
+
+   **Wave 1 additional agents (spawn alongside standard Wave 1 batch)**:
+   | Agent file | Instance | Sheet row scope | Findings row allocation | Budget |
+   |---|---|---|---|---|
+   | `agents/formula-check-data.md` | C | `split_row+1`–end | Start row 712 | 30 rows |
+   | `agents/formula-check-data.md` | D | `split_row+1`–end | Start row 742 | 30 rows |
+   | `agents/formula-check-edge-cases.md` | C | `split_row+1`–end | Start row 782 | 30 rows |
+   | `agents/formula-check-edge-cases.md` | D | `split_row+1`–end | Start row 812 | 30 rows |
+   | `agents/formula-check-structure.md` | C | `split_row+1`–end | Start row 852 | 30 rows |
+   | `agents/formula-check-structure.md` | D | `split_row+1`–end | Start row 882 | 30 rows |
+
+   Buffer zones: rows 772–781 (between formula-check-data and formula-check-edge-cases C/D), rows 842–851 (between formula-check-edge-cases and formula-check-structure C/D), rows 912–921 (formula-check-structure C/D overflow). Large-sheet Wave 1 end: ~row 921.
+
+   Apply the adversarial B-instance preamble to D instances (same as B instances). C instances receive standard session context with bottom-half row scope and cache. Pre-read cache for C/D instances: FORMATTED_VALUE, FORMULA, notes, and hyperlinks for rows `split_row+1`–end only.
+
+   Write large-sheet C/D row allocations to the Dashboard log at A49 (appended after the standard Wave 1 allocation table).
+
+   **Wave 2 additional agents** — when `populated_rows > 150`, extend each Wave 2 pair to four instances. For pairs that currently run A at `last_row + N` and B at `last_row + N + 50`, add:
+   - C at `last_row + N + 100` (budget: 40 rows)
+   - D at `last_row + N + 150` (budget: 40 rows)
+   - Buffer: `last_row + N + 190` to `last_row + N + 200`
+
+   Apply this extension to: **sources**, **heads-up-evidence**, **heads-up-intervention**, **readability**. These are the agents that scan rows sequentially and benefit most from band-splitting.
+
+   Do **not** add C/D band instances for: `ce-chain-trace` (traces backwards from CE output, not row-sequential), `leverage-funging` (concentrated in the adjustments section), `leverage-uov-check` (targeted structural check), `notes-scan` (runs once).
+
+   For **`heads-up-epi`** on large sheets: epi already uses a complementary section split (A=Section A, B=Section B). Add two more band instances: epi-C at `last_row + 201 + 100` (Section A, bottom half, rows `split_row+1`–end) and epi-D at `last_row + 201 + 150` (Section B, bottom half, rows `split_row+1`–end). Append to epi-C: `Instance scope: Section A only, rows split_row+1–end.` Append to epi-D: `Instance scope: Section B only, rows split_row+1–end.` Apply the adversarial B preamble to epi-D.
+
+   **Wave 2.5 additions for large-sheet C/D pairs**: For each C/D pair spawned in Wave 2, add a corresponding reconcile agent in Wave 2.5. Each C/D reconcile agent receives:
+   - C row range (its allocation)
+   - D row range (its allocation)
+   - Band context note: `"C/D instances audited rows split_row+1–end (bottom half of the sheet). De-duplicate any finding also present in the A/B reconciled set for the same cell — a structural finding about the whole sheet may legitimately appear in both the top-half and bottom-half passes."`
+
+   Add C/D reconcile pairs after all standard Wave 2.5 pairs in the reconcile spawn batch. Announce their count in the Wave 2.5 announcement: `Wave 2.5 reconciliation: [N] standard pairs + [M] large-sheet band-split pairs.`
 
 #### Spawn Wave 1 agents simultaneously (up to 21; fewer based on conditional skips above)
 

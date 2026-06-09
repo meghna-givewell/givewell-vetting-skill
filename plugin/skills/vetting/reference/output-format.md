@@ -63,6 +63,13 @@ Apply the decision tree below in order — stop at the first rule that matches.
 ### Grouping and Sorting
 Sort by sheet (column B), then row number. Where the same issue applies to multiple cells, **group into a single finding** listing all affected cells (e.g., "B14, B18, B22"). Only create separate rows when the issue, explanation, or recommended fix differs meaningfully. Aim for ~15–25 grouped findings rather than 50+ individual entries.
 
+**Mandatory same-root-cause grouping**: Before writing any set of findings, identify groups of candidate findings that share (a) the same root cause AND (b) the same recommended fix. Any group of N ≥ 2 MUST be written as a single finding that lists all affected cells in column C. Lead the Explanation with the pattern description, not the individual cell: "B14, B22, B36: all reference the 'All ages' GBD row instead of the 5–14 age band — same copy-paste error across three geographies." A single finding citing 10 cells is preferable to 10 separate findings. Do not write individual per-cell findings when a pattern finding covers the same ground — the researcher needs to understand the pattern and fix it once, not process N identical recommended fixes.
+
+**Exceptions — keep findings separate when**:
+- The recommended fix differs meaningfully between cells (e.g., one cell should reference row 14, another should reference row 22)
+- Cells are on different sheets and the Explanation would need to describe two distinct contexts to be intelligible
+- Severity differs between cells (e.g., one cell has a documented note rationale that triggers a downgrade; another does not — they cannot share a finding at a single severity)
+
 **Newly-added geography column — missing source batch finding**: When a column represents a newly-added geography and multiple parameters in that column lack cell notes or source citations, file a single grouped Medium finding listing all affected cells rather than one finding per cell. Example wording: "CIV column (J) has N parameters with no source note — newly-added geographies commonly have documentation gaps across the board. Cells: [J16, J34, J92, J135, J146, ...]. Recommend adding a source note or cell note for each before publication." This prevents alert fatigue from 8+ identical Low/H findings that all have the same fix.
 
 Write findings starting at row 2.

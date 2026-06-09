@@ -44,6 +44,16 @@ Read all non-empty rows in the A range and all non-empty rows in the B range fro
 
 Two findings **match** if they reference the same cell or overlapping row range (column A) AND describe the same underlying issue type (column E). Wording differences don't matter — "C48: GBD age group references 'All ages' row" and "C48: wrong age band in Busia column" match. Err toward treating findings as matching rather than distinct.
 
+**Granularity normalization — do this before classifying**: Before moving to Step 3, scan for findings where A and B described the same underlying issue at different granularity levels. Signs of granularity divergence:
+- A has one grouped finding listing cells X, Y, Z while B has three separate findings each covering one of X, Y, or Z (or vice versa)
+- A wrote "B14, B22, B36: same copy-paste error" while B wrote three individual findings for B14, B22, and B36
+
+When granularity divergence exists:
+1. Treat all related findings as a single confirmed issue — do not classify the individual cells as A-only or B-only divergences.
+2. Normalize to the **grouped form** (all cells in one finding) unless the recommended fixes differ meaningfully between cells, in which case keep them separate.
+3. The content of the normalized finding uses the most complete Explanation and Recommended Fix across all component findings.
+4. Apply the grouping rules from `reference/output-format.md` (Grouping and Sorting section): same root cause + same fix → one finding; keep separate only when fixes differ or severities differ.
+
 ---
 
 ## Step 3 — Classify
