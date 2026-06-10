@@ -805,19 +805,13 @@ Run the four steps in order — each must complete before the next begins. Annou
 
 After all agents complete, announce `[Vet complete — Phase 4/4 done]`, then:
 
-**Step 1 — Leave a comment on the source spreadsheet**: Use `create_spreadsheet_comment` to post a comment on cell A1 of each vetted sheet in the **source** workbook (not the output workbook). Content:
-
-> Vetted [date]. Scope: [full / formula-only]. [N] model findings ([H]H / [M]M / [L]L). Findings: [output spreadsheet link]
-
-This gives any future reader of the source workbook immediate context about what was checked and where the results live. Use one `create_spreadsheet_comment` call per vetted sheet.
-
-**Step 2 — Present results to the user**:
+**Step 1 — Present results to the user**:
 
 **Findings Sheet (Google Sheet):** [link]
 
 One-line count: e.g., "13 findings: 2 High, 6 Medium, 5 Low — 4 require researcher input"
 
-**Step 3 — Collect pilot feedback**
+**Step 2 — Collect pilot feedback**
 
 Ask the researcher the following six questions. Present them as a labelled block so they are easy to copy and answer:
 
