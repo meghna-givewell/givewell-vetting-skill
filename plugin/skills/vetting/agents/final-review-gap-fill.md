@@ -92,6 +92,28 @@ Coverage declaration: "Won't Fix verification complete. ID gaps found: [N]. Pair
 
 ---
 
+## Check 4 — Mandatory category coverage declaration
+
+Before writing any new findings, verify that each of the following check categories was covered by at least one agent in this vet — either by a finding in the Findings sheet, or by an explicit "no issues found" statement in an AGENT_COMPLETE marker's column F.
+
+To check: scan the Findings sheet for at least one finding in the relevant error type, OR scan the AGENT_COMPLETE rows (column D = `AGENT_COMPLETE`) for the relevant agent's completion message confirming the check ran. If neither is present, file a gap-fill finding.
+
+**Required coverage categories**:
+
+| Category | Agent expected to cover it | File this if absent |
+|---|---|---|
+| Study data accuracy (cohort, metric type, comparison arm) | `formula-check-data` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration found for study data accuracy (cohort/metric/arm checks). Confirm formula-check-data ran and completed Check 5." |
+| Structural completeness (leverage/funging, Simple CEA, scenario tab) | `formula-check-structure` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for structural completeness checklist. Confirm formula-check-structure ran and completed the mandatory checklist." |
+| Geography/country consistency | `source-data-check` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for geography consistency. Confirm source-data-check ran and completed Check F (if source tabs were present)." |
+| Grant amount consistency | `formula-check-parameters` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for grant amount consistency. Confirm formula-check-parameters ran and completed Check 5." |
+| Formula fragility (DIV/0, negative value guards, IFERROR) | `formula-check-edge-cases` or `formula-check-arithmetic` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for formula fragility / edge case guards. Confirm formula-check-edge-cases ran." |
+
+**Do not file** a gap finding when: (a) the relevant agent's AGENT_COMPLETE row is present and its completion message confirms the check ran; (b) program context contains a declared-intentional deviation that would make the check not applicable; or (c) the workbook has no source data tabs (geography consistency check does not apply).
+
+Coverage declaration: "Category coverage check complete. Categories confirmed covered: [N/5]. Gaps filed: [list of categories or 'none']."
+
+---
+
 ## Writing new findings
 
 Before writing any finding, confirm: (1) exact cell reference(s), (2) specific issue not already covered by a prior finding, (3) precise fix required.

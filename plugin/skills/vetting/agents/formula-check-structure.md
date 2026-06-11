@@ -19,6 +19,33 @@ Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes, hyperlink
 
 ## Step 3b — Program Structure Completeness
 
+**Mandatory structural completeness checklist — run this first**: Before any other check in this section, complete every line below and write a ✓ (present) or ✗ (absent/unclear) for each. "N/A — [reason]" is acceptable only when the item structurally cannot apply (e.g., a non-direct-grant model has no leverage rows by design). A blank or skipped line is not acceptable.
+
+```
+Structural completeness:
+  [ ] Leverage/funging rows: present and wired to the CE output?
+  [ ] Simple CEA tab: present?
+  [ ] Sensitivity/scenario tab: present? Varies key parameters beyond just one?
+  [ ] Actor cost rows: populated (not silently blank)?
+  [ ] Income effects row: present?
+  [ ] Discount rate: documented anywhere in the model?
+```
+
+For each absent item, file as follows — do not skip absent items because they seem obvious:
+- **Leverage/funging rows absent** → **High/H**: "No leverage/funging rows found in this CEA. GW standard methodology for direct grants requires explicit leverage and funging adjustments. Add the standard GW leverage/funging section." CE impact: Raises CE — magnitude unknown (overcounts CE without funging).
+- **Simple CEA tab absent** → **Low/H**: "No Simple CEA tab found. GW convention includes a simplified CE summary for reader accessibility."
+- **Sensitivity/scenario tab absent** → **Low/H**: "No sensitivity or scenario analysis found. Add a tab testing CE under varied key assumptions."
+- **Scenario tab present but only one parameter varies** → **Low/H**: "Scenario tab exists but only [parameter] varies — all other key parameters are held constant. Confirm whether the scenario design is intentional."
+- **Actor cost rows blank → leverage silently zeroed** → **Medium/H**: "Actor cost rows are blank, silently zeroing leverage/funging credit. Populate or explicitly document as zero with a note."
+- **Income effects row absent** → **Low/H**: "No income effects row found. GW standard includes long-run income effects for health interventions. Add with citation to key-parameters.md or document the intentional omission."
+- **Discount rate undocumented** → **Low/H**: "No discount rate documented in any in-scope sheet. Add an explicit discount rate row citing the GW standard."
+
+Do not file structural completeness findings for items explicitly noted as declared-intentional deviations in program context.
+
+Coverage declaration: "Structural completeness checklist complete. Items: leverage/funging [✓/✗], Simple CEA [✓/✗], sensitivity tab [✓/✗], actor cost rows [✓/✗], income effects [✓/✗], discount rate [✓/✗]. Findings filed: [N]."
+
+---
+
 **Missing cost or benefit components**: Compare the model's rows to the source document's structure. For RFMF and cost models, verify all major cost categories present in the source appear as line items in the model (e.g., national management, global strategy/support, indirect costs, reserves). For CEA models, verify all benefit streams mentioned in the grant description appear in the model. A cost or benefit category present in the source document but absent from the model is a Medium finding if the omission is plausible but unconfirmed, High if the missing component is material.
 
 **Transmission effects for infectious disease programs**: When a model covers a program targeting an infectious disease (malaria, HIV, diarrhea, respiratory infections), verify the model includes a benefit stream for transmission effects — the lives saved among individuals NOT directly targeted by the program, due to reduced disease spread. If this stream is absent and the program description suggests transmission reduction is plausible (e.g., ITNs reduce mosquito-biting rates for non-users; antivirals reduce infectivity), flag as Medium/H and ask the researcher to confirm whether transmission effects were considered and quantified, or whether there is a reason they were omitted. Note: transmission effects may be incorporated indirectly (e.g., within the mortality averted estimate rather than as a separate line), so check cell notes before assuming complete omission.
@@ -97,6 +124,22 @@ For each flagged deviation: "[Cell] = X. The GiveWell Vaccination Programs CEA T
 Do not re-flag the GiveDirectly benchmark from Part B — it is already handled by the key-parameters.md check. Skip any parameter from the doc that does not clearly correspond to a named row in the model. For each flagged deviation: "[Cell] = X in this model; the Cross-Cutting CEA Parameters doc (doc #7) currently shows Y. Confirm whether the model's value is intentionally different or should be updated to match."
 
 **Large parameter divergence — source-type investigation**: When the same parameter has values that differ by ≥3× across geographies or implementation contexts within the same workbook (e.g., net loss 1% in one state vs. 26% in another, coverage 40% vs. 85%), verify whether the underlying data sources for each value are of the same type. A large divergence frequently reflects a data-methodology difference — one value sourced from program-reported M&E (distributor counts, facility records, grantee household surveys) and another from an independent household survey — rather than genuine contextual variation. Flag as Medium/H if: (a) the divergence exceeds 3×, (b) the data source types differ across the columns or are unclear, and (c) the cell notes do not explain whether the discrepancy reflects true contextual differences or different measurement approaches. Recommend: document whether the discrepancy was investigated, which source was prioritized and why, and whether the range across contexts should be used for sensitivity analysis. Note: this check is distinct from the inherited-geography check above — that one fires on identical values; this one fires on implausibly large differences.
+
+## Cross-Arm Methodology Consistency
+
+When a model covers multiple treatment arms, severity strata, or patient populations (e.g., strict vs. non-strict malaria treatment, uncomplicated vs. severe, different treatment regimens, multiple age groups), verify that methodology is applied consistently across all arms. Run all four sub-checks for every arm pair in the model.
+
+1. **Efficacy derivation method**: Is the same type of evidence used to derive efficacy for each arm? Flag as **Medium/H** when one arm's efficacy comes from a specific trial sub-cohort (e.g., pediatric-only, a specific geographic subset) while another uses a pooled or different-population estimate, without a cell note documenting the different provenance.
+
+2. **CFR sourcing consistency**: Are case fatality rates sourced from consistent populations across age groups and severity strata? Flag as **Medium/H** when one stratum uses a treated/facility CFR while another uses a population-level or untreated CFR, without documentation distinguishing them. A 37.5% CFR applied uniformly across age groups when the underlying study enrolled only one age group is the canonical example.
+
+3. **Aggregation method consistency across tabs**: Is the same aggregation method (e.g., SUM, population-weighted average, unweighted average) used for equivalent calculations across tabs modeling the same program? Flag as **Medium/H** when one tab uses additive combination for leverage/funging while another uses multiplicative combination for the same parameters, producing a different bottom-line CE.
+
+4. **IV/EV adjustment symmetry**: Are internal validity and external validity adjustments applied symmetrically to analogous arms? Flag as **Low/H** when an IV/EV discount is applied to one treatment arm but not to a parallel arm using the same trial source, without a note explaining the asymmetry.
+
+Coverage declaration: "Cross-arm consistency check complete. Arm/strata pairs reviewed: [N]. Issues found: [list or 'none']. No other cross-arm methodology issues."
+
+---
 
 **Orphaned calculation rows — computed but unreferenced**: After reading all formulas in the vetted sheet(s) in FORMULA mode, scan for rows that meet all three of: (a) the primary value cell contains a formula (not a hardcoded input), (b) the row label describes an intermediate result rather than a named input (i.e., the label doesn't say "input," "assumption," or "from [source]"), and (c) the cell address does not appear in any other formula string across the vetted sheet(s).
 

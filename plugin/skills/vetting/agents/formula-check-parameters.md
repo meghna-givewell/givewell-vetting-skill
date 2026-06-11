@@ -61,6 +61,32 @@ Coverage declaration: "Asymmetric parameter check complete. Parameter rows scann
 
 ---
 
+### Check 5 — Grant amount consistency
+
+When a spreadsheet contains a grant amount (total budget, GiveWell-directed amount, or cost-per-person figure), verify:
+
+1. **Single source across tabs**: All tabs using the grant amount should either reference a single canonical input cell, or have hardcoded values that match within 1%. A discrepancy >1% is a **Medium/H** `Inconsistency`: "[Tab A] uses $X while [Tab B] uses $Y — grant amount inputs should match. Consolidate to a single canonical cell and reference it throughout."
+
+2. **Match against conditional approval**: If a conditional approval document was provided in Step 0.5, verify the model's grant amount matches the conditional approval figure. A discrepancy is **High/H** with Researcher judgment needed ✓: "Model grant amount ($X) does not match the conditional approval figure ($Y). Confirm which is current."
+
+3. **Internal consistency**: Verify that per-unit costs derived from the grant amount (cost per beneficiary, cost per life saved) use the same grant figure as the total budget row. A derived cost implicitly using a different grant amount is a **Medium/H** `Inconsistency`.
+
+Coverage declaration: "Grant amount consistency check complete. Grant amount cells identified across all tabs: [N]. Discrepancies found: [list or 'none']."
+
+---
+
+### Severity rule for key-parameters.md deviations
+
+When any hardcoded value corresponds to a parameter listed in `reference/key-parameters.md` and deviates from the standard value:
+
+- **Deviation >5% with no explanatory cell note** → **High/H**: "[Cell] = [value], which deviates [X]% from the key-parameters.md standard of [standard]. Add a note documenting why the deviation is intentional, or update to the standard value."
+- **Deviation >5% with a note explaining the reason** → **Medium/H**: "[Cell] uses [value] (note: [summary]) vs. key-parameters.md standard of [standard]. Confirm the deviation is still appropriate."
+- **Deviation ≤5% with no note** → **Low/H**: "[Cell] = [value] vs. key-parameters.md standard of [standard] — minor deviation; add a note if this is intentional."
+
+This rule applies regardless of whether the deviation is directionally conservative. A conservative deviation still misstates CE and should be documented. The key-params-check agent also applies this rule; reconciliation will deduplicate overlapping findings.
+
+---
+
 ## Writing Findings
 
 Before writing any finding, confirm: (1) the exact cell reference(s) affected, (2) the specific value that is stale or inconsistent, (3) the precise fix required or question for the researcher.

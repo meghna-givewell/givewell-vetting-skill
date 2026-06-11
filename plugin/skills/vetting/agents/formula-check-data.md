@@ -118,6 +118,36 @@ Coverage declaration: "Downstream re-computation check complete. Summary/aggrega
 
 ---
 
+## Check 5 — Study data accuracy: cohort, metric type, and comparison arm
+
+For every hardcoded value sourced from a study (identified by an external URL or citation in the cell note), verify three things before accepting the value as correct:
+
+1. **Correct cohort**: Is the value drawn from the cohort the model actually requires? Common errors:
+   - Using a non-intervention arm rate as the baseline when the model needs the general-population baseline (e.g., applying a non-KMC arm neonatal mortality rate as if it represents untreated LBW infants generally)
+   - Using a subgroup rate (e.g., 1500–1999g LBW subgroup) when the model requires the all-LBW rate
+   - Using a pediatric-only cohort estimate for a parameter the model applies across all age groups
+
+2. **Correct metric type**: Is the value the right unit for how the model uses it? Common errors:
+   - A per-100-person-years *rate* used where a cumulative *probability* is required (e.g., 33.1 per 100 person-years ≠ 33.1% cumulative probability — the correct conversion requires the formula `1 − e^(−rate/100)`)
+   - A case fatality rate (proportion of presenting cases that die) used where an annual mortality rate (proportion of at-risk population that dies per year) is needed
+   - A rate-based relative risk applied directly as a probability reduction
+
+3. **Correct comparison arm**: Does the study's comparator match the counterfactual the model is modeling? Common errors:
+   - Using an estimate from a treated/intervention cohort as the untreated baseline
+   - Using a composite-package efficacy (e.g., a care bundle including drug + nursing + supportive care) and attributing the full effect to one component
+   - Using an effect from a specific severity stratum (e.g., severe malaria only) and applying it across all severity levels
+
+**Severity calibration**:
+- Confirmed mismatch with material CE impact (>5%) → **High/D**
+- Plausible mismatch but uncertain without researcher context → **Medium/H** with Researcher judgment needed ✓
+- Minor difference unlikely to affect CE materially → **Low/H**
+
+Before filing a High/D: retrieve and read the cited source to confirm the mismatch. Do not file High/D based solely on the cell note description.
+
+Coverage declaration: "Study data accuracy check complete. Cells with study citations reviewed: [N]. Cohort mismatches: [list or 'none']. Metric type mismatches: [list or 'none']. Comparison arm mismatches: [list or 'none']. No other issues of this type."
+
+---
+
 ## Writing Findings
 
 Before writing any finding, confirm: (1) exact cell reference(s), (2) specific discrepancy (what the cell stores vs. what the source shows), (3) precise fix required.
