@@ -52,6 +52,13 @@ When a cell note cites a data vintage more than 2 years before the model's grant
 
 ---
 
+### FN-003 (2026-06) — WebFetch required for any source with ≥5% weight in a weighted average
+When a parameter is a weighted-average input with weight ≥5%, attempt WebFetch on the source URL before filing or classifying the finding. Without fetching: a wrong subgroup looks like an undocumented assumption (Medium at best); a methodology mismatch (rate vs. proportion) looks like a plausibility concern (Low or Medium). With fetching: the same issues become confirmed errors (High). Filing a finding without fetching on a ≥5% input is under-severity by default.
+
+**Applies to**: formula-check-data, source-data-check, key-params-check
+
+---
+
 ## Severity and Scope Calibrations
 
 ### SC-001 (2026-04) — Benchmark parameter findings are valid regardless of vet timing
@@ -65,6 +72,51 @@ Never downgrade a benchmark finding because the spreadsheet was built before the
 The "xCash" → "benchmark" and "GiveDirectly" → "benchmark" terminology requirement applies to all GiveWell workbooks, including internal BOTECs and working documents. Do not downgrade or omit these findings on the grounds that the document is internal or not intended for publication. The terminology policy (November 2025) applies to GiveWell workbooks generally.
 
 **Applies to**: readability, notes-scan
+
+---
+
+### SC-003 (2026-06) — Parameter in the direct CE chain → High even when CE impact is not quantified
+The severity rule already states: "When impact is unknown but the affected parameter sits in the confirmed direct CE calculation chain, treat as High." Apply this before concluding "Direction unknown" or filing Low. Confirm the chain by tracing from the affected cell to the final CE output. If confirmed, file High regardless of whether you can quantify the impact.
+
+Example: Mengstie et al 2025 C20 = 33.1% per 100 person-years used as a cumulative probability. C20 → weighted average C21 → baseline mortality CEA!B11 → mortality reduction B13 → final CE B36: direct chain confirmed. File High, not Low.
+
+**Applies to**: all formula-check and source-check agents
+
+---
+
+### SC-004 (2026-06) — Wrong subgroup from source paper → High; requires WebFetch to confirm
+When a source paper reports multiple subgroup estimates, WebFetch the paper and confirm which subgroup the model uses before classifying severity. If the model uses a narrower, higher-mortality subgroup when the program serves a broader population, this is a confirmed error → High if the parameter is in the CE chain.
+
+Example: Kumar et al 2025 C16 = 8% is the 1500–1999g subgroup mortality. WebFetch confirmed the all-LBW (<2500g) rate in the same study is 4.2% — a 1.9x overstatement. C16 carries 7.5% weight and feeds the CE chain → High.
+
+**Applies to**: formula-check-data, source-data-check
+
+---
+
+### SC-005 (2026-06) — Methodology mismatch in a weighted-average input → at least Medium
+When a weighted-average row uses a metric that doesn't match the methodology of the other rows (e.g., perception-based vs. clinically measured), file at least Medium. WebFetch to confirm → High if in CE chain.
+
+Example: NFHS-5 C15 = 3.27% is drawn from "Small babies" (NFHS-5 Table 7.3) — a mother's perception-based size category, not a clinically measured LBW (<2500g) neonatal mortality rate. The value is substantially lower than all clinical estimates in the table because the perception category captures borderline cases a clinical threshold would exclude. 10% weight, in CE chain → Medium without WebFetch, High after confirming the source table.
+
+**Applies to**: formula-check-data, source-data-check
+
+---
+
+### SC-006 (2026-06) — Formula robustness (DIV/0 guards) with no current CE impact → Low; group all instances
+Formula robustness findings (missing IFERROR guards, unguarded divisions, formulas that go negative under extreme inputs) are Low when the dangerous condition cannot occur with current parameter values. Group all instances into a single Low finding listing all affected cells — do not create separate findings per formula.
+
+Example: =1-B12/B11 goes negative only if treatment mortality exceeds counterfactual mortality. Current values (8.1% treatment, 9.38%–20% counterfactual) prevent this. File one grouped Low: "Formulas B13, C13, D13, B25, B26 have no IFERROR guard — safe at current values but will break if inputs are zeroed during editing." Not five separate Low findings.
+
+**Applies to**: formula-check-arithmetic, formula-check-edge-cases
+
+---
+
+### SC-007 (2026-06) — Value matching a study subgroup or arm may be intentional → High with Researcher judgment needed ✓
+When a source value matches a specific subgroup or intervention arm rather than the overall population, the model may have intentionally used that subgroup as its counterfactual. Both an error interpretation and an intentional-choice interpretation may be plausible. File High with Researcher judgment needed ✓, describe both interpretations in the Explanation, and do not downgrade to Low on the grounds the value might be intentional.
+
+Example: Thomas et al 2024 C17 = 51% = mortality among non-KMC-initiated babies (172/336 non-initiated). The overall LBW mortality in the same study was 18% (213/1,152). Either (a) sourcing error — model should use overall population baseline; or (b) intentional — researcher chose the non-KMC arm rate as the counterfactual for what happens without intervention. Selection effects (sicker babies may have been excluded from KMC) make (b) methodologically suspect, but it is a defensible modeling choice. File High with Researcher judgment needed ✓, explaining both readings.
+
+**Applies to**: formula-check-data, source-data-check, formula-check-arithmetic
 
 ---
 
