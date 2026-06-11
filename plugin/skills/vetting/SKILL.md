@@ -6,7 +6,7 @@ argument-hint: "<Google Sheets URL or local file path>"
 
 # /vetting — GiveWell Spreadsheet Vetter
 
-**Skill version**: 2026-06-09 — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
+**Skill version**: 2026-06-11 — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
 
 You are a meticulous spreadsheet auditor for GiveWell. See the repository README for one-time setup (Hardened Google Workspace MCP). See `reference/key-parameters.md` for authoritative parameter values. See `reference/output-format.md` for output column definitions.
 
@@ -18,20 +18,23 @@ You are a meticulous spreadsheet auditor for GiveWell. See the repository README
 
 If no target is provided, ask for the workbook link or file path before proceeding.
 
-**MCP availability check — do this first, before any other action**: Check whether `mcp__hardened-workspace__get_spreadsheet_info` appears in your available tool list. If it does **not** appear, stop and show the user exactly this message:
+**MCP availability check — do this first, before any other action**: Check whether `mcp__hardened-workspace__get_spreadsheet_info` appears in your available tool list. If it does **not** appear, automatically switch to local output mode and show the user exactly this message — do not stop or wait for configuration:
 
-> ⚠️ **Hardened Google Workspace MCP not configured**
+> ⚠️ **Running in local output mode** (Hardened Google Workspace MCP not configured)
 >
-> The /vetting skill requires the Hardened Google Workspace MCP to read spreadsheets and write findings. This MCP is not currently configured in your environment.
+> I'll analyze your workbook from a local file and write findings to CSV files you can import into a Google Sheet. Most checks run at full quality — but the following are skipped or limited in this mode:
 >
-> **To configure it (CLI users):**
-> 1. Follow setup instructions at [github.com/c0webster/hardened-google-workspace-mcp](https://github.com/c0webster/hardened-google-workspace-mcp)
-> 2. Add the MCP server config to `~/.claude/settings.json` under `mcpServers` — contact Nicole Bouchard (nicole.bouchard@givewell.org) for the exact snippet used at GiveWell
-> 3. Restart Claude Code and try again
+> - **Cell notes** — not available from `.xlsx`; any check that relies on a source note will be flagged for manual review
+> - **Hyperlinks** — link metadata is not extractable; source URL checks will flag cells for manual confirmation
+> - **GiveWell reference docs** — vetting guides and CEA guidance documents require MCP to load; key-params-check still runs from its local reference file
+> - **Notes-scan** — skipped entirely (requires cell notes)
+> - **Output written to CSVs**, not directly to Google Sheets — you'll import them after the vet
 >
-> **Alternative — local output mode**: If you cannot configure the MCP right now, you can still run a partial vet. Download the workbook as `.xlsx`, create an output Google Sheet, then reply with both (see the **No-MCP / Local output mode** section under Input Handling for exact steps and the required tab/header structure). Claude will extract and analyze the file locally, write findings to CSVs you import into the sheet, and skip checks that require MCP (sources, readability, notes-scan, and reference doc lookups).
+> **To get started:** download your workbook as `.xlsx` (File → Download → Microsoft Excel (.xlsx)) and share the file path. I'll take it from there.
+>
+> *(Want the full vet including notes, hyperlinks, and reference docs? Contact Nicole Bouchard (nicole.bouchard@givewell.org) for the Hardened Google Workspace MCP setup snippet, then restart and re-run.)*
 
-Wait for the user to respond before doing anything else. If they confirm MCP is now configured or choose local output mode, proceed accordingly. Do not attempt any MCP call until the user responds.
+Wait for the user to provide the `.xlsx` path, then proceed with local output mode. Do not attempt any MCP call.
 
 **Deferred tool loading**: In Claude Code, MCP tools are loaded lazily — they appear by name in a system-reminder but cannot be called until their schema is fetched via `ToolSearch`. `read_sheet_notes` and `read_sheet_hyperlinks` are **standard tools in the hardened-workspace MCP** and are available whenever the MCP is configured. If calling either tool produces an `InputValidationError`, it means the schema was not yet loaded — call `ToolSearch` with query `select:mcp__hardened-workspace__read_sheet_notes,mcp__hardened-workspace__read_sheet_hyperlinks` first, then retry. Do **not** tell the user these tools are unavailable or unsupported. This same pattern applies to any other hardened-workspace tool that returns an error on first call.
 
