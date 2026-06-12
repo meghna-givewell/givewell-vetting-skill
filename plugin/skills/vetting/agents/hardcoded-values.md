@@ -81,14 +81,28 @@ This step is required — do not skip it even if the output-setup step already a
 
 ---
 
+## Step 3 — Coverage cross-check
+
+After all rows are written to the Hardcoded Values sheet, verify your scan was complete:
+
+1. Call `get_spreadsheet_info` to retrieve the total populated row count for each vetted sheet.
+2. Compare the total populated rows against the count of rows you scanned in FORMULA mode during Step 1.
+3. If the scanned count is more than 5 rows less than the sheet's populated row count, identify which row range was skipped and re-read it in FORMULA mode before writing the completion marker.
+
+Write in your reasoning before proceeding: "Coverage cross-check: [sheet name] — `get_spreadsheet_info` reports [N] populated rows; FORMULA scan covered [M] rows. Gap: [N-M] rows. [Confirmed complete / Re-read rows X–Y]."
+
+This cross-check guards against silent truncation from batch read limits — the MCP tool returns at most 50 rows per call, and a missed batch can leave whole sections unscanned.
+
+---
+
 ## Final step — write completion marker
 
-After all rows are written and conditional formatting is applied, add ONE final row to the Hardcoded Values sheet at the next available row after all enumerated entries. This is the absolute last action you take before finishing.
+After all rows are written, conditional formatting is applied, and the coverage cross-check is complete, add ONE final row to the Hardcoded Values sheet at the next available row after all enumerated entries. This is the absolute last action you take before finishing.
 
 Write the row with:
 - Column A: `AGENT_COMPLETE`
 - Column E: `hardcoded-values`
-- Column F: `Enumerated [N] hardcoded parameters across [sheet name(s)].`
+- Column F: `Enumerated [N] hardcoded parameters across [sheet name(s)]. Coverage cross-check: [M] rows scanned vs. [K] populated rows per get_spreadsheet_info. [Confirmed complete / N rows rescanned].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The reconciliation agent detects this row to confirm the agent completed normally. This row is excluded before presenting the sheet to researchers.

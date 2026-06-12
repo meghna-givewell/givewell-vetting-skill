@@ -69,11 +69,39 @@ Load the Cross-Cutting CEA Parameters doc (`1ru1SNtgj0D9-vLAHEdTM27GEq_P17ySzG-a
 
 If no declared-intentional deviations exist in session context, skip this step.
 
+**Mandatory check log — write this before filing any findings.** For each item below, write `ran: [brief result or finding cell]` or `n/a: [one-word reason — e.g., no-VOI, not-TA]`. A blank or placeholder entry is not acceptable — it means the check was not considered. The log must be complete before any findings are written to the sheet.
+
+```
+Consistency-check log:
+
+Cross-parameter:
+  study-derived parameter row consistency [___]
+  unit consistency check [___]
+
+GiveWell parameters:
+  cross-vet parameter consistency — Cross-Cutting CEA doc loaded [___]
+  benchmark and final CE rows [___]
+  moral weights numeric verification — Moral Weights doc loaded [___]
+  moral weights bounds guard [___]
+  declared-intentional deviation verification [___]
+
+VOI/Optionality (run only when VOI detected):
+  VOI structural completeness check [___]
+  VOI parameter deviation check [___]
+  optionality/VoI structural conformance check [___]
+
+TA-specific (run only for TA BOTECs):
+  TA discount rate by benefit stream [___]
+  TA discount rate numerator/denominator symmetry [___]
+```
+
 ---
 
 ## Writing Findings
 
-Before writing any finding, confirm you can answer all three of these: (1) the exact cell reference(s) affected, (2) the specific parameter that deviates and the authoritative value it should match, and (3) the precise fix required. A finding that flags a deviation without naming the cell and the expected value is not complete.
+Before writing any finding, confirm you can answer all three of these: (1) the exact cell reference(s) affected, (2) the specific parameter that deviates and the authoritative value it should match, and (3) the precise fix required.
+
+**Before filing an Assumption-type finding**: For each finding you are about to file as an Assumption (where the value may be intentional rather than wrong), ask: "What would a researcher who trusts this value point to as their evidence?" Write it as a single sentence in your reasoning before deciding whether to file (e.g., "Strongest defense: the VOI template default was updated after this model was built"). Only after writing that sentence, test it against the available evidence. If the defense holds up even partially, downgrade severity or mark Researcher judgment needed ✓ rather than filing Medium or High. If it fails, file with confidence. Do not skip this step for Assumption findings — the alternative is filing questions as errors. A finding that flags a deviation without naming the cell and the expected value is not complete.
 
 **Your row start position is pre-assigned in session context** — do not read existing rows to auto-detect position. Append findings using `modify_sheet_values`. Column reference: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | **J** Status (leave blank)
 See `reference/output-format.md` for full column definitions. **Group findings by issue type**: when the same issue applies to multiple cells, file one finding listing all affected cells in column B (e.g., `B4, B7, B11`), not one row per cell. Exhaustive checking is still required — find every instance — but write one consolidated row per issue type.

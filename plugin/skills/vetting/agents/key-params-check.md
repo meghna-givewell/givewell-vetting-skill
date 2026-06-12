@@ -131,12 +131,14 @@ See `reference/output-format.md` for full column definitions.
 
 ## Final step — write completion marker
 
+**Do not write the AGENT_COMPLETE marker** until the Key-params coverage log above is fully complete — every applicable parameter must have a result entry (not blank or `[___]`). A blank entry means the check was not run, not that the parameter is n/a. If any applicable parameter in the log is blank, complete the check before writing the completion marker. The gap-fill agent verifies the coverage log count in column F of the AGENT_COMPLETE row.
+
 After all findings are written and all other steps are complete, write ONE final row to the Findings sheet at the next available row within your allocated range (or at the first row of your allocated range if no findings were written). This is the absolute last action you take before finishing.
 
 Write the row with:
 - Column B: `key-params-check`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Checked [N] parameters across [sheet name(s)]. Filed [K] findings. Row allocation: [start]–[end].`
+- Column F: `Checked [N] parameters across [sheet name(s)]. Coverage log complete: [N] of [M] applicable parameters logged (M = number of parameters applicable to this program type). Filed [K] findings. Row allocation: [start]–[end].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure.
