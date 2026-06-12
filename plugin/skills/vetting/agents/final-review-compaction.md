@@ -10,7 +10,7 @@ You are performing Step 10a of a GiveWell spreadsheet vet. This is the first of 
 
 Before reading or modifying anything, write the following in your reasoning:
 
-> Pre-compaction state: No rows have been read or modified yet. Will read Findings sheet in 50-row batches (A2:J51, A52:J101, A102:J151, … continuing until two consecutive empty batches) and Publication Readiness in 50-row batches (A2:F51, A52:F101, … continuing until two consecutive empty batches). If compaction fails partway through, this declaration establishes the pre-compaction state.
+> Pre-compaction state: No rows have been read or modified yet. Will read each staging tab listed in session context (stg-arith-A through stg-rec-ceta) in full, then route and merge all findings. The Findings sheet and Publication Readiness sheet are currently empty (written only by this compaction agent). If compaction fails partway through, this declaration establishes the pre-compaction state.
 
 This declaration serves as a checkpoint. If the rewrite step fails mid-execution (e.g., an MCP error after partial writes), it confirms that the original data had not yet been overwritten as of Step 0.
 
@@ -24,33 +24,54 @@ This declaration serves as a checkpoint. If the rewrite step fails mid-execution
 
 ## Step 1 — Read all rows
 
-**Row filtering — apply while reading, before any further processing**: Three types of non-finding rows must be excluded from all subsequent steps (routing, deduplication, sorting, ID assignment). Filter them out as you read:
-1. **Divider rows**: column D is empty AND column B contains `───`
+**Row filtering — apply while reading, before any further processing**: Four types of non-finding rows must be excluded from all subsequent steps (routing, deduplication, sorting, ID assignment). Filter them out as you read:
+1. **Header rows**: row 1 of each staging tab (the column label row written during output setup).
 2. **Completion marker rows**: column D = `AGENT_COMPLETE`
-3. **Meta-findings about the vetting process**: Any row whose Explanation (column F) or Error Type (column E) references the vetting pipeline itself — e.g., "agent," "Instance A," "Instance B," "readability agent," "vetting process," "this agent," "pipeline," or any description whose subject is how the vet was conducted rather than the model being vetted. These are process quality observations, not model findings. Discard them entirely.
+3. **Won't Fix rows**: column J (Status) = `WONT_FIX` — these rows were marked by a reconcile agent as invalid findings; exclude them entirely.
+4. **Meta-findings about the vetting process**: Any row whose Explanation (column F) or Error Type (column E) references the vetting pipeline itself — e.g., "agent," "Instance A," "Instance B," "readability agent," "vetting process," "this agent," "pipeline," or any description whose subject is how the vet was conducted rather than the model being vetted. These are process quality observations, not model findings. Discard them entirely.
 
 Completion marker rows are written by Wave 2 agents as their final action to signal a clean run. They are metadata, not findings. Do not route, deduplicate, sort, or assign IDs to them — discard them entirely after noting their presence in your coverage declaration.
 
-Read the Findings sheet in **50-row batches**: `A2:J51`, `A52:J101`, `A102:J151`, and so on in 50-row increments. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Continue until two consecutive batches return no non-empty rows.
+Read each staging tab listed in your session context. The session context provides the full list of staging tab names (all stg-* tabs created during output setup). For each tab, call `read_sheet_values` with range `{tab_name}!A1:J500` — adjust the upper bound upward if any tab might exceed 500 rows. Read all tabs before taking any further action.
 
-**Do not stop after one empty batch.** Buffer zones between pre-allocated agent ranges produce empty batches in the middle of the sheet — data may resume after a gap. Stop only after two consecutive empty batches.
+**Session context staging tab list**: If the full staging tab list is not in session context, read Dashboard cell A99 onward of the output spreadsheet to recover the staging sheet log (written during output setup).
 
-After each batch completes, write the line: `"Batch [N] (rows [start]–[end]): [X] non-empty rows found."` Do this before reading the next batch. If you proceed to processing without reading until two consecutive empty batches, you will silently miss findings — and GiveWell may act on an incomplete vet.
+After reading each tab, write: `"Tab [tab_name]: [X] non-empty rows found (excluding header row 1)."` Do this after each tab read.
 
-Read the Publication Readiness sheet the same way: `A2:F51`, `A52:F101`, `A102:F151`, continuing in 50-row increments until two consecutive batches return no non-empty rows.
+The Findings sheet and Publication Readiness sheet should be empty at this point — all findings are in the staging tabs. Do not read the Findings or Publication Readiness sheets in Step 1.
 
-Coverage declaration: "Read complete. Findings: [N] batches read, total non-empty rows: [N] ([X] divider rows, [Y] AGENT_COMPLETE markers, [Z] finding rows). Completion markers present for: [list agent names or 'none found']. Publication Readiness: [M] batches read, [M] total non-empty rows."
+Coverage declaration: "Read complete. Staging tabs read: [N]. Total non-empty rows across all tabs: [N] ([X] header rows, [Y] AGENT_COMPLETE markers, [Z] WONT_FIX rows, [W] finding rows). Completion markers present for: [list agent names or 'none found']."
+
+---
+
+## Step 1.5 — Create backup before writing
+
+Before making any modification to the Findings sheet or Publication Readiness sheet, create a backup of the Findings sheet data you just read. This preserves a recoverable state if the rewrite step fails mid-execution.
+
+1. Call `ToolSearch` with query `select:mcp__hardened-workspace__create_sheet` to ensure the tool schema is loaded.
+2. Call `mcp__hardened-workspace__create_sheet` to add a tab named `Findings_backup` to the output spreadsheet. If the tool returns an error indicating the tab already exists (e.g., from a prior partial run), skip creation — the existing backup remains available.
+3. Use a single `modify_sheet_values` call to write a header row and all [W] finding rows (excluding AGENT_COMPLETE markers, WONT_FIX rows, and header rows) from your Step 1 read into `Findings_backup`, starting at row 1. Header row: `Finding # | Sheet | Cell/Row | Severity | Error Type/Issue | Explanation | Recommended Fix | Estimated CE Impact | Researcher judgment needed | Status`.
+4. Announce: `✓ Backup complete: [Z] finding rows written to Findings_backup tab.`
+
+If `create_sheet` cannot be called after one ToolSearch retry, announce: `⚠️ Backup skipped — could not create Findings_backup tab. Proceeding with compaction; if interrupted, original data may be lost.` and continue to Step 2.
+
+Coverage declaration: "Step 1.5 complete. Findings_backup tab [created / already existed — skipped creation]. [Z] finding rows written. Source sheets unchanged."
 
 ---
 
 ## Step 2 — Route misrouted rows
 
-Check each row:
+**Apply routing in this exact priority order — stop at the first match:**
+1. **Error Type = `Adjustment`** → Findings, regardless of CE impact value or documentation status. Adjustment scope errors are model-integrity issues by definition. A blank CE impact column means unknown, not zero.
+2. **Error Type = `Formula`, `Parameter`, or `Assumption`, AND column H is populated (not blank)** → Findings.
+3. **Column H is blank or "No CE impact" AND the Explanation describes only a documentation gap** (the recommended fix is: add a source note, add a cell note, fix a label, update a broken link, change terminology) → Publication Readiness. **Exception: Error Type = `Adjustment` is never routed to Publication Readiness under rule 3, even with blank column H — it stays in Findings.**
+4. **All other cases** → Findings. When in doubt, leave in Findings.
+
+Check each row using the priority above, then apply these additional rules:
 - Findings sheet rows whose **sole** issue is citation format, link permissions, terminology, labeling, or style (no model impact) → move to Publication Readiness.
 - Findings sheet rows where **Estimated CE Impact (column H) is blank or "No CE impact"** AND the explanation describes only a documentation gap (missing source, missing cell note, missing label) → move to Publication Readiness. A finding that does not change CE and only recommends adding a note belongs in Publication Readiness regardless of how its Error Type is worded.
 - Publication Readiness sheet rows that affect model outputs or interpretation → move to Findings.
-- **Adjustment and double-count findings always stay in Findings** — never route an `Adjustment` finding to Publication Readiness on the basis of "No CE impact" or a blank CE impact column. Adjustment double-counts and scope errors are model-integrity issues by definition; their CE impact is often non-zero but hard to quantify at the time of filing. A blank CE impact column for an Adjustment finding means the impact is unknown, not zero — leave it in Findings with "Direction unknown" in column H.
-- When in doubt, leave in Findings.
+- **Adjustment and double-count findings always stay in Findings** — never route an `Adjustment` finding to Publication Readiness on the basis of "No CE impact" or a blank CE impact column. A blank CE impact column for an Adjustment finding means the impact is unknown, not zero — leave it in Findings with "Direction unknown" in column H.
 
 **Column remapping when moving Findings → Publication Readiness**: The Findings sheet has 10 columns (A–J); the Publication Readiness sheet has exactly 6 (A–F). When moving a row, remap as follows — do not copy extra Findings columns into PR:
 - PR A (Finding #): leave blank
@@ -86,7 +107,9 @@ When duplicates are found: keep the finding with the more complete Explanation a
 
 After this pass, write: "Semantic consolidation complete. [N] root-cause/symptom pairs consolidated. [M] same-parameter multi-cell groups consolidated."
 
-**Synthesis false-positive guard**: After deduplication and consolidation, scan for any finding whose Explanation (column F) contains language suggesting it was assembled by combining signals from two agents rather than directly observed — phrases like "both instances flagged," "A noted X while B noted Y," "combining these observations suggests," or any claim at High/D severity that is not supported by a specific cell value read in FORMULA or FORMATTED_VALUE mode. For each such finding: (a) if you can verify the claim by calling `read_sheet_values` on the referenced cell — do so now, and either confirm the finding (retain at its severity) or downgrade it; (b) if the claim cannot be verified without reading the source spreadsheet — downgrade to Medium/H with Researcher judgment needed ✓ and add to the Explanation: "Synthesized from two partial agent observations — researcher to confirm before treating as confirmed error." Do not retain a High/D synthesized finding that was not directly verified. Rationale: the compaction agent in a prior vet elevated a Low observation to High/D by combining two partial signals, producing a false positive that the human vet did not catch — and which caused the researcher to distrust the adjacent real findings.
+**High-severity protection during consolidation**: When consolidating findings at different severities (root-cause/symptom grouping or same-parameter multi-cell grouping), always retain the higher severity. Any downgrade from High → Medium during consolidation must be documented with a specific evidentiary reason in column F (e.g., "CE impact computed as 1.3%, below 2% threshold; downgraded to Medium"). Do not downgrade based on scope judgment ("this is a documentation issue") without verifying the CE chain impact is truly <2%. If the CE impact cannot be computed, retain High.
+
+**Synthesis false-positive guard**: After deduplication and consolidation, scan for any finding whose Explanation (column F) contains language suggesting it was assembled by combining signals from two agents rather than directly observed — phrases like "both instances flagged," "A noted X while B noted Y," "combining these observations suggests," or any claim at High/D severity that is not supported by a specific cell value read in FORMULA or FORMATTED_VALUE mode. For each such finding: downgrade to Medium/H with Researcher judgment needed ✓ and add to the Explanation: "Synthesized from two partial agent observations — researcher to confirm before treating as confirmed error." Do not attempt to verify by reading the source spreadsheet — this agent's scope restriction prohibits reading source spreadsheet values. The final-review-validation agent (Step 10c) performs source-value verification on all High/D findings; flag synthesized findings as Medium/H so the validation agent can re-examine them with full source-read access. Rationale: the compaction agent in a prior vet elevated a Low observation to High/D by combining two partial signals, producing a false positive that the human vet did not catch — and which caused the researcher to distrust the adjacent real findings.
 
 Coverage declaration: "Deduplication complete. [N] exact duplicates merged. [See semantic consolidation above.] Synthesis guard: [M] unverified High/D findings downgraded. No other duplicates found."
 
@@ -94,7 +117,7 @@ Coverage declaration: "Deduplication complete. [N] exact duplicates merged. [See
 
 ## Step 3.3 — Researcher-to-confirm audit
 
-Count all rows with ✓ in column I. If the ✓ count exceeds 20% of all findings rows, apply the following triage pass before proceeding to Step 3.5.
+Count all rows with ✓ in column I. If the ✓ count is **strictly greater than 20%** of all findings rows (✓ count / total findings > 0.20; at exactly 20%, skip this step), apply the following triage pass before proceeding to Step 3.5.
 
 For each ✓ row, ask: **can this question be answered by (a) reading another cell or formula in the spreadsheet, (b) checking a cited URL, or (c) applying standard GW methodology documented in key-parameters.md or GW guidance?** If yes to any of these, the ✓ mark should not have been filed — the agent had enough information to either confirm or dismiss the finding without researcher input.
 
@@ -121,13 +144,15 @@ Before rewriting, scan every row in memory and normalize the Error Type/Issue fi
 
 If a value does not match any recognized label, keep it as-is and flag it in your coverage declaration so it can be reviewed.
 
-Coverage declaration: "Label normalization complete. Findings: [N] labels normalized. Publication Readiness: [M] labels normalized. Unrecognized labels: [list or 'none']."
+**Findings sheet column I (Researcher judgment needed) normalization**: Scan every Findings row for any of the following variants in column I and replace each with `✓`: `YES`, `Yes`, `yes`, `Y`, `True`, `true`, `X`, `x`. Leave blank values blank — do not change them. Flag any other non-blank, non-`✓` value in the coverage declaration.
+
+Coverage declaration: "Label normalization complete. Findings: [N] labels normalized. Publication Readiness: [M] labels normalized. Column I: [N] variants normalized to ✓. Unrecognized labels: [list or 'none']. Unrecognized column I values: [list or 'none']."
 
 ---
 
 ## Step 4 — Rewrite and sort both sheets
 
-Rewrite both sheets sequentially from row 2, closing all gaps left by Wave 2's pre-allocated row ranges.
+Rewrite both sheets sequentially from row 2. The Findings sheet and Publication Readiness sheet are initially empty (all findings were in staging tabs until this step) — write directly from row 2 with no gaps to close.
 
 Sort all Findings rows in memory using four sort keys:
 1. **Primary**: Severity (High → Medium → Low)

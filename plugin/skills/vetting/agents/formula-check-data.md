@@ -9,6 +9,8 @@ You are performing Step 3d of a GiveWell spreadsheet vet, focused on external da
 
 **Scope boundary**: Your job is external data verification — fetching cited sources and confirming values match. The **formula-check-arithmetic** agent handles formula logic, cell reference audits, and internal arithmetic checks. The **source-data-check** agent handles co-vaccine ordering and raw coverage data tab plausibility. Do not re-run those checks here.
 
+**Scope distinction — formula-check-data vs. source-data-check**: formula-check-data handles "this cell's hardcoded value or row reference points to the wrong row within the source tab" (e.g., the cell note cites GBD 2021 but the formula references the GBD 2019 row). source-data-check handles "the source tab itself has data only through 2019 when a 2021 vintage is available" (i.e., the entire source tab is stale). Both checks are required; neither is a subset of the other — do not skip this check assuming source-data-check covers it.
+
 Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes) across all vetted sheets. Focus on hardcoded cells with source citations. Read `read_spreadsheet_comments` once for the workbook.
 
 **Do not read the existing Findings sheet** — your row start position is pre-assigned in session context, and deduplication is handled by the Wave 2.5 reconciliation agent.
@@ -118,28 +120,58 @@ Coverage declaration: "Downstream re-computation check complete. Summary/aggrega
 
 ---
 
+## Check 5 — Study data accuracy: cohort, metric type, and comparison arm
+
+For every hardcoded value sourced from a study (identified by an external URL or citation in the cell note), verify three things before accepting the value as correct:
+
+1. **Correct cohort**: Is the value drawn from the cohort the model actually requires? Common errors:
+   - Using a non-intervention arm rate as the baseline when the model needs the general-population baseline (e.g., applying a non-KMC arm neonatal mortality rate as if it represents untreated LBW infants generally)
+   - Using a subgroup rate (e.g., 1500–1999g LBW subgroup) when the model requires the all-LBW rate
+   - Using a pediatric-only cohort estimate for a parameter the model applies across all age groups
+
+2. **Correct metric type**: Is the value the right unit for how the model uses it? Common errors:
+   - A per-100-person-years *rate* used where a cumulative *probability* is required (e.g., 33.1 per 100 person-years ≠ 33.1% cumulative probability — the correct conversion requires the formula `1 − e^(−rate/100)`)
+   - A case fatality rate (proportion of presenting cases that die) used where an annual mortality rate (proportion of at-risk population that dies per year) is needed
+   - A rate-based relative risk applied directly as a probability reduction
+
+3. **Correct comparison arm**: Does the study's comparator match the counterfactual the model is modeling? Common errors:
+   - Using an estimate from a treated/intervention cohort as the untreated baseline
+   - Using a composite-package efficacy (e.g., a care bundle including drug + nursing + supportive care) and attributing the full effect to one component
+   - Using an effect from a specific severity stratum (e.g., severe malaria only) and applying it across all severity levels
+
+**Severity calibration**:
+- Confirmed mismatch with material CE impact (>5%) → **High/D**
+- Plausible mismatch but uncertain without researcher context → **Medium/H** with Researcher judgment needed ✓
+- Minor difference unlikely to affect CE materially → **Low/H**
+
+Before filing a High/D: retrieve and read the cited source to confirm the mismatch. Do not file High/D based solely on the cell note description.
+
+Coverage declaration: "Study data accuracy check complete. Cells with study citations reviewed: [N]. Cohort mismatches: [list or 'none']. Metric type mismatches: [list or 'none']. Comparison arm mismatches: [list or 'none']. No other issues of this type."
+
+---
+
 ## Writing Findings
 
 Before writing any finding, confirm: (1) exact cell reference(s), (2) specific discrepancy (what the cell stores vs. what the source shows), (3) precise fix required.
 
-**Your row start position is pre-assigned in session context** — do not auto-detect. Append findings using `modify_sheet_values`. See `reference/column-reference.md` for full column specifications.
+**CE impact before severity assignment**: Before assigning severity ≥ Medium for any finding, attempt to compute the CE impact by tracing the flagged cell's value through the formula chain to the CE output. If the chain is traceable, compute the delta and write the estimated impact in column H before finalizing severity. A finding whose CE impact computes to <2% must be filed as Low/H, not Medium — do not assign severity qualitatively when CE impact is computable. If the chain is not directly traceable, write "Direction unknown" and proceed with qualitative severity judgment.
+
+**Your staging sheet name is provided in session context** — write all findings to that staging tab starting at row 2. Append findings using `modify_sheet_values`. See `reference/column-reference.md` for full column specifications.
 
 Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | **J** Status (leave blank)
 
-**Overflow protection**: If you exhaust your allocated row budget and still have findings to write, do not stop. Continue writing at the next row beyond your budget — the compaction agent reads all rows and will sort any overflow findings into their correct position.
-
-**Publication Readiness column layout differs**: When routing a finding to Publication Readiness, use the 6-column A–F layout. Write exactly 6 values per row — no more. Do not include Severity, Status, Changes CE?, Estimated CE Impact, or Researcher judgment needed. Writing a 7th column will corrupt the sheet layout. A=Finding # (blank) | B=Sheet | C=Cell/Row | D=Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Sourcing | Box Link | Legibility) | E=Explanation | F=Recommended Fix.
+**Publication Readiness findings go to your staging sheet**: Do not write directly to the Publication Readiness sheet. For publication-readiness findings (Error Type: Sourcing, Box Link, or Legibility), write them to your staging sheet in the same 10-column format as model-integrity findings, with column D (Severity) left blank. The compaction agent routes them to Publication Readiness based on Error Type.
 
 ---
 
 ## Final step — write completion marker
 
-After all findings are written and all other steps are complete, write ONE final row to the Findings sheet at the next available row within your allocated range (or at the first row of your allocated range if no findings were written). This is the absolute last action you take before finishing.
+After all findings are written and all other steps are complete, write ONE final row to your staging sheet at the next available row after your last finding (or row 2 if no findings were written). This is the absolute last action you take before finishing.
 
 Write the row with:
 - Column B: `formula-check-data`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Staging sheet: [stg-data-A or stg-data-B]. Filed [K] findings in rows 2–[K+1].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).

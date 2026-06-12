@@ -19,6 +19,34 @@ Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes, hyperlink
 
 ## Step 3b — Program Structure Completeness
 
+**Mandatory structural completeness checklist — run this first**: Before any other check in this section, complete every line below and write a ✓ (present) or ✗ (absent/unclear) for each. "N/A — [reason]" is acceptable only when the item structurally cannot apply (e.g., a non-direct-grant model has no leverage rows by design). A blank or skipped line is not acceptable.
+
+```
+Structural completeness:
+  [ ] Leverage/funging rows: present and wired to the CE output?
+  [ ] Simple CEA tab: present?
+  [ ] Sensitivity/scenario tab: present? Varies key parameters beyond just one?
+  [ ] Actor cost rows: populated (not silently blank)?
+  [ ] Income effects row: present?
+  [ ] Discount rate: documented anywhere in the model?
+```
+
+For each absent item, file as follows — do not skip absent items because they seem obvious:
+- **Leverage/funging rows absent** → **High/H**: "No leverage/funging rows found in this CEA. GW standard methodology for direct grants requires explicit leverage and funging adjustments. Add the standard GW leverage/funging section." CE impact: Raises CE — magnitude unknown (overcounts CE without funging).
+- **Simple CEA tab absent** → **Low/H**: "No Simple CEA tab found. GW convention includes a simplified CE summary for reader accessibility."
+- **Sensitivity/scenario tab absent** → **Low/H**: "No sensitivity or scenario analysis found. Add a tab testing CE under varied key assumptions."
+- **Scenario tab present but only one parameter varies** → **Low/H**: "Scenario tab exists but only [parameter] varies — all other key parameters are held constant. Confirm whether the scenario design is intentional."
+- **Scenario tab present but top CE drivers not covered**: After confirming the tab exists and varies more than one parameter, identify the top 3 CE-driving parameters by tracing the CE formula chain backward from the CE output (the hardcoded input cells most immediately upstream with the largest chain weight). Verify that at least 2 of those 3 appear in the scenario/sensitivity tab's column headers or row labels. If fewer than 2 of the top 3 are represented, file as **Low/H**: "Scenario tab exists but does not vary [parameter A] or [parameter B], which are among the top CE-driving inputs. Add scenario columns or rows testing sensitivity to these parameters."
+- **Actor cost rows blank → leverage silently zeroed** → **Medium/H**: "Actor cost rows are blank, silently zeroing leverage/funging credit. Populate or explicitly document as zero with a note."
+- **Income effects row absent** → **Low/H**: "No income effects row found. GW standard includes long-run income effects for health interventions. Add with citation to key-parameters.md or document the intentional omission."
+- **Discount rate undocumented** → **Low/H**: "No discount rate documented in any in-scope sheet. Add an explicit discount rate row citing the GW standard."
+
+Do not file structural completeness findings for items explicitly noted as declared-intentional deviations in program context.
+
+Coverage declaration: "Structural completeness checklist complete. Items: leverage/funging [✓/✗], Simple CEA [✓/✗], sensitivity tab [✓/✗], actor cost rows [✓/✗], income effects [✓/✗], discount rate [✓/✗]. Findings filed: [N]."
+
+---
+
 **Missing cost or benefit components**: Compare the model's rows to the source document's structure. For RFMF and cost models, verify all major cost categories present in the source appear as line items in the model (e.g., national management, global strategy/support, indirect costs, reserves). For CEA models, verify all benefit streams mentioned in the grant description appear in the model. A cost or benefit category present in the source document but absent from the model is a Medium finding if the omission is plausible but unconfirmed, High if the missing component is material.
 
 **Transmission effects for infectious disease programs**: When a model covers a program targeting an infectious disease (malaria, HIV, diarrhea, respiratory infections), verify the model includes a benefit stream for transmission effects — the lives saved among individuals NOT directly targeted by the program, due to reduced disease spread. If this stream is absent and the program description suggests transmission reduction is plausible (e.g., ITNs reduce mosquito-biting rates for non-users; antivirals reduce infectivity), flag as Medium/H and ask the researcher to confirm whether transmission effects were considered and quantified, or whether there is a reason they were omitted. Note: transmission effects may be incorporated indirectly (e.g., within the mortality averted estimate rather than as a separate line), so check cell notes before assuming complete omission.
@@ -88,7 +116,7 @@ For each flagged deviation: "[Cell] = X. The GiveWell Vaccination Programs CEA T
 
 **Part B — Cross-Cutting CEA Parameters doc (all CEA types)**: For every vet, read the Cross-Cutting CEA Parameters doc (doc #7, spreadsheet ID `1ru1SNtgj0D9-vLAHEdTM27GEq_P17ySzG-aTxKD6Fzg`) using `read_sheet_values` in **50-row batches** (`A1:ZZ50`, `A51:ZZ100`, continuing until two consecutive empty batches). Do not use a fixed range — the doc may have grown beyond 50 rows and a fixed range will silently truncate newer parameters. For each parameter in the doc that has a value in column E and corresponds to a named row in the spreadsheet being vetted, compare the doc's current value against the model's value. Parameters to check:
 
-- **SMC deaths-averted rates by country** (doc rows 11–16: Chad, DRC, Nigeria, Togo, South Sudan): if the model uses an SMC deaths-averted rate for any of these countries, compare to the doc's current value. This check applies to both SMC CEAs and ITN CEAs that incorporate SMC spillover benefits. A difference of >5% → flag as **Medium/H**: "SMC deaths-averted rate for [country] = X in this model; the Cross-Cutting CEA Parameters doc currently shows Y."
+- **SMC deaths-averted rates by country** (doc rows 11–16: Chad, DRC, Nigeria, Togo, South Sudan): if the model uses an SMC deaths-averted rate for any of these countries, compare to the doc's current value. This check applies to both SMC CEAs and ITN CEAs that incorporate SMC spillover benefits. Any difference → flag as **High/D**: "SMC deaths-averted rate for [country] = X in this model; the Cross-Cutting CEA Parameters doc currently shows Y."
 - **Pryce et al. 2018 trial usage rate** (doc row 26, "Proportion of distributed nets that were used in trials"): if the model references this rate as an input, compare to the doc's value.
 - **PMI Nigeria U5 mortality reduction under nets** (doc row 25): if the model uses this parameter, compare to the doc's value.
 - **VAS long-term income increases ratio** (doc row 36, "Ratio of value generated from income increases to value generated from mortalities averted among people under age 15"): if the model is a VAS CEA and includes this ratio, compare to the doc's value.
@@ -96,7 +124,25 @@ For each flagged deviation: "[Cell] = X. The GiveWell Vaccination Programs CEA T
 
 Do not re-flag the GiveDirectly benchmark from Part B — it is already handled by the key-parameters.md check. Skip any parameter from the doc that does not clearly correspond to a named row in the model. For each flagged deviation: "[Cell] = X in this model; the Cross-Cutting CEA Parameters doc (doc #7) currently shows Y. Confirm whether the model's value is intentionally different or should be updated to match."
 
+**Scope ownership — do not file from Part B when consistency-check is running**: consistency-check is the designated owner of Cross-Cutting CEA Parameters doc value comparisons (per pitfalls.md Cross-Agent Scope Reference). In a standard vet where both agents run, consistency-check will check every doc row exhaustively. If you observe a deviation in Part B, note it in reasoning ("parameter deviation at [cell] observed; deferred to consistency-check") but do NOT file a finding. Filing from both agents creates duplicates with potentially divergent severities. File Part B findings only if session context explicitly indicates consistency-check is not running for this vet.
+
 **Large parameter divergence — source-type investigation**: When the same parameter has values that differ by ≥3× across geographies or implementation contexts within the same workbook (e.g., net loss 1% in one state vs. 26% in another, coverage 40% vs. 85%), verify whether the underlying data sources for each value are of the same type. A large divergence frequently reflects a data-methodology difference — one value sourced from program-reported M&E (distributor counts, facility records, grantee household surveys) and another from an independent household survey — rather than genuine contextual variation. Flag as Medium/H if: (a) the divergence exceeds 3×, (b) the data source types differ across the columns or are unclear, and (c) the cell notes do not explain whether the discrepancy reflects true contextual differences or different measurement approaches. Recommend: document whether the discrepancy was investigated, which source was prioritized and why, and whether the range across contexts should be used for sensitivity analysis. Note: this check is distinct from the inherited-geography check above — that one fires on identical values; this one fires on implausibly large differences.
+
+## Cross-Arm Methodology Consistency
+
+When a model covers multiple treatment arms, severity strata, or patient populations (e.g., strict vs. non-strict malaria treatment, uncomplicated vs. severe, different treatment regimens, multiple age groups), verify that methodology is applied consistently across all arms. Run all four sub-checks for every arm pair in the model.
+
+1. **Efficacy derivation method**: Is the same type of evidence used to derive efficacy for each arm? Flag as **Medium/H** when one arm's efficacy comes from a specific trial sub-cohort (e.g., pediatric-only, a specific geographic subset) while another uses a pooled or different-population estimate, without a cell note documenting the different provenance.
+
+2. **CFR sourcing consistency**: Are case fatality rates sourced from consistent populations across age groups and severity strata? Flag as **Medium/H** when one stratum uses a treated/facility CFR while another uses a population-level or untreated CFR, without documentation distinguishing them. A 37.5% CFR applied uniformly across age groups when the underlying study enrolled only one age group is the canonical example.
+
+3. **Aggregation method consistency across tabs**: Is the same aggregation method (e.g., SUM, population-weighted average, unweighted average) used for equivalent calculations across tabs modeling the same program? Flag as **Medium/H** when one tab uses additive combination for leverage/funging while another uses multiplicative combination for the same parameters, producing a different bottom-line CE.
+
+4. **IV/EV adjustment symmetry**: Are internal validity and external validity adjustments applied symmetrically to analogous arms? Flag as **Low/H** when an IV/EV discount is applied to one treatment arm but not to a parallel arm using the same trial source, without a note explaining the asymmetry.
+
+Coverage declaration: "Cross-arm consistency check complete. Arm/strata pairs reviewed: [N]. Issues found: [list or 'none']. No other cross-arm methodology issues."
+
+---
 
 **Orphaned calculation rows — computed but unreferenced**: After reading all formulas in the vetted sheet(s) in FORMULA mode, scan for rows that meet all three of: (a) the primary value cell contains a formula (not a hardcoded input), (b) the row label describes an intermediate result rather than a named input (i.e., the label doesn't say "input," "assumption," or "from [source]"), and (c) the cell address does not appear in any other formula string across the vetted sheet(s).
 
@@ -122,8 +168,10 @@ Rationale: copy-paste template errors in repetitive blocks freeze the disease-na
 
 Before writing any finding, confirm you can answer all three of these: (1) the exact cell reference(s) affected, (2) the specific value or formula that is wrong, and (3) the precise fix required. A finding that identifies an area of concern without naming a cell and a specific corrective action is not complete — keep investigating until you can answer all three.
 
+**CE impact before severity assignment**: Before assigning severity ≥ Medium for any finding, attempt to compute the CE impact by tracing the flagged cell through the formula chain to the CE output. If the chain is traceable, compute the delta and write the estimated impact in column H before finalizing severity. A finding whose CE impact computes to <2% must be filed as Low/H, not Medium — do not assign severity qualitatively when CE impact is computable. If the chain is not directly traceable, write "Direction unknown" and proceed with qualitative severity judgment. Exception: structural completeness findings (leverage/funging absent, actor costs blank) are pre-classified by severity — their CE impact is "Raises CE — magnitude unknown" by definition and does not require chain computation.
+
 **Your row start position is pre-assigned in session context** — do not read existing rows to auto-detect position. Append findings using `modify_sheet_values`. Column reference: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | **J** Status (leave blank)
-See `reference/output-format.md` for full column definitions. Group findings where the same issue applies to multiple cells — aim for ~15–25 grouped findings, not one row per cell.
+See `reference/output-format.md` for full column definitions. Group findings where the same issue applies to multiple cells — one finding per issue type, listing all affected cells in column C. Do not cap or target a finding count; exhaustive coverage takes priority over brevity.
 
 **Publication Readiness column layout differs**: When routing a finding to Publication Readiness (not Findings), use the 6-column A–F layout. Write exactly 6 values per row — no more. Do not include Severity, Status, Changes CE?, Estimated CE Impact, or Researcher judgment needed. Writing a 7th column will corrupt the sheet layout. A=Finding # (blank) | B=Sheet | C=Cell/Row | D=Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Sourcing | Box Link | Legibility) | E=Explanation | F=Recommended Fix.
 
@@ -138,7 +186,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `formula-check-structure`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).

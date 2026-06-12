@@ -32,7 +32,9 @@ Search the spreadsheet for the bottom-line CE multiple. GiveWell CEAs typically 
 
 Look for this in the Results tab, Main CEA tab, or a Summary section. Common row labels: `Cost-effectiveness multiple`, `CE multiple`, `Total units of value per $10,000`, `Times as cost-effective`, `Bottom line`.
 
-If multiple CE outputs exist (e.g., per intervention, per country, weighted average), identify the **primary** CE multiple that is displayed to decision-makers. Note all others as secondary and verify they flow from the same chain.
+**Use session context CE cell references when available**: If session context includes explicit CE cell references (e.g., `CE baseline: Nigeria = B48 (7.8x)`), start your trace from those cells rather than searching from scratch — Step 0 extracted them during the initial workbook read. Use all provided cell references as starting points.
+
+If multiple CE outputs exist (e.g., per country, per scenario, per intervention, weighted average), **trace each one independently** — do not assume secondary CE outputs flow from the same chain as the primary without verifying. Each country or scenario may apply different coverage rates, cost inputs, or EV adjustments that diverge mid-chain. Record the cell reference, label, and current value for each CE output separately before beginning any trace.
 
 Record: the cell reference, the label used, and its current displayed value.
 
@@ -137,6 +139,12 @@ Flag as **High** if a named adjustment (IV, EV, leverage, funging) is absent fro
 
 **Do not file this finding based on a visual scan or the absence of an expected row label.** An adjustment that exists but is not referenced will always appear present on visual inspection — the error is only detectable by tracing the cell address forward through downstream formulas. Always read the formulas that consume the final CE output and trace back to confirm each adjustment is in the chain before claiming one is missing.
 
+**Named adjustment coverage declaration**: After completing Step 3e for all adjustment rows, write this declaration before proceeding to Step 3f:
+
+`Named adjustments verified in chain: IV adjustment [Y/N — cell ref / reason not found], EV adjustment [Y/N — cell ref / reason not found], leverage adjustment [Y/N — cell ref / reason not found], funging adjustment [Y/N — cell ref / reason not found], supplemental adjustment(s) [Y/N — cell ref / reason not found]. Adjustments defined but not found in any downstream formula: [list or 'none']. If any adjustment is 'not found': file as High/D (for IV/EV/leverage/funging) or Medium/D (for supplemental) before proceeding — 'Adjustment [name] at [cell] is computed but not referenced in the CE output formula chain. Either add a cell reference or document intentional exclusion in a cell note.'`
+
+If an adjustment type is not present in this model (e.g., no leverage row exists), write `n/a — not modeled` for that entry.
+
 ---
 
 ### 3f — Semantic reference verification in high-risk sections
@@ -220,11 +228,15 @@ Based on the program context and grant document (if provided):
 
 **Note**: TA cost denominator consistency checks (comparing cost bases between Main CEA and Simple CEA) are handled by a dedicated `ce-chain-trace-ta` agent running in parallel. Do not duplicate that check here.
 
+**Note — mixed TA/direct delivery programs**: When the program combines technical assistance with direct delivery, verify which cost base the chain uses — TA-only costs, direct delivery costs, or a combined total. If cost allocation between TA and direct delivery components is ambiguous and the correct split cannot be confirmed from the spreadsheet or grant document, route as **Medium/H with Researcher judgment needed ✓** rather than High/D — the correct allocation is a program-specific analytical choice. If session context includes a `ta_cost_scope` flag, use it to determine the applicable cost base.
+
 ---
 
 ## Writing findings
 
 Before writing any finding, confirm: (1) exact cell reference(s) for both the error and the correct source, (2) specific issue (which formula references the wrong cell, which units mismatch, which step is missing), (3) precise fix (e.g., "Change C47 formula from `=0.87*D23` to `=CoverageAssumptions!B12*D23`").
+
+**Before filing any Assumption-type finding**: ask: "What would a researcher who trusts this value point to as their evidence?" Write it as a single sentence in your reasoning before deciding whether to file. Only after writing that sentence, test it against the available evidence. If the defense holds up even partially, downgrade severity or mark Researcher judgment needed ✓. If it fails, file with confidence. This applies to Assumption-type findings only — do not apply to Formula-type findings, which are mechanical errors requiring no intent check.
 
 Append findings using `modify_sheet_values`. **Your row start position is pre-assigned in session context** — write starting at that row. Do not auto-detect the next empty row.
 
@@ -239,7 +251,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `ce-chain-trace`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).

@@ -53,6 +53,8 @@ Coverage declaration: "CE baseline re-verification complete. Cell read: [ref]. S
 
 ## Check 1 — Fix-validation
 
+**Computability threshold**: A CE impact is computable inline if: (a) the fix is a direct numeric substitution (the finding's Recommended Fix column states the exact replacement value), AND (b) the formula chain from the fixed cell to CE output uses no intermediate cells flagged 'Guess' or 'TBD.' If either condition fails, write 'Magnitude unknown — replacement value not specified' in column H. Do not assume a replacement value that isn't stated in the finding.
+
 For each **High or Medium** finding in the Findings sheet whose Recommended Fix (column G) includes a specific formula change:
 
 1. Use `read_sheet_values` (FORMULA mode) on the cell being fixed to confirm the current formula matches what the finding describes. If it does not match, note the discrepancy in the finding's Explanation — do not mark the finding resolved.
@@ -104,7 +106,7 @@ Coverage declaration: "Placeholder scan complete. Header rows and column A check
 
 ## Check 4 — CE impact completeness
 
-**Pass A — fill blanks**: For every **High** finding and every **Medium** finding whose Error Type is `Formula Error`, `Parameter Issue`, or `Adjustment Issue` — where Estimated CE Impact (column H) is blank — compute the directional impact using the pre-vet baseline CE from session context. Write using the standard format: `Raises CE — 8.7x → ~10.2x` or `Lowers CE — magnitude unknown` etc. Always lead with the standard phrase from output-format.md. Use `Direction unknown` if the researcher's answer would determine the direction. Update the finding in place using `modify_sheet_values`.
+**Pass A — fill blanks**: For every **High** finding and every **Medium** finding whose Error Type is `Formula`, `Parameter`, or `Adjustment` — where Estimated CE Impact (column H) is blank — compute the directional impact using the pre-vet baseline CE from session context. Write using the standard format: `Raises CE — 8.7x → ~10.2x` or `Lowers CE — magnitude unknown` etc. Always lead with the standard phrase from output-format.md. Use `Direction unknown` if the researcher's answer would determine the direction. Update the finding in place using `modify_sheet_values`.
 
 Rationale: Medium Formula, Parameter, and Adjustment findings can affect CE even if their impact is below the High threshold. Researchers need the CE direction to triage them against High findings. `Assumption`, `Legibility`, and `Inconsistency` at Medium severity often have no computable CE impact — leave those blank rather than writing "Direction unknown" unless you can clearly identify a direction.
 
@@ -151,6 +153,7 @@ Convert every cell reference in column C of both the Findings sheet and Publicat
 3. **Parse each column C value** to extract a sheet name and cell reference:
    - **`SheetName!CellRef`** (e.g., `Main CEA!B47`) → sheet name = `Main CEA`, cell ref = `B47`
    - **`CellRef` only** (e.g., `B47`, no `!`) → sheet name = primary vetted sheet from session context, cell ref = `B47`
+   - **Comma-separated cell list** (e.g., `B14, B18, B22`) → extract the first cell ref before the first comma; sheet name = primary vetted sheet from session context. Keep the full comma-separated text as the display text. This covers grouped findings where multiple cells are listed in one row.
    - **`Row N` or `rows N–M`** (e.g., `Row 47`) → sheet name = value from column B of this finding row, cell ref = `A47` (first cell of that row)
    - **Range** (e.g., `B47:C51`) → link to the first cell of the range (`B47`); keep the full range as the display text
    - **`Multiple`** as the sheet name → skip; leave column C as plain text (no single target cell to link to)

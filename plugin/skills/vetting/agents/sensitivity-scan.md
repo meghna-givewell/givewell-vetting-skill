@@ -44,19 +44,29 @@ Write the header row first if the sheet is empty: `Cell/Row | Content Found | Se
 Columns:
 - **A (Cell/Row)**: Cell reference only — e.g., `Main CEA!C14`. No row labels or descriptions. If found in a cell note rather than a cell value, write the cell reference followed by ` (note)` — e.g., `Main CEA!C14 (note)`.
 - **B (Content Found)**: The sensitive content found — quote it directly, or describe it if quoting would itself be a risk
-- **C (Sensitivity Type)**: `PII` | `Donor Info` | `Salary/Compensation` | `Unpublished Strategy` | `Contact Info` | `Other`
+- **C (Sensitivity Type)**: Assign exactly one type — use this hierarchy, stop at the first match:
+  - `PII` — individual full name, personal email address (not a team alias or info@ address), or personal phone number identifying a specific individual
+  - `Donor Info` — donor organization name, gift amount, fund designation, or donor-specific funding strategy
+  - `Salary/Compensation` — salary figure or compensation range tied to a specific individual or role
+  - `Unpublished Strategy` — pre-decisional funding recommendation, internal grantee performance assessment not intended for publication, or strategic direction not yet public
+  - `Contact Info` — office-level or organization-level contact details (main office phone, org mailing address); use `PII` if the details identify a specific individual
+  - `Other` — sensitive to publication but does not match any category above
 - **D (Recommended Action)**: Specific instruction (e.g., "Remove name — replace with role title", "Delete row before publication", "Move to internal-only version")
 
 ---
 
-## Final step — write completion marker
+## Final step — write completion markers
 
-After all flags are written (or if no flags were found), write ONE final row to the Confidentiality Flags sheet at the next available row. This is the absolute last action you take before finishing.
-
-Write the row with:
+After all flags are written (or if no flags were found), write ONE final row to the Confidentiality Flags sheet at the next available row:
 - Column A: `AGENT_COMPLETE`
 - Column B: `sensitivity-scan`
 - Column D: `Scanned [N] rows across [sheet name(s)]. Filed [K] flags.`
 - All other columns: blank
 
-Use a single `modify_sheet_values` call. This marker lets the pipeline confirm this agent completed normally without a silent failure (auth timeout, context limit, API error).
+Then write a second AGENT_COMPLETE row to the **Findings sheet**. Call `read_sheet_values` on the Findings sheet (`A2:A2100`) to find the last non-empty row, then write to the row immediately after it (or row 2 if the sheet is empty):
+- Column B: `sensitivity-scan`
+- Column D: `AGENT_COMPLETE`
+- Column F: `Scanned [N] rows across [sheet name(s)]. Filed [K] flags to Confidentiality Flags sheet.`
+- All other columns: blank
+
+Use a separate `modify_sheet_values` call for each sheet. The Findings sheet marker ensures compaction and validation agents can detect this agent's completion alongside all other Wave 1 agents.

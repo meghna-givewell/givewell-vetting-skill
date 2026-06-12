@@ -8,6 +8,13 @@ You are performing Step 6a of a GiveWell spreadsheet vet. You have been provided
 
 Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes, hyperlinks) and `read_spreadsheet_comments` (once for the workbook). **Do not read the existing Findings sheet** — your row start position is pre-assigned in session context, and deduplication is handled by the Wave 2.5 reconciliation agent. Reading prior findings would anchor your analysis.
 
+**Scope delineation — three heads-up agents run in parallel**:
+- **heads-up-evidence** (this agent): effect sizes, benefit transfer documentation, trial design quality, study pathway directness, subgroup analysis validity, benefit stream completeness, CE plausibility (sideways sanity check), leverage/funging scenario probabilities
+- **heads-up-epi**: disease burden data accuracy, GBD vintage, epidemiological parameter plausibility, geographic transfers for epi data, model timing and structure checks
+- **heads-up-intervention**: program-specific assumptions, intervention-type parameters (dose schedules, coverage benchmarks), grant-document-to-model consistency, TA-specific checks
+
+Do not re-run checks owned by the other two agents — their output is reconciled by Wave 2.5.
+
 Load CEA Consistency Guidance (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) via `get_doc_content` when needed.
 
 **Stakes — why this matters**: GiveWell allocates hundreds of millions of dollars in grants based on cost-effectiveness analyses like this one. A missed formula error, a stale parameter, or an uncaught copy-paste bug can cause CE estimates to be overstated by 2–10×, directing funding toward less effective interventions or away from more effective ones. Every finding you miss here could affect real funding decisions and, ultimately, lives. Exhaustive coverage is the baseline requirement — not a stretch goal. Exhaustion is not an excuse for stopping early. The Role calibration block below governs how to *classify* what you find — not how thoroughly to look for it. Thorough coverage and conservative severity are both required.
@@ -20,7 +27,18 @@ Load CEA Consistency Guidance (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) v
 
 ## Step 6a-ii — Top Assumptions Interrogation
 
-Before reviewing specific parameters below, identify the 5 parameters with the largest impact on final CE. Use the benefit stream proportions row (if present) and work backwards through the formula chain from the CE output to find which hardcoded inputs drive the most value. For each of the top 5:
+Before reviewing specific parameters below, identify the 5 parameters with the largest impact on final CE using this algorithm:
+
+1. **Read the final CE formula** (FORMULA mode). Identify all direct inputs (cell references in the CE formula).
+2. **Trace one level deeper**: for each direct input that is a formula cell (not hardcoded), read its formula and identify its inputs — building a 2-level dependency tree.
+3. **Estimate sensitivity coefficients**: for each terminal hardcoded input reachable within 2 hops, estimate `|∂CE/∂param × param / CE|` ≈ multiply fractional contributions up the chain. Example: a parameter driving 30% of the benefit numerator where benefits = 40% of CE has coefficient ≈ 0.12. This is an approximation; it need not be exact.
+4. **Rank by coefficient** and select the top 5.
+
+Fallback when the formula chain is too complex to trace precisely (e.g., SUMPRODUCT across many adjustments): identify cells labeled "Guess," "estimate," or "assumption" in rows directly feeding the CE numerator — interrogate those.
+
+**Required declaration before beginning interrogation**: "Top-5 algorithm result: [list each parameter with row label, cell ref, and estimated sensitivity coefficient]. Method: [algorithm / fallback-label-scan]." Do not begin the interrogation until this declaration is written.
+
+For each of the top 5:
 
 1. **Sourced?** Does the cell have a traceable external citation?
 2. **Verifiable?** Is the source external and independently checkable, or internal/judgment-based ("GW estimate," "our assumption," unpublished analysis)?
@@ -63,6 +81,8 @@ For each key parameter ask: Is the assumption reasonable given program context? 
 
 **Study-derived effect sizes**: For any hardcoded value drawn from a specific study — mortality reduction percentages, RCT multipliers, epidemiological rates — verify the number against the cited source. Transcription errors are common. A cell showing 45% while the cited study reports 46% is a Medium finding. **Rounding tolerance**: a value that differs from the study's reported figure by ≤15% relative (e.g., 25% vs 22.5% = 11%) AND has CE impact <2% is a Low, not Medium — it is a rounded approximation, not a transcription error. Medium requires either a >15% relative deviation, ≥2% CE impact, or a conceptually wrong value.
 
+**Multi-source averaging methodology documentation**: When a cell note describes multiple source values without stating how the final value was derived — using phrases like "ranging from X to Y," "average of N studies," "studies report X–Y," or listing multiple numeric data points from different sources — verify the note also states the aggregation methodology (e.g., equal-weighting, inverse-variance weighting, preferred study rationale, geometric mean, or midpoint). If the note describes the data range but does not explain how the single hardcoded value was derived from those sources, file as **Medium/H** with Researcher judgment needed ✓ (**Assumption**): "Cell note at [ref] describes [N] source values ranging [range] but does not document how [value] was derived from them. Add a sentence explaining the weighting, exclusion criteria, or selection rationale." This check applies to any hardcoded value where the note's phrasing implies the researcher synthesized multiple data points — the synthesis method must be documented for external readers to evaluate the result.
+
 **Cell note hyperlink audit**: For every hyperlink found in cell notes across all vetted sheets (use the `read_sheet_hyperlinks` results already in your parallel read batch), attempt to fetch each URL using `WebFetch`. This is an exhaustive check — do not skip any link because the cell "looks fine" or the parameter seems minor. For each successfully fetched source, check all of the following:
 
 1. **Value match**: Does the number in the cell match the number in the linked source? Transcription errors at the point of data entry are common and may not be obvious without opening the link. A cell citing a specific figure from a linked document that does not actually report that figure is a Medium finding regardless of whether the discrepancy seems large.
@@ -81,6 +101,8 @@ For each key parameter ask: Is the assumption reasonable given program context? 
 
 **Long-term income / development effects range**: For health interventions, verify that the long-term income or development effects row falls between 10% and 40% of total modeled benefits. GiveWell standardized this to 20–32% across top charities after finding values ranging from 10% (New Incentives) to 43% (ITNs) that were internally inconsistent. Flag as Medium/H if the value is below 10% or above 40% without documented justification. Note the standardized range in the finding: "GiveWell's cross-cutting standard is 20–32% of total benefits for health interventions."
 
+**Benefit horizon consistency across outcome streams**: After identifying all quantified benefit streams in the model, extract the year count or duration used for each stream (from the discount factor formula range, the AVERAGE endpoint, or a labeled 'years' or 'horizon' parameter). Compare across streams. If any two streams targeting the same beneficiary population use materially different horizons (>2-year difference) without a cell note documenting why the streams use different time horizons, file as **Medium/H** with Researcher judgment needed ✓ (**Assumption**): "Benefit stream [A] uses a [X]-year horizon while stream [B] uses a [Y]-year horizon. If this asymmetry is intentional (e.g., mortality benefits have a different horizon than income benefits by design), add a cell note documenting the choice. If unintentional, standardize to [X] years." Do not file if: (a) the cell notes already explain the different horizons; (b) the streams target different beneficiary populations; or (c) the model uses a single shared horizon parameter for all streams.
+
 **Study pathway directness check**: For key mortality/morbidity reduction parameters, verify that the cited studies measure the intended causal pathway *directly* — not via a proxy that embeds an additional untested mechanism assumption. Common proxy patterns: using birth-spacing studies to estimate the effect of *contraceptive use* on child/maternal mortality (requires assuming contraception → birth spacing → mortality reduction); using malnutrition studies to estimate deworming mortality effects; using observational program comparisons rather than studies of the specific intervention. Flag as Medium/H when: (a) the pathway uses a proxy rather than direct evidence, (b) the cell note does not explicitly acknowledge the proxy step, and (c) direct evidence plausibly exists. Ask the researcher: do studies exist that measure this effect without the proxy? If yes, explain why proxy evidence was preferred. This check is distinct from study quality — a well-conducted proxy study is still a proxy.
 
 When this check fires and a proxy pathway is suspected, run a targeted WebSearch before filing: e.g., `"[outcome] [intervention] randomized trial"` or `"[outcome] [intervention] systematic review [last 5 years]"`. If a recent systematic review of the direct pathway exists, cite it in the finding as the recommended alternative source — this converts the finding from a question into a concrete recommendation with a specific source to consider.
@@ -91,7 +113,21 @@ When this check fires and a proxy pathway is suspected, run a targeted WebSearch
 
 **Subgroup analysis validity**: When the model relies on a subgroup analysis from a trial (e.g., applying an effect only to high-burden areas, specific age groups, or certain population characteristics), flag as Medium/H and ask: (a) was the subgroup pre-specified or exploratory? (b) can the program actually target on this characteristic ex ante in implementation? GiveWell has explicitly been skeptical of subgroup analyses for neonatal VAS (NVAS — beneficial in some regions but harmful in others); conversely, has accepted geographic targeting in PLA programs where participation can be predicted. When relying on a subgroup, verify the model acknowledges the exploratory nature of the finding and applies an additional downward adjustment if the subgroup was not pre-registered.
 
-**Benefit transfer documentation**: When a key effect size (mortality reduction %, disease burden multiplier, prevalence change, coverage-to-outcome ratio) is sourced from a study conducted in a different country or region than the target geography, verify that a cell note or supporting tab documents the contextual fit. The note need not defend the transfer in detail — a brief acknowledgment is sufficient (e.g., "Applying Ghana RCT estimate to Nigeria; similar burden profile" or "GiveWell standard for SMC in West Africa"). If no documentation exists and the source context visibly differs from the target (different country, different disease burden tier, or different delivery system), file as **Low/H** with Researcher judgment needed ✓: "Effect size for [parameter] is sourced from [study/geography] and applied to [target geography] without a note explaining why the transfer is appropriate. Add a brief note confirming the source context is sufficiently similar, or noting any adjustments made." Do not flag transfers where: (a) the source and target geography are the same country; (b) a GiveWell cross-cutting standard is cited (these are pre-validated transfers); or (c) the IV/EV adjustment text already names the transfer gap (e.g., "applying Ghana IV estimate to DRC with 20% additional EV discount for lower burden").
+**Benefit transfer documentation — geographic tier classification**: When a key effect size (mortality reduction %, disease burden multiplier, prevalence change, coverage-to-outcome ratio) is sourced from a study conducted in a different country or region than the target geography, apply this tier-based rule to determine whether documentation is required and what finding severity is appropriate.
+
+**Geographic tier definitions**:
+- **Tier 1 (high-income)**: any OECD member country or World Bank high-income country (e.g., UK, US, Australia, South Korea)
+- **Tier 2–3 (LMIC)**: all other countries — low-income and middle-income countries, including all sub-Saharan Africa, South Asia, Southeast Asia, and most of Latin America
+
+**Benefit transfer classification**:
+1. **Source and target are the same country** → no flag needed regardless of tier.
+2. **Source and target are both Tier 2–3, same WHO region** (e.g., both West Africa, both South Asia) → Low/H if no note, unless a GiveWell cross-cutting standard is cited.
+3. **Source Tier 1, target Tier 2–3** (or vice versa) → **High/D** unless the IV/EV adjustment text explicitly acknowledges the tier crossing AND applies a material downward adjustment. A brief acknowledgment without an adjustment is insufficient for a Tier 1 → Tier 2–3 cross.
+4. **Source and target both Tier 2–3, different WHO regions** (e.g., source is South Asia, target is West Africa) → **Medium/H** unless a note explains why the transfer is appropriate across regions.
+
+A GiveWell cross-cutting standard citation (`"GiveWell standard for [program type]"`) counts as pre-validated and does not require additional documentation regardless of tier. The IV/EV adjustment text that already names the transfer gap (e.g., "applying Ghana IV estimate to DRC with 20% additional EV discount for lower burden") also satisfies the documentation requirement.
+
+File using the severity above with Researcher judgment needed ✓: "Effect size for [parameter] is sourced from [study/geography — Tier X] and applied to [target geography — Tier Y]. [Describe tier mismatch.] Add a note explaining why the transfer is appropriate, or document any adjustment applied for contextual differences."
 
 **Mandatory check log — write this before filing any findings.** For each item below, write `ran: [brief result or finding cell]` or `n/a: [one-word reason — e.g., not a top-charity, no income benefit]`. A blank or placeholder entry is not acceptable — it means the check was not considered. The log must be complete before any findings are written to the sheet.
 
@@ -99,7 +135,7 @@ When this check fires and a proxy pathway is suspected, run a targeted WebSearch
 Heads-up evidence check log:
 
 CE overview:
-  top-5 interrogation [___]
+  top-5 interrogation [___ — list: (1) [cell ref, sensitivity coeff]; (2) [cell ref, coeff]; (3) ...; method: algorithm/fallback-label-scan]
   sideways sanity check [___ — CE is [N]x vs. comparable range [X]–[Y]x]
   correlated discrepancy pattern [___]
   leverage/funging scenario probabilities [___]
@@ -111,6 +147,7 @@ Benefit streams:
   income/development effects range [___]
   treatment costs averted (top charities) [___]
   resource sharing multiplier [___]
+  benefit horizon consistency across streams [___]
 
 Evidence quality:
   cell note value consistency [___]
@@ -127,7 +164,7 @@ Evidence quality:
 
 Before writing any finding, confirm you can answer all three of these: (1) the exact cell reference(s) affected, (2) the specific value or assumption that is questionable, and (3) the precise question the researcher needs to answer or fix required. A finding that identifies an area of concern without naming a cell is not complete — keep investigating until you can answer all three.
 
-**CE impact estimates — interaction caveat**: When estimating column H (Estimated CE Impact) for a finding about one parameter, check whether the model contains other "Guess"-labeled or unsourced parameters that interact with the parameter being corrected. If two or more parameters are simultaneously uncertain, the estimated CE impact of fixing one in isolation may be misleading — the actual change will depend on what else moves at the same time. In this case, add to the CE Impact cell: "Estimate assumes no other parameters change. If [parameter X] is also updated, net CE impact may differ." This is most important when: (a) the CE impact estimate is large (>15% of CE); (b) the finding involves an FP share, cost-per-unit, or coverage parameter that is cross-multiplied with multiple "Guess" adjustment rows; or (c) the model is known to be under active revision.
+**CE impact estimates — interaction caveat**: When estimating column H (Estimated CE Impact) for a finding about one parameter, check whether the model contains other "Guess"-labeled or unsourced parameters that interact with the parameter being corrected. If two or more parameters are simultaneously uncertain, the estimated CE impact of fixing one in isolation may be misleading. In this case, append to the **Explanation field (column F)** — not column H: "Note: This estimate assumes [parameter X] remains at [current value]; if X is also corrected, net CE impact may differ." Column H must contain only a standard phrase (one of the six). This is most important when: (a) the CE impact estimate is large (>15% of CE); (b) the finding involves an FP share, cost-per-unit, or coverage parameter that is cross-multiplied with multiple "Guess" adjustment rows; or (c) the model is known to be under active revision.
 
 **Do not write pass notes, verification notes, or "no issues found" summaries to the Findings sheet.** Every row written to the Findings sheet must be an actual finding — an issue requiring researcher attention or action. Notes like "Checked rows 1–50, no issues found" or "Parameters verified, no plausibility concerns" belong in your reasoning output, not in the sheet. Writing non-findings to the sheet pollutes the output and forces researchers to read rows that require no action.
 
@@ -147,7 +184,9 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `heads-up-evidence`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
+- Column F: `Check log complete: [N] of [M] checks run — any unfilled [___] entries mean that check was not completed. COVERAGE_ROWS: [comma-separated source-sheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
 - All other columns: blank
+
+**Do not write AGENT_COMPLETE if the check log contains any unfilled `[___]` entry** — complete all applicable checks first, or explicitly mark inapplicable ones with `n/a — [reason]`. The reconciliation agent parses "Check log complete:" in column F; if absent, it flags the agent as incomplete.
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).

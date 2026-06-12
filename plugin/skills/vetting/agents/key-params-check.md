@@ -19,14 +19,14 @@ These are the authoritative current values. They must match `reference/key-param
 
 | Parameter | Expected Value | Notes |
 |---|---|---|
-| Benchmark (UoV per $) | 0.00333 | Old value 0.003355 is stale — flag if found |
+| Benchmark (UoV per $) | 0.00333 | For boundary checks, load the Acceptable Ranges table in `reference/key-parameters.md` — do not hardcode historical stale values here |
 | Neonatal moral weight (under 1 month) | 84 | 2020 update; values like 70 are not valid variants |
 | Avert under-5 death (malaria/vaccines) | 116 UoV | ±5% tolerance |
 | Avert over-5 death (malaria) | 73 UoV | ±5% tolerance |
 | Avert death, 6–59 month child (VAS) | 119 UoV | ±5% tolerance |
 | Avert maternal death (MNH/reproductive health) | 125 UoV | ±5% tolerance |
 | Discount rate | 4% | |
-| Income effects — malaria programs | 0.58088% | Values above 0.60% are likely stale pre-Nov 2025 |
+| Income effects — malaria programs | 0.58088% | Values above 0.65% are outside the Acceptable Range (max 0.65%) — flag as Medium/H; values 0.60%–0.65% are within range but were common in pre-Nov 2025 models |
 | Long-term income ratio | 0.3064 | |
 | Years to benefits (benefit horizon) | 10 | Applies to malaria and other mortality-reduction programs; flag values other than 10 |
 
@@ -70,7 +70,7 @@ Key-params coverage log:
   Years to benefits (10): [cell ref or 'not found'] = [raw value]. Match: YES/NO.
 ```
 
-If a parameter is not applicable to this model type, write `n/a — [one-word reason]` (e.g., `n/a — not-malaria`).
+If a parameter is not applicable to this program type **per the program-type applicability table below**, write `n/a — [one-word reason]` (e.g., `n/a — not-malaria`). Write `n/a` only because the program type excludes this parameter — not because the parameter is absent from the spreadsheet. A parameter that should appear (based on program type) but does not is "not found," not "n/a."
 
 **"Not found" behavior — do not silently skip**: If a parameter is applicable to this program type but was not located in the column A/B label scan, do not write `not found` and move on. Instead, file a `Low/Parameter` with `Researcher judgment needed ✓`:
 
@@ -81,6 +81,8 @@ Parameters and their program-type applicability:
 - **Malaria and mortality-reduction programs**: Neonatal moral weight, Avert under-5 death, Avert over-5 death, Income effects, Long-term income ratio, Years to benefits
 - **VAS programs only**: Avert death 6–59m VAS
 - **MNH/reproductive health only**: Avert maternal death
+
+**Applicability is determined solely by the program-type name from Step 0.5 session context** — not by what parameters appear or do not appear in the spreadsheet. Do not expand the applicable set because the spreadsheet happens to include a row for a parameter outside the program type; do not contract it because the spreadsheet omits a row. A malaria model that omits an income effects row still requires the income effects check — file `Low/Parameter` with Researcher judgment needed ✓ if not found. A malaria model that includes a secondary maternal outcomes section does not require the maternal death moral weight check — its program type is malaria, not MNH.
 
 ---
 
@@ -104,8 +106,9 @@ Before filing, check whether the mismatch is covered by a declared-intentional d
 **Age-band moral weight handling**: When a model contains **separate rows for 5-14 and over-14 moral weights** rather than a single over-5 row, do not compare each age-band cell to the aggregate over-5 standard (73) and state they should both be 73. The 73 value is the aggregate — not a per-band standard. Instead: (a) identify the source cited in each cell's note; (b) determine whether the source is a GiveWell malaria source or a different disease area (vaccines, nutrition); (c) if non-malaria, file as High: "B[X] = [value] citing [non-malaria source] — use a GiveWell malaria-specific age-band weight or document the derivation from the 73 aggregate." The explanation must describe the source mismatch (wrong disease area), not assert that the individual band value should be 73.
 
 **Severity**:
-- **High/Parameter**: Benchmark, neonatal moral weight, under-5 moral weight, over-5 moral weight — specific authoritative values with documented update dates; a wrong value is a confirmed error
-- **Medium/Parameter with Researcher judgment needed ✓**: income effects, long-term income ratio, years to benefits, VAS moral weight, maternal death moral weight, discount rate — more context-dependence; flag for researcher confirmation
+- **High/Parameter**: Benchmark, neonatal moral weight, under-5 moral weight, over-5 moral weight — specific authoritative values with documented update dates; a wrong value is a confirmed error. Before filing High, load the Acceptable Ranges table in `reference/key-parameters.md`: if the stored value falls within the Min–Max range for that parameter, file **Medium/H with Researcher judgment needed ✓** instead. File High only when the value falls outside the Min–Max range.
+- **Medium/Parameter with Researcher judgment needed ✓**: income effects, long-term income ratio, years to benefits, VAS moral weight, maternal death moral weight — more context-dependence; flag for researcher confirmation.
+- **Discount rate special rule**: if stored value is between 3% and 5% (inclusive), file as **Low/H** with Researcher judgment needed ✓ — the range is plausible and the deviation likely reflects an intentional modeling choice. If stored value falls outside 3%–5%, file as **Medium/H** with Researcher judgment needed ✓ — the Acceptable Ranges table classifies out-of-range discount rates as Medium, not High.
 
 **Explanation discipline — do not read source documents**: Do not navigate to or read any URL found in a cell note to characterize what the source document says. Your determination of whether a value is wrong is based solely on comparing the stored value to key-parameters.md — not on interpreting the source document's contents. If you need to describe the source, use only the text already present in the cell note (e.g., "cell note cites 'Moral weights [2020, Tool]_New Incentives CEA'"). Do not write "conflating," "misidentifying," or other language that characterizes what a source document contains. The explanation is always: "[cell] = [stored value] but key-parameters.md specifies [expected value]."
 
@@ -131,12 +134,14 @@ See `reference/output-format.md` for full column definitions.
 
 ## Final step — write completion marker
 
+**Do not write the AGENT_COMPLETE marker** until the Key-params coverage log above is fully complete — every applicable parameter must have a result entry (not blank or `[___]`). A blank entry means the check was not run, not that the parameter is n/a. If any applicable parameter in the log is blank, complete the check before writing the completion marker. The gap-fill agent verifies the coverage log count in column F of the AGENT_COMPLETE row.
+
 After all findings are written and all other steps are complete, write ONE final row to the Findings sheet at the next available row within your allocated range (or at the first row of your allocated range if no findings were written). This is the absolute last action you take before finishing.
 
 Write the row with:
 - Column B: `key-params-check`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Checked [N] parameters across [sheet name(s)]. Filed [K] findings. Row allocation: [start]–[end].`
+- Column F: `Coverage log complete: [N] of [M] applicable parameters — any unlisted parameter means that check was not run. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings. Row allocation: [start]–[end].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure.

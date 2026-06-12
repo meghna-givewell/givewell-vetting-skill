@@ -16,6 +16,8 @@ You are performing Step 10b of a GiveWell spreadsheet vet. This step runs after 
 
 **Coverage mandate**: After each of the three checks below, write a coverage declaration before moving to the next. Do not proceed until you can write it.
 
+**COVERAGE_ROWS reliability note**: Each Wave 1 and Wave 2 agent writes a `COVERAGE_ROWS` field in its AGENT_COMPLETE marker declaring which source spreadsheet rows it scanned. This field is self-reported and not independently verified. An agent that ran out of context or stopped early may have under-declared or over-declared its actual coverage. When Check 2 finds a gap of 15+ rows with no findings, treat it as a genuine coverage gap unless: (a) the relevant agent's COVERAGE_ROWS declaration explicitly excludes those rows, or (b) the rows are structurally empty (headers, dividers, blank rows) on visual inspection. Do not conclude a section was clean simply because a prior agent claimed to have scanned it — this gap-fill check is the verification mechanism. A COVERAGE_ROWS claim covering substantially more rows than a typical agent budget can support (more than ~200 rows for a Wave 1 agent in a single run, more than ~80 rows for a Wave 2 agent without band-split) warrants extra skepticism: read those rows directly in FORMULA mode before declaring the gap clean.
+
 ---
 
 ## Step 1 — Read all confirmed findings
@@ -32,6 +34,8 @@ Coverage declaration: "Read complete. Total findings: [N]. High/Formula findings
 ---
 
 ## Check 1 — Formula cascade check
+
+**Cascade finding — definition**: A cascade finding is a new finding (not already in the Findings sheet) that identifies a cell that will produce incorrect output *after* a confirmed High/Formula finding is corrected. The cascading cell is not itself the source of error — it is a downstream consumer that either (a) mathematically depends on the corrected cell's old value in a way that won't self-correct, (b) uses an absolute reference that will not automatically update when the source cell changes, or (c) has its own logic that was valid assuming the old wrong value but becomes invalid after the fix. Cascade findings are always filed as **Medium/Formula**, at most 2 hops downstream from the source error. **Hop definitions**: 1 hop = a cell whose formula directly references the flagged (source-error) cell. 2 hops = a cell whose formula directly references a 1-hop cell. Self-correcting pass-throughs — cells containing only a simple `=B14` reference with no arithmetic — do not count as a hop: they propagate any fix automatically and introduce no independent error. Cells beyond 2 hops are the CE chain trace agent's responsibility.
 
 For every **High Formula** finding:
 
@@ -74,6 +78,26 @@ Coverage declaration: "Coverage gap scan complete. Gaps of 15+ rows found: [N, w
 
 ---
 
+## Check 2.5 — Cross-band root cause trace (band-split runs only)
+
+**Only run this check if band-split was used for this vet.** To determine this: (1) check session context for a `band1_end` value; (2) if not present in session context, read Dashboard cells `A49:B100` of the output spreadsheet — if the Dashboard row allocation log shows more than one band pair for any agent type, recover `band1_end` from the last row number of the first band pair. If neither session context nor the Dashboard log contains band-split information, skip entirely and write: "Check 2.5: skipped — band-split not active (confirmed: no band1_end in session context or Dashboard log)."
+
+When band-split is active, agents scanned the spreadsheet in row-range bands (band 1: rows 1–`band1_end`, band 2: rows `band1_end+1` and above). Each band pair's reconcile agent was explicitly prohibited from cross-reconciling with other bands. This creates a gap: a High/D finding in band 2 whose root cause is a cell in band 1 may not be linked to the upstream error.
+
+1. From the confirmed findings list built in Step 1, filter to all **High/D findings** whose cell reference row number exceeds `band1_end` (i.e., they fall in band 2 or later).
+
+2. For each such finding: read the referenced cell in FORMULA mode on the source spreadsheet. Extract all cell references the formula uses.
+
+3. For each referenced cell that falls in band 1 (row number ≤ `band1_end`): check whether that cell is referenced in any confirmed finding already on the Findings sheet. If it is, this finding has a traceable root cause in band 1.
+
+4. For each High/D finding with a confirmed band-1 root cause: **do not file a new finding** — instead, append to its Explanation in column F (using `modify_sheet_values`): " Root cause traces to [band-1 cell], which is the subject of finding [F-NNN]. Resolve [F-NNN] first — this finding may resolve automatically." This is an annotation, not a new row.
+
+5. For each High/D finding whose formula references a band-1 cell that is **not** in any confirmed finding: file as **Low/H** with Researcher judgment needed ✓: "High finding at [cell] (band 2) references [band-1 cell] in its formula chain, but that band-1 cell was not flagged by the band-1 agents. Verify [band-1 cell] is correct; if it is wrong, the fix required here may change."
+
+Coverage declaration: "Cross-band root cause trace complete. Band1_end: [N]. High/D findings in band 2+: [N]. Band-1 root causes identified: [N]. Annotations added: [N]. New Low/H cross-band flags filed: [N]."
+
+---
+
 ## Check 3 — Won't Fix verification
 
 Reconciliation agents delete rows they mark Won't Fix. The only evidence a Won't Fix decision was made is a gap in Finding IDs in the output (e.g., IDs jump from F-003 to F-005). This check verifies a sample of those decisions.
@@ -89,6 +113,28 @@ Reconciliation agents delete rows they mark Won't Fix. The only evidence a Won't
 If there are no ID gaps, skip this check entirely.
 
 Coverage declaration: "Won't Fix verification complete. ID gaps found: [N]. Pairs investigated: [N]. New findings filed: [N or 'none — no ID gaps']."
+
+---
+
+## Check 4 — Mandatory category coverage declaration
+
+Before writing any new findings, verify that each of the following check categories was covered by at least one agent in this vet — either by a finding in the Findings sheet, or by an explicit "no issues found" statement in an AGENT_COMPLETE marker's column F.
+
+To check: scan the Findings sheet for at least one finding in the relevant error type, OR scan the AGENT_COMPLETE rows (column D = `AGENT_COMPLETE`) for the relevant agent's completion message confirming the check ran. If neither is present, file a gap-fill finding.
+
+**Required coverage categories**:
+
+| Category | Agent expected to cover it | File this if absent |
+|---|---|---|
+| Study data accuracy (cohort, metric type, comparison arm) | `formula-check-data` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration found for study data accuracy (cohort/metric/arm checks). Confirm formula-check-data ran and completed Check 5." |
+| Structural completeness (leverage/funging, Simple CEA, scenario tab) | `formula-check-structure` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for structural completeness checklist. Confirm formula-check-structure ran and completed the mandatory checklist." |
+| Geography/country consistency | `source-data-check` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for geography consistency. Confirm source-data-check ran and completed Check F (if source tabs were present)." |
+| Grant amount consistency | `formula-check-parameters` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for grant amount consistency. Confirm formula-check-parameters ran and completed Check 5." |
+| Formula fragility (DIV/0, negative value guards, IFERROR) | `formula-check-edge-cases` or `formula-check-arithmetic` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for formula fragility / edge case guards. Confirm formula-check-edge-cases ran." |
+
+**Do not file** a gap finding when: (a) the relevant agent's AGENT_COMPLETE row is present and its completion message confirms the check ran; (b) program context contains a declared-intentional deviation that would make the check not applicable; or (c) the workbook has no source data tabs (geography consistency check does not apply).
+
+Coverage declaration: "Category coverage check complete. Categories confirmed covered: [N/5]. Gaps filed: [list of categories or 'none']."
 
 ---
 

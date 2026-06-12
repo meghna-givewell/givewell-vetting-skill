@@ -7,6 +7,8 @@ You are performing a raw data plausibility check for a GiveWell spreadsheet vet.
 
 Your job is narrow and concrete: check the raw data extract tabs for transposition errors, ordering violations, and implausible year-over-year jumps for the in-scope geographies. Do not audit formulas in calculated tabs — that is the formula-check agent's job. Do not read the full vetted sheets (Vaccine coverage, Disease burden, Main CEA). Read source data tabs only.
 
+**Scope distinction — source-data-check vs. formula-check-data**: source-data-check handles the raw source data tabs themselves — plausibility, ordering violations, and whether the tab carries a stale vintage. formula-check-data handles whether a specific hardcoded value in the CEA matches the value at the row its formula or note claims to reference. Both checks are required; do not skip either on the assumption the other covers it.
+
 **Stakes**: Transcription errors in raw data tabs propagate silently into every downstream calculation. A BCG/OPV0 column swap or a coverage value transposed from one country to another will never surface in a formula audit because the formula is correct — only the input is wrong. This check exists specifically to catch errors that formula audits cannot.
 
 **Role calibration**: This is a factual correctness check, not a methodology review. Flag ordering violations and transpositions you can actually demonstrate — not values that merely look low or high in isolation. When a value is plausible but unverified, prefer Medium/H with Researcher judgment needed ✓ over High/D.
@@ -92,6 +94,24 @@ Prioritize this check for tabs carrying **cause-specific mortality or disease bu
 
 Skip this check for tabs that explicitly carry a fixed historical vintage by design (e.g., a tab labeled "GBD 2019 fixed baseline").
 
+### Check F — Geography/country consistency across source tabs
+
+After completing Checks A–E, verify that every source data tab in the workbook contains data from the correct geography for the program being modeled.
+
+1. From the program context (Step 0.5), identify the program's target geography (country, state, or region). If not provided, infer from the workbook title or the first populated row of the main CEA sheet.
+
+2. For each source tab identified in Step 1, scan column A through column C of the first 100 rows using `read_sheet_values` (FORMATTED_VALUE). Look for country names, ISO codes, GBD location names, DHS survey country codes, or administrative region labels.
+
+3. Flag any source tab where the majority of data rows reference a different country than the program's target geography AND no cell note explains the use of proxy data (e.g., "Using Ghana data as proxy for Mozambique — no country-specific data available").
+
+File as **High/H** if the wrong-country data appears to drive a key CE parameter (mortality rate, disease burden, coverage baseline): "[Tab name] contains primarily [wrong country] data in a model for [correct country]. No note explains the use of proxy data. Verify whether [correct country]-specific data should be used, or add a note documenting the proxy rationale."
+
+File as **Medium/H** if the tab is secondary or supplementary: "[Tab name] contains [wrong country] data — confirm this is appropriate or update with a source note."
+
+Do not flag tabs where: (a) the cell note or tab header explicitly acknowledges the proxy geography; (b) the wrong-country rows are reference/comparison rows, not the rows being used in formulas; or (c) the program intentionally models a multi-country portfolio.
+
+Coverage declaration: "Geography/country consistency check complete. Source tabs checked: [N]. Target geography: [country]. Tabs with matching geography: [N]. Tabs flagged for wrong or unexplained geography: [list or 'none']."
+
 ---
 
 ## Coverage declaration
@@ -121,7 +141,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `source-data-check`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).

@@ -30,6 +30,7 @@ Exclude:
 - Cells containing only text labels with no numeric meaning
 - Cells in the output sheets (Dashboard, Findings, Publication Readiness, Hardcoded Values, Confidentiality Flags)
 - Cells that are clearly lookup keys (e.g., `1`, `2`, `3` in an index column)
+- **Formula cells** — cells containing a formula starting with `=`, even when those formulas embed numeric literals (e.g., `=B14 * 0.87`). Embedded literals in formula cells are **formula-check-arithmetic**'s scope. This agent enumerates hardcoded-value cells only (no `=` operator). Do not double-count.
 
 ---
 
@@ -53,7 +54,14 @@ Columns:
 - `Org-Reported` — from the grantee's own data: coverage surveys, program reports, cost figures, delivery statistics. The researcher should confirm against the grantee's most recent reporting.
 - `Structural` — a model constant where the value is determined by model design rather than empirical evidence (e.g., 12 months/year, 0.5 for mid-year timing, 100,000 population denominator). Flag if the structural constant is unusually non-standard.
 
-When category is ambiguous, prefer the more specific category (e.g., a coverage rate that came from a DHS survey is `Study-Derived`, not `Org-Reported`, even if the grantee cited it).
+**Category assignment — apply in this priority order** (stop at the first match):
+
+1. **GiveWell Parameter first**: Look up the cell's row label in `reference/key-parameters.md`. If the parameter name or value matches an entry there (moral weight, discount rate, income elasticity, value of a life saved, benchmark CEA), assign `GiveWell Parameter`.
+2. **Study-Derived second**: Does the cell note or an adjacent cell cite a specific external source (RCT, meta-analysis, DHS survey, GBD/IHME estimate, WUENIC table)? If yes, assign `Study-Derived`.
+3. **Org-Reported third**: Does the value represent data the grantee itself reported — coverage surveys, program reports, cost figures, delivery statistics — rather than a published external study? If yes, assign `Org-Reported`.
+4. **Structural last**: Is the value determined by model design rather than empirical evidence (12 months/year, 0.5 mid-year convention, a 100,000 population denominator)? If yes, assign `Structural`.
+
+When category is ambiguous, prefer the more specific category. Prefer `Org-Reported` over `Study-Derived` only when the data comes from the grantee's own primary data collection with no external source cited.
 
 **One row per unique parameter** — if the same parameter value (e.g., discount rate, moral weight, units of value per dollar) appears in multiple cells, create a single row and list all cell references in column B, separated by commas (e.g., `C14, C22, E14`). Treat cells as the same parameter if they share the same row label or adjacent description and the same value. Each *distinct* parameter still gets its own row.
 
@@ -81,14 +89,30 @@ This step is required — do not skip it even if the output-setup step already a
 
 ---
 
+## Step 3 — Coverage cross-check
+
+After all rows are written to the Hardcoded Values sheet, verify your scan was complete:
+
+1. From your Step 1 FORMULA scan, identify the last non-empty row number you encountered on each vetted sheet (the highest row number that had any data).
+2. Compare the last non-empty row against the highest row number you scanned in your final batch.
+3. If the scanned count is more than 5 rows less than the last non-empty row, identify which row range was skipped and re-read it in FORMULA mode before writing the completion marker.
+
+Do not use `get_spreadsheet_info` for this check — it returns the grid size (e.g., 1000 rows), not the number of populated rows, and would always show a false gap.
+
+Write in your reasoning before proceeding: "Coverage cross-check: [sheet name] — last non-empty row from FORMULA scan: [N]; scan covered through row [M]. Gap: [N-M rows or 'none']. [Confirmed complete / Re-read rows X–Y]."
+
+This cross-check guards against silent truncation from batch read limits — the MCP tool returns at most 50 rows per call, and a missed batch can leave whole sections unscanned.
+
+---
+
 ## Final step — write completion marker
 
-After all rows are written and conditional formatting is applied, add ONE final row to the Hardcoded Values sheet at the next available row after all enumerated entries. This is the absolute last action you take before finishing.
+After all rows are written, conditional formatting is applied, and the coverage cross-check is complete, add ONE final row to the Hardcoded Values sheet at the next available row after all enumerated entries. This is the absolute last action you take before finishing.
 
 Write the row with:
-- Column A: `AGENT_COMPLETE`
-- Column E: `hardcoded-values`
-- Column F: `Enumerated [N] hardcoded parameters across [sheet name(s)].`
+- Column B: `hardcoded-values`
+- Column D: `AGENT_COMPLETE`
+- Column F: `Enumerated [N] hardcoded parameters across [sheet name(s)]. Coverage cross-check: scanned through row [M]; last non-empty row [K]. [Confirmed complete / Re-read rows X–Y].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The reconciliation agent detects this row to confirm the agent completed normally. This row is excluded before presenting the sheet to researchers.

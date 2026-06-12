@@ -156,26 +156,48 @@ Coverage declaration: `COVERAGE | formula-check-voi | SUMPRODUCT range alignment
 
 ---
 
+## Mandatory check log
+
+Before filing any findings, write the check log for all checks you ran. For each item write `ran: [brief result or cell range]` or `n/a: [one-word reason]`:
+
+```
+formula-check-voi check log:
+  VOI structural comparison vs. template [___]
+  grant cost logical consistency [___]
+  VOI/optionality ad hoc adjustment scope [___]
+  probability row column-reference consistency [___]
+  cross-actor symmetry assumption [___]
+  VOI_Priors cross-formula column-scope [___]
+  annuity-due vs. annuity-immediate [___]
+  scenario weight sum verification [___]
+  VOI CE reference source verification [___]
+  P(wrong) parameter floor [___]
+  CE of reallocated funding vs. funding bar [___]
+  SUMPRODUCT final CE range alignment [___]
+```
+
+---
+
 ## Writing Findings
 
 Before writing any finding, confirm: (1) exact cell reference(s), (2) specific formula or value issue, (3) precise fix.
 
-**Your row start position is pre-assigned in session context** — do not auto-detect. Append findings using `modify_sheet_values`. See `reference/column-reference.md` for full column specifications.
+**Your staging sheet name is provided in session context** — write all findings to that staging tab starting at row 2. Append findings using `modify_sheet_values`. See `reference/column-reference.md` for full column specifications.
 
 Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula; plain language; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include exact replacement formula or value) | **H** Estimated CE Impact (write exactly one of these standard phrases: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown) | **I** Researcher judgment needed (✓ only for intent/decision questions) | **J** Status (leave blank)
 
-**Overflow protection**: If you exhaust your allocated row budget and still have findings to write, do not stop. Continue writing at the next row beyond your budget — the compaction agent reads all rows and will sort any overflow findings into their correct position.
+**No row budget**: Write all findings to your staging sheet. There is no row limit.
 
 ---
 
 ## Final step — write completion marker
 
-After all checks are complete (or after the self-detection step if no VOI content is found), write ONE final row to the Findings sheet at the next available row within your allocated range (or at the first row of your allocated range if no findings were written). This is the absolute last action you take.
+After all checks are complete (or after the self-detection step if no VOI content is found), write ONE final row to your staging sheet at the next available row after your last finding (or row 2 if no findings were written). This is the absolute last action you take.
 
 Write the row with:
 - Column B: `formula-check-voi`
 - Column D: `AGENT_COMPLETE`
-- Column F: If VOI content was found: `Checked [N] VOI rows across [sheet name(s)]. Filed [K] Findings rows. Row allocation: [start]–[end].` If no VOI content found: `No VOI content found across vetted sheets. Checks skipped. Row allocation: [start]–[end].`
+- Column F: If VOI content was found: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] VOI rows across [sheet name(s)]. Staging sheet: [stg-voi-A or stg-voi-B]. Filed [K] findings in rows 2–[K+1].` If no VOI content found: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | No VOI content found across vetted sheets. Checks skipped. Staging sheet: [stg-voi-A or stg-voi-B].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure.

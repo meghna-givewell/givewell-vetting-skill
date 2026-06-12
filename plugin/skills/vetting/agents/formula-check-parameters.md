@@ -45,6 +45,8 @@ A note reading "GBD 2019" in a 2025–2027 grant model is a trigger to check whe
 - **Drift ≥2%**: file as **Medium/H** and include both values in the Explanation: "Cell [ref] cites [year] — current [source] value is [X] vs. model's [Y] ([Z]% difference)."
 - **No updated value found after searching**: file as **Medium/H** with Researcher judgment needed ✓ (**Parameter**): "Cell [ref] note cites [year] data for a key parameter in a [grant period] model — verify the value reflects the most recent available vintage and update the note."
 
+**GBD/IHME-specific rule**: When the cited source is GBD (Global Burden of Disease) or IHME data and the vintage is ≥2 years before the model's grant period start year, file as **Medium/H** by vintage alone — do not require drift evidence before escalating from Low. Write 'Direction unknown' in column H. GBD data is updated annually and the direction of change for any specific parameter is not predictable without looking it up; the vintage staleness alone is a material parameter quality issue for GBD-derived values. This rule applies regardless of whether a WebSearch finds a current value — if the search finds an updated value and drift ≥2%, include both values; if the search finds no updated value, use the standard no-updated-value phrasing.
+
 Do not file this finding if the note already explains why the older vintage is appropriate (e.g., "GBD 2019 used because the 2021 vintage does not disaggregate this age group").
 
 Coverage declaration: "Stale-year note check complete. Hardcoded cells with vintage year citations scanned: [N]. Stale values found at: [list or 'none']. WebSearches run: [N]."
@@ -61,11 +63,41 @@ Coverage declaration: "Asymmetric parameter check complete. Parameter rows scann
 
 ---
 
+### Check 5 — Grant amount consistency
+
+When a spreadsheet contains a grant amount (total budget, GiveWell-directed amount, or cost-per-person figure), verify:
+
+1. **Single source across tabs**: All tabs using the grant amount should either reference a single canonical input cell, or have hardcoded values that match within 1%. A discrepancy >1% is a **Medium/H** `Inconsistency`: "[Tab A] uses $X while [Tab B] uses $Y — grant amount inputs should match. Consolidate to a single canonical cell and reference it throughout."
+
+2. **Match against conditional approval**: If a conditional approval document was provided in Step 0.5, verify the model's grant amount matches the conditional approval figure. A discrepancy is **High/H** with Researcher judgment needed ✓: "Model grant amount ($X) does not match the conditional approval figure ($Y). Confirm which is current."
+
+3. **Internal consistency**: Verify that per-unit costs derived from the grant amount (cost per beneficiary, cost per life saved) use the same grant figure as the total budget row. A derived cost implicitly using a different grant amount is a **Medium/H** `Inconsistency`.
+
+Coverage declaration: "Grant amount consistency check complete. Grant amount cells identified across all tabs: [N]. Discrepancies found: [list or 'none']."
+
+---
+
+### Severity rule for key-parameters.md deviations
+
+When any hardcoded value corresponds to a parameter listed in `reference/key-parameters.md` and deviates from the standard value:
+
+- **Deviation >5% with no explanatory cell note** → **High/H**: "[Cell] = [value], which deviates [X]% from the key-parameters.md standard of [standard]. Add a note documenting why the deviation is intentional, or update to the standard value."
+- **Deviation >5% with a note explaining the reason** → **Medium/H**: "[Cell] uses [value] (note: [summary]) vs. key-parameters.md standard of [standard]. Confirm the deviation is still appropriate."
+- **Deviation ≤5% with no note** → **Low/H**: "[Cell] = [value] vs. key-parameters.md standard of [standard] — minor deviation; add a note if this is intentional."
+
+This rule applies regardless of whether the deviation is directionally conservative. A conservative deviation still misstates CE and should be documented. The key-params-check agent also applies this rule; reconciliation will deduplicate overlapping findings.
+
+**Full-row continuation rule**: When a parameter issue is found in one column of a row — e.g., a stale-year value or wrong-country value in column C — scan every other populated column in the same row before moving to the next row. Copy-paste creates sibling parameter errors: if column C of a "mortality rate under-5" row cites a 2019 vintage, columns D through N of the same row likely carry the same vintage or an equally outdated value. File all affected columns in a single grouped finding listing every affected cell (e.g., `C34, D34, E34`) rather than separate per-column findings. Only after scanning all columns in that row can you proceed to the next row. This rule applies to: stale-year note findings (Check 3), wrong-country note findings (Check 2), and asymmetric parameter findings (Check 4).
+
+---
+
 ## Writing Findings
 
 Before writing any finding, confirm: (1) the exact cell reference(s) affected, (2) the specific value that is stale or inconsistent, (3) the precise fix required or question for the researcher.
 
 **Severity guard**: Before filing a finding that classifies a specific hardcoded value as wrong (High/D or Medium/H), you must have done at least one of: (a) confirmed the value contradicts a source you retrieved via WebSearch, (b) verified against `reference/key-parameters.md`, or (c) confirmed via direct computation from the source tab. If uncertain after checking, downgrade to Low/H with Researcher judgment needed ✓.
+
+**CE impact before severity assignment**: Before assigning severity ≥ Medium for any finding, attempt to compute the CE impact by tracing the flagged cell through the formula chain to the CE output. If the chain is traceable, compute the delta and write the estimated impact in column H before finalizing severity. A finding whose CE impact computes to <2% must be filed as Low/H, not Medium — do not assign severity qualitatively when CE impact is computable. If the chain is not directly traceable, write "Direction unknown" and proceed with qualitative severity judgment.
 
 **Your row start position is pre-assigned in session context** — do not auto-detect. Append findings using `modify_sheet_values`.
 
@@ -81,5 +113,5 @@ After all findings are written, write ONE final row to the Findings sheet at the
 
 - Column B: `formula-check-parameters`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Checked all rows across [sheet name(s)]. Filed [K] findings. Row allocation: [start]–[end].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked all rows across [sheet name(s)]. Filed [K] findings. Row allocation: [start]–[end].`
 - All other columns: blank

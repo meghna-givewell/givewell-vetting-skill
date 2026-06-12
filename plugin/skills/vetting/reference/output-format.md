@@ -25,6 +25,14 @@ Columns (A–J): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
   - `Assumption` — key assumption lacks a source, explanation, or is an unacknowledged edge case; also covers structural model issues (missing required tab, inverted section structure that affects CE interpretation)
   - `Inconsistency` — values that should match across sheets or within the model don't
   - `Legibility` — tab ordering, section ordering, unclear or stale labels, terminology errors (e.g., "x cash" instead of "x benchmark"), placeholder text
+
+  **`Adjustment` vs. `Inconsistency` — decision tree** (these are frequently confused):
+  - Use `Adjustment` when the finding concerns an *operation* that should (or should not) exist: an adjustment that is missing, double-counted, applied to the wrong base, has the wrong sign, or is additive vs. multiplicative incorrectly. The issue is with the treatment of the adjustment itself.
+  - Use `Inconsistency` when the finding concerns two *values that should match* but don't, with no formula or adjustment operation as the root cause: the same parameter appears in two cells with different values, a cross-sheet reference pulls a value that doesn't match its stated source, or a figure cited in a note doesn't match the cell value.
+  - If an adjustment produces a value that is inconsistent across tabs → `Adjustment` (root cause is the adjustment treatment).
+  - If the same parameter value is hardcoded differently in two places with no formula involved → `Inconsistency`.
+  - If a formula references a wrong cell causing a mismatch → `Formula` (root cause is the formula error, not the inconsistency).
+
 - **Explanation** (F): 1–2 sentences maximum. Lead with the specific problem — not background. Make a specific, falsifiable claim and include the actual value or formula fragment (e.g., "B14 = 0.87 but C22 = 0.79"). Plain language a non-expert can understand. Do not hedge what you can confirm. No chain traces, no reasoning.
 - **Recommended Fix** (G): One sentence or formula only. Lead with an imperative verb (Change, Replace, Add, Delete). Include the exact replacement formula or value. No explanation of why — only the action.
 - **Estimated CE Impact** (H): Always begin with one of these standard phrases, then append a magnitude note if known:
@@ -34,31 +42,68 @@ Columns (A–J): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
   - `No CE impact`
   - `Direction unknown` (use when even direction requires researcher input)
 
-  **When to use `Direction unknown`**: Use this phrase whenever the researcher's judgment determines both *what the fix is* and *which direction it moves CE* — not just the magnitude. A finding marked `Researcher judgment needed ✓` where the researcher could legitimately revise the parameter in either direction (e.g., a placeholder that real-world evidence might revise up or down, an AMR assumption that a new study might increase or decrease) must use `Direction unknown`, not a directional phrase based on one assumed revision. Predicting a direction under one assumption and filing it as `Raises CE` or `Lowers CE` is only correct when the direction is unambiguous regardless of which reasonable fix the researcher chooses.
-- **Researcher judgment needed** (I): Mark `✓` only when the researcher must make a **decision** — e.g., an intent question ("is this $0 intentional?") or a choice between two valid approaches. Do NOT mark for verification tasks ("check this against the source") or plausibility concerns ("this value seems off") — those are just Medium findings. Leave blank if the correct action is unambiguous, even if the researcher still has to perform it.
+  **Exact punctuation required**: all phrases use an em-dash (` — `) with one space on each side. Do not use en-dash (`–`) or hyphen (`-`). The compaction agent sorts column H lexicographically — any punctuation variation produces an inconsistent sort order and breaks grouping.
+
+  **When to use `Direction unknown` — decision tree** (apply in order, stop at first match):
+  1. Does the researcher's answer determine both *what the fix is* AND *which direction it moves CE*? → `Direction unknown`
+  2. Could a reasonable researcher apply fixes that raise CE in one scenario and lower it in another (e.g., a placeholder where real-world evidence might revise up or down)? → `Direction unknown`
+  3. Is the finding marked `Researcher judgment needed ✓` and could the researcher's answer change the direction of CE impact? → `Direction unknown`
+  4. Is the direction clear but the magnitude unknown? → `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown`
+  5. Are both direction and magnitude clear? → `Raises CE — [estimate]` or `Lowers CE — [estimate]`
+
+  **Do not use `Direction unknown`** when the direction is evident from the evidence but you simply cannot compute the magnitude — use `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown` instead.
+
+  **Column H completeness by Error Type**:
+  - `Formula`, `Parameter`, `Adjustment` findings at Medium or High severity: column H must **never be blank**. Use `Direction unknown` if the direction depends on researcher input; use `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown` if the direction is clear.
+  - `Assumption` findings at Medium severity: blank is acceptable only when the assumption has no clear directional CE effect. When the assumption does affect CE, use `Direction unknown` or a directional phrase.
+  - `Inconsistency`, `Legibility` findings at Medium severity: blank is acceptable.
+
+  **`No CE impact` must be written explicitly — never leave blank when the determination is zero**: When you have assessed a finding's CE impact and determined it is zero, write `No CE impact` in column H — do not leave column H blank. Blank means "CE impact not yet assessed"; `No CE impact` means "assessed and confirmed as zero." A blank column H on a Formula, Parameter, or Adjustment finding will be treated as an unassessed impact during validation and routing. This applies at all severity levels — write `No CE impact` explicitly even for Low findings when CE impact is confirmed zero.
+- **Researcher judgment needed** (I): Mark `✓` only when the researcher must make a **decision** and BOTH of the following hold: (1) the researcher's answer changes what you recommend — either the severity OR the fix itself, not just how you word the explanation; AND (2) the researcher's answer cannot be determined from spreadsheet content, external sources, or GiveWell guidance without entering the researcher's specific analytical intent. If the spreadsheet can answer the question (e.g., a cell note already states the intent, or the value can be verified against a GW reference document), do not mark `✓`. **Do NOT mark `✓` for**:
+  - Verification tasks: "check this against the source," "confirm the GBD vintage," "verify this value" — these are Medium findings; the researcher performs the action, but no judgment call is required
+  - Documentation tasks: "add a cell note," "update the label," "add a source citation" — the action is unambiguous regardless of researcher intent
+  - Deterministic fixes: any finding where the correct action is a specific formula change or specific value substitution — the fix is clear regardless of intent
+  - Plausibility concerns: "this value seems off" without a specific correction — downgrade to Low or reframe as a question in column F
+
+  Leave blank if the correct action is unambiguous, even if the researcher still has to perform it.
 - **Status** (J): Left blank by Claude. The researcher fills this in: `Open` / `Fixed` / `Won't Fix` / `Needs Discussion`. Do not write to this column.
 
 ### Severity Rules
 
-Apply the decision tree below in order — stop at the first rule that matches.
+Every finding has a **Nature** and a **Materiality**. Determine both, then read severity from the matrix.
 
-**High** — file as High if ANY of the following are true:
-1. **Confirmed factual error against an authoritative standard**: A GW standard parameter (benchmark, moral weight, discount rate) deviates from `key-parameters.md` with no cell note rationale; a formula is confirmed (FORMULA mode) to reference a demonstrably wrong cell or deleted range; a logical impossibility (direct benefit cost > total grant cost; probability > 100%; deaths averted > all-cause deaths in the target population).
-2. **Estimated CE impact ≥2%**: You have estimated the CE impact of correcting the finding and it is at or above 2%. When impact is unknown but the affected parameter sits in the confirmed direct CE calculation chain, treat as High.
-3. **Silent omission**: An adjustment was calculated in the model but is confirmed absent from the CE chain.
+**Nature**
+- **Defect** — objectively wrong: there is a correct answer and the sheet has it wrong. Includes formula errors (wrong reference, wrong logic, sign error, broken range), confirmed value mismatches against a cited source, GW standard parameter violations with no documented rationale, logical impossibilities.
+- **Gap** — something required is absent: a source citation on a key input, a required adjustment, a link that should exist.
+- **Judgment** — a defensible modeling choice you would question, not an error: a parameter at the optimistic end of a plausible range, a discount rate choice, a structural modeling decision.
 
-**Medium** — none of the High conditions apply, and ANY of the following are true:
-1. The finding plausibly affects CE but direction or magnitude requires researcher judgment (column H would be "Direction unknown").
-2. A GW standard parameter deviates from `key-parameters.md` with a documented cell note rationale — confirmed deliberate, but requires researcher reconfirmation.
-3. A key input in the direct CE calculation chain lacks an external source or explanation, and the value's correctness cannot be independently verified.
-4. A formula inconsistency (e.g., additive vs multiplicative adjustment composition) doesn't currently affect CE but would produce a ≥2% CE difference if the inconsistency were triggered by changed inputs.
+**Materiality** (effect on bottom-line CE)
+- **Decision-changing** — would flip whether the program clears the funding bar.
+- **Material** — moves bottom-line CE by ≥5% but does not flip the decision.
+- **Immaterial** — moves bottom-line CE by <5%.
+- **Zero** — does not touch the bottom line: orphaned cell, label, documentation gap on a value that is itself correct.
 
-**Low** — none of the above apply:
-- Documentation, labeling, or structural issues with no CE calculation impact.
-- Rounding differences within tolerance: ≤15% relative deviation from the source value AND estimated CE impact <2%.
-- Hidden rows/columns with no active formula dependencies in visible cells.
+**Severity matrix**
 
-**Tie-breaker**: When the decision tree is genuinely ambiguous between two levels, ask: "Would a researcher triaging by severity want to see this in their first pass?" If yes, use the higher level.
+|  | Decision-changing | Material (≥5%) | Immaterial (<5%) | Zero |
+|---|---|---|---|---|
+| **Defect** (incl. formula errors) | High | High | Medium | Medium |
+| **Gap** | High | High | Medium | Low |
+| **Judgment** | High | Medium | Low | — |
+
+**Bright-line rules** — apply these before reading the matrix; they override it:
+1. **Defect floor**: A confirmed objective error is never below Medium, even with zero CE impact. An orphaned formula error, a confirmed value mismatch in a non-CE tab — both remain Medium. Errors may become material if inputs change; they also undermine confidence in adjacent calculations.
+2. **Unknown materiality rounds up**: If CE impact cannot be estimated, treat materiality as one tier higher. A Defect or Gap with unknown materiality → High. A Judgment with unknown materiality → Medium. Write `Raises/Lowers CE — magnitude unknown` or `Direction unknown` in column H accordingly.
+3. **Decision-changing always wins**: Any finding that could flip whether the program clears the bar is High regardless of category.
+4. **GW standard parameters always High**: Any deviation from a benchmark, moral weight, or discount rate in `key-parameters.md` with no documented cell note rationale is always High — these parameters are cross-cutting and a miscalibration in one CEA propagates to others.
+
+**Nature disambiguation when ambiguous**:
+- Defect vs. Gap: default to Defect — treat as objectively wrong until the researcher confirms the absence was intentional.
+- Gap vs. Judgment: if the researcher could have intended the current state, use Gap — it asks the researcher to confirm rather than asserting error.
+
+**Rounding note**: Small rounding differences (≤2% relative deviation from the source value AND <5% CE impact) are a Judgment + Immaterial → **Low**, not a Defect. Classify as a Defect only when the deviation materially misrepresents the source value.
+
+**Discount rate omission exception**: Omitting the discount rate from the CE chain is filed as Low/H per `key-parameters.md` calibration — discount rates are present in virtually all models and their chain omission is almost always intentional (applied at the UoV level). See `key-parameters.md` for per-parameter severity overrides.
 
 ### Grouping and Sorting
 Sort by sheet (column B), then row number. Where the same issue applies to multiple cells, **group into a single finding** listing all affected cells (e.g., "B14, B18, B22"). Only create separate rows when the issue, explanation, or recommended fix differs meaningfully. Aim for ~15–25 grouped findings rather than 50+ individual entries.

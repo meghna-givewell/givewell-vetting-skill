@@ -46,7 +46,7 @@ When a tab uses an older GBD vintage (e.g., GBD 2019 when GBD 2021 is available)
 ---
 
 ### FN-002 (2026-04) — Stale year in cell note: verify the value, not just the note
-When a cell note cites a data vintage more than 2 years before the model's grant period start year AND the row is a key epidemiological or cost parameter (mortality rate, incidence, coverage, unit cost, or any parameter in `reference/key-parameters.md`), treat this as a trigger to verify the underlying value itself — not just the documentation. Run a WebSearch for the current value. If drift is <2%, file as Low/H noting the vintage is stale but value is materially unchanged. If drift ≥2%, file as Medium/H and include the current value in the Explanation (e.g., "Cell B14 note cites GBD 2019 — current GBD 2021 value is 0.42 vs. model's 0.38 (11% difference)"). If no updated value is found after searching, file as Medium/H with Researcher judgment needed ✓.
+When a cell note cites a data vintage more than 2 years before the model's grant period start year AND the row is a key epidemiological or cost parameter (mortality rate, incidence, coverage, unit cost, or any parameter in `reference/key-parameters.md`), treat this as a trigger to verify the underlying value itself — not just the documentation. Run a WebSearch for the current value. If drift is <5%, file as **Medium/H** (Defect + Immaterial — the Defect floor applies; confirmed drift, even small, is not Low) and include the current value in the Explanation. If drift is ≥5%, file as **High/D** (Defect + Material) and include the current value (e.g., "Cell B14 note cites GBD 2019 — current GBD 2021 value is 0.42 vs. model's 0.38 (11% difference)"). If no updated value is found after searching, file as **Medium/H** with Researcher judgment needed ✓.
 
 **Applies to**: formula-check-arithmetic
 
@@ -117,6 +117,44 @@ When a source value matches a specific subgroup or intervention arm rather than 
 Example: Thomas et al 2024 C17 = 51% = mortality among non-KMC-initiated babies (172/336 non-initiated). The overall LBW mortality in the same study was 18% (213/1,152). Either (a) sourcing error — model should use overall population baseline; or (b) intentional — researcher chose the non-KMC arm rate as the counterfactual for what happens without intervention. Selection effects (sicker babies may have been excluded from KMC) make (b) methodologically suspect, but it is a defensible modeling choice. File High with Researcher judgment needed ✓, explaining both readings.
 
 **Applies to**: formula-check-data, source-data-check, formula-check-arithmetic
+
+---
+
+### SC-008 (2026-06) — GBD vintage staleness: High when CE chain confirmed, Medium otherwise
+FN-001 sets the floor (always flag GBD vintage staleness, Medium minimum). SC-003 determines when Medium should be High (parameter in direct CE chain). Both rules apply together:
+- Stale GBD vintage cell AND confirmed in direct CE chain (FORMULA-mode trace ≥2 hops to CE output) → **High**
+- Stale GBD vintage cell, CE chain not confirmed in FORMULA mode → **Medium**
+
+Do not cite FN-001 ("Medium is acceptable") to justify filing a CE-chain GBD vintage finding as Medium. FN-001 ensures you always file; SC-003 + this entry determine whether to file High or Medium. The key step is the FORMULA trace — without it, use Medium.
+
+**Applies to**: formula-check-data, formula-check-arithmetic, heads-up-epi
+
+---
+
+### SC-009 (2026-06) — Missing source on a parameter: Medium only when CE chain or key-parameters.md confirmed
+Medium severity rule #3 ("key input in the direct CE calculation chain lacks an external source") is frequently over-applied, causing Low-severity documentation gaps to be filed as Medium. Apply the threshold precisely:
+- Row label appears in `key-parameters.md` AND has no source note → **Medium** (the parameter's correctness cannot be independently verified without the source)
+- Cell is confirmed in the direct CE chain via FORMULA mode (≥2 hops to CE output) AND no external source or cell note explains the value → **Medium**
+- All other missing-source cases → **Low**
+
+Do not upgrade to Medium because a row "looks important" or "is probably in the CE chain" without FORMULA-mode confirmation. Both conditions (chain confirmed OR key-parameters.md match) must be checked before claiming Medium.
+
+**Applies to**: formula-check-data, formula-check-arithmetic, notes-scan, source-check agents
+
+---
+
+## Cross-Agent Scope Reference
+
+This section identifies which agent **owns** each check category. When a non-owning agent encounters a potential issue that falls in an owned category, it should note the observation in its reasoning but defer the actual finding to the owning agent rather than filing independently. This prevents the same issue type from being filed with different severities by different agents across runs — a primary source of inter-run inconsistency.
+
+| Check category | Owner agent | Non-owner behavior |
+|---|---|---|
+| Discount rate value | `key-params-check` | Other agents (formula-check-arithmetic, ce-chain-trace, heads-up-intervention) may read the discount rate cell as part of chain verification but must not file a Parameter finding for it. Note "discount rate check deferred to key-params-check" in AGENT_COMPLETE column F. |
+| GBD/IHME vintage staleness | `formula-check-arithmetic` (primary); `formula-check-parameters` (stale-year cell note variant) | Heads-up-epi SHOULD run the full GBD vintage check internally (per its agent file) and file findings — it has context to assess epi-specific vintage issues. Ce-chain-trace should not independently file GBD vintage findings; if encountered, note "GBD vintage staleness deferred to formula-check-arithmetic" in reasoning. The Wave 2.5 reconciliation agent deduplicates if both heads-up-epi and formula-check-arithmetic accidentally file the same finding. |
+| Cross-sheet reference concept mismatch (wrong-row reference) | `formula-check-arithmetic` (general case across all rows); `ce-chain-trace` (CE-chain-specific, Steps 3f and 4d) | Heads-up-epi, heads-up-intervention, and formula-check-data should not file wrong-row-reference findings — these belong to formula-check-arithmetic's cross-sheet inventory pass. If a suspicious reference is observed, note it in reasoning for the researcher but do not file a finding unless no formula-check-arithmetic agent is running for those rows (e.g., row scope explicitly excludes that section). |
+| Cross-Cutting CEA Parameters doc value comparison (all parameter rows) | `consistency-check` | formula-check-structure Part B reads the same doc (spreadsheet ID `1ru1SNtgj0D9-vLAHEdTM27GEq_P17ySzG-aTxKD6Fzg`) and checks a named subset of parameters (SMC deaths-averted rates, Pryce et al., PMI Nigeria, VAS income ratio, NI income ratio). In a standard vet where both agents run, formula-check-structure should note any deviation it observes in reasoning ("parameter deviation observed; deferred to consistency-check") but must NOT file a finding — consistency-check's "enumerate every parameter row" mandate already covers all rows formula-check-structure would catch. Filing from formula-check-structure would produce duplicates with potentially divergent severity classifications that compaction may not cleanly deduplicate. |
+
+**Applies to**: all agents
 
 ---
 

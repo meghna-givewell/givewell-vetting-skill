@@ -18,6 +18,20 @@ However: the *verdict* in column G is a model judgment that may be wrong. The ci
 
 ---
 
+## Bash tool check — do this before Step 1
+
+Before writing the verification script, confirm the Bash tool is available by attempting a trivial command (e.g., `echo "bash_available"`). If Bash is unavailable:
+
+1. Fall back to manual `WebFetch` verification for the top 5 `Study-Derived` parameters only (select by CE impact proximity — parameters in rows whose Description mentions mortality rate, coverage, or unit cost take precedence).
+2. For each of the 5 parameters: call `WebFetch` on the Source to Verify URL, then compare the stated value against the fetched content.
+3. Write verdicts (`Matched ✓`, `Contradicted ✗`, or `Could not verify`) and evidence to columns G and H of those 5 rows.
+4. Write AGENT_COMPLETE with column F text: `Bash unavailable — fell back to manual spot-check of top-5 Study-Derived parameters; full citation verification not completed. [N] spot-checked. [K] Matched ✓, [M] Contradicted ✗, [P] Could not verify.`
+5. Stop — do not attempt Steps 1–6 below.
+
+The orchestrator (SKILL.md) checks the AGENT_COMPLETE text for `Bash unavailable` and will surface a warning to the researcher.
+
+---
+
 ## Step 1 — Write the verification script
 
 Write the following Python script to `/tmp/citation_verify.py` using the Write tool:
