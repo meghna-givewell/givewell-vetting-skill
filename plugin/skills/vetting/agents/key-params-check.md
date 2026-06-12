@@ -72,7 +72,7 @@ Key-params coverage log:
 
 If a parameter is not applicable to this program type **per the program-type applicability table below**, write `n/a — [one-word reason]` (e.g., `n/a — not-malaria`). Write `n/a` only because the program type excludes this parameter — not because the parameter is absent from the spreadsheet. A parameter that should appear (based on program type) but does not is "not found," not "n/a."
 
-**"Not found" behavior — do not silently skip**: If a parameter is applicable to this program type but was not located in the column A/B label scan, do not write `not found` and move on. Instead, file a `Low/Parameter` with `Researcher judgment needed ✓`:
+**"Not found" behavior — do not silently skip**: If a parameter is applicable to this program type but was not located in the column A/B label scan, write `not found` as the cell ref in the coverage log AND also file a `Low/Parameter` with `Researcher judgment needed ✓`. Writing 'not found' in the log records that the search was executed; the finding flags the researcher to locate or confirm the parameter. Do not stop at the log entry — both actions are required:
 
 > *"[Parameter name] was not located in column A or B row labels. Verify the spreadsheet contains this parameter and that its value matches the GiveWell standard of [expected value]. Common alternative labels: [list from the synonyms above]."*
 

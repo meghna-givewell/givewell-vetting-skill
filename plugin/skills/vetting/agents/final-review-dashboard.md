@@ -39,6 +39,8 @@ After the Total row, skip one blank row, then write `Sheets not vetted:` in colu
 
 To compute the unvetted list accurately: call `get_spreadsheet_info` on the source spreadsheet to retrieve the complete list of all tabs. Compare that list against the vetted and lite-passed tabs from the session context scope declaration. Any tab not in either list is unvetted — write each on its own row in column A. If every tab in the workbook is covered by vetted or lite-passed, write `None`. Do not rely solely on the session context scope declaration — always verify against the actual workbook tab list.
 
+**Scope declaration recovery** — if session context was compacted and the vetted/lite-passed tab lists are not available: read Dashboard cells A151:B152 of the output spreadsheet (written by the orchestrator before Wave 1). Cell B151 = comma-separated fully vetted tabs, cell B152 = comma-separated lite-pass tabs. Use these values as the scope declaration. If B151 is also blank or unreadable, announce: "Scope declaration unavailable — vet metadata at Dashboard A151:B152 is missing. Ask the researcher which tabs were fully vetted vs. lite-passed before finalizing the unvetted list." Then proceed with the tab list from `get_spreadsheet_info` and leave the vetted/lite-passed categorization blank.
+
 ---
 
 ## Step 3 — Write Key Findings summary in chat

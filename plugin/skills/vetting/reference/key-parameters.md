@@ -12,9 +12,9 @@ Flag deviations from these values unless the sheet provides an explicit document
 | Avert death, 6–59 month child (VAS) | **119 UoV** | |
 | Avert maternal death (MNH/reproductive health) | **125 UoV** | From GW Facility-based MNH BOTEC; higher than over-5 value due to DALYs per maternal death calculation. Use this when a model cites GW MNH BOTEC as the source — do not infer from general age-specific tables |
 | Long-term income ratio (SMC/VAS/New Incentives) | **0.3064** | |
-| Income effects — % increase in ln(income) per malaria case averted (children under 15) | **0.58088%** | From GW ITN CEA; used in malaria programs (ITNs, case management, SMC). Pre-Nov 2025 models may use 0.65% — flag as High/D if value deviates from 0.58088% |
+| Income effects — % increase in ln(income) per malaria case averted (children under 15) | **0.58088%** | From GW ITN CEA; used in malaria programs (ITNs, case management, SMC). Pre-Nov 2025 models may use 0.65% — flag as **Medium/H** if value deviates from 0.58088% |
 | p(update) cap (VOI/optionality) | **≤ 50%** | Above 50% implies program should be funded directly |
-| VOI adjustment application | Apply wrong-risk + other-funders to VoI component; funging to total | Do not apply all adjustments to the aggregate CE |
+| VOI adjustment application | Apply wrong-risk + influencing-other-funders to VoI component; funging to total | Do not apply all adjustments to the aggregate CE |
 | VOI adjustment scope (detail) | wrong-risk and influencing-other-funders apply to VOI component **only**; funging applies to the **total** CE | Do NOT dismiss as equivalent even when wrong-risk and other-funders numerically cancel — the funging adjustment must be correctly scoped away from direct benefits. Applying all three to total CE is a structural error. |
 | VOI — probability trial fails | Default **10%** | Speculative; update upward for politically unstable contexts |
 | VOI — probability we influence other funders | Default **20%** | Highly speculative; adjust based on total RFMF landscape and whether the study is answering a field-relevant question |
@@ -30,6 +30,7 @@ Flag deviations from these values unless the sheet provides an explicit document
 | Discount rate — TA death-averting programs | **1.4%** per year | Temporal uncertainty component only; used for TA grants where the primary benefit is near-term mortality reduction; use **4%** for income/consumption streams in the same model |
 | TA — p(failure to shift status quo) | Default **30%** | Probability TA engagement fails to change government behavior; distinct from VOI p(trial fails) = 10%; calibrate lower if government is already publicly committed or has co-funded the program. **Quality-improvement TA scope**: The 30% default is calibrated for scale-up TA (shifting a government to adopt a new program or scale coverage). For grants that improve the quality of an existing program already in operation (e.g., fortification standards enforcement, improving quality of ongoing iron fortification delivery), the standard p(failure) framing may not apply. Flag absence as **Low/H with Researcher judgment needed ✓** only, not Medium — do not auto-file as Medium for quality-improvement TA structures without first confirming with the researcher that scale-up p(failure) logic applies. |
 | TA speed-up benchmarks (years to reach steady-state coverage) | RTS,S: **2**; DtW: **4**; IFA: **4**; Dual tests: **5**; HPV: **6**; ILC: **13** | Cross-program reference for the "speed-up of steady state due to TA" parameter; ILC is high due to dual steady-state structure |
+| Years to benefits | **10** | Years from grant disbursement until the program's benefits start flowing. Program-specific; deviation from 10 triggers **Medium/H** — program context determines the appropriate value. |
 
 ## Moral Weights by Age Band (UoV per death averted)
 
@@ -67,7 +68,7 @@ These are the authoritative per-death moral weights by age group in units of dou
 
 ## Acceptable Ranges for Algorithmic Comparison
 
-Any deviation from the Exact Value column triggers a High/D finding — there is no tolerance band. The Min/Max columns are reference context (e.g., to understand plausible rounding or rounding-adjusted values) but do NOT define a tolerance zone. A value within the range that is not the Exact Value is still High/D.
+Deviations from the Exact Value column trigger a finding at the severity shown in the Flag severity column. The benchmark, moral weights, and direct-program parameters trigger **High/D**. Discount rate, income effects, and years-to-benefits trigger **Medium/H** (intentional-choice parameters that vary by program type). The Min/Max columns are reference context only — they do NOT define a tolerance zone. A value within the range that is not the Exact Value still triggers a finding at the stated severity.
 
 | Parameter | Exact Value | Min | Max | Flag severity |
 |---|---|---|---|---|
@@ -76,10 +77,12 @@ Any deviation from the Exact Value column triggers a High/D finding — there is
 | Avert over-5 death (malaria) | 73 | 69 | 77 | Yes — High |
 | Avert death 6–59m VAS | 119 | 113 | 125 | Yes — High |
 | Avert maternal death | 125 | 119 | 131 | Yes — High |
-| Discount rate | 4% | 3% | 5% | Yes — High |
-| Income effects malaria | 0.58088% | 0.55% | 0.65% | Yes — High |
+| Discount rate (general) | 4% | 3% | 5% | Yes — Medium |
+| Discount rate (TA death-averting) | 1.4% | 1% | 2% | Yes — Medium |
+| Discount rate (long-term health) | 0.5% | 0.3% | 0.8% | Yes — Medium |
+| Income effects malaria | 0.58088% | 0.55% | 0.65% | Yes — Medium |
 | Long-term income ratio | 0.3064 | 0.25 | 0.35 | Yes — High |
-| Years to benefits | 10 | 8 | 15 | Yes — High |
+| Years to benefits | 10 | 8 | 15 | Yes — Medium |
 | Moral weight — Stillbirth | 33 | — | — | Yes — High |
 | Moral weight — Early Neonatal | 84 | — | — | Yes — High |
 | Moral weight — Late Neonatal | 84 | — | — | Yes — High |

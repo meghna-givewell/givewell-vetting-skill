@@ -143,7 +143,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `leverage-funging`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Section detection: [N] leverage/funging rows found; Leverage/Funging tab: [present/absent]. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Section detection: [N] leverage/funging rows found; Leverage/Funging tab: [present/absent]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).

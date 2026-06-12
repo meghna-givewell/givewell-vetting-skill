@@ -55,18 +55,13 @@ Columns:
 
 ---
 
-## Final step — write completion markers
+## Final step — write completion marker
 
-After all flags are written (or if no flags were found), write ONE final row to the Confidentiality Flags sheet at the next available row:
-- Column A: `AGENT_COMPLETE`
+After all flags are written (or if no flags were found), write ONE final row to the Confidentiality Flags sheet at the next available row. This is the absolute last action you take.
+
+- Column A: `AGENT_COMPLETE` (not column D as in staging-sheet agents — this agent writes to the Confidentiality Flags sheet, which uses a different column layout)
 - Column B: `sensitivity-scan`
-- Column D: `Scanned [N] rows across [sheet name(s)]. Filed [K] flags.`
-- All other columns: blank
+- Column C: (blank)
+- Column D: `Sensitivity scan complete. Scanned [N] sheets. Found [K] confidentiality flags in rows 2–[K+1].`
 
-Then write a second AGENT_COMPLETE row to your staging sheet at row 2:
-- Column B: `sensitivity-scan`
-- Column D: `AGENT_COMPLETE`
-- Column F: `Scanned [N] rows across [sheet name(s)]. Filed [K] flags to Confidentiality Flags sheet. Staging sheet: [name from session context].`
-- All other columns: blank
-
-Use a separate `modify_sheet_values` call for each sheet. The staging sheet marker ensures compaction and validation agents can detect this agent's completion alongside all other Wave 1 agents.
+Use a single `modify_sheet_values` call. **Do not write to any staging sheet** — sensitivity-scan has no staging tab. The pre-Wave-3 self-verification check reads the Confidentiality Flags sheet directly for this marker. The compaction agent does not read the Confidentiality Flags sheet — it is excluded from the staging tab list.

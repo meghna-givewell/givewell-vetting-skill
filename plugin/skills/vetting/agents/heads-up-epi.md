@@ -48,7 +48,7 @@ If session context does not set an `is_ta_botec` flag or identify a counterfactu
 
 **Disease burden multi-source check**: When a model's mortality burden estimate for a specific geography derives from a single source (IHME/GBD alone, or WHO alone), flag as Medium/H and recommend triangulation. IHME estimates have been found 2.5× lower than UN IGME for Chad malaria burden (correcting this enabled $28M+ in new grants), and negatively correlated with IGME in Nigerian states for New Incentives. The recommended approach is to use at least two of: GBD, UN IGME, DHS, and — where available — RCT control-arm data. If IHME and UN IGME estimates differ by more than ~30%, flag as Medium/H and recommend deeper investigation. Note on source quality: recent DHS full birth history surveys (2021+, nationally representative, 5,000–30,000 HHs) should receive at least as much weight as IHME or IGME; HMIS/DHIS2 surveillance data is generally unreliable in sub-Saharan Africa and should not be given significant weight unless independently validated. If the model uses GBD 2019 data without noting that GBD 2021 estimates may differ materially, flag as **Medium/H**. You cannot rerun the model with updated GBD data to estimate CE impact — write "Direction unknown" in column H by default (updated GBD direction is geography- and cause-specific and should not be assumed). Before filing, run a targeted WebSearch for `"[disease] [country] burden GBD 2019 vs 2021"` or similar to check whether this specific cause/geography shows higher or lower burden in the more recent vintage. If the search establishes a clear direction, write "Raises CE — magnitude unknown" or "Lowers CE — magnitude unknown" accordingly; if inconclusive, write "Direction unknown." Flagging the vintage mismatch and recommending an update is the correct and complete action; do not downgrade severity because CE impact cannot be quantified.
 
-**GBD and IGME vintage year — explicit extraction step**: When any GBD or IGME citation appears in a cell note or source column, extract the vintage year before evaluating anything else. Do not assume the vintage is current. The extraction step is: (a) locate the year in the citation text (e.g., "GBD 2019," "IGME 2021," "IHME GBD Results Tool, accessed 2022"); (b) if no year is stated, flag as Low/O (Readability): "GBD/IGME citation at [cell] does not state the data vintage year — add the release year to the source note." Once extracted, apply the following vintage staleness rules:
+**GBD and IGME vintage year — explicit extraction step**: When any GBD or IGME citation appears in a cell note or source column, extract the vintage year before evaluating anything else. Do not assume the vintage is current. The extraction step is: (a) locate the year in the citation text (e.g., "GBD 2019," "IGME 2021," "IHME GBD Results Tool, accessed 2022"); (b) if no year is stated, flag as Low/O (Legibility): "GBD/IGME citation at [cell] does not state the data vintage year — add the release year to the source note." Once extracted, apply the following vintage staleness rules:
 - **GBD**: expected current vintage is GBD 2021 (released October 2022); GBD 2024 (released May 2025) is now also available and may be preferred for 2025+ models. If the cited vintage is GBD 2019 or earlier, flag as **Medium/H** (Parameter) regardless of whether an intervention adjustment note is present. If the cited vintage is GBD 2021 and the model covers 2025+, flag as **Low/H** with Researcher judgment needed ✓ asking whether the researcher has checked GBD 2024 for material changes. Recommended fix: "Update burden estimates to GBD 2024 (or GBD 2021 minimum) and confirm whether the intervention adjustment logic still applies." Write "Direction unknown" in column H — updated GBD data typically shows higher burden (raising CE) but direction is geography- and cause-specific.
 - **IGME (UN child mortality)**: expected current vintage is UNICEF IGME 2024 (released March 2025). If the cited vintage is IGME 2022 or earlier, flag as **Medium/H** (Parameter). If the cited vintage is IGME 2023, flag as **Low/H** with Researcher judgment needed ✓ asking whether the researcher has checked IGME 2024. Recommended fix: "Update to UNICEF IGME 2024 estimates and recheck the mortality rate used in the model." Write "Direction unknown" in column H.
 - **No vintage year cited at all**: flag as Low/O (Readability) as above; do not proceed to the staleness check until the year is identified.
@@ -114,6 +114,7 @@ This explicit extraction step is required because the general GBD vintage check 
 **heads-up-epi-A log** (Section A only):
 ```
 Heads-up epi-A check log — Epidemiological Parameter Checks:
+  source footnote check [___]
   disease burden multi-source [___]
   indirect deaths multiplier cap [___]
   GBD vintage year extracted + staleness check [___]
@@ -125,11 +126,14 @@ Heads-up epi-A check log — Epidemiological Parameter Checks:
   program-reported vs. independent coverage [___]
   population denominator accuracy [___]
   screening program new vs. repeat tester prevalence [___]
+  selection into programs [___]
+  program interaction / overlap [___]
+  multi-program substitution [___]
 ```
 
-**heads-up-epi-B log** (Section B only):
+**heads-up-epi-B log** (Section B primary + adversarial Section A pass):
 ```
-Heads-up epi-B check log — Model Structure & Timing Checks:
+Heads-up epi-B check log — Model Structure & Timing Checks + adversarial Section A pass:
   pre/post-adjustment UoV [___]
   double-counting [___]
   adjustment combination method [___]
@@ -141,14 +145,15 @@ Heads-up epi-B check log — Model Structure & Timing Checks:
   Global Fund funging calculation [___]
   cost estimate inflation adjustment [___]
   VOI wait-time plausibility [___]
+  VOI P(trial/study fails) [___]
   TA program duration [___]
   TA benefit horizon — AVERAGE range endpoint [___]
-  program interaction / overlap [___]
-  multi-program substitution [___]
-  selection into programs [___]
   ceiling analysis — impossible outputs [___]
+  disease burden multi-source — adversarial pass [___]
+  GBD/IGME vintage staleness — adversarial pass [___]
+  counterfactual coverage floor — adversarial pass [___]
   source footnote check — adversarial challenge to any Section A filed findings (verify downgrade rationale) [___]
-  GBD vintage staleness communicated to formula-check-arithmetic (per Cross-Agent Scope Reference) [___]
+  GBD vintage findings filed; deduplication with formula-check-arithmetic handled by Wave 2.5 reconciliation [___]
 ```
 
 ## Writing Findings
@@ -157,7 +162,7 @@ Before writing any finding, confirm you can answer all three of these: (1) the e
 
 **Before filing any finding**: For each finding you are about to file, ask: "What would a researcher who trusts this value point to as their evidence?" Write it as a single sentence in your reasoning before deciding whether to file (e.g., "Strongest defense: GBD 2021 was current when this model was built and this geography doesn't have substantially different estimates in GBD 2024"). Only after writing that sentence, test it against the available evidence. If the defense fails, file with confidence. If it holds up even partially, downgrade severity or mark Researcher judgment needed ✓ rather than filing Medium or High. Do not skip this step — it separates a finding grounded in evidence from one based on pattern-matching.
 
-**CE impact estimates — interaction caveat**: When estimating column H (Estimated CE Impact) for a finding about one parameter, check whether the model contains other "Guess"-labeled or unsourced parameters that interact with the parameter being corrected. If two or more parameters are simultaneously uncertain, the estimated CE impact of fixing one in isolation may be misleading — the actual change will depend on what else moves at the same time. In this case, add to the CE Impact cell: "Estimate assumes no other parameters change. If [parameter X] is also updated, net CE impact may differ." This is most important when: (a) the CE impact estimate is large (>15% of CE); (b) the finding involves an FP share, cost-per-unit, or coverage parameter that is cross-multiplied with multiple "Guess" adjustment rows; or (c) the model is known to be under active revision.
+**CE impact estimates — interaction caveat**: When estimating column H (Estimated CE Impact) for a finding about one parameter, check whether the model contains other "Guess"-labeled or unsourced parameters that interact with the parameter being corrected. If two or more parameters are simultaneously uncertain, the estimated CE impact of fixing one in isolation may be misleading — the actual change will depend on what else moves at the same time. In this case, add to column F (Explanation) — not column H — a note about the interaction: "Estimate assumes no other parameters change. If [parameter X] is also updated, net CE impact may differ." This is most important when: (a) the CE impact estimate is large (>15% of CE); (b) the finding involves an FP share, cost-per-unit, or coverage parameter that is cross-multiplied with multiple "Guess" adjustment rows; or (c) the model is known to be under active revision.
 
 **Do not write pass notes, verification notes, or "no issues found" summaries to the Findings sheet.** Every row written to the Findings sheet must be an actual finding — an issue requiring researcher attention or action. Notes like "Checked rows 1–50, no issues found" or "Parameters verified, no plausibility concerns" belong in your reasoning output, not in the sheet. Writing non-findings to the sheet pollutes the output and forces researchers to read rows that require no action.
 

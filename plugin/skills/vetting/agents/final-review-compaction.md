@@ -10,7 +10,7 @@ You are performing Step 10a of a GiveWell spreadsheet vet. This is the first of 
 
 Before reading or modifying anything, write the following in your reasoning:
 
-> Pre-compaction state: No rows have been read or modified yet. Will read each staging tab listed in session context (stg-arith-A through stg-rec-ceta) in full, then route and merge all findings. The Findings sheet and Publication Readiness sheet are currently empty (written only by this compaction agent). If compaction fails partway through, this declaration establishes the pre-compaction state.
+> Pre-compaction state: No rows have been read or modified yet. Will read each staging tab listed in session context (names provided by orchestrator) in full, then route and merge all findings. The Findings sheet and Publication Readiness sheet are currently empty (written only by this compaction agent). If compaction fails partway through, this declaration establishes the pre-compaction state.
 
 This declaration serves as a checkpoint. If the rewrite step fails mid-execution (e.g., an MCP error after partial writes), it confirms that the original data had not yet been overwritten as of Step 0.
 
@@ -42,6 +42,8 @@ The Findings sheet and Publication Readiness sheet should be empty at this point
 
 Coverage declaration: "Read complete. Staging tabs read: [N]. Total non-empty rows across all tabs: [N] ([X] header rows, [Y] AGENT_COMPLETE markers, [Z] WONT_FIX rows, [W] finding rows). Completion markers present for: [list agent names or 'none found']."
 
+**Note**: stg-rec-* (reconciliation staging) tabs do not write AGENT_COMPLETE markers — treat a reconcile tab with any non-header rows as complete. Only check for AGENT_COMPLETE in non-reconcile staging tabs.
+
 ---
 
 ## Step 1.5 — Create backup before writing
@@ -51,11 +53,11 @@ Before making any modification to the Findings sheet or Publication Readiness sh
 1. Call `ToolSearch` with query `select:mcp__hardened-workspace__create_sheet` to ensure the tool schema is loaded.
 2. Call `mcp__hardened-workspace__create_sheet` to add a tab named `Findings_backup` to the output spreadsheet. If the tool returns an error indicating the tab already exists (e.g., from a prior partial run), skip creation — the existing backup remains available.
 3. Use a single `modify_sheet_values` call to write a header row and all [W] finding rows (excluding AGENT_COMPLETE markers, WONT_FIX rows, and header rows) from your Step 1 read into `Findings_backup`, starting at row 1. Header row: `Finding # | Sheet | Cell/Row | Severity | Error Type/Issue | Explanation | Recommended Fix | Estimated CE Impact | Researcher judgment needed | Status`.
-4. Announce: `✓ Backup complete: [Z] finding rows written to Findings_backup tab.`
+4. Announce: `✓ Backup complete: [W] finding rows written to Findings_backup tab.`
 
 If `create_sheet` cannot be called after one ToolSearch retry, announce: `⚠️ Backup skipped — could not create Findings_backup tab. Proceeding with compaction; if interrupted, original data may be lost.` and continue to Step 2.
 
-Coverage declaration: "Step 1.5 complete. Findings_backup tab [created / already existed — skipped creation]. [Z] finding rows written. Source sheets unchanged."
+Coverage declaration: "Step 1.5 complete. Findings_backup tab [created / already existed — skipped creation]. [W] finding rows written. Source sheets unchanged."
 
 ---
 
@@ -85,8 +87,8 @@ Do not write column G or beyond in Publication Readiness under any circumstances
 
 **Routing audit — after all moves are complete**: Before writing the coverage declaration, perform three explicit spot-checks:
 
-1. Scan all remaining Findings rows for any whose Error Type (column E) is `Sourcing`, `Sourcing`, `Sourcing`, `Legibility`, or `Legibility` AND whose Estimated CE Impact (column H) is blank or "No CE impact" — these are candidates that should have been moved to Publication Readiness. Move any found.
-2. Scan all Publication Readiness rows for any whose Explanation (column E) describes a formula error, parameter mismatch, or value that affects CE — these belong in Findings. Move any found, writing all ten columns.
+1. Scan all remaining Findings rows for any whose Error Type (column E) is `Sourcing`, `Box Link`, or `Legibility` AND whose Estimated CE Impact (column H) is blank or "No CE impact" — these are candidates that should have been moved to Publication Readiness. Move any found, remapping to 6-column PR format per the column remapping table above.
+2. Scan all Publication Readiness rows for any whose Explanation (column E) describes a formula error, parameter mismatch, or value that affects CE — these belong in Findings. Move any found, remapping Publication Readiness columns (A–F) back to Findings columns using the inverse of the routing table above: PR B → Findings B, PR C → Findings C, PR D → Findings E, PR E → Findings F, PR F → Findings G. For Severity (Findings column D): assign `Medium` as the default — PR rows carry no Severity, and Medium is the conservative baseline when CE impact is unclear; the validation agent will refine column H in Check 4. Leave Findings columns A, H, I, J blank.
 3. **Adjustment audit**: Confirm zero `Adjustment` rows remain in Publication Readiness. If any are found, move them to Findings unconditionally — adjustment scope errors are model-integrity issues regardless of whether their CE impact appears zero. Also check for rows in Publication Readiness whose Explanation (column E) contains "adjustment" or "double-count" regardless of the Error Type label — a prior agent may have filed an Adjustment as `Inconsistency` which then got routed to PR. Move any such rows to Findings and reclassify Error Type as `Adjustment`.
 
 Coverage declaration: "Routing complete. [N] rows moved to Publication Readiness. [M] rows moved to Findings. Routing audit: [K] additional moves after spot-check. Adjustment rows in PR after audit: 0. No other misrouted rows."
@@ -160,12 +162,13 @@ Sort all Findings rows in memory using four sort keys:
 3. **Tertiary**: Error Type/Issue (column E, alphabetical)
 4. **Quaternary**: Researcher judgment needed (column I) — within the same severity, CE impact tier, and error type, place findings WITHOUT ✓ before findings WITH ✓. Confirmed findings should appear before researcher-to-confirm items so reviewers encounter actionable findings first without having to skip over speculative ones.
 
-Then rewrite the Findings sheet from row 2 with section dividers:
-- Before the first High finding: divider row with column B = `─── High (N findings) ───`, all other columns blank.
+Then rewrite the Findings sheet from row 2 with section dividers. **If no findings exist at a given severity level, skip that divider entirely — do not write an empty `─── High (0 findings) ───` row.** Only write a divider when at least one finding of that severity is present.
+
+- Before the first High finding (if any): divider row with column B = `─── High (N findings) ───`, all other columns blank.
 - All High findings follow.
-- Before the first Medium finding: `─── Medium (N findings) ───`.
+- Before the first Medium finding (if any): `─── Medium (N findings) ───`.
 - All Medium findings follow.
-- Before the first Low finding: `─── Low (N findings) ───`.
+- Before the first Low finding (if any): `─── Low (N findings) ───`.
 
 Divider rows are auto-styled by conditional formatting (gray background — triggered when column B contains `───`). Divider rows are not finding rows — skip them when counting for the N values above.
 

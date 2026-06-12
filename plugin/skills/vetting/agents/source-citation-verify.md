@@ -25,8 +25,8 @@ Before writing the verification script, confirm the Bash tool is available by at
 1. Fall back to manual `WebFetch` verification for the top 5 `Study-Derived` parameters only (select by CE impact proximity — parameters in rows whose Description mentions mortality rate, coverage, or unit cost take precedence).
 2. For each of the 5 parameters: call `WebFetch` on the Source to Verify URL, then compare the stated value against the fetched content.
 3. Write verdicts (`Matched ✓`, `Contradicted ✗`, or `Could not verify`) and evidence to columns G and H of those 5 rows.
-4. Write AGENT_COMPLETE with column F text: `Bash unavailable — fell back to manual spot-check of top-5 Study-Derived parameters; full citation verification not completed. [N] spot-checked. [K] Matched ✓, [M] Contradicted ✗, [P] Could not verify.`
-5. Stop — do not attempt Steps 1–6 below.
+4. Write a single row to the Hardcoded Values sheet immediately after the last filled row: column B = `source-citation-verify`, column D = `AGENT_COMPLETE`, column F = `Bash unavailable — fell back to manual spot-check of top-5 Study-Derived parameters; full citation verification not completed. [N] spot-checked. [K] Matched ✓, [M] Contradicted ✗, [P] Could not verify.`, all other columns blank.
+5. Stop — do not attempt Steps 1–5 below.
 
 The orchestrator (SKILL.md) checks the AGENT_COMPLETE text for `Bash unavailable` and will surface a warning to the researcher.
 
@@ -133,7 +133,7 @@ def run():
         # The document block with citations.enabled causes the API to attach citation objects
         # (text extracted verbatim from the source) to model output drawn from the document.
         response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model="claude-haiku-4-5",
             max_tokens=4096,
             messages=[{"role": "user", "content": [
                 {
@@ -230,9 +230,10 @@ Read `A2:G500` from the Hardcoded Values sheet (extend range if needed; stop whe
 - Column C is `GiveWell Parameter` (key-params-check handles these against internal references)
 - Column C is `Structural` (model constants — no external source)
 - Column F is a Google Sheets URL (not accepted as a document block — write `Could not verify — source is a spreadsheet` for these rows)
+- Column F contains plain text without a URL — e.g., `"Smith et al 2023"`, `"GBD estimate"`, `"internal communication"`, `"GiveWell analysis"`, or any value that does not begin with `http` or `https`. These are text citations, not fetchable sources; write `Could not verify — non-URL citation; verify manually` for these rows and skip the fetch step.
 - Column G is already non-empty (e.g., `Matched ✓`, `Contradicted ✗`, `Could not verify`) — row was verified in a prior run; do not overwrite
 
-Eligible rows: category is `Study-Derived` or `Org-Reported` AND column F contains an accessible URL AND column G is blank.
+Eligible rows: category is `Study-Derived` or `Org-Reported` AND column F contains a URL starting with `http` or `https` AND column G is blank.
 
 ---
 
@@ -282,11 +283,9 @@ python3 /tmp/citation_verify.py /tmp/citation_source.txt < /tmp/citation_params.
 
 ## Step 4 — Write results to sheet
 
-Collect all verdicts across all sources. Build a 2D array for `G2:H{last_row}`:
-- Processed rows: `[verdict, evidence]`
-- Skipped rows (ineligible category, no URL): `["", ""]`
+For each row that had a blank column G in Step 2 (either processed or skipped as ineligible): prepare the write as `[verdict, evidence]` or `["", ""]` respectively. **Do not write to any row whose column G was already non-empty in Step 2** — those rows were already verified and must not be overwritten.
 
-Write to the Hardcoded Values sheet in a **single `modify_sheet_values` call** (USER_ENTERED) to `G2:H{last_row}`.
+Because already-verified rows may be interspersed with new rows, write results **row by row** using individual `modify_sheet_values` calls (one call per eligible row) rather than a single contiguous `G2:H{last_row}` array. A single array write would overwrite already-verified cells in the gaps with blank values.
 
 ---
 
@@ -308,3 +307,9 @@ If any `Contradicted ✗` rows exist:
 ⚠️ Contradicted values (researcher attention required):
 • Row [N] — [description]: model states [value] | source sentence: "[cited text]"
 ```
+
+---
+
+## Step 6 — Write completion marker
+
+After writing all results to columns G and H (and writing the coverage declaration in Step 5), write ONE final row to the Hardcoded Values sheet immediately after the last data row: column B = `source-citation-verify`, column D = `AGENT_COMPLETE`, column F = `COVERAGE_ROWS: [row range checked, e.g., 2-85] | [N] rows eligible. [K] Matched ✓, [M] Contradicted ✗, [P] Could not verify. [Q] skipped (no URL, GiveWell parameter, or non-URL citation).`, all other columns blank. Use a single `modify_sheet_values` call. This is the absolute last action.

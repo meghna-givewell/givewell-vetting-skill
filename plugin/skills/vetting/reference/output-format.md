@@ -148,7 +148,7 @@ Columns (A–H): Sheet | Cell | Category | Current Value | Description | Source 
 
 ---
 
-## Confidentiality Flags Sheet — Sheet 5
+## Confidentiality Flags Sheet — Sheet 4
 
 Columns: Cell/Row | Content Found | Sensitivity Type | Recommended Action
 

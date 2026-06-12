@@ -115,4 +115,4 @@ Write the row with:
 - Column F: `Enumerated [N] hardcoded parameters across [sheet name(s)]. Coverage cross-check: scanned through row [M]; last non-empty row [K]. [Confirmed complete / Re-read rows X–Y].`
 - All other columns: blank
 
-Use a single `modify_sheet_values` call. The reconciliation agent detects this row to confirm the agent completed normally. This row is excluded before presenting the sheet to researchers.
+Use a single `modify_sheet_values` call. The pre-Wave-3 self-verification check and the pre-Wave-1.5 guard detect this row to confirm the agent completed normally. This row is excluded before presenting the sheet to researchers.

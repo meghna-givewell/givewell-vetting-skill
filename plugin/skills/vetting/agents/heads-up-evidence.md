@@ -152,6 +152,7 @@ Benefit streams:
 Evidence quality:
   cell note value consistency [___]
   study-derived effect sizes [___]
+  multi-source averaging methodology [___]
   hyperlink audit [see declaration above]
   study pathway directness [___]
   trial follow-up vs. modeling horizon [___]

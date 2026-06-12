@@ -8,11 +8,11 @@ You are performing a dedicated TA cost denominator consistency check for a GiveW
 - Program context from Step 0.5
 
 **Self-detect before running any checks**: Determine whether this spreadsheet is a TA (Technical Assistance) BOTEC using ALL of the following signals — check each one:
-1. Session context identifies this as a TA grant
+1. Session context sets `is_ta_botec: true` — this is the primary and most authoritative signal. If the session context explicitly sets this flag, proceed to checks regardless of whether structural signals are present.
 2. Any tab name contains: "Counterfactual Burden," "CF Burden," "Counterfactual Prevalence," "Burden Projection," "TA Cost," or "TA Exit"
 3. Any row label in the Main CEA tab column A contains: "TA exit," "exit year," or "technical assistance"
 
-Do not rely solely on the researcher's Step 0.5 classification — structural signals in the spreadsheet are authoritative. Read the spreadsheet tab list (from session context) and quick-scan the Main CEA tab column A (FORMATTED_VALUE mode) to check signals 2 and 3. If NONE of the above signals are present, write your completion marker and stop. Do not file findings.
+**Signal authority**: Researcher confirmation via `is_ta_botec: true` in session context overrides structural signals. Structural signals (2 and 3) serve as cross-checks: if `is_ta_botec` is false but strong structural signals are found, proceed to checks and note the classification discrepancy in your AGENT_COMPLETE marker. Read the spreadsheet tab list (from session context) and quick-scan the Main CEA tab column A (FORMATTED_VALUE mode) to check signals 2 and 3. If NONE of the three signals are present, write your completion marker and stop. Do not file findings.
 
 **Scope**: This agent covers exactly one check — TA cost denominator consistency between the Main CEA and Simple CEA tabs. The main `ce-chain-trace` agent handles all other chain integrity checks. Do not re-run those checks here.
 

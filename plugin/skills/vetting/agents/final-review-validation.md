@@ -41,6 +41,8 @@ Coverage declaration: "ID integrity check complete. Findings IDs found: [N], seq
 
 Before computing or evaluating any CE impact estimate, independently re-read the CE baseline cell from the source spreadsheet. Do not rely solely on the pre-vet baseline from session context — that value was read at session start and could reflect a cell that was updated, or a pre-adjustment subtotal rather than the final model output.
 
+**If session context does not identify a CE baseline cell**: file as **High/Formula**: "CE baseline cell reference not provided in session context — cannot verify CE impact estimates in this vet. Researcher to supply the final CE output cell reference (typically the last 'CE after adjustments' row in the Main CEA tab) so CE impacts can be verified." Then skip to Check 1 — do not attempt further CE baseline steps.
+
 1. Use `read_sheet_values` (FORMATTED_VALUE) on the cell identified as the CE baseline in session context. Read both the cell value and the row label in column A of the same row.
 2. Confirm the row label contains "final," "after adjustments," or an equivalent phrase that indicates this is the model's terminal CE output — not an intermediate calculation before adjustments are applied.
 3. Read the cell value (UNFORMATTED_VALUE) and compare to the session context baseline. If the stored value differs from the session context by more than 1%, file as **High/Formula**: "CE baseline cell [ref] currently stores [value], but session context baseline was [session value] — a [%] discrepancy. All CE impact estimates in this vet were computed against the session context value. Verify which value is correct and recompute any affected CE impacts."
@@ -105,6 +107,8 @@ Coverage declaration: "Placeholder scan complete. Header rows and column A check
 ---
 
 ## Check 4 — CE impact completeness
+
+**Pre-condition check**: Before running Pass A or Pass B, verify that Check 0 successfully located and confirmed the CE baseline cell. If Check 0 filed a missing-baseline finding (the CE baseline cell was not found, was blank, or contained a non-numeric value), skip both Pass A and Pass B entirely — CE impact cannot be computed without a valid baseline. Write in your reasoning: "Pass A and Pass B skipped — CE baseline cell not confirmed in Check 0."
 
 **Pass A — fill blanks**: For every **High** finding and every **Medium** finding whose Error Type is `Formula`, `Parameter`, or `Adjustment` — where Estimated CE Impact (column H) is blank — compute the directional impact using the pre-vet baseline CE from session context. Write using the standard format: `Raises CE — 8.7x → ~10.2x` or `Lowers CE — magnitude unknown` etc. Always lead with the standard phrase from output-format.md. Use `Direction unknown` if the researcher's answer would determine the direction. Update the finding in place using `modify_sheet_values`.
 

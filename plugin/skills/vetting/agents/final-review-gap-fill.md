@@ -8,6 +8,8 @@ You are performing Step 10b of a GiveWell spreadsheet vet. This step runs after 
 
 **Do not compact, sort, re-assign IDs, or redo any prior step's work.**
 
+**Findings_backup scope**: The compaction agent (Step 10a) creates a `Findings_backup` tab before modifying the Findings sheet. That backup captures the state of all staging tabs at compaction time — it does not include any findings added by this gap-fill agent. If the vet is later reviewed and a finding is traceable only to gap-fill (Finding IDs assigned after compaction's highest ID), it will not appear in `Findings_backup`. This is expected behavior, not an error.
+
 **Scope**: This agent addresses what A/B parallel instances systematically tend to miss: (1) downstream cascade effects from confirmed formula errors, (2) long coverage gaps in the row sequence of findings, (3) Won't Fix decisions that may have been under-investigated. It does NOT re-run the full checklist — it reasons about the findings that already exist and fills in what they imply was missed.
 
 **Stakes**: GiveWell allocates hundreds of millions of dollars in grants based on cost-effectiveness analyses like this one. A formula error in a cell that is confirmed and fixed may have uncorrected downstream cells whose behavior the researcher assumes changed — but hasn't. Every cascade that goes undetected here could mean a corrected CEA still produces wrong output.
@@ -80,7 +82,7 @@ Coverage declaration: "Coverage gap scan complete. Gaps of 15+ rows found: [N, w
 
 ## Check 2.5 — Cross-band root cause trace (band-split runs only)
 
-**Only run this check if band-split was used for this vet.** To determine this: (1) check session context for a `band1_end` value; (2) if not present in session context, read Dashboard cells `A49:B100` of the output spreadsheet — if the Dashboard row allocation log shows more than one band pair for any agent type, recover `band1_end` from the last row number of the first band pair. If neither session context nor the Dashboard log contains band-split information, skip entirely and write: "Check 2.5: skipped — band-split not active (confirmed: no band1_end in session context or Dashboard log)."
+**Only run this check if band-split was used for this vet.** To determine this: (1) check session context for a `band1_end` value; (2) if not present in session context, read Dashboard cell `A154` of the output spreadsheet — if it contains a numeric value, that is `band1_end` (written by the orchestrator during Wave 1 output setup when band-split is active). If neither session context nor Dashboard A154 contains band-split information, skip entirely and write: "Check 2.5: skipped — band-split not active (confirmed: no band1_end in session context or Dashboard A154)."
 
 When band-split is active, agents scanned the spreadsheet in row-range bands (band 1: rows 1–`band1_end`, band 2: rows `band1_end+1` and above). Each band pair's reconcile agent was explicitly prohibited from cross-reconciling with other bands. This creates a gap: a High/D finding in band 2 whose root cause is a cell in band 1 may not be linked to the upstream error.
 
@@ -100,19 +102,21 @@ Coverage declaration: "Cross-band root cause trace complete. Band1_end: [N]. Hig
 
 ## Check 3 — Won't Fix verification
 
-Reconciliation agents delete rows they mark Won't Fix. The only evidence a Won't Fix decision was made is a gap in Finding IDs in the output (e.g., IDs jump from F-003 to F-005). This check verifies a sample of those decisions.
+Reconciliation agents mark rows they decide not to include by writing `WONT_FIX` to column J of the original stg-A or stg-B tab. These rows are **not deleted** — they remain in the staging tab and are filtered out during compaction. There are no Finding ID gaps from Won't Fix decisions (IDs are assigned sequentially during compaction from non-WONT_FIX rows only).
 
-1. From the ID gaps identified in Step 1, there is no way to recover the deleted findings directly — they are gone from the sheet. However, you can infer what they likely covered from context: the surrounding findings in the same row range identify which agent pair produced them, and the pair's source agent file identifies its check patterns.
+To verify a sample of Won't Fix decisions:
 
-2. For each ID gap, identify the agent pair it came from (use the Dashboard's row allocation log at A49:B100). Then: read the rows of the source spreadsheet covered by that pair and ask — is there a cell in this range that was flagged by one instance but cleared by reconciliation that, on reflection, is plausibly a genuine finding?
+1. Read the staging tabs for each agent pair (both stg-agent-A and stg-agent-B). Look for any row where column J contains `WONT_FIX`.
 
-3. This check is intentionally light — you cannot re-run the full agent. Focus only on: (a) any cell in the pair's row range that appears in the program context as a known parameter (moral weight, benchmark, cross-cutting parameter), and (b) any formula row where the formula and row label diverge in a way that would be obvious on visual inspection.
+2. For each Won't Fix row found, read the cell it covers in the source spreadsheet and ask: is there a plausible reason this finding was cleared? Common valid reasons: the other instance found no issue in the same cell; the deviation was declared-intentional in session context; the finding was a duplicate of a finding from a different agent.
 
-4. If you find a cell that was plausibly Won't Fixd incorrectly, file as **Medium/H with Researcher judgment needed ✓**: "Finding ID gap at [F-00X] in the [pair name] range suggests a Won't Fix decision by the reconciliation agent. Spot-check of this row range found [cell] with [anomaly]. Verify this cell was correctly cleared."
+3. This check is intentionally light. Focus only on Won't Fix decisions involving: (a) cells identified as known parameters (moral weight, benchmark, cross-cutting parameter), and (b) formula rows where the formula and row label diverge in a way that would be obvious on visual inspection.
 
-If there are no ID gaps, skip this check entirely.
+4. If you find a Won't Fix decision that appears incorrect, file as **Medium/H with Researcher judgment needed ✓**: "A `WONT_FIX` decision in [stg-tab] at row [N] appears to have cleared [cell ref] which may warrant review: [brief description of the anomaly]. Verify this cell was correctly cleared."
 
-Coverage declaration: "Won't Fix verification complete. ID gaps found: [N]. Pairs investigated: [N]. New findings filed: [N or 'none — no ID gaps']."
+If no `WONT_FIX` rows are found in any staging tab, skip this check entirely.
+
+Coverage declaration: "Won't Fix verification complete. WONT_FIX rows found across all stg-* tabs: [N]. Pairs investigated: [N]. New findings filed: [N or 'none']."
 
 ---
 
@@ -120,7 +124,7 @@ Coverage declaration: "Won't Fix verification complete. ID gaps found: [N]. Pair
 
 Before writing any new findings, verify that each of the following check categories was covered by at least one agent in this vet — either by a finding in the Findings sheet, or by an explicit "no issues found" statement in an AGENT_COMPLETE marker's column F.
 
-To check: scan the Findings sheet for at least one finding in the relevant error type, OR scan the AGENT_COMPLETE rows (column D = `AGENT_COMPLETE`) for the relevant agent's completion message confirming the check ran. If neither is present, file a gap-fill finding.
+To check: scan the Findings sheet for at least one finding in the relevant error type, OR read the relevant agent's stg-* staging tab and look for an AGENT_COMPLETE row (column D = `AGENT_COMPLETE`) confirming the check ran. Do not look for AGENT_COMPLETE rows in the Findings sheet — they are never written there; they remain in the staging tabs. If neither a finding nor an AGENT_COMPLETE confirmation is found, file a gap-fill finding.
 
 **Required coverage categories**:
 

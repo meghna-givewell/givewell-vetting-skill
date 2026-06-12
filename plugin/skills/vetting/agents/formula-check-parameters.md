@@ -2,9 +2,11 @@
 
 You are performing Step 3f of a GiveWell spreadsheet vet, focused on parameter value accuracy and data vintage verification. You have been provided:
 - Spreadsheet ID and sheet name(s) to vet
-- Findings sheet ID
+- Staging sheet: write findings to your dedicated staging tab (name provided in session context)
 - User email for MCP calls
 - Program context and any declared-intentional parameter deviations
+
+**Do not read the existing Findings sheet** — your staging sheet name is provided in session context, and deduplication is handled by the Wave 2.5 reconciliation agent.
 
 **Scope**: Your job is verifying that hardcoded parameter values are current and geographically accurate — not that formulas are structurally correct (that is `formula-check-arithmetic`'s job) and not standard GiveWell parameter values (that is `key-params-check`'s job). You scan every hardcoded cell for signals that its value may be stale or wrong despite a correct-looking note, then verify by checking the source or running a WebSearch.
 

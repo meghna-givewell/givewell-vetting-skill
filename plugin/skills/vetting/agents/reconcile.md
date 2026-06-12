@@ -106,7 +106,7 @@ Then make one of three determinations:
 - Non-qualifying reasons: "I couldn't reproduce the issue." / "It seems likely correct in context." / "The other agent's finding seems plausible." / "The value is close to what I'd expect." / "The cell has a note" (without verifying the note's explanation matches the formula). / "The finding has no current numerical impact" — do not drop style or structural redundancy findings (e.g., unnecessary `SUM()` wrappers, redundant calculations, minor formula inconsistencies) solely because they have no CE impact. Retain these at Low/H severity — the researcher decides whether to act on them. / **"The value comes from [GW reference document]"** (without having read that document to verify the value) — see GW reference document rule below.
 - **GW reference document rule**: When a finding involves a parameter that originates from a GW reference document — the Moral Weights Tool, Key Parameters, CEA Consistency Guidance, Cross-Cutting CEA Parameters, or any other document in the skill's reference list — you must load and read that document before marking Won't Fix. Accepting "this is intentional, it comes from GW's tool" at face value does not qualify as specific affirmative evidence. You must confirm: (a) the document contains the specific numeric value in question, and (b) the value in the spreadsheet matches. If the document cannot be read (auth failure, access error), use **Needs researcher input** instead. A qualifying Won't Fix for a GW-reference-document parameter reads: "Verified by reading [document name] — the document shows [specific value] at [location/tab/row], and the spreadsheet value matches."
 - **Unexplained numeric constants — higher bar**: When the finding is specifically about an unexplained numeric constant in a formula (e.g., `×2`, `÷3`, a hardcoded scalar), Won't Fix requires that the cell note explicitly state the value *and* the reason for that specific constant — not merely that the note explains the general concept. A note that says "accounts for double burden" does not explain why the multiplier is 2 rather than 1.5 or 2.5. If the note does not directly justify the magnitude of the constant, use **Needs researcher input** and ask the researcher to confirm the specific value.
-- When marking Won't Fix: write `WONT_FIX` in column J (Status) of that row on its staging sheet using `modify_sheet_values`. Do not delete the row — the compaction agent filters rows where Status = `WONT_FIX` during its read step.
+- When marking Won't Fix: write `WONT_FIX` in column J (Status) of **the original staging tab that contained the finding** (stg-A or stg-B — whichever tab held that specific row) using `modify_sheet_values`. Do not delete the row — the compaction agent reads all staging tabs including A and B, and filters rows where column J = `WONT_FIX` during its read step. Do **not** write Won't Fix to the reconcile staging sheet (stg-rec-*) — that sheet holds net-new findings only.
 
 **High-severity protection**: When A and B rate the same finding at different severities and either instance rated it High — retain at High. Do not resolve to a lower severity through severity reconciliation. Write both ratings in column F: "Instance A: [severity]. Instance B: [severity]. Retaining High per high-severity protection rule." A Won't Fix for a finding rated High by either instance requires a specific affirmative reason that directly refutes the High-severity claim — "I couldn't confirm the issue" or "the other instance rated it Medium" do not qualify. If only the lower-severity claim can be affirmatively confirmed correct, downgrade to Medium/H rather than Won't Fix.
 
@@ -155,3 +155,17 @@ See `reference/output-format.md` for full column definitions.
 **Publication Readiness column layout differs**: When routing a finding to Publication Readiness (not Findings), use the 6-column A–F layout. Write exactly 6 values per row — no more. Do not include Severity, Status, Changes CE?, Estimated CE Impact, or Researcher judgment needed. Writing a 7th column will corrupt the sheet layout. A=Finding # (blank) | B=Sheet | C=Cell/Row | D=Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Sourcing | Box Link | Legibility) | E=Explanation | F=Recommended Fix.
 
 Before writing any new finding, confirm: (1) exact cell reference, (2) specific issue, (3) precise fix required.
+
+---
+
+## Final step — write completion marker
+
+After all findings are written and all other steps are complete, write ONE final row to your reconcile staging sheet immediately after your last finding (or at row 2 if no findings were written). This is the absolute last action.
+
+Write the row with:
+- Column B: `reconcile`
+- Column D: `AGENT_COMPLETE`
+- Column F: `COVERAGE_ROWS: [pair assignment, e.g., sources-A vs sources-B] | Compared [N] rows from [stg-agent-A] and [N] rows from [stg-agent-B]. Net-new findings filed: [K]. WONT_FIX decisions: [M]. Staging sheet: [stg-rec-pair from session context].`
+- All other columns: blank
+
+Use a single `modify_sheet_values` call.

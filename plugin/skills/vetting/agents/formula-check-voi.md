@@ -41,7 +41,7 @@ Coverage declaration: `COVERAGE | formula-check-voi | template comparison | [N] 
 
 Locate the row for total grant cost — label typically contains "total grant cost," "grant size," "total program cost," "cost of grant," or equivalent. Locate the row for direct benefit cost — label typically contains "grant cost going toward direct benefit," "direct benefit cost," "cost toward direct benefits," or equivalent. Read both cells in UNFORMATTED_VALUE mode.
 
-If direct benefit cost > total grant cost: flag as **High/Structural Issue**: "[direct benefit cell ref] = [value] exceeds [total grant cell ref] = [value] — a direct-benefit sub-component cannot exceed the total grant cost. This is likely a stale template value not updated for this specific grant. The VOI direct-benefit CE calculation is materially overstated. Change [direct benefit cell ref] to a value ≤ [total grant cell ref], updated to reflect the actual grant amount."
+If direct benefit cost > total grant cost: flag as **High/Formula**: "[direct benefit cell ref] = [value] exceeds [total grant cell ref] = [value] — a direct-benefit sub-component cannot exceed the total grant cost. This is likely a stale template value not updated for this specific grant. The VOI direct-benefit CE calculation is materially overstated. Change [direct benefit cell ref] to a value ≤ [total grant cell ref], updated to reflect the actual grant amount."
 
 If either row is not found: write "not found" in your coverage declaration and continue — do not file a finding for a missing row. Not all VOI models include an explicit direct-benefit cost row.
 
@@ -53,11 +53,15 @@ Coverage declaration: `COVERAGE | formula-check-voi | grant cost consistency | t
 
 Locate the row(s) where CE-from-optionality and CE-from-direct-benefits are combined into a total. Then find where ad hoc adjustments are applied in the model. Verify adjustments are applied ONLY to the VOI/optionality component — not to the aggregate total that includes direct benefits. If the adjustment formula multiplies the combined total CE rather than the VOI component alone, flag as **Medium/Adjustment**: "[cell] applies [adjustment name] to the combined CE total (direct + optionality). This adjustment should apply only to the VOI/optionality component — applying it to the total double-adjusts the direct-benefits portion."
 
+Coverage declaration: `COVERAGE | formula-check-voi | VOI adjustment scope | [cells checked] | issues found: [N] | status: complete`
+
 ---
 
 ## Check 2 — VOI probability row column-reference consistency
 
 For every group of rows in a VOI tab that compute scenario probabilities (rows labeled "probability of [outcome]," "P([scenario])," or similar), read each row's formula in FORMULA mode. Compare the set of column references used across all probability rows in the same section. If one row references a superset of columns compared to adjacent probability rows — e.g., row N uses `SUM(B42:C42)` while rows N−1 and N+1 use only a single cell — flag as **Medium/Formula**: "Probability row [ref] uses `[formula]` which references [extra columns] not referenced in adjacent probability rows (`[adjacent refs]`). If the extra column is intended to include an additional scenario, verify that all downstream rows in this section also incorporate that column; if not, the total probability may exceed 1.0 or double-count a scenario." Do not flag if a cell note documents why one probability row has a wider reference range than its neighbors.
+
+Coverage declaration: `COVERAGE | formula-check-voi | probability row column-reference consistency | [rows checked] | issues found: [N] | status: complete`
 
 ---
 
@@ -65,17 +69,23 @@ For every group of rows in a VOI tab that compute scenario probabilities (rows l
 
 When a VOI sheet defines parallel parameters for different actors (e.g., GiveWell opportunity cost CE and other philanthropic funders' opportunity cost CE), identify any two structurally parallel cells that hold identical values for actors with plausibly different cost-effectiveness thresholds. Flag as **Low/Assumption** with Researcher judgment needed ✓: "Row [X] assumes [actor 1]'s [parameter] equals [actor 2]'s [parameter] (both = [value]). Equal values across different modeled actors are a non-obvious assumption — if intentional, add a cell note explaining why both actors share this assumption." Do not flag where a cell note already explains the equality.
 
+Coverage declaration: `COVERAGE | formula-check-voi | cross-actor symmetry | [cells checked] | issues found: [N] | status: complete`
+
 ---
 
 ## Check 4 — VOI_Priors cross-formula column-scope consistency
 
 For all formulas referencing a VOI_Priors tab (or equivalent Bayesian prior tab), record which columns each formula uses. Flag any case where two structurally analogous formulas — e.g., Scenario 1 and Scenario 2 probability calculations — reference different column ranges from the same source tab. File as **Medium/Formula**: "Rows [X] and [Y] both query VOI_Priors but use different column ranges (`[formula X]` vs. `[formula Y]`). If both rows compute the same type of Bayesian prior update, they should reference the same column range. Verify which is correct and apply consistently."
 
+Coverage declaration: `COVERAGE | formula-check-voi | VOI_Priors column-scope consistency | [rows checked] | issues found: [N] | status: complete`
+
 ---
 
 ## Check 5 — Annuity-due vs. annuity-immediate
 
 For every `PV()` formula in all VOI sections, inspect the `type` argument. `type=0` is annuity-immediate (standard). `type=1` is annuity-due, which overstates PV by approximately `(1 + r)`. For every `PV()` formula where `type=1` and no cell note explains why beginning-of-period is appropriate, file as **Medium/Formula** with Researcher judgment needed ✓: "[cell] uses PV() with type=1 (annuity-due), which applies payments at the start of each period and overstates present value by ~(1+r) relative to the standard annuity-immediate (type=0). Add a note if beginning-of-period timing is intentional; otherwise change type to 0."
+
+Coverage declaration: `COVERAGE | formula-check-voi | annuity-due check | [PV() formulas checked] | issues found: [N] | status: complete`
 
 ---
 
@@ -158,7 +168,7 @@ Coverage declaration: `COVERAGE | formula-check-voi | SUMPRODUCT range alignment
 
 ## Mandatory check log
 
-Before filing any findings, write the check log for all checks you ran. For each item write `ran: [brief result or cell range]` or `n/a: [one-word reason]`:
+Before filing any findings, write the check log to your **reasoning output only** (not to the staging sheet — the log is for your reference during this run). For each item write `ran: [brief result or cell range]` or `n/a: [one-word reason]`:
 
 ```
 formula-check-voi check log:

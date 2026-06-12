@@ -71,6 +71,8 @@ Flag as Medium/H for confirmed misalignments. Flag as Low/H if the formula is in
 
 ## Cross-Column Value Consistency
 
+**Before running any checks in this section**: Complete the AVERAGE/SUMPRODUCT formula pre-scan described below (the section beginning "AVERAGE/SUMPRODUCT formula pre-scan — required before the parallel symmetry check below"). Sub-checks (a) and (b) in the parallel scenario formula symmetry block depend on that pre-scan log. Do not begin the cross-column checks until the log exists.
+
 Compare every hardcoded input to values in neighboring columns (other geographies or program variants):
 - Material difference from neighbors with no cell note explanation → flag
 - Pay particular attention to asymmetric adjustments across columns

@@ -27,7 +27,7 @@ Read the spreadsheet in FORMULA mode across all vetted sheets. Read `read_spread
 
 Record: row number of the post-supplemental UoV/dollar row; row numbers bounding the leverage section.
 
-If no leverage/funging section is found, write: "No leverage or funging section identified. Steps 6 and 6b skipped." and write no findings.
+If no leverage/funging section is found, write: "No leverage or funging section identified. Steps 6 and 6b skipped." and write no findings, then proceed to the Final step to write the AGENT_COMPLETE marker.
 
 ---
 

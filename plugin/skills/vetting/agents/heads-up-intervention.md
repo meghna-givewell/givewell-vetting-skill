@@ -122,7 +122,7 @@ Run both sub-checks for every country column and every SAM/MAM row independently
 
 ### Section B — TA Grant Checks *(heads-up-intervention-B only)*
 
-> **Non-TA fast exit**: If Step 0 identified this as a non-TA intervention, write your AGENT_COMPLETE marker now and stop. Do not run the checks below.
+> **Non-TA Section A adversarial pass**: If Step 0 identified this as a non-TA intervention, skip the TA Grant Checks below and proceed to the Writing Findings section. You have already completed your adversarial Section A pass above.
 
 **TA grants — model type and structural consistency**: TA grant BOTECs follow one of three model types; identify which and verify the model structure matches:
 - **Model 1** (accelerating introduction of a new technology — e.g. malaria vaccines, dual tests): coverage today = 0%; both "speed-up of introduction" and "speed-up of steady state" parameters should be present and non-zero.
@@ -214,7 +214,9 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `heads-up-intervention`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Check log complete: [N] of [M] applicable checks — any unfilled [___] entries mean that check was not completed. Scope: [A / B]. Section run: [A — Intervention-Specific Checks / B — TA Grant Checks or non-TA fast exit]. Routing decision: [A — non-TA / B — TA] based on: [signal, e.g., 'session context is_ta_botec flag set' or 'workbook title contains TA' or 'non-TA: no TA signals found in Step 0']. Checks run: [comma-separated list]. Checks skipped per scope: [comma-separated list with reason]. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
+- Column F: `Routing decision: [A — non-TA / B — TA] based on: [signal, e.g., 'session context is_ta_botec flag set' or 'workbook title contains TA' or 'non-TA: no TA signals found in Step 0']. Check log complete: [N] of [M] applicable checks — any unfilled [___] entries mean that check was not completed. Scope: [A / B]. Section run: [A — Intervention-Specific Checks / B — TA Grant Checks or non-TA fast exit]. Checks run: [comma-separated list]. Checks skipped per scope: [comma-separated list with reason]. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
+
+**The `Routing decision:` field must be the first element in column F** — it is machine-read by the TA misclassification cross-check in Wave 2.5. Do not reorder this field.
 - All other columns: blank
 
 **Do not write AGENT_COMPLETE if the check log contains any unfilled `[___]` entry** — an unfilled entry means the check was not run, not that no issues were found. Complete all applicable checks first.

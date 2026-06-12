@@ -146,4 +146,4 @@ Write the row with:
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).
 
-Group findings where multiple vaccines in the same row show the same transposition pattern — one finding covering "BCG and OPV0 appear transposed in [tab] for [country], cells [X] and [Y]" rather than two separate findings.
+Group findings where multiple vaccines in the same row show the same transposition pattern — one finding listing all affected cells in column C (e.g., "BCG and OPV0 appear transposed in [tab] for [country], cells [X] and [Y]") rather than two separate findings.
