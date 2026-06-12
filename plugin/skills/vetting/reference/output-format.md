@@ -70,27 +70,40 @@ Columns (A–J): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
 
 ### Severity Rules
 
-Apply the decision tree below in order — stop at the first rule that matches.
+Every finding has a **Nature** and a **Materiality**. Determine both, then read severity from the matrix.
 
-**High** — file as High if ANY of the following are true:
-1. **Confirmed factual error against an authoritative standard**: A GW standard parameter (benchmark, moral weight, discount rate) deviates from `key-parameters.md` with no cell note rationale; a formula is confirmed (FORMULA mode) to reference a demonstrably wrong cell or deleted range; a logical impossibility (direct benefit cost > total grant cost; probability > 100%; deaths averted > all-cause deaths in the target population).
-2. **Estimated CE impact ≥2%**: You have estimated the CE impact of correcting the finding and it is at or above 2%. When impact is unknown but the affected parameter sits in the confirmed direct CE calculation chain, treat as High. **"Confirmed in the CE chain" requires tracing ≥2 consecutive FORMULA-mode hops from the flagged cell to the final CE output** — an assumption that a parameter "probably feeds into CE" without FORMULA-mode verification is not confirmation; use Medium (direction or magnitude unknown) instead.
-3. **Silent omission**: An adjustment was calculated in the model but is confirmed absent from the CE chain. **Exception: discount rate omission is filed as Low/H per `reference/key-parameters.md` calibration** — the discount rate is present in virtually all models and its omission from the chain is almost always intentional (it applies at the UoV level). Check `key-parameters.md` for per-parameter severity overrides before applying rule 3.
+**Nature**
+- **Defect** — objectively wrong: there is a correct answer and the sheet has it wrong. Includes formula errors (wrong reference, wrong logic, sign error, broken range), confirmed value mismatches against a cited source, GW standard parameter violations with no documented rationale, logical impossibilities.
+- **Gap** — something required is absent: a source citation on a key input, a required adjustment, a link that should exist.
+- **Judgment** — a defensible modeling choice you would question, not an error: a parameter at the optimistic end of a plausible range, a discount rate choice, a structural modeling decision.
 
-**Medium** — none of the High conditions apply, and ANY of the following are true:
-1. The finding plausibly affects CE but direction or magnitude requires researcher judgment (column H would be "Direction unknown").
-2. A GW standard parameter deviates from `key-parameters.md` with a documented cell note rationale — confirmed deliberate, but requires researcher reconfirmation.
-3. A key input in the direct CE calculation chain lacks an external source or explanation, and the value's correctness cannot be independently verified.
-4. A formula inconsistency (e.g., additive vs multiplicative adjustment composition) doesn't currently affect CE but would produce a ≥2% CE difference if the inconsistency were triggered by changed inputs.
+**Materiality** (effect on bottom-line CE)
+- **Decision-changing** — would flip whether the program clears the funding bar.
+- **Material** — moves bottom-line CE by ≥5% but does not flip the decision.
+- **Immaterial** — moves bottom-line CE by <5%.
+- **Zero** — does not touch the bottom line: orphaned cell, label, documentation gap on a value that is itself correct.
 
-**Low** — none of the above apply:
-- Documentation, labeling, or structural issues with no CE calculation impact.
-- Rounding differences within tolerance: ≤15% relative deviation from the source value AND estimated CE impact <2%.
-- Hidden rows/columns with no active formula dependencies in visible cells.
+**Severity matrix**
 
-**Tie-breaker**: When the decision tree is genuinely ambiguous, apply these defaults by level pair:
-- **Low vs. Medium**: Use Medium only if you can name the specific Medium criterion it meets (rules 1–4 above). If none of the Medium criteria clearly apply, use Low — do not upgrade based on the finding "seeming important."
-- **Medium vs. High**: Use Medium. Never escalate to High unless you have (a) a computed CE impact ≥2%, (b) confirmed a factual error against an authoritative standard in FORMULA mode, or (c) traced ≥2 consecutive FORMULA-mode hops confirming the cell is in the direct CE chain. Intuition about importance is not a substitute for computation or verification.
+|  | Decision-changing | Material (≥5%) | Immaterial (<5%) | Zero |
+|---|---|---|---|---|
+| **Defect** (incl. formula errors) | High | High | Medium | Medium |
+| **Gap** | High | High | Medium | Low |
+| **Judgment** | High | Medium | Low | — |
+
+**Bright-line rules** — apply these before reading the matrix; they override it:
+1. **Defect floor**: A confirmed objective error is never below Medium, even with zero CE impact. An orphaned formula error, a confirmed value mismatch in a non-CE tab — both remain Medium. Errors may become material if inputs change; they also undermine confidence in adjacent calculations.
+2. **Unknown materiality rounds up**: If CE impact cannot be estimated, treat materiality as one tier higher. A Defect or Gap with unknown materiality → High. A Judgment with unknown materiality → Medium. Write `Raises/Lowers CE — magnitude unknown` or `Direction unknown` in column H accordingly.
+3. **Decision-changing always wins**: Any finding that could flip whether the program clears the bar is High regardless of category.
+4. **GW standard parameters always High**: Any deviation from a benchmark, moral weight, or discount rate in `key-parameters.md` with no documented cell note rationale is always High — these parameters are cross-cutting and a miscalibration in one CEA propagates to others.
+
+**Nature disambiguation when ambiguous**:
+- Defect vs. Gap: default to Defect — treat as objectively wrong until the researcher confirms the absence was intentional.
+- Gap vs. Judgment: if the researcher could have intended the current state, use Gap — it asks the researcher to confirm rather than asserting error.
+
+**Rounding note**: Small rounding differences (≤2% relative deviation from the source value AND <5% CE impact) are a Judgment + Immaterial → **Low**, not a Defect. Classify as a Defect only when the deviation materially misrepresents the source value.
+
+**Discount rate omission exception**: Omitting the discount rate from the CE chain is filed as Low/H per `key-parameters.md` calibration — discount rates are present in virtually all models and their chain omission is almost always intentional (applied at the UoV level). See `key-parameters.md` for per-parameter severity overrides.
 
 ### Grouping and Sorting
 Sort by sheet (column B), then row number. Where the same issue applies to multiple cells, **group into a single finding** listing all affected cells (e.g., "B14, B18, B22"). Only create separate rows when the issue, explanation, or recommended fix differs meaningfully. Aim for ~15–25 grouped findings rather than 50+ individual entries.
