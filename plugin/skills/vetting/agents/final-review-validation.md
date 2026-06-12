@@ -53,6 +53,8 @@ Coverage declaration: "CE baseline re-verification complete. Cell read: [ref]. S
 
 ## Check 1 — Fix-validation
 
+**Computability threshold**: A CE impact is computable inline if: (a) the fix is a direct numeric substitution (the finding's Recommended Fix column states the exact replacement value), AND (b) the formula chain from the fixed cell to CE output uses no intermediate cells flagged 'Guess' or 'TBD.' If either condition fails, write 'Magnitude unknown — replacement value not specified' in column H. Do not assume a replacement value that isn't stated in the finding.
+
 For each **High or Medium** finding in the Findings sheet whose Recommended Fix (column G) includes a specific formula change:
 
 1. Use `read_sheet_values` (FORMULA mode) on the cell being fixed to confirm the current formula matches what the finding describes. If it does not match, note the discrepancy in the finding's Explanation — do not mark the finding resolved.

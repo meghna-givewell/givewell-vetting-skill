@@ -140,6 +140,55 @@ Flag as Medium/H if the model structure is inconsistent with the intervention ty
 
 File as **Low/H** with Researcher judgment needed ✓ if two or more adjustments share a plausible common mechanism and are combined additively: "[cells]: supplemental adjustments [A = +X%, B = +Y%] are summed additively (net = [X+Y]%). If these share a common mechanism, multiplicative compounding gives [X×Y result]% instead. Confirm additive treatment is intentional and document the independence assumption." Do not file if: (a) all adjustment magnitudes are small (<5% each) and the additive vs. multiplicative difference is trivial (<1%); or (b) a cell note already explains why additive combination is appropriate.
 
+## Mandatory pre-filing check log
+
+**Write only the log for your instance scope before filing any findings.** For each item write `ran: [brief result or finding cell]` or `n/a: [one-word reason]`. A blank entry means the check was not considered — not acceptable.
+
+**heads-up-intervention-A log** (Section A — Intervention-Specific Checks):
+```
+Heads-up intervention-A check log — Intervention-Specific Checks:
+  bidirectional magnitude check (universal) [___]
+  benefit completeness (universal) [___]
+  VAS — indirect deaths multiplier [___]
+  VAS — evidence age and VAD prevalence [___]
+  SMC — RCT vs. observational gap [___]
+  SMC — cycles/transmission linkage [___]
+  SMC — non-Sahel efficacy and seasonality [___]
+  ITN — PBO net durability and chemical decay [___]
+  deworming — single-study income effect [___]
+  malaria vaccines — 3-dose rebound [___]
+  malaria vaccines — year-1 vs. multi-year efficacy horizon [___]
+  azithromycin aMDA — setting-specific generalizability [___]
+  CMAM — CFR vs. annual mortality rate [___]
+  CMAM — ceiling analysis GAM ICF formula [___]
+  CMAM — ICF weighted-average weight integrity [___]
+  HPV — advances-in-treatment discount [___]
+  IPTp — parity restriction on birthweight effect [___]
+  water quality — non-significant pooled RR + adjustments [___]
+  New Incentives — standard adjustment set [___]
+  VOI BOTEC — GiveDirectly benchmark fix prescription [___]
+```
+
+**heads-up-intervention-B log** (Section B — TA Grant Checks; or adversarial Section A pass for non-TA):
+```
+Heads-up intervention-B check log:
+  TA classification: [TA / non-TA] [___]
+  [If non-TA — adversarial bottom-up Section A pass:]
+    adversarial pass complete [___]
+  [If TA — Section B checks:]
+    TA model type and structural consistency [___]
+    discount rate by benefit stream [___]
+    probability of failure [___]
+    speed-up parameter calibration [___]
+    counterfactual coverage trajectory [___]
+    rollout lag (Model 2 only) [___]
+    supplemental adjustments additive vs. compounding [___]
+```
+
+Do not write your AGENT_COMPLETE marker until this log is complete and all entries are filled in.
+
+---
+
 ## Writing Findings
 
 Before writing any finding, confirm you can answer all three of these: (1) the exact cell reference(s) affected, (2) the specific value or assumption that is questionable, and (3) the precise question the researcher needs to answer or fix required. A finding that identifies an area of concern without naming a cell is not complete — keep investigating until you can answer all three.

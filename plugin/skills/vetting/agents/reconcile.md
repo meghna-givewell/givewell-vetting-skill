@@ -32,6 +32,10 @@ Count the non-empty rows in the A range. Count the non-empty rows in the B range
 
 Exception: plausibility-intervention and formula-check-structure may legitimately produce fewer than 3 findings if the intervention type or sheet structure doesn't trigger their checks — use judgment. If the sheet is a simple BOTEC and sources found 1 finding, that may be valid. If formula-check found 0 findings on a 100-row CEA, that is not plausible. The completion marker absence is a stronger signal than low finding count — always flag if the marker is absent.
 
+**Self-detecting agent exception**: formula-check-voi (and ce-chain-trace-ta) may legitimately produce zero findings if no VOI or TA content is detected. Before flagging as a potential failure, read the completion marker text. If it contains 'No VOI content found' or 'No TA grant signals found,' the zero-finding result is valid — do not flag. Only flag as potential failure if the marker text is generic (no self-detection outcome statement) or is absent.
+
+**Check log validation**: For agents that write a mandatory check log (heads-up-evidence, heads-up-epi, consistency-check, key-params-check, heads-up-intervention): verify the AGENT_COMPLETE marker's column F text contains 'Coverage log complete:' or 'check log' or 'Pre-filing check log' or equivalent. If not present, note: 'Agent completed but check log summary absent from AGENT_COMPLETE — cannot confirm all named checks were run.' Treat this pair with extra scrutiny during divergence analysis.
+
 ---
 
 ## Step 1 — Read both finding sets

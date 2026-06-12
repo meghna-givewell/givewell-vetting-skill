@@ -45,6 +45,8 @@ A note reading "GBD 2019" in a 2025–2027 grant model is a trigger to check whe
 - **Drift ≥2%**: file as **Medium/H** and include both values in the Explanation: "Cell [ref] cites [year] — current [source] value is [X] vs. model's [Y] ([Z]% difference)."
 - **No updated value found after searching**: file as **Medium/H** with Researcher judgment needed ✓ (**Parameter**): "Cell [ref] note cites [year] data for a key parameter in a [grant period] model — verify the value reflects the most recent available vintage and update the note."
 
+**GBD/IHME-specific rule**: When the cited source is GBD (Global Burden of Disease) or IHME data and the vintage is ≥2 years before the model's grant period start year, file as **Medium/H** by vintage alone — do not require drift evidence before escalating from Low. Write 'Direction unknown' in column H. GBD data is updated annually and the direction of change for any specific parameter is not predictable without looking it up; the vintage staleness alone is a material parameter quality issue for GBD-derived values. This rule applies regardless of whether a WebSearch finds a current value — if the search finds an updated value and drift ≥2%, include both values; if the search finds no updated value, use the standard no-updated-value phrasing.
+
 Do not file this finding if the note already explains why the older vintage is appropriate (e.g., "GBD 2019 used because the 2021 vintage does not disaggregate this age group").
 
 Coverage declaration: "Stale-year note check complete. Hardcoded cells with vintage year citations scanned: [N]. Stale values found at: [list or 'none']. WebSearches run: [N]."
