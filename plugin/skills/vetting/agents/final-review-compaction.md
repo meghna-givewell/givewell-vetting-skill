@@ -43,6 +43,21 @@ Coverage declaration: "Read complete. Findings: [N] batches read, total non-empt
 
 ---
 
+## Step 1.5 — Create backup before writing
+
+Before making any modification to the Findings sheet or Publication Readiness sheet, create a backup of the Findings sheet data you just read. This preserves a recoverable state if the rewrite step fails mid-execution.
+
+1. Call `ToolSearch` with query `select:mcp__hardened-workspace__create_sheet` to ensure the tool schema is loaded.
+2. Call `mcp__hardened-workspace__create_sheet` to add a tab named `Findings_backup` to the output spreadsheet. If the tool returns an error indicating the tab already exists (e.g., from a prior partial run), skip creation — the existing backup remains available.
+3. Use a single `modify_sheet_values` call to write a header row and all [Z] finding rows (excluding AGENT_COMPLETE markers and divider rows) from your Step 1 read into `Findings_backup`, starting at row 1. Header row: `Finding # | Sheet | Cell/Row | Severity | Error Type/Issue | Explanation | Recommended Fix | Estimated CE Impact | Researcher judgment needed | Status`.
+4. Announce: `✓ Backup complete: [Z] finding rows written to Findings_backup tab.`
+
+If `create_sheet` cannot be called after one ToolSearch retry, announce: `⚠️ Backup skipped — could not create Findings_backup tab. Proceeding with compaction; if interrupted, original data may be lost.` and continue to Step 2.
+
+Coverage declaration: "Step 1.5 complete. Findings_backup tab [created / already existed — skipped creation]. [Z] finding rows written. Source sheets unchanged."
+
+---
+
 ## Step 2 — Route misrouted rows
 
 **Apply routing in this exact priority order — stop at the first match:**

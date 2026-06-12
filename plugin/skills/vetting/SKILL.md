@@ -6,7 +6,7 @@ argument-hint: "<Google Sheets URL or local file path>"
 
 # /vetting — GiveWell Spreadsheet Vetter
 
-**Skill version**: 2026-06-12 — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
+**Skill version**: 2026-06-12 (v1.2.8) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
 
 You are a meticulous spreadsheet auditor for GiveWell. See the repository README for one-time setup (Hardened Google Workspace MCP). See `reference/key-parameters.md` for authoritative parameter values. See `reference/output-format.md` for output column definitions.
 
@@ -824,6 +824,16 @@ Note: notes-scan (Step 7c) has no reconciliation pair — it runs as A/B but bot
 > ⚠️ Reconciliation failure warning: [pair name] reconcile agent produced no coverage declaration and no net-new findings. Its A/B divergences may be unreconciled. Consider re-running this reconcile agent before proceeding to Wave 3.
 
 Exception: pairs where both A and B agents wrote zero findings (confirmed empty) produce no divergences to reconcile and zero net-new findings legitimately — verify this by reading the pair's A and B ranges before flagging.
+
+**TA misclassification cross-check — only if `is_ta_botec` was set in Step 0.5**: After all Wave 2.5 reconciliation agents complete and before starting Wave 3, verify that heads-up-intervention-B and ce-chain-trace-ta reached consistent TA/non-TA classifications.
+
+1. Read the AGENT_COMPLETE marker row for heads-up-intervention-B from its allocated row range (rows `last_row + 351` to `last_row + 390` on the Findings sheet). Extract the `Routing decision:` field from column F.
+2. Read the AGENT_COMPLETE marker row for ce-chain-trace-ta-A from its allocated row range (rows `last_row + 951` to `last_row + 1000`). Check whether column F contains `No TA grant signals found` (non-TA self-detection) or describes TA-specific check results.
+3. If heads-up-intervention-B declared `Routing decision: A — non-TA` but ce-chain-trace-ta-A produced TA-specific findings (its AGENT_COMPLETE does **not** contain `No TA grant signals found`), announce:
+
+> ⚠️ TA classification mismatch: heads-up-intervention-B identified this as non-TA (ran Section A intervention checks only) but ce-chain-trace-ta found TA signals. If this is a TA grant, Section B TA grant checks were skipped by heads-up-intervention-B. Consider re-running heads-up-intervention with `is_ta_botec = true` in session context before Wave 3.
+
+4. If both agree (both non-TA or both found TA signals), proceed silently. Skip this cross-check entirely if `is_ta_botec` was not set in Step 0.5 session context.
 
 ---
 

@@ -214,7 +214,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `heads-up-intervention`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Check log complete: [N] of [M] applicable checks — any unfilled [___] entries mean that check was not completed. Scope: [A / B]. Section run: [A — Intervention-Specific Checks / B — TA Grant Checks or non-TA fast exit]. Checks run: [comma-separated list]. Checks skipped per scope: [comma-separated list with reason]. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
+- Column F: `Check log complete: [N] of [M] applicable checks — any unfilled [___] entries mean that check was not completed. Scope: [A / B]. Section run: [A — Intervention-Specific Checks / B — TA Grant Checks or non-TA fast exit]. Routing decision: [A — non-TA / B — TA] based on: [signal, e.g., 'session context is_ta_botec flag set' or 'workbook title contains TA' or 'non-TA: no TA signals found in Step 0']. Checks run: [comma-separated list]. Checks skipped per scope: [comma-separated list with reason]. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
 - All other columns: blank
 
 **Do not write AGENT_COMPLETE if the check log contains any unfilled `[___]` entry** — an unfilled entry means the check was not run, not that no issues were found. Complete all applicable checks first.

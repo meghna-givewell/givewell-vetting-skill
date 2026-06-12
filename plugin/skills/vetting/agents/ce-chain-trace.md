@@ -32,7 +32,9 @@ Search the spreadsheet for the bottom-line CE multiple. GiveWell CEAs typically 
 
 Look for this in the Results tab, Main CEA tab, or a Summary section. Common row labels: `Cost-effectiveness multiple`, `CE multiple`, `Total units of value per $10,000`, `Times as cost-effective`, `Bottom line`.
 
-If multiple CE outputs exist (e.g., per intervention, per country, weighted average), identify the **primary** CE multiple that is displayed to decision-makers. Note all others as secondary and verify they flow from the same chain.
+**Use session context CE cell references when available**: If session context includes explicit CE cell references (e.g., `CE baseline: Nigeria = B48 (7.8x)`), start your trace from those cells rather than searching from scratch — Step 0 extracted them during the initial workbook read. Use all provided cell references as starting points.
+
+If multiple CE outputs exist (e.g., per country, per scenario, per intervention, weighted average), **trace each one independently** — do not assume secondary CE outputs flow from the same chain as the primary without verifying. Each country or scenario may apply different coverage rates, cost inputs, or EV adjustments that diverge mid-chain. Record the cell reference, label, and current value for each CE output separately before beginning any trace.
 
 Record: the cell reference, the label used, and its current displayed value.
 

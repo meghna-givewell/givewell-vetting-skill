@@ -120,6 +120,20 @@ Example: Thomas et al 2024 C17 = 51% = mortality among non-KMC-initiated babies 
 
 ---
 
+## Cross-Agent Scope Reference
+
+This section identifies which agent **owns** each check category. When a non-owning agent encounters a potential issue that falls in an owned category, it should note the observation in its reasoning but defer the actual finding to the owning agent rather than filing independently. This prevents the same issue type from being filed with different severities by different agents across runs — a primary source of inter-run inconsistency.
+
+| Check category | Owner agent | Non-owner behavior |
+|---|---|---|
+| Discount rate value | `key-params-check` | Other agents (formula-check-arithmetic, ce-chain-trace, heads-up-intervention) may read the discount rate cell as part of chain verification but must not file a Parameter finding for it. Note "discount rate check deferred to key-params-check" in AGENT_COMPLETE column F. |
+| GBD/IHME vintage staleness | `formula-check-arithmetic` (primary); `formula-check-parameters` (stale-year cell note variant) | Heads-up-epi and ce-chain-trace should not independently file GBD vintage findings — these are owned by formula-check-arithmetic. If encountered, note "GBD vintage staleness deferred to formula-check-arithmetic" in reasoning. The Wave 2.5 reconciliation agent deduplicates if both agents accidentally file. |
+| Cross-sheet reference concept mismatch (wrong-row reference) | `formula-check-arithmetic` (general case across all rows); `ce-chain-trace` (CE-chain-specific, Steps 3f and 4d) | Heads-up-epi, heads-up-intervention, and formula-check-data should not file wrong-row-reference findings — these belong to formula-check-arithmetic's cross-sheet inventory pass. If a suspicious reference is observed, note it in reasoning for the researcher but do not file a finding unless no formula-check-arithmetic agent is running for those rows (e.g., row scope explicitly excludes that section). |
+
+**Applies to**: all agents
+
+---
+
 ## Entry template
 
 ```

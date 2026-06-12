@@ -16,6 +16,8 @@ You are performing Step 10b of a GiveWell spreadsheet vet. This step runs after 
 
 **Coverage mandate**: After each of the three checks below, write a coverage declaration before moving to the next. Do not proceed until you can write it.
 
+**COVERAGE_ROWS reliability note**: Each Wave 1 and Wave 2 agent writes a `COVERAGE_ROWS` field in its AGENT_COMPLETE marker declaring which source spreadsheet rows it scanned. This field is self-reported and not independently verified. An agent that ran out of context or stopped early may have under-declared or over-declared its actual coverage. When Check 2 finds a gap of 15+ rows with no findings, treat it as a genuine coverage gap unless: (a) the relevant agent's COVERAGE_ROWS declaration explicitly excludes those rows, or (b) the rows are structurally empty (headers, dividers, blank rows) on visual inspection. Do not conclude a section was clean simply because a prior agent claimed to have scanned it — this gap-fill check is the verification mechanism. A COVERAGE_ROWS claim covering substantially more rows than a typical agent budget can support (more than ~200 rows for a Wave 1 agent in a single run, more than ~80 rows for a Wave 2 agent without band-split) warrants extra skepticism: read those rows directly in FORMULA mode before declaring the gap clean.
+
 ---
 
 ## Step 1 — Read all confirmed findings
