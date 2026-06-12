@@ -101,7 +101,7 @@ Coverage declaration: "Deduplication complete. [N] exact duplicates merged. [See
 
 ## Step 3.3 — Researcher-to-confirm audit
 
-Count all rows with ✓ in column I. If the ✓ count exceeds 20% of all findings rows, apply the following triage pass before proceeding to Step 3.5.
+Count all rows with ✓ in column I. If the ✓ count is **strictly greater than 20%** of all findings rows (✓ count / total findings > 0.20; at exactly 20%, skip this step), apply the following triage pass before proceeding to Step 3.5.
 
 For each ✓ row, ask: **can this question be answered by (a) reading another cell or formula in the spreadsheet, (b) checking a cited URL, or (c) applying standard GW methodology documented in key-parameters.md or GW guidance?** If yes to any of these, the ✓ mark should not have been filed — the agent had enough information to either confirm or dismiss the finding without researcher input.
 

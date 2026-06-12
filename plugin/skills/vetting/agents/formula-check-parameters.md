@@ -87,6 +87,8 @@ When any hardcoded value corresponds to a parameter listed in `reference/key-par
 
 This rule applies regardless of whether the deviation is directionally conservative. A conservative deviation still misstates CE and should be documented. The key-params-check agent also applies this rule; reconciliation will deduplicate overlapping findings.
 
+**Full-row continuation rule**: When a parameter issue is found in one column of a row — e.g., a stale-year value or wrong-country value in column C — scan every other populated column in the same row before moving to the next row. Copy-paste creates sibling parameter errors: if column C of a "mortality rate under-5" row cites a 2019 vintage, columns D through N of the same row likely carry the same vintage or an equally outdated value. File all affected columns in a single grouped finding listing every affected cell (e.g., `C34, D34, E34`) rather than separate per-column findings. Only after scanning all columns in that row can you proceed to the next row. This rule applies to: stale-year note findings (Check 3), wrong-country note findings (Check 2), and asymmetric parameter findings (Check 4).
+
 ---
 
 ## Writing Findings

@@ -70,7 +70,7 @@ Key-params coverage log:
   Years to benefits (10): [cell ref or 'not found'] = [raw value]. Match: YES/NO.
 ```
 
-If a parameter is not applicable to this model type, write `n/a — [one-word reason]` (e.g., `n/a — not-malaria`).
+If a parameter is not applicable to this program type **per the program-type applicability table below**, write `n/a — [one-word reason]` (e.g., `n/a — not-malaria`). Write `n/a` only because the program type excludes this parameter — not because the parameter is absent from the spreadsheet. A parameter that should appear (based on program type) but does not is "not found," not "n/a."
 
 **"Not found" behavior — do not silently skip**: If a parameter is applicable to this program type but was not located in the column A/B label scan, do not write `not found` and move on. Instead, file a `Low/Parameter` with `Researcher judgment needed ✓`:
 
@@ -81,6 +81,8 @@ Parameters and their program-type applicability:
 - **Malaria and mortality-reduction programs**: Neonatal moral weight, Avert under-5 death, Avert over-5 death, Income effects, Long-term income ratio, Years to benefits
 - **VAS programs only**: Avert death 6–59m VAS
 - **MNH/reproductive health only**: Avert maternal death
+
+**Applicability is determined solely by the program-type name from Step 0.5 session context** — not by what parameters appear or do not appear in the spreadsheet. Do not expand the applicable set because the spreadsheet happens to include a row for a parameter outside the program type; do not contract it because the spreadsheet omits a row. A malaria model that omits an income effects row still requires the income effects check — file `Low/Parameter` with Researcher judgment needed ✓ if not found. A malaria model that includes a secondary maternal outcomes section does not require the maternal death moral weight check — its program type is malaria, not MNH.
 
 ---
 
