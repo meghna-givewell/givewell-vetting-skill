@@ -141,7 +141,7 @@ Flag as **High** if a named adjustment (IV, EV, leverage, funging) is absent fro
 
 **Named adjustment coverage declaration**: After completing Step 3e for all adjustment rows, write this declaration before proceeding to Step 3f:
 
-`Named adjustments verified in chain: IV adjustment [Y/N — cell ref / reason not found], EV adjustment [Y/N — cell ref / reason not found], leverage adjustment [Y/N — cell ref / reason not found], funging adjustment [Y/N — cell ref / reason not found]. Adjustments defined but not found in any downstream formula: [list or 'none']. If any adjustment is 'not found': file as High/D before proceeding — 'Adjustment [name] at [cell] is computed but not referenced in the CE output formula chain. Either add a cell reference or document intentional exclusion in a cell note.'`
+`Named adjustments verified in chain: IV adjustment [Y/N — cell ref / reason not found], EV adjustment [Y/N — cell ref / reason not found], leverage adjustment [Y/N — cell ref / reason not found], funging adjustment [Y/N — cell ref / reason not found], supplemental adjustment(s) [Y/N — cell ref / reason not found]. Adjustments defined but not found in any downstream formula: [list or 'none']. If any adjustment is 'not found': file as High/D (for IV/EV/leverage/funging) or Medium/D (for supplemental) before proceeding — 'Adjustment [name] at [cell] is computed but not referenced in the CE output formula chain. Either add a cell reference or document intentional exclusion in a cell note.'`
 
 If an adjustment type is not present in this model (e.g., no leverage row exists), write `n/a — not modeled` for that entry.
 

@@ -30,7 +30,7 @@ Load CEA Consistency Guidance (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) v
 This agent runs as two complementary instances covering distinct check sets. Check your instance scope in session context before starting:
 
 - **heads-up-intervention-A**: Run Step 0, the universal checks (bidirectional magnitude check, benefit completeness), and all **Section A — Intervention-Specific Checks** (VAS through New Incentives). Skip Section B (TA grant checks) entirely — heads-up-intervention-B covers those.
-- **heads-up-intervention-B**: Run Step 0 only to determine if this is a TA grant. If this is NOT a TA grant: write your AGENT_COMPLETE marker immediately and stop — no TA checks apply. If this IS a TA grant: run all checks under **Section B — TA Grant Checks**.
+- **heads-up-intervention-B**: Run Step 0 to determine if this is a TA grant. If this is NOT a TA grant: run all checks under **Section A — Intervention-Specific Checks** as an adversarial reviewer (see B instance adversarial preamble in session context). If this IS a TA grant: run all checks under **Section B — TA Grant Checks**.
 
 ---
 

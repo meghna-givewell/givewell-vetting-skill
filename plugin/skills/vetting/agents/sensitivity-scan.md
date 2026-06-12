@@ -55,14 +55,18 @@ Columns:
 
 ---
 
-## Final step — write completion marker
+## Final step — write completion markers
 
-After all flags are written (or if no flags were found), write ONE final row to the Confidentiality Flags sheet at the next available row. This is the absolute last action you take before finishing.
-
-Write the row with:
+After all flags are written (or if no flags were found), write ONE final row to the Confidentiality Flags sheet at the next available row:
 - Column A: `AGENT_COMPLETE`
 - Column B: `sensitivity-scan`
 - Column D: `Scanned [N] rows across [sheet name(s)]. Filed [K] flags.`
 - All other columns: blank
 
-Use a single `modify_sheet_values` call. This marker lets the pipeline confirm this agent completed normally without a silent failure (auth timeout, context limit, API error).
+Then write a second AGENT_COMPLETE row to the **Findings sheet**. Call `read_sheet_values` on the Findings sheet (`A2:A2100`) to find the last non-empty row, then write to the row immediately after it (or row 2 if the sheet is empty):
+- Column B: `sensitivity-scan`
+- Column D: `AGENT_COMPLETE`
+- Column F: `Scanned [N] rows across [sheet name(s)]. Filed [K] flags to Confidentiality Flags sheet.`
+- All other columns: blank
+
+Use a separate `modify_sheet_values` call for each sheet. The Findings sheet marker ensures compaction and validation agents can detect this agent's completion alongside all other Wave 1 agents.

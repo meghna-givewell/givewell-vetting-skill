@@ -75,7 +75,7 @@ Apply the decision tree below in order — stop at the first rule that matches.
 **High** — file as High if ANY of the following are true:
 1. **Confirmed factual error against an authoritative standard**: A GW standard parameter (benchmark, moral weight, discount rate) deviates from `key-parameters.md` with no cell note rationale; a formula is confirmed (FORMULA mode) to reference a demonstrably wrong cell or deleted range; a logical impossibility (direct benefit cost > total grant cost; probability > 100%; deaths averted > all-cause deaths in the target population).
 2. **Estimated CE impact ≥2%**: You have estimated the CE impact of correcting the finding and it is at or above 2%. When impact is unknown but the affected parameter sits in the confirmed direct CE calculation chain, treat as High.
-3. **Silent omission**: An adjustment was calculated in the model but is confirmed absent from the CE chain.
+3. **Silent omission**: An adjustment was calculated in the model but is confirmed absent from the CE chain. **Exception: discount rate omission is filed as Low/H per `reference/key-parameters.md` calibration** — the discount rate is present in virtually all models and its omission from the chain is almost always intentional (it applies at the UoV level). Check `key-parameters.md` for per-parameter severity overrides before applying rule 3.
 
 **Medium** — none of the High conditions apply, and ANY of the following are true:
 1. The finding plausibly affects CE but direction or magnitude requires researcher judgment (column H would be "Direction unknown").

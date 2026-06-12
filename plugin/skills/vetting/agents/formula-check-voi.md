@@ -156,6 +156,28 @@ Coverage declaration: `COVERAGE | formula-check-voi | SUMPRODUCT range alignment
 
 ---
 
+## Mandatory check log
+
+Before filing any findings, write the check log for all checks you ran. For each item write `ran: [brief result or cell range]` or `n/a: [one-word reason]`:
+
+```
+formula-check-voi check log:
+  VOI structural comparison vs. template [___]
+  grant cost logical consistency [___]
+  VOI/optionality ad hoc adjustment scope [___]
+  probability row column-reference consistency [___]
+  cross-actor symmetry assumption [___]
+  VOI_Priors cross-formula column-scope [___]
+  annuity-due vs. annuity-immediate [___]
+  scenario weight sum verification [___]
+  VOI CE reference source verification [___]
+  P(wrong) parameter floor [___]
+  CE of reallocated funding vs. funding bar [___]
+  SUMPRODUCT final CE range alignment [___]
+```
+
+---
+
 ## Writing Findings
 
 Before writing any finding, confirm: (1) exact cell reference(s), (2) specific formula or value issue, (3) precise fix.

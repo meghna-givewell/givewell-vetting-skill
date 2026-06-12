@@ -67,3 +67,15 @@ Rules:
 - List every High finding under "High findings," grouped by sheet. If no High findings, write "No High findings."
 - List only items with `✓` in column I (Researcher judgment needed) from the Findings sheet under "Items requiring researcher input" — do not include pub-readiness items here. If none, omit this section.
 - Keep each bullet to one sentence — the full detail is in the Findings sheet.
+
+---
+
+## Step 10d — Delete Findings_backup tab
+
+After Step 3 is written to chat, clean up the `Findings_backup` tab created by the compaction agent:
+
+1. ToolSearch for `delete_sheet` (or equivalent tab-deletion tool).
+2. If found: call it with the output spreadsheet ID and tab name `Findings_backup`. Announce: `✓ Findings_backup tab deleted — output spreadsheet is clean.`
+3. If not found: announce: `⚠️ Could not delete Findings_backup tab — researcher should delete it manually before sharing the output spreadsheet (Dashboard → right-click Findings_backup → Delete).`
+
+This step is required to prevent researchers from seeing raw pre-compaction data alongside the clean, sorted output.

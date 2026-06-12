@@ -108,8 +108,8 @@ This cross-check guards against silent truncation from batch read limits — the
 After all rows are written, conditional formatting is applied, and the coverage cross-check is complete, add ONE final row to the Hardcoded Values sheet at the next available row after all enumerated entries. This is the absolute last action you take before finishing.
 
 Write the row with:
-- Column A: `AGENT_COMPLETE`
-- Column E: `hardcoded-values`
+- Column B: `hardcoded-values`
+- Column D: `AGENT_COMPLETE`
 - Column F: `Enumerated [N] hardcoded parameters across [sheet name(s)]. Coverage cross-check: [M] rows scanned vs. [K] populated rows per get_spreadsheet_info. [Confirmed complete / N rows rescanned].`
 - All other columns: blank
 

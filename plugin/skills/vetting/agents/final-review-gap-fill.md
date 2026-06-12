@@ -80,7 +80,7 @@ Coverage declaration: "Coverage gap scan complete. Gaps of 15+ rows found: [N, w
 
 ## Check 2.5 — Cross-band root cause trace (band-split runs only)
 
-**Only run this check if session context includes a `band1_end` value** (indicating that band-split was used for this vet). If no `band1_end` is provided, skip entirely and write: "Check 2.5: skipped — band-split not active."
+**Only run this check if band-split was used for this vet.** To determine this: (1) check session context for a `band1_end` value; (2) if not present in session context, read Dashboard cells `A49:B100` of the output spreadsheet — if the Dashboard row allocation log shows more than one band pair for any agent type, recover `band1_end` from the last row number of the first band pair. If neither session context nor the Dashboard log contains band-split information, skip entirely and write: "Check 2.5: skipped — band-split not active (confirmed: no band1_end in session context or Dashboard log)."
 
 When band-split is active, agents scanned the spreadsheet in row-range bands (band 1: rows 1–`band1_end`, band 2: rows `band1_end+1` and above). Each band pair's reconcile agent was explicitly prohibited from cross-reconciling with other bands. This creates a gap: a High/D finding in band 2 whose root cause is a cell in band 1 may not be linked to the upstream error.
 
