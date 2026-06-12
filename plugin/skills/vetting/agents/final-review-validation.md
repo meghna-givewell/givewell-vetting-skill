@@ -106,7 +106,7 @@ Coverage declaration: "Placeholder scan complete. Header rows and column A check
 
 ## Check 4 — CE impact completeness
 
-**Pass A — fill blanks**: For every **High** finding and every **Medium** finding whose Error Type is `Formula Error`, `Parameter Issue`, or `Adjustment Issue` — where Estimated CE Impact (column H) is blank — compute the directional impact using the pre-vet baseline CE from session context. Write using the standard format: `Raises CE — 8.7x → ~10.2x` or `Lowers CE — magnitude unknown` etc. Always lead with the standard phrase from output-format.md. Use `Direction unknown` if the researcher's answer would determine the direction. Update the finding in place using `modify_sheet_values`.
+**Pass A — fill blanks**: For every **High** finding and every **Medium** finding whose Error Type is `Formula`, `Parameter`, or `Adjustment` — where Estimated CE Impact (column H) is blank — compute the directional impact using the pre-vet baseline CE from session context. Write using the standard format: `Raises CE — 8.7x → ~10.2x` or `Lowers CE — magnitude unknown` etc. Always lead with the standard phrase from output-format.md. Use `Direction unknown` if the researcher's answer would determine the direction. Update the finding in place using `modify_sheet_values`.
 
 Rationale: Medium Formula, Parameter, and Adjustment findings can affect CE even if their impact is below the High threshold. Researchers need the CE direction to triage them against High findings. `Assumption`, `Legibility`, and `Inconsistency` at Medium severity often have no computable CE impact — leave those blank rather than writing "Direction unknown" unless you can clearly identify a direction.
 

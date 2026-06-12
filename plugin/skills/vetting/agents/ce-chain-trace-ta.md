@@ -59,8 +59,8 @@ Write the row with:
 - Column B: `ce-chain-trace-ta`
 - Column D: `AGENT_COMPLETE`
 - Column F:
-  - If TA signals found: `TA signals confirmed: [list which signals detected — e.g., session-context-flag=Y, tab-names=Y/N (tabs found: [list]), row-labels=Y/N]. Checked Main CEA and Simple CEA cost denominators. Filed [K] Findings rows. Row allocation: [start]–[end].`
-  - If no TA signals found: `TA signals checked: session-context-flag=[Y/N], tab-names=[Y/N — names checked: [list]], Main-CEA-row-labels=[Y/N]. No TA grant signals found on any of the 3 detection methods — checks skipped. Row allocation: [start]–[end].`
+  - If TA signals found: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | TA signals confirmed: [list which signals detected — e.g., session-context-flag=Y, tab-names=Y/N (tabs found: [list]), row-labels=Y/N]. Checked Main CEA and Simple CEA cost denominators. Filed [K] Findings rows. Row allocation: [start]–[end].`
+  - If no TA signals found: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | TA signals checked: session-context-flag=[Y/N], tab-names=[Y/N — names checked: [list]], Main-CEA-row-labels=[Y/N]. No TA grant signals found on any of the 3 detection methods — checks skipped. Row allocation: [start]–[end].`
 - All other columns: blank
 
 Stating the detection outcome explicitly (rather than just "no signals found") allows the orchestrator to distinguish a thorough negative result from a silent failure in which the self-detection step was skipped.

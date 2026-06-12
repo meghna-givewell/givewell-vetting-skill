@@ -175,7 +175,7 @@ After all checks are complete (or after the self-detection step if no VOI conten
 Write the row with:
 - Column B: `formula-check-voi`
 - Column D: `AGENT_COMPLETE`
-- Column F: If VOI content was found: `Checked [N] VOI rows across [sheet name(s)]. Filed [K] Findings rows. Row allocation: [start]–[end].` If no VOI content found: `No VOI content found across vetted sheets. Checks skipped. Row allocation: [start]–[end].`
+- Column F: If VOI content was found: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] VOI rows across [sheet name(s)]. Filed [K] Findings rows. Row allocation: [start]–[end].` If no VOI content found: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | No VOI content found across vetted sheets. Checks skipped. Row allocation: [start]–[end].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure.

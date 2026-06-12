@@ -111,5 +111,5 @@ After all findings are written, write ONE final row to the Findings sheet at the
 
 - Column B: `formula-check-parameters`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Checked all rows across [sheet name(s)]. Filed [K] findings. Row allocation: [start]–[end].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked all rows across [sheet name(s)]. Filed [K] findings. Row allocation: [start]–[end].`
 - All other columns: blank

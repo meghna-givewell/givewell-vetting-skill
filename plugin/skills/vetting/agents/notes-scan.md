@@ -124,7 +124,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `notes-scan`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Checked [N] rows across [sheet name(s)]. Filed [K] Publication Readiness rows. Row allocation: [start]–[end].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] Publication Readiness rows. Row allocation: [start]–[end].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure.

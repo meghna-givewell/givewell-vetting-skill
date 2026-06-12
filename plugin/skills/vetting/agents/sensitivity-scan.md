@@ -44,7 +44,13 @@ Write the header row first if the sheet is empty: `Cell/Row | Content Found | Se
 Columns:
 - **A (Cell/Row)**: Cell reference only — e.g., `Main CEA!C14`. No row labels or descriptions. If found in a cell note rather than a cell value, write the cell reference followed by ` (note)` — e.g., `Main CEA!C14 (note)`.
 - **B (Content Found)**: The sensitive content found — quote it directly, or describe it if quoting would itself be a risk
-- **C (Sensitivity Type)**: `PII` | `Donor Info` | `Salary/Compensation` | `Unpublished Strategy` | `Contact Info` | `Other`
+- **C (Sensitivity Type)**: Assign exactly one type — use this hierarchy, stop at the first match:
+  - `PII` — individual full name, personal email address (not a team alias or info@ address), or personal phone number identifying a specific individual
+  - `Donor Info` — donor organization name, gift amount, fund designation, or donor-specific funding strategy
+  - `Salary/Compensation` — salary figure or compensation range tied to a specific individual or role
+  - `Unpublished Strategy` — pre-decisional funding recommendation, internal grantee performance assessment not intended for publication, or strategic direction not yet public
+  - `Contact Info` — office-level or organization-level contact details (main office phone, org mailing address); use `PII` if the details identify a specific individual
+  - `Other` — sensitive to publication but does not match any category above
 - **D (Recommended Action)**: Specific instruction (e.g., "Remove name — replace with role title", "Delete row before publication", "Move to internal-only version")
 
 ---

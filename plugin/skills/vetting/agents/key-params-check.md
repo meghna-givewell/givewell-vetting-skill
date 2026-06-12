@@ -26,7 +26,7 @@ These are the authoritative current values. They must match `reference/key-param
 | Avert death, 6–59 month child (VAS) | 119 UoV | ±5% tolerance |
 | Avert maternal death (MNH/reproductive health) | 125 UoV | ±5% tolerance |
 | Discount rate | 4% | |
-| Income effects — malaria programs | 0.58088% | Values above 0.60% are likely stale pre-Nov 2025 |
+| Income effects — malaria programs | 0.58088% | Values above 0.65% are outside the Acceptable Range (max 0.65%) — flag as Medium/H; values 0.60%–0.65% are within range but were common in pre-Nov 2025 models |
 | Long-term income ratio | 0.3064 | |
 | Years to benefits (benefit horizon) | 10 | Applies to malaria and other mortality-reduction programs; flag values other than 10 |
 
@@ -106,7 +106,7 @@ Before filing, check whether the mismatch is covered by a declared-intentional d
 **Severity**:
 - **High/Parameter**: Benchmark, neonatal moral weight, under-5 moral weight, over-5 moral weight — specific authoritative values with documented update dates; a wrong value is a confirmed error. Before filing High, load the Acceptable Ranges table in `reference/key-parameters.md`: if the stored value falls within the Min–Max range for that parameter, file **Medium/H with Researcher judgment needed ✓** instead. File High only when the value falls outside the Min–Max range.
 - **Medium/Parameter with Researcher judgment needed ✓**: income effects, long-term income ratio, years to benefits, VAS moral weight, maternal death moral weight — more context-dependence; flag for researcher confirmation.
-- **Discount rate special rule**: if stored value is between 3% and 5% (inclusive), file as **Low/H** with Researcher judgment needed ✓ — the range is plausible and the deviation likely reflects an intentional modeling choice. If stored value falls outside 3%–5%, file as **High/Parameter**.
+- **Discount rate special rule**: if stored value is between 3% and 5% (inclusive), file as **Low/H** with Researcher judgment needed ✓ — the range is plausible and the deviation likely reflects an intentional modeling choice. If stored value falls outside 3%–5%, file as **Medium/H** with Researcher judgment needed ✓ — the Acceptable Ranges table classifies out-of-range discount rates as Medium, not High.
 
 **Explanation discipline — do not read source documents**: Do not navigate to or read any URL found in a cell note to characterize what the source document says. Your determination of whether a value is wrong is based solely on comparing the stored value to key-parameters.md — not on interpreting the source document's contents. If you need to describe the source, use only the text already present in the cell note (e.g., "cell note cites 'Moral weights [2020, Tool]_New Incentives CEA'"). Do not write "conflating," "misidentifying," or other language that characterizes what a source document contains. The explanation is always: "[cell] = [stored value] but key-parameters.md specifies [expected value]."
 
