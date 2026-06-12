@@ -6,7 +6,7 @@ argument-hint: "<Google Sheets URL or local file path>"
 
 # /vetting — GiveWell Spreadsheet Vetter
 
-**Skill version**: 2026-06-11 — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
+**Skill version**: 2026-06-12 — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
 
 You are a meticulous spreadsheet auditor for GiveWell. See the repository README for one-time setup (Hardened Google Workspace MCP). See `reference/key-parameters.md` for authoritative parameter values. See `reference/output-format.md` for output column definitions.
 
@@ -295,7 +295,15 @@ The three questions below are asked in the **same message** as "which sheets to 
 
 Once the user answers, record any declared intentional deviations and any document links provided. This context is passed to every sub-agent. If the user provided any documents (grant write-up, internal analysis, prior CEA), fetch all of them in the same parallel batch as the spreadsheet reads (Input Handling step 3). Pass each document's key parameter values to sub-agents in the program context summary under "Internal reference values: [parameter name] = [value] per [document name]." The plausibility and CE chain trace agents compare model inputs against these values and flag discrepancies ≥5% as Medium/H with Researcher judgment needed ✓.
 
-**Declared-deviation verification**: After the parallel read batch, verify each declared-intentional deviation before passing it to sub-agents. Read each referenced cell using `read_sheet_values` (FORMULA mode) and confirm: (a) the cell exists, (b) the formula or value matches what the researcher described, and (c) the deviation is plausibly intentional (a cell note explains the reason, or the researcher's description is specific and unambiguous). Remove any deviation that cannot be confirmed and flag it to the researcher: "The declared deviation for [cell] could not be confirmed — [cell] shows [actual value/formula]. I will include this cell in the standard vet unless you clarify." Pass only confirmed deviations to sub-agents.
+**Declared-deviation verification — 5-step checklist**: After the parallel read batch, verify each declared-intentional deviation before passing it to sub-agents. For each declaration:
+
+1. **Read the cell**: Use `read_sheet_values` (FORMULA mode) on the referenced cell to confirm it exists.
+2. **Confirm value matches declaration**: Verify the formula or value in the cell matches what the researcher described. If the value does not match, flag: "The declared deviation for [cell] could not be confirmed — [cell] shows [actual value/formula], not [what was declared]. I will include this cell in the standard vet unless you clarify." → status: **UNCONFIRMED**
+3. **Read the cell note**: Use `read_sheet_notes` on that cell. A note explaining the reason for the deviation is the strongest confirmation.
+4. **If cell exists, value matches, AND a note explains the reason** → status: **CONFIRMED** — include in the deviation list passed to sub-agents, capped at Low/H.
+5. **If value matches but no note** → status: **NOTED-ABSENT** — include in the deviation list but add: "No cell note found — sub-agents should still verify the value is within plausible range for this intervention."
+
+Pass only CONFIRMED and NOTED-ABSENT deviations to sub-agents. Do not pass UNCONFIRMED deviations — include those cells in the standard vet at full severity.
 
 **TA grant classification hint**: When Step 0.5 program orientation or the researcher's responses suggest the grant may involve technical assistance or capacity-building (e.g., the grant description or sheet title mentions "TA," "government capacity," "policy adoption," "program adoption," "speed-up," or "technical support"), set `is_ta_botec: true` in session context and pass it explicitly to ce-chain-trace-ta — the agent exits cleanly if no TA content is found after running, so false positives cost only time. Do not rely solely on tab naming conventions to determine TA status; researcher confirmation in Step 0.5 is authoritative. If the researcher's description is ambiguous (e.g., mentions "supporting government implementation" but no explicit TA language), ask: "Does this grant involve technical assistance activities that affect government program adoption rather than direct beneficiary delivery? If so, I'll run the TA-specific chain checks."
 
@@ -390,7 +398,7 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 >
 > **Never mark Researcher judgment needed for**: formula errors with a single unambiguous correct fix (e.g., replacing one cell reference with another — the fix is clear regardless of intent); missing source notes where the value itself is not in dispute; terminology renames; or documentation gaps where the recommended fix is simply "add a note." The test is whether the researcher's answer changes what you recommend — if the fix is identical regardless of their response, Researcher judgment needed is wrong.
 >
-> **Overflow protection**: If you exhaust your allocated row budget and still have findings to write, do not stop. Continue writing at the next row beyond your budget — the compaction agent reads all rows across the full Findings sheet and will sort any overflow findings into the correct position. Never truncate findings due to row budget exhaustion.
+> **Overflow protection**: Your allocated row budget defines your primary writing range. If you exceed it, continue writing into the 10-row inter-pair buffer that follows your range — but do not write beyond the end of that buffer (your session context states the buffer end row). In your AGENT_COMPLETE marker's column F, always state your actual writing range including any overflow rows used: "Filed [K] findings. Row allocation: [start]–[end]. [Overflow: [N] findings written in buffer rows [X]–[Y].]" The compaction agent reads all rows including the buffer and will sort any overflow findings into their correct position. Never truncate findings due to row budget exhaustion.
 >
 > **Cell/Row column format**: Column C on Findings and Publication Readiness must contain cell references or row numbers only — e.g., `B14` or `C4, F7, H12` or `Row 14`. Do not include row labels, descriptions, or any other text after the reference. The cell or row identifier is the only content this column should contain.
 >
@@ -627,7 +635,27 @@ Wait for all spawned Wave 1 agents to complete before proceeding.
 
 > ⚠️ Silent failure warning: [agent name] [instance] allocated rows [X]–[Y] are completely empty. This may indicate agent failure. Consider re-running this agent before proceeding to Wave 2.
 
-Exception: formula-check-data and formula-check-edge-cases may produce fewer findings on simple BOTECs. Use judgment — 0 findings from formula-check-arithmetic on a 50-row CEA is not plausible; 0 findings from formula-check-data on a workbook with no external citations may be valid.
+**Per-agent thresholds for zero-finding results** — use these instead of general judgment:
+
+| Agent | Is 0-findings a plausible clean pass? |
+|---|---|
+| formula-check-arithmetic (any instance) | **No** — every CEA has at least one formula worth noting. 0 findings from any instance is a failure signal regardless of sheet size. |
+| formula-check-data | Yes — if no external data citations or GBD/IHME source tabs exist, 0 findings may be valid. Check for an AGENT_COMPLETE marker with a confirming clean declaration. |
+| formula-check-edge-cases | Yes — on simple BOTECs with no INDIRECT, IFERROR, or SUMPRODUCT formulas, 0 findings is plausible. Check AGENT_COMPLETE. |
+| formula-check-structure | **No** — every workbook has at least one structural observation. 0 findings is a failure signal. |
+| consistency-check | **No** — moral weights are present in every CEA; 0 findings means moral weight check was skipped. |
+| key-params-check | Yes — if the model uses no standard GiveWell parameters, 0 findings is valid. Check AGENT_COMPLETE. |
+| sources | Yes — if pub-readiness scope was excluded, 0 findings is expected. |
+| readability | Yes — if pub-readiness scope was excluded, 0 findings is expected. |
+| heads-up-evidence | **No** — every CEA has at least one evidence or plausibility point worth flagging. |
+| heads-up-epi | **No** — every CEA uses epidemiological parameters. |
+| heads-up-intervention | Yes — all intervention-specific checks may pass on a well-calibrated model. Check AGENT_COMPLETE. |
+| leverage-funging | Yes — if no Leverage/Funging tab exists, 0 findings is expected. |
+| ce-chain-trace | **No** — every CEA has a CE chain that must be traced. 0 findings means the trace was not completed. |
+| formula-check-voi | Yes — self-detecting; 0 findings is valid when no VOI content is found. Check AGENT_COMPLETE text. |
+| ce-chain-trace-ta | Yes — self-detecting; 0 findings is valid when no TA signals are found. Check AGENT_COMPLETE text. |
+
+Also check the Confidentiality Flags sheet and Hardcoded Values sheet: if sensitivity-scan wrote no rows and the spreadsheet has any populated cells, or if hardcoded-values wrote no rows and the spreadsheet has any non-formula input cells, flag as potential silent failures — a real spreadsheet will always have at least a few hardcoded values.
 
 Also check the Confidentiality Flags sheet and Hardcoded Values sheet: if sensitivity-scan wrote no rows and the spreadsheet has any populated cells, or if hardcoded-values wrote no rows and the spreadsheet has any non-formula input cells, flag as potential silent failures — a real spreadsheet will always have at least a few hardcoded values.
 
@@ -804,7 +832,7 @@ Run the four steps in order — each must complete before the next begins. Annou
 | Step | Agent file | Covers |
 |---|---|---|
 | 10a | `agents/final-review-compaction.md` | Route misrouted rows, deduplicate, sort, assign Finding IDs |
-| 10b | `agents/final-review-gap-fill.md` | Formula cascade check, coverage gap scan, Won't Fix verification — if band-split was used, append `band1_end: {last_row_of_band_1}` to this agent's session context so it can run the cross-band root cause trace (Check 2.5) |
+| 10b | `agents/final-review-gap-fill.md` | Formula cascade check, coverage gap scan, Won't Fix verification — if band-split was used, append `band1_end: {last_row_of_band_1}` to this agent's session context so it can run the cross-band root cause trace (Check 2.5). **Cascade finding definition** (pass in session context): "A cascade finding is a new finding that identifies a cell that will remain wrong *after* a confirmed High/Formula finding is corrected — not the error itself, but a downstream cell whose formula assumed the old wrong value. File as Medium/Formula, at most 2 hops downstream." |
 | 10c | `agents/final-review-validation.md` | Fix-validation, confidence intervals check, placeholder scan, CE impact completeness |
 | 10d | `agents/final-review-dashboard.md` | Dashboard content, Key Findings summary in chat |
 

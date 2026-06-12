@@ -25,6 +25,14 @@ Columns (A–J): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
   - `Assumption` — key assumption lacks a source, explanation, or is an unacknowledged edge case; also covers structural model issues (missing required tab, inverted section structure that affects CE interpretation)
   - `Inconsistency` — values that should match across sheets or within the model don't
   - `Legibility` — tab ordering, section ordering, unclear or stale labels, terminology errors (e.g., "x cash" instead of "x benchmark"), placeholder text
+
+  **`Adjustment` vs. `Inconsistency` — decision tree** (these are frequently confused):
+  - Use `Adjustment` when the finding concerns an *operation* that should (or should not) exist: an adjustment that is missing, double-counted, applied to the wrong base, has the wrong sign, or is additive vs. multiplicative incorrectly. The issue is with the treatment of the adjustment itself.
+  - Use `Inconsistency` when the finding concerns two *values that should match* but don't, with no formula or adjustment operation as the root cause: the same parameter appears in two cells with different values, a cross-sheet reference pulls a value that doesn't match its stated source, or a figure cited in a note doesn't match the cell value.
+  - If an adjustment produces a value that is inconsistent across tabs → `Adjustment` (root cause is the adjustment treatment).
+  - If the same parameter value is hardcoded differently in two places with no formula involved → `Inconsistency`.
+  - If a formula references a wrong cell causing a mismatch → `Formula` (root cause is the formula error, not the inconsistency).
+
 - **Explanation** (F): 1–2 sentences maximum. Lead with the specific problem — not background. Make a specific, falsifiable claim and include the actual value or formula fragment (e.g., "B14 = 0.87 but C22 = 0.79"). Plain language a non-expert can understand. Do not hedge what you can confirm. No chain traces, no reasoning.
 - **Recommended Fix** (G): One sentence or formula only. Lead with an imperative verb (Change, Replace, Add, Delete). Include the exact replacement formula or value. No explanation of why — only the action.
 - **Estimated CE Impact** (H): Always begin with one of these standard phrases, then append a magnitude note if known:
@@ -34,8 +42,26 @@ Columns (A–J): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
   - `No CE impact`
   - `Direction unknown` (use when even direction requires researcher input)
 
-  **When to use `Direction unknown`**: Use this phrase whenever the researcher's judgment determines both *what the fix is* and *which direction it moves CE* — not just the magnitude. A finding marked `Researcher judgment needed ✓` where the researcher could legitimately revise the parameter in either direction (e.g., a placeholder that real-world evidence might revise up or down, an AMR assumption that a new study might increase or decrease) must use `Direction unknown`, not a directional phrase based on one assumed revision. Predicting a direction under one assumption and filing it as `Raises CE` or `Lowers CE` is only correct when the direction is unambiguous regardless of which reasonable fix the researcher chooses.
-- **Researcher judgment needed** (I): Mark `✓` only when the researcher must make a **decision** — e.g., an intent question ("is this $0 intentional?") or a choice between two valid approaches. Do NOT mark for verification tasks ("check this against the source") or plausibility concerns ("this value seems off") — those are just Medium findings. Leave blank if the correct action is unambiguous, even if the researcher still has to perform it.
+  **When to use `Direction unknown` — decision tree** (apply in order, stop at first match):
+  1. Does the researcher's answer determine both *what the fix is* AND *which direction it moves CE*? → `Direction unknown`
+  2. Could a reasonable researcher apply fixes that raise CE in one scenario and lower it in another (e.g., a placeholder where real-world evidence might revise up or down)? → `Direction unknown`
+  3. Is the finding marked `Researcher judgment needed ✓` and could the researcher's answer change the direction of CE impact? → `Direction unknown`
+  4. Is the direction clear but the magnitude unknown? → `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown`
+  5. Are both direction and magnitude clear? → `Raises CE — [estimate]` or `Lowers CE — [estimate]`
+
+  **Do not use `Direction unknown`** when the direction is evident from the evidence but you simply cannot compute the magnitude — use `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown` instead.
+
+  **Column H completeness by Error Type**:
+  - `Formula`, `Parameter`, `Adjustment` findings at Medium or High severity: column H must **never be blank**. Use `Direction unknown` if the direction depends on researcher input; use `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown` if the direction is clear.
+  - `Assumption` findings at Medium severity: blank is acceptable only when the assumption has no clear directional CE effect. When the assumption does affect CE, use `Direction unknown` or a directional phrase.
+  - `Inconsistency`, `Legibility` findings at Medium severity: blank is acceptable.
+- **Researcher judgment needed** (I): Mark `✓` only when the researcher must make a **decision** — e.g., an intent question ("is this $0 intentional?") or a choice between two valid approaches. **Do NOT mark `✓` for**:
+  - Verification tasks: "check this against the source," "confirm the GBD vintage," "verify this value" — these are Medium findings; the researcher performs the action, but no judgment call is required
+  - Documentation tasks: "add a cell note," "update the label," "add a source citation" — the action is unambiguous regardless of researcher intent
+  - Deterministic fixes: any finding where the correct action is a specific formula change or specific value substitution — the fix is clear regardless of intent
+  - Plausibility concerns: "this value seems off" without a specific correction — downgrade to Low or reframe as a question in column F
+
+  Leave blank if the correct action is unambiguous, even if the researcher still has to perform it.
 - **Status** (J): Left blank by Claude. The researcher fills this in: `Open` / `Fixed` / `Won't Fix` / `Needs Discussion`. Do not write to this column.
 
 ### Severity Rules

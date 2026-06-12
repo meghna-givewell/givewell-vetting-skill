@@ -53,7 +53,14 @@ Columns:
 - `Org-Reported` — from the grantee's own data: coverage surveys, program reports, cost figures, delivery statistics. The researcher should confirm against the grantee's most recent reporting.
 - `Structural` — a model constant where the value is determined by model design rather than empirical evidence (e.g., 12 months/year, 0.5 for mid-year timing, 100,000 population denominator). Flag if the structural constant is unusually non-standard.
 
-When category is ambiguous, prefer the more specific category (e.g., a coverage rate that came from a DHS survey is `Study-Derived`, not `Org-Reported`, even if the grantee cited it).
+**Category assignment — apply in this priority order** (stop at the first match):
+
+1. **GiveWell Parameter first**: Look up the cell's row label in `reference/key-parameters.md`. If the parameter name or value matches an entry there (moral weight, discount rate, income elasticity, value of a life saved, benchmark CEA), assign `GiveWell Parameter`.
+2. **Study-Derived second**: Does the cell note or an adjacent cell cite a specific external source (RCT, meta-analysis, DHS survey, GBD/IHME estimate, WUENIC table)? If yes, assign `Study-Derived`.
+3. **Org-Reported third**: Does the value represent data the grantee itself reported — coverage surveys, program reports, cost figures, delivery statistics — rather than a published external study? If yes, assign `Org-Reported`.
+4. **Structural last**: Is the value determined by model design rather than empirical evidence (12 months/year, 0.5 mid-year convention, a 100,000 population denominator)? If yes, assign `Structural`.
+
+When category is ambiguous, prefer the more specific category. Prefer `Org-Reported` over `Study-Derived` only when the data comes from the grantee's own primary data collection with no external source cited.
 
 **One row per unique parameter** — if the same parameter value (e.g., discount rate, moral weight, units of value per dollar) appears in multiple cells, create a single row and list all cell references in column B, separated by commas (e.g., `C14, C22, E14`). Treat cells as the same parameter if they share the same row label or adjacent description and the same value. Each *distinct* parameter still gets its own row.
 

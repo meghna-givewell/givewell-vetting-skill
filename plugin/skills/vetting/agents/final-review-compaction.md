@@ -123,7 +123,9 @@ Before rewriting, scan every row in memory and normalize the Error Type/Issue fi
 
 If a value does not match any recognized label, keep it as-is and flag it in your coverage declaration so it can be reviewed.
 
-Coverage declaration: "Label normalization complete. Findings: [N] labels normalized. Publication Readiness: [M] labels normalized. Unrecognized labels: [list or 'none']."
+**Findings sheet column I (Researcher judgment needed) normalization**: Scan every Findings row for any of the following variants in column I and replace each with `✓`: `YES`, `Yes`, `yes`, `Y`, `True`, `true`, `X`, `x`. Leave blank values blank — do not change them. Flag any other non-blank, non-`✓` value in the coverage declaration.
+
+Coverage declaration: "Label normalization complete. Findings: [N] labels normalized. Publication Readiness: [M] labels normalized. Column I: [N] variants normalized to ✓. Unrecognized labels: [list or 'none']. Unrecognized column I values: [list or 'none']."
 
 ---
 

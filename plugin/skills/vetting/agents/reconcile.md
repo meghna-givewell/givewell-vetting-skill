@@ -17,7 +17,7 @@ You have been provided:
 
 ## Step 0 — Empty-range detection (do this first)
 
-Count the non-empty rows in the A range. Count the non-empty rows in the B range. Also check the 20 rows beyond each stated range end (overflow from agents that exceeded their budget).
+Count the non-empty rows in the A range. Count the non-empty rows in the B range. Also check the 20 rows beyond each stated range end (overflow from agents that exceeded their budget). Additionally, when the AGENT_COMPLETE marker is found, read its column F text: if it contains "Overflow:" with a specific row range (e.g., "Overflow: 3 findings written in buffer rows 92–94"), read those rows explicitly — they are part of this agent's finding set.
 
 **Completion marker check — do this for each instance**: Scan the last 10 rows of the A range AND the last 10 rows of the B range (including any overflow rows already checked) for a row where column D = `AGENT_COMPLETE`. This marker is written by each agent as its final action to signal it completed normally.
 
@@ -34,7 +34,7 @@ Exception: plausibility-intervention and formula-check-structure may legitimatel
 
 **Self-detecting agent exception**: formula-check-voi (and ce-chain-trace-ta) may legitimately produce zero findings if no VOI or TA content is detected. Before flagging as a potential failure, read the completion marker text. If it contains 'No VOI content found' or 'No TA grant signals found,' the zero-finding result is valid — do not flag. Only flag as potential failure if the marker text is generic (no self-detection outcome statement) or is absent.
 
-**Check log validation**: For agents that write a mandatory check log (heads-up-evidence, heads-up-epi, consistency-check, key-params-check, heads-up-intervention): verify the AGENT_COMPLETE marker's column F text contains 'Coverage log complete:' or 'check log' or 'Pre-filing check log' or equivalent. If not present, note: 'Agent completed but check log summary absent from AGENT_COMPLETE — cannot confirm all named checks were run.' Treat this pair with extra scrutiny during divergence analysis.
+**Check log validation**: For agents that write a mandatory check log (heads-up-evidence, heads-up-epi, consistency-check, key-params-check, heads-up-intervention): verify the AGENT_COMPLETE marker's column F text contains 'Coverage log complete:' or 'check log' or 'Pre-filing check log' or equivalent. If not present, note: 'Agent completed but check log summary absent from AGENT_COMPLETE — cannot confirm all named checks were run.' Additionally, scan the check log text for any entries containing `[___]` — a placeholder that was never filled in. Any `[___]` in a check log entry means the agent did not complete that specific check. Note each unfilled check by name: 'Check log contains unfilled placeholder(s) at: [check name(s)] — these checks were not completed.' Treat this pair with extra scrutiny during divergence analysis for those specific check areas.
 
 ---
 
@@ -101,6 +101,12 @@ Then make one of three determinations:
 - When marking Won't Fix: delete the row from the sheet.
 
 **High-severity protection**: When A and B rate the same finding at different severities and either instance rated it High — retain at High. Do not resolve to a lower severity through severity reconciliation. Write both ratings in column F: "Instance A: [severity]. Instance B: [severity]. Retaining High per high-severity protection rule." A Won't Fix for a finding rated High by either instance requires a specific affirmative reason that directly refutes the High-severity claim — "I couldn't confirm the issue" or "the other instance rated it Medium" do not qualify. If only the lower-severity claim can be affirmatively confirmed correct, downgrade to Medium/H rather than Won't Fix.
+
+**Reference doc access for parameter divergences**: When a divergence involves a GiveWell standard parameter — a moral weight, benchmark CEA, discount rate, income elasticity, or cross-cutting CEA parameter — and you cannot determine the correct value from the spreadsheet alone, you are permitted to load the relevant reference document to resolve the divergence *before* escalating to "Needs researcher input." Use `get_doc_content` or `read_sheet_values` on:
+- **Cross-Cutting CEA Parameters** (`1ru1SNtgj0D9-vLAHEdTM27GEq_P17ySzG-aTxKD6Fzg`)
+- **GiveWell Moral Weights and Discount Rate** (`1GAcGQSyBQxcB6oGJFGGWCYqwY-jW7oahJJK-cTZOkMc`)
+
+Use these only to verify that a specific numeric value matches or deviates from GiveWell's standard — not as a general research tool. If the document confirms a value is wrong, change Won't Fix to Retain. If it confirms the value is correct, proceed to Won't Fix with specific affirmative evidence: "Verified by reading [document name] — the document shows [value] at [location/tab/row], and the spreadsheet value matches." If the document cannot be read (auth failure, access error), fall back to **Needs researcher input**.
 
 **Needs researcher input** (when validity depends on intent):
 - Leave the finding as-is.
