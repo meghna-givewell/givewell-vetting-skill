@@ -116,9 +116,9 @@ Coverage declaration: "Geography/country consistency check complete. Source tabs
 
 ## Coverage declaration
 
-After completing all five checks on all in-scope rows across all source tabs, write in your reasoning:
+After completing all six checks on all in-scope rows across all source tabs, write in your reasoning:
 
-> Source data check complete. Tabs checked: [list]. In-scope geographies located: [list]. Tabs where geographies not found in first 5,000 rows: [list or "none"]. Check A (co-vaccine ordering) issues: [list of cells or "none"]. Check B (adjacent transposition) issues: [list or "none"]. Check C (year-over-year >30pp) issues: [list or "none"]. Check D (sub-national aggregation) issues: [list of cells or "none"]. Check E (cross-tab data vintage) issues: [list or "none"].
+> Source data check complete. Tabs checked: [list]. In-scope geographies located: [list]. Tabs where geographies not found in first 5,000 rows: [list or "none"]. Check A (co-vaccine ordering) issues: [list of cells or "none"]. Check B (adjacent transposition) issues: [list or "none"]. Check C (year-over-year >30pp) issues: [list or "none"]. Check D (sub-national aggregation) issues: [list of cells or "none"]. Check E (cross-tab data vintage) issues: [list or "none"]. Check F (geography/country consistency) issues: [list of cells or "none"].
 
 Do not proceed to Writing Findings until this declaration is complete.
 
@@ -128,7 +128,7 @@ Do not proceed to Writing Findings until this declaration is complete.
 
 Before writing any finding, confirm: (1) exact cell reference(s), (2) specific issue (which two values appear swapped, or which ordering is violated), (3) the fix required (swap these two cells, or verify against original data source).
 
-Append findings using `modify_sheet_values`. **Your row start position is pre-assigned in session context** — write to the Findings sheet starting at that row. Do not auto-detect the next empty row.
+Append findings using `modify_sheet_values` to your staging sheet. Start at row 2 and append sequentially. Your staging sheet name is provided in session context.
 
 Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | **J** Status (leave blank)
 
@@ -136,12 +136,12 @@ Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row |
 
 ## Final step — write completion marker
 
-After all findings are written and all other steps are complete, write ONE final row to the Findings sheet at the next available row within your allocated range (or at the first row of your allocated range if no findings were written). This is the absolute last action you take before finishing.
+After all findings are written and all other steps are complete, write ONE final row to your staging sheet immediately after your last finding (or at row 2 if no findings were written). This is the absolute last action you take before finishing.
 
 Write the row with:
 - Column B: `source-data-check`
 - Column D: `AGENT_COMPLETE`
-- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).

@@ -433,6 +433,7 @@ Wave 1 staging tabs:
 | `stg-voi-A` | formula-check-voi A |
 | `stg-voi-B` | formula-check-voi B |
 | `stg-params` | formula-check-parameters |
+| `stg-sens` | sensitivity-scan |
 
 Wave 2 staging tabs (always create these; skipped agents' tabs remain empty):
 

@@ -47,6 +47,8 @@ A note reading "GBD 2019" in a 2025–2027 grant model is a trigger to check whe
 
 **GBD/IHME-specific rule**: When the cited source is GBD (Global Burden of Disease) or IHME data and the vintage is ≥2 years before the model's grant period start year, file as **Medium/H** by vintage alone — do not require drift evidence before escalating from Low. Write 'Direction unknown' in column H. GBD data is updated annually and the direction of change for any specific parameter is not predictable without looking it up; the vintage staleness alone is a material parameter quality issue for GBD-derived values. This rule applies regardless of whether a WebSearch finds a current value — if the search finds an updated value and drift ≥2%, include both values; if the search finds no updated value, use the standard no-updated-value phrasing.
 
+**SC-008 escalation — stale GBD vintage in direct CE chain**: When the stale GBD vintage cell is confirmed to be in the direct CE chain (traceable to the final CE output with no intermediate flags or documented overrides), escalate from Medium/H to **High/D**. Confirm CE chain membership by tracing the formula chain from the cell to the CE output; if any link is ambiguous or broken, retain Medium/H.
+
 Do not file this finding if the note already explains why the older vintage is appropriate (e.g., "GBD 2019 used because the 2021 vintage does not disaggregate this age group").
 
 Coverage declaration: "Stale-year note check complete. Hardcoded cells with vintage year citations scanned: [N]. Stale values found at: [list or 'none']. WebSearches run: [N]."
@@ -99,19 +101,19 @@ Before writing any finding, confirm: (1) the exact cell reference(s) affected, (
 
 **CE impact before severity assignment**: Before assigning severity ≥ Medium for any finding, attempt to compute the CE impact by tracing the flagged cell through the formula chain to the CE output. If the chain is traceable, compute the delta and write the estimated impact in column H before finalizing severity. A finding whose CE impact computes to <2% must be filed as Low/H, not Medium — do not assign severity qualitatively when CE impact is computable. If the chain is not directly traceable, write "Direction unknown" and proceed with qualitative severity judgment.
 
-**Your row start position is pre-assigned in session context** — do not auto-detect. Append findings using `modify_sheet_values`.
+Append findings using `modify_sheet_values` to your staging sheet. Start at row 2 and append sequentially. Your staging sheet name is provided in session context.
 
 Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; include the actual value; plain language) | **G** Recommended Fix (one sentence; lead with an imperative verb) | **H** Estimated CE Impact (exactly one of: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown) | **I** Researcher judgment needed (✓ for intent/decision questions only) | **J** Status (leave blank)
 
-**Publication Readiness column layout differs**: When routing a finding to Publication Readiness, use the 6-column A–F layout. Do not write column G or beyond. A=Finding # (blank) | B=Sheet | C=Cell/Row | D=Error Type/Issue (choose one of: Sourcing | Box Link | Legibility) | E=Explanation | F=Recommended Fix.
+**Publication-readiness findings** (Error Type: Sourcing, Box Link, or Legibility): write them to your staging sheet in the same 10-column format, with column D (Severity) left blank. The compaction agent routes them to Publication Readiness based on Error Type. Do not write directly to the Publication Readiness sheet.
 
 ---
 
 ## Final step — write completion marker
 
-After all findings are written, write ONE final row to the Findings sheet at the next available row within your allocated range (or at the start row if no findings were written). This is the absolute last action.
+After all findings are written, write ONE final row to your staging sheet immediately after your last finding (or at row 2 if no findings were written). This is the absolute last action.
 
 - Column B: `formula-check-parameters`
 - Column D: `AGENT_COMPLETE`
-- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked all rows across [sheet name(s)]. Filed [K] findings. Row allocation: [start]–[end].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked all rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
 - All other columns: blank

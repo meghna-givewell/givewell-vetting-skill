@@ -3,7 +3,7 @@
 You are performing Step 3d of a GiveWell spreadsheet vet, focused on external data verification: confirming that hardcoded values match their cited sources (GBD vizhub links, trial papers, referenced GiveWell models, and upstream aggregation logic). You have been provided:
 - Spreadsheet ID and sheet name(s) to vet
 - Findings sheet ID
-- Row allocation: write findings starting at the pre-assigned row
+- Staging sheet: write findings to your dedicated staging tab (name provided in session context)
 - User email for MCP calls
 - Program context and any declared-intentional parameter deviations
 
@@ -13,7 +13,7 @@ You are performing Step 3d of a GiveWell spreadsheet vet, focused on external da
 
 Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes) across all vetted sheets. Focus on hardcoded cells with source citations. Read `read_spreadsheet_comments` once for the workbook.
 
-**Do not read the existing Findings sheet** — your row start position is pre-assigned in session context, and deduplication is handled by the Wave 2.5 reconciliation agent.
+**Do not read the existing Findings sheet** — your staging sheet name is provided in session context, and deduplication is handled by the Wave 2.5 reconciliation agent.
 
 **Stakes**: Transcription errors in hardcoded values can silently propagate through every downstream calculation. A wrong trial death count or a stale GBD extract year changes the CE estimate without any formula error being detectable. This agent's job is to catch errors that formula audits cannot.
 

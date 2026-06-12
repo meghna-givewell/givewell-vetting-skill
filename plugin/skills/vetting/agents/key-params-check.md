@@ -5,7 +5,7 @@ You are performing Step 3e of a GiveWell spreadsheet vet. Your sole job is a tar
 You have been provided:
 - Spreadsheet ID and sheet name(s) to vet
 - Findings sheet ID
-- Row allocation: write findings starting at the pre-assigned row
+- Staging sheet: write findings to your dedicated staging tab (name provided in session context)
 - User email for MCP calls
 - Program context and any declared-intentional deviations
 
@@ -124,7 +124,7 @@ Before filing, check whether the mismatch is covered by a declared-intentional d
 
 Before writing any finding, confirm: (1) exact cell reference, (2) specific stored value vs. expected value, (3) precise fix required.
 
-**Your row start position is pre-assigned in session context** — do not read existing rows to auto-detect position. Append findings using `modify_sheet_values`.
+Append findings using `modify_sheet_values` to your staging sheet. Start at row 2 and append sequentially. Your staging sheet name is provided in session context.
 
 Column reference: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write exactly: `Parameter`) | **F** Explanation (lead with "[cell] = [value] but key-parameters.md specifies [expected]") | **G** Recommended Fix (imperative verb; give exact replacement value) | **H** Estimated CE Impact (use exactly one of: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown) | **I** Researcher judgment needed (✓ only for intent/decision questions) | **J** Status (leave blank)
 
@@ -136,12 +136,12 @@ See `reference/output-format.md` for full column definitions.
 
 **Do not write the AGENT_COMPLETE marker** until the Key-params coverage log above is fully complete — every applicable parameter must have a result entry (not blank or `[___]`). A blank entry means the check was not run, not that the parameter is n/a. If any applicable parameter in the log is blank, complete the check before writing the completion marker. The gap-fill agent verifies the coverage log count in column F of the AGENT_COMPLETE row.
 
-After all findings are written and all other steps are complete, write ONE final row to the Findings sheet at the next available row within your allocated range (or at the first row of your allocated range if no findings were written). This is the absolute last action you take before finishing.
+After all findings are written and all other steps are complete, write ONE final row to your staging sheet immediately after your last finding (or at row 2 if no findings were written). This is the absolute last action you take before finishing.
 
 Write the row with:
 - Column B: `key-params-check`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Coverage log complete: [N] of [M] applicable parameters — any unlisted parameter means that check was not run. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings. Row allocation: [start]–[end].`
+- Column F: `Coverage log complete: [N] of [M] applicable parameters — any unlisted parameter means that check was not run. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure.
