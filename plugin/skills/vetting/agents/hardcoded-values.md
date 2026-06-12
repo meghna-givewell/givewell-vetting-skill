@@ -30,6 +30,7 @@ Exclude:
 - Cells containing only text labels with no numeric meaning
 - Cells in the output sheets (Dashboard, Findings, Publication Readiness, Hardcoded Values, Confidentiality Flags)
 - Cells that are clearly lookup keys (e.g., `1`, `2`, `3` in an index column)
+- **Formula cells** — cells containing a formula starting with `=`, even when those formulas embed numeric literals (e.g., `=B14 * 0.87`). Embedded literals in formula cells are **formula-check-arithmetic**'s scope. This agent enumerates hardcoded-value cells only (no `=` operator). Do not double-count.
 
 ---
 

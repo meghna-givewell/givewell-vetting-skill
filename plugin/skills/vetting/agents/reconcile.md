@@ -66,7 +66,7 @@ When granularity divergence exists:
   1. Re-read the referenced cell in FORMULA mode if not already in context.
   2. Work through the High → Medium → Low decision tree using the actual cell data and the criteria in `output-format.md` (confirmed factual error / CE impact ≥2% / silent omission → High; plausibly affects CE / documented deviation / undocumented assumption → Medium; no CE impact / within rounding tolerance → Low).
   3. Use the severity the decision tree produces — this may match A, may match B, or may match neither.
-  4. Only if the decision tree is genuinely ambiguous after re-reading the cell, fall back to the higher of A and B as a conservative default.
+  4. **Tie-breaker when the decision tree produces the same ambiguity A and B already diverged on**: retain the higher severity. A finding elevated to High by one instance requires specific affirmative evidence (a computed CE impact <2%, or confirmed factual source showing the value is correct) to downgrade — the decision tree producing Medium is not sufficient if the underlying evidence is unchanged. Err high; the researcher can downgrade at review time with a note explaining why. Do not silently resolve divergence to the lower severity.
 
   Do not note the severity comparison in the Explanation. Do not append any meta-commentary (e.g., "Confirmed by both independent agents", "Two independent agents assessed this at different severities") to the surviving row's Explanation.
 - **A-only**: A caught it, B did not → investigate (Step 4).
@@ -94,7 +94,7 @@ Then make one of three determinations:
 **Won't Fix binary gate — all three conditions must hold; if any fails → Retain**:
 1. **Cell read in FORMULA mode this session**: You read the referenced cell using `read_sheet_values` (FORMULA mode) during this reconciliation session — not relying on a prior agent's cached reading.
 2. **Note–formula coherence**: The cell note's stated mechanism and the cell's actual formula are semantically consistent — the formula implements what the note claims. A note saying "accounts for X" must be paired with a formula that plausibly computes an X-adjustment, not just any formula.
-3. **Deviation confirmed**: Either (a) the deviation is explicitly listed in the session context declared-deviations, OR (b) the cell note cites a specific GiveWell reference document by name AND you loaded that document this session AND confirmed the numeric value in the spreadsheet matches the document's current value.
+3. **Deviation confirmed**: Either (a) the deviation is explicitly listed in the session context declared-deviations AND you have called `read_sheet_notes` on the cell and confirmed the note (if present) does not contradict the declared reason — a note describing a different source or different value than the declared deviation means condition 3 fails, use Retain; OR (b) the cell note cites a specific GiveWell reference document by name AND you loaded that document this session AND confirmed the numeric value in the spreadsheet matches the document's current value AND either the deviation is also in the declared list or the document's stated acceptable range explicitly covers this value. Path (b) without any declared-deviation entry requires Retain — escalate to Needs researcher input so the researcher can formally declare the deviation.
 
 → Proceed to Won't Fix only if ALL three conditions hold. If any condition fails, use Retain.
 

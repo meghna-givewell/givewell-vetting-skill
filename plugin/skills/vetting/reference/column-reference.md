@@ -15,7 +15,7 @@ This is the canonical column specification for the two output sheets. All agents
 | E | Error Type/Issue | Use **exactly one of**: Formula, Parameter, Adjustment, Assumption, Inconsistency, Legibility |
 | F | Explanation | 1–2 sentences max. Lead with the specific problem. Make a specific, falsifiable claim; include the actual value or formula (e.g., "B14 = 0.87 but C22 = 0.79"). Plain language. Do not hedge what you can confirm. No chain traces. |
 | G | Recommended Fix | One sentence or formula only. Lead with an imperative verb. Include the exact replacement formula or value. No explanation of why. |
-| H | Estimated CE Impact | Use **exactly one of**: Raises CE — [estimate], Lowers CE — [estimate], Raises CE — magnitude unknown, Lowers CE — magnitude unknown, No CE impact, Direction unknown |
+| H | Estimated CE Impact | Use **exactly one of** these six phrases with exact punctuation — em-dash (` — `) with a space on each side, never en-dash or hyphen: `Raises CE — [estimate]`, `Lowers CE — [estimate]`, `Raises CE — magnitude unknown`, `Lowers CE — magnitude unknown`, `No CE impact`, `Direction unknown`. Punctuation variants cause sort failures in the compaction agent. |
 | I | Researcher judgment needed | Mark ✓ only when the researcher must make a **decision** — e.g., an intent question or a choice between two valid approaches. Do NOT mark for verification tasks or plausibility concerns. Leave blank if the correct action is unambiguous. |
 | J | Status | Leave blank — filled in by the researcher after review |
 

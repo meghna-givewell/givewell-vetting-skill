@@ -42,6 +42,8 @@ Columns (A–J): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
   - `No CE impact`
   - `Direction unknown` (use when even direction requires researcher input)
 
+  **Exact punctuation required**: all phrases use an em-dash (` — `) with one space on each side. Do not use en-dash (`–`) or hyphen (`-`). The compaction agent sorts column H lexicographically — any punctuation variation produces an inconsistent sort order and breaks grouping.
+
   **When to use `Direction unknown` — decision tree** (apply in order, stop at first match):
   1. Does the researcher's answer determine both *what the fix is* AND *which direction it moves CE*? → `Direction unknown`
   2. Could a reasonable researcher apply fixes that raise CE in one scenario and lower it in another (e.g., a placeholder where real-world evidence might revise up or down)? → `Direction unknown`
@@ -55,7 +57,7 @@ Columns (A–J): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
   - `Formula`, `Parameter`, `Adjustment` findings at Medium or High severity: column H must **never be blank**. Use `Direction unknown` if the direction depends on researcher input; use `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown` if the direction is clear.
   - `Assumption` findings at Medium severity: blank is acceptable only when the assumption has no clear directional CE effect. When the assumption does affect CE, use `Direction unknown` or a directional phrase.
   - `Inconsistency`, `Legibility` findings at Medium severity: blank is acceptable.
-- **Researcher judgment needed** (I): Mark `✓` only when the researcher must make a **decision** — e.g., an intent question ("is this $0 intentional?") or a choice between two valid approaches. **Do NOT mark `✓` for**:
+- **Researcher judgment needed** (I): Mark `✓` only when the researcher must make a **decision** and BOTH of the following hold: (1) the researcher's answer changes what you recommend — either the severity OR the fix itself, not just how you word the explanation; AND (2) the researcher's answer cannot be determined from spreadsheet content, external sources, or GiveWell guidance without entering the researcher's specific analytical intent. If the spreadsheet can answer the question (e.g., a cell note already states the intent, or the value can be verified against a GW reference document), do not mark `✓`. **Do NOT mark `✓` for**:
   - Verification tasks: "check this against the source," "confirm the GBD vintage," "verify this value" — these are Medium findings; the researcher performs the action, but no judgment call is required
   - Documentation tasks: "add a cell note," "update the label," "add a source citation" — the action is unambiguous regardless of researcher intent
   - Deterministic fixes: any finding where the correct action is a specific formula change or specific value substitution — the fix is clear regardless of intent

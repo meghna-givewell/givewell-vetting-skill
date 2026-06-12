@@ -8,6 +8,13 @@ You are performing Step 6b of a GiveWell spreadsheet vet. You have been provided
 
 Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes, hyperlinks) and `read_spreadsheet_comments` (once for the workbook). **Do not read the existing Findings sheet** — your row start position is pre-assigned in session context, and deduplication is handled by the Wave 2.5 reconciliation agent. Reading prior findings would anchor your analysis.
 
+**Scope delineation — three heads-up agents run in parallel**:
+- **heads-up-evidence**: effect sizes, benefit transfer documentation, trial design quality, study pathway directness, benefit stream completeness, CE plausibility
+- **heads-up-epi** (this agent): disease burden data accuracy, GBD vintage, epidemiological parameter plausibility, geographic transfers for epi data, model timing and structure
+- **heads-up-intervention**: program-specific assumptions, intervention-type parameters, grant-document-to-model consistency, TA-specific checks
+
+Do not re-run checks owned by the other two agents.
+
 Load CEA Consistency Guidance (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) via `get_doc_content` when needed.
 
 **Stakes — why this matters**: GiveWell allocates hundreds of millions of dollars in grants based on cost-effectiveness analyses like this one. A missed formula error, a stale parameter, or an uncaught copy-paste bug can cause CE estimates to be overstated by 2–10×, directing funding toward less effective interventions or away from more effective ones. Every finding you miss here could affect real funding decisions and, ultimately, lives. Exhaustive coverage is the baseline requirement — not a stretch goal. Exhaustion is not an excuse for stopping early. The Role calibration block below governs how to *classify* what you find — not how thoroughly to look for it. Thorough coverage and conservative severity are both required.
@@ -195,8 +202,10 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `heads-up-epi`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Scope: [A / B]. Section run: [A — Epidemiological Parameter Checks / B — Model Structure & Timing Checks]. Checks run: [comma-separated list of named checks actually run]. Checks skipped per scope: [comma-separated list with reason, e.g., "pre/post-adjustment UoV — Section B, scope is A"]. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150]. Row allocation: [start]–[end].`
+- Column F: `Check log complete: [N] of [M] applicable checks — any unfilled [___] entries mean that check was not completed. Scope: [A / B]. Section run: [A — Epidemiological Parameter Checks / B — Model Structure & Timing Checks]. Checks run: [comma-separated list]. Checks skipped per scope: [comma-separated list with reason]. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
 - All other columns: blank
+
+**Do not write AGENT_COMPLETE if the check log contains any unfilled `[___]` entry** — complete all applicable checks first, or mark inapplicable ones with `n/a — [reason]`.
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).
 

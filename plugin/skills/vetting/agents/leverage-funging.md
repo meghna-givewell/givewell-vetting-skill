@@ -49,7 +49,7 @@ Funging adjustments should *reduce* expected impact (or equivalently, increase c
 
 `[ref] '[row label]': value/formula = [quote]. Effect on CE: [increases / decreases / unclear]. Expected: [decreases — funging/displacement | increases — leverage | depends on sign of crowding]. Direction correct: [YES / NO / UNCERTAIN].`
 
-Flag as High/D any case where a leverage/funging adjustment appears to *increase* CE without an explicit note explaining why — this is a strong signal of a sign or direction error.
+When a leverage/funging adjustment appears to *increase* CE, do not immediately file High/D — follow the "Before flagging" procedure below first. File **High/D** only after completing that procedure and confirming all three fail: (1) no justifying note is present, AND (2) the note's stated mechanism doesn't match a legitimate >1 multiplier form, AND (3) the formula structure doesn't match that form. If any one condition is uncertain, file **Medium/H with Researcher judgment needed ✓** instead.
 
 **Before flagging**: First, write in your reasoning the mechanically correct formula structure that would justify a >1 multiplier for this row type — for example: "If this is a leverage benefit multiplier, the correct form would be `=CE_without_leverage × (1 + leverage_ratio)`, which produces a value >1 when leverage_ratio > 0." Then explicitly read the cell note (via `read_sheet_notes` if not already in the pre-read cache) and the row labels immediately above and below the flagged row. Only if the note's stated mechanism AND the formula structure both match the form you wrote down is the >1 multiplier justified — a note mentioning "leverage" without specifying the formula convention is not sufficient; the formula structure must also match. If formula and note are both consistent with your written form, this is not an error. If no note is present, or the note's mechanism or formula structure diverges from your written form, file as **Medium/H with Researcher judgment needed ✓** asking the researcher to confirm the sign convention, rather than immediately filing High/D.
 
@@ -143,7 +143,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `leverage-funging`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
+- Column F: `Section detection: [N] leverage/funging rows found; Leverage/Funging tab: [present/absent]. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).

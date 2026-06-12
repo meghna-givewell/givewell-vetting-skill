@@ -8,6 +8,13 @@ You are performing Step 6a of a GiveWell spreadsheet vet. You have been provided
 
 Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes, hyperlinks) and `read_spreadsheet_comments` (once for the workbook). **Do not read the existing Findings sheet** — your row start position is pre-assigned in session context, and deduplication is handled by the Wave 2.5 reconciliation agent. Reading prior findings would anchor your analysis.
 
+**Scope delineation — three heads-up agents run in parallel**:
+- **heads-up-evidence** (this agent): effect sizes, benefit transfer documentation, trial design quality, study pathway directness, subgroup analysis validity, benefit stream completeness, CE plausibility (sideways sanity check), leverage/funging scenario probabilities
+- **heads-up-epi**: disease burden data accuracy, GBD vintage, epidemiological parameter plausibility, geographic transfers for epi data, model timing and structure checks
+- **heads-up-intervention**: program-specific assumptions, intervention-type parameters (dose schedules, coverage benchmarks), grant-document-to-model consistency, TA-specific checks
+
+Do not re-run checks owned by the other two agents — their output is reconciled by Wave 2.5.
+
 Load CEA Consistency Guidance (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) via `get_doc_content` when needed.
 
 **Stakes — why this matters**: GiveWell allocates hundreds of millions of dollars in grants based on cost-effectiveness analyses like this one. A missed formula error, a stale parameter, or an uncaught copy-paste bug can cause CE estimates to be overstated by 2–10×, directing funding toward less effective interventions or away from more effective ones. Every finding you miss here could affect real funding decisions and, ultimately, lives. Exhaustive coverage is the baseline requirement — not a stretch goal. Exhaustion is not an excuse for stopping early. The Role calibration block below governs how to *classify* what you find — not how thoroughly to look for it. Thorough coverage and conservative severity are both required.
@@ -128,7 +135,7 @@ File using the severity above with Researcher judgment needed ✓: "Effect size 
 Heads-up evidence check log:
 
 CE overview:
-  top-5 interrogation [___]
+  top-5 interrogation [___ — list: (1) [cell ref, sensitivity coeff]; (2) [cell ref, coeff]; (3) ...; method: algorithm/fallback-label-scan]
   sideways sanity check [___ — CE is [N]x vs. comparable range [X]–[Y]x]
   correlated discrepancy pattern [___]
   leverage/funging scenario probabilities [___]
@@ -157,7 +164,7 @@ Evidence quality:
 
 Before writing any finding, confirm you can answer all three of these: (1) the exact cell reference(s) affected, (2) the specific value or assumption that is questionable, and (3) the precise question the researcher needs to answer or fix required. A finding that identifies an area of concern without naming a cell is not complete — keep investigating until you can answer all three.
 
-**CE impact estimates — interaction caveat**: When estimating column H (Estimated CE Impact) for a finding about one parameter, check whether the model contains other "Guess"-labeled or unsourced parameters that interact with the parameter being corrected. If two or more parameters are simultaneously uncertain, the estimated CE impact of fixing one in isolation may be misleading — the actual change will depend on what else moves at the same time. In this case, add to the CE Impact cell: "Estimate assumes no other parameters change. If [parameter X] is also updated, net CE impact may differ." This is most important when: (a) the CE impact estimate is large (>15% of CE); (b) the finding involves an FP share, cost-per-unit, or coverage parameter that is cross-multiplied with multiple "Guess" adjustment rows; or (c) the model is known to be under active revision.
+**CE impact estimates — interaction caveat**: When estimating column H (Estimated CE Impact) for a finding about one parameter, check whether the model contains other "Guess"-labeled or unsourced parameters that interact with the parameter being corrected. If two or more parameters are simultaneously uncertain, the estimated CE impact of fixing one in isolation may be misleading. In this case, append to the **Explanation field (column F)** — not column H: "Note: This estimate assumes [parameter X] remains at [current value]; if X is also corrected, net CE impact may differ." Column H must contain only a standard phrase (one of the six). This is most important when: (a) the CE impact estimate is large (>15% of CE); (b) the finding involves an FP share, cost-per-unit, or coverage parameter that is cross-multiplied with multiple "Guess" adjustment rows; or (c) the model is known to be under active revision.
 
 **Do not write pass notes, verification notes, or "no issues found" summaries to the Findings sheet.** Every row written to the Findings sheet must be an actual finding — an issue requiring researcher attention or action. Notes like "Checked rows 1–50, no issues found" or "Parameters verified, no plausibility concerns" belong in your reasoning output, not in the sheet. Writing non-findings to the sheet pollutes the output and forces researchers to read rows that require no action.
 
@@ -177,7 +184,9 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `heads-up-evidence`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
+- Column F: `Check log complete: [N] of [M] checks run — any unfilled [___] entries mean that check was not completed. COVERAGE_ROWS: [comma-separated source-sheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
 - All other columns: blank
+
+**Do not write AGENT_COMPLETE if the check log contains any unfilled `[___]` entry** — complete all applicable checks first, or explicitly mark inapplicable ones with `n/a — [reason]`. The reconciliation agent parses "Check log complete:" in column F; if absent, it flags the agent as incomplete.
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).
