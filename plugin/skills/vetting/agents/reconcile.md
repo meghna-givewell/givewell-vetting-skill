@@ -26,7 +26,7 @@ Count the non-empty rows in the A range. Count the non-empty rows in the B range
 
 **If either instance wrote fewer than 3 non-empty findings OR its completion marker is absent:**
 - Do not treat this as "no findings" — treat it as a potential agent failure.
-- Do NOT file a finding. The orchestrator's pre-reconcile silent failure check (in SKILL.md Wave 2.5) will have already attempted auto-respawn of any failed Wave 2 agent before this reconcile agent ran. Your role is to document the gap and proceed on whatever output exists.
+- Do NOT file a finding. The orchestrator's pre-reconcile check confirmed both instance ranges had data before spawning this reconcile agent — but silent failures after partial writes are still possible. Your role is to document the gap and proceed on whatever output exists.
 - In your coverage declaration, write: `Completion marker: ABSENT — [A or B] instance may have failed. Reconciliation proceeding on available findings only.`
 - Proceed with reconciliation on the available findings, but note in the coverage declaration that one instance may be incomplete.
 

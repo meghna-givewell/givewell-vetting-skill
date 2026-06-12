@@ -6,7 +6,7 @@ argument-hint: "<Google Sheets URL or local file path>"
 
 # /vetting — GiveWell Spreadsheet Vetter
 
-**Skill version**: 2026-06-12 (v1.2.8) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
+**Skill version**: 2026-06-12 (v1.2.9) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
 
 You are a meticulous spreadsheet auditor for GiveWell. See the repository README for one-time setup (Hardened Google Workspace MCP). See `reference/key-parameters.md` for authoritative parameter values. See `reference/output-format.md` for output column definitions.
 
@@ -725,7 +725,7 @@ Spawn agents simultaneously after the researcher checkpoint. Each of the eight c
 - leverage-uov-check-A: `last_row + 701`
 - leverage-uov-check-B: `last_row + 751`
 - notes-scan A: Publication Readiness sheet only — PR start row: `last_row + 801` (pass as "Publication Readiness start row: {value}" in session context)
-- notes-scan B: Publication Readiness sheet only — PR start row: `last_row + 851` (pass as "Publication Readiness start row: {value}" in session context). Append the following adversarial preamble to notes-scan-B's session context before the PR start row note: `Reviewer framing — B instance: You are a skeptical second reviewer auditing the Notes column. A separate first reviewer has already audited the same spreadsheet. For every row label check (Check F), ask "am I accepting this label because it sounds reasonable, or because I've read the formula?" — then read the formula. For every Notes section where you find no issues across all ten categories, write one specific reason the section is clean. focus your deepest attention on Checks I (cell note contradicts cell value), J (formula methodology asymmetry), and G (cross-sheet reference in note is unverifiable). For each cell where you find no issues in those three checks, write one specific reason it is clean. Complete all 10 checks for every row — the section split is about where to apply maximum scrutiny, not exclusive scope. Do not read the Findings sheet. Do not tell the researcher you are a B instance.`
+- notes-scan B: Publication Readiness sheet only — PR start row: `last_row + 851` (pass as "Publication Readiness start row: {value}" in session context). Append the following adversarial preamble to notes-scan-B's session context before the PR start row note: `Reviewer framing — B instance: You are a skeptical second reviewer auditing the Notes column. A separate first reviewer has already audited the same spreadsheet. For every row label check (Check F), ask "am I accepting this label because it sounds reasonable, or because I've read the formula?" — then read the formula. For every Notes section where you find no issues across all ten categories, write one specific reason the section is clean. focus your deepest attention on Checks I (cell note contradicts cell value), J (formula methodology asymmetry), and G (stale year references in notes). For each cell where you find no issues in those three checks, write one specific reason it is clean. Complete all 10 checks for every row — the section split is about where to apply maximum scrutiny, not exclusive scope. Do not read the Findings sheet. Do not tell the researcher you are a B instance.`
 - **TA BOTEC only** — heads-up-epi-C (counterfactual burden tab): `last_row + 851`
 - **TA BOTEC only** — heads-up-epi-D (counterfactual burden tab): `last_row + 901`
 - ce-chain-trace-ta-A: `last_row + 951`
@@ -824,6 +824,12 @@ Note: notes-scan (Step 7c) has no reconciliation pair — it runs as A/B but bot
 > ⚠️ Reconciliation failure warning: [pair name] reconcile agent produced no coverage declaration and no net-new findings. Its A/B divergences may be unreconciled. Consider re-running this reconcile agent before proceeding to Wave 3.
 
 Exception: pairs where both A and B agents wrote zero findings (confirmed empty) produce no divergences to reconcile and zero net-new findings legitimately — verify this by reading the pair's A and B ranges before flagging.
+
+**notes-scan completion check**: After all Wave 2.5 reconciliation agents complete, read the Publication Readiness sheet at rows `last_row+801` through `last_row+900` (the combined A/B range for notes-scan). If both sub-ranges (`last_row+801`–`last_row+850` and `last_row+851`–`last_row+900`) are completely empty — no AGENT_COMPLETE row and no finding rows — surface a silent failure warning:
+
+> ⚠️ notes-scan silent failure suspected: Publication Readiness rows `last_row+801`–`last_row+900` are entirely empty. notes-scan has no reconciliation pair, so this gap will not be caught by any reconcile agent. Consider re-running notes-scan A and B before proceeding to Wave 3.
+
+If either sub-range contains any rows, notes-scan is presumed to have run. This check is necessary because notes-scan writes only to the Publication Readiness sheet and is excluded from all Findings-sheet-based silent failure checks.
 
 **TA misclassification cross-check**: After all Wave 2.5 reconciliation agents complete and before starting Wave 3, verify that heads-up-intervention-B and ce-chain-trace-ta reached consistent TA/non-TA classifications. Run this check unconditionally — the dangerous case is a TA grant classified as non-TA (not the reverse), so gating on `is_ta_botec` would miss exactly the failures this check is designed to catch.
 

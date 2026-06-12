@@ -153,6 +153,7 @@ Convert every cell reference in column C of both the Findings sheet and Publicat
 3. **Parse each column C value** to extract a sheet name and cell reference:
    - **`SheetName!CellRef`** (e.g., `Main CEA!B47`) → sheet name = `Main CEA`, cell ref = `B47`
    - **`CellRef` only** (e.g., `B47`, no `!`) → sheet name = primary vetted sheet from session context, cell ref = `B47`
+   - **Comma-separated cell list** (e.g., `B14, B18, B22`) → extract the first cell ref before the first comma; sheet name = primary vetted sheet from session context. Keep the full comma-separated text as the display text. This covers grouped findings where multiple cells are listed in one row.
    - **`Row N` or `rows N–M`** (e.g., `Row 47`) → sheet name = value from column B of this finding row, cell ref = `A47` (first cell of that row)
    - **Range** (e.g., `B47:C51`) → link to the first cell of the range (`B47`); keep the full range as the display text
    - **`Multiple`** as the sheet name → skip; leave column C as plain text (no single target cell to link to)

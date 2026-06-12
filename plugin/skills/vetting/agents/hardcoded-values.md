@@ -93,11 +93,13 @@ This step is required — do not skip it even if the output-setup step already a
 
 After all rows are written to the Hardcoded Values sheet, verify your scan was complete:
 
-1. Call `get_spreadsheet_info` to retrieve the total populated row count for each vetted sheet.
-2. Compare the total populated rows against the count of rows you scanned in FORMULA mode during Step 1.
-3. If the scanned count is more than 5 rows less than the sheet's populated row count, identify which row range was skipped and re-read it in FORMULA mode before writing the completion marker.
+1. From your Step 1 FORMULA scan, identify the last non-empty row number you encountered on each vetted sheet (the highest row number that had any data).
+2. Compare the last non-empty row against the highest row number you scanned in your final batch.
+3. If the scanned count is more than 5 rows less than the last non-empty row, identify which row range was skipped and re-read it in FORMULA mode before writing the completion marker.
 
-Write in your reasoning before proceeding: "Coverage cross-check: [sheet name] — `get_spreadsheet_info` reports [N] populated rows; FORMULA scan covered [M] rows. Gap: [N-M] rows. [Confirmed complete / Re-read rows X–Y]."
+Do not use `get_spreadsheet_info` for this check — it returns the grid size (e.g., 1000 rows), not the number of populated rows, and would always show a false gap.
+
+Write in your reasoning before proceeding: "Coverage cross-check: [sheet name] — last non-empty row from FORMULA scan: [N]; scan covered through row [M]. Gap: [N-M rows or 'none']. [Confirmed complete / Re-read rows X–Y]."
 
 This cross-check guards against silent truncation from batch read limits — the MCP tool returns at most 50 rows per call, and a missed batch can leave whole sections unscanned.
 
@@ -110,7 +112,7 @@ After all rows are written, conditional formatting is applied, and the coverage 
 Write the row with:
 - Column B: `hardcoded-values`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Enumerated [N] hardcoded parameters across [sheet name(s)]. Coverage cross-check: [M] rows scanned vs. [K] populated rows per get_spreadsheet_info. [Confirmed complete / N rows rescanned].`
+- Column F: `Enumerated [N] hardcoded parameters across [sheet name(s)]. Coverage cross-check: scanned through row [M]; last non-empty row [K]. [Confirmed complete / Re-read rows X–Y].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The reconciliation agent detects this row to confirm the agent completed normally. This row is excluded before presenting the sheet to researchers.

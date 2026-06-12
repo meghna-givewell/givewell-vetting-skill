@@ -193,7 +193,7 @@ Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row |
 
 **Blank-range check before writing any formula fix**: For any finding whose Recommended Fix formula involves referencing or operating across a cell range (e.g., `=SUM(C4:C18)/D4`, `=A1*B1:B5`), use `read_sheet_values` (UNFORMATTED_VALUE) on all cells in the proposed fix range before writing the finding. If any cell in the range is blank, append to the finding's Explanation (column F): "Note: [cell ref] in the proposed fix range is currently blank — populate it before applying this fix or the result will silently be zero." File the finding as-is; do not suppress it.
 
-**Overflow protection**: If you exhaust your allocated row budget and still have findings to write, do not stop. Continue writing at the next row beyond your budget — the compaction agent reads all rows and will sort any overflow findings into their correct position.
+**Row budget**: Do not write beyond your allocated range (including its 10-row inter-pair buffer). Your session context states your start row and buffer end row. If you have more findings than budget allows, prioritize by severity (High first) and note any omitted findings in your AGENT_COMPLETE column F. Do not overflow into adjacent agents' pre-allocated rows.
 
 Group findings where the same issue applies to multiple cells — one finding per issue type per sheet, listing all affected cells in column C. Do not cap or target a finding count; report every distinct issue found.
 
