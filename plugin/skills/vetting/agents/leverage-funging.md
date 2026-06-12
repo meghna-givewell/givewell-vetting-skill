@@ -23,7 +23,17 @@ Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes) across al
 
 Before running checks, identify which rows and sections of the spreadsheet contain leverage, funging, or counterfactual-related calculations. Look for row labels containing: `leverage`, `fung`, `counterfactual`, `government`, `co-financ`, `crowding`, `additionality`, `displacement`, `deadweight`, `policy`, `multiplier`. Also check the Leverage/Funging tab if one exists.
 
-If no leverage or funging sections are found, write: "No leverage or funging sections identified in this workbook. Checks 1–5 skipped." and proceed to Check 6.
+**Write this section detection report before running any check** (required — do not proceed without it):
+
+```
+Leverage/funging section detection:
+  Keywords scanned: leverage, fung, counterfactual, government, co-financ, crowding, additionality, displacement, deadweight, policy, multiplier
+  Matching rows: [row ref and label text for every match, e.g., "Row 47: 'Funging adjustment (government replacement)', Row 48: 'Government replacement rate'"; or 'none']
+  Leverage/Funging tab: [present / absent]
+  Sections identified: [named sections with row ranges, e.g., "Leverage section (rows 45–55), Funging section (rows 60–72)"; or 'none']
+```
+
+If the report shows "Matching rows: none" and "Leverage/Funging tab: absent": write "No leverage or funging sections identified in this workbook. Checks 1–5 skipped." and proceed to Check 6.
 
 ---
 

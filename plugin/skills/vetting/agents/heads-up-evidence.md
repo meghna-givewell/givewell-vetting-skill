@@ -20,7 +20,18 @@ Load CEA Consistency Guidance (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) v
 
 ## Step 6a-ii — Top Assumptions Interrogation
 
-Before reviewing specific parameters below, identify the 5 parameters with the largest impact on final CE. Use the benefit stream proportions row (if present) and work backwards through the formula chain from the CE output to find which hardcoded inputs drive the most value. For each of the top 5:
+Before reviewing specific parameters below, identify the 5 parameters with the largest impact on final CE using this algorithm:
+
+1. **Read the final CE formula** (FORMULA mode). Identify all direct inputs (cell references in the CE formula).
+2. **Trace one level deeper**: for each direct input that is a formula cell (not hardcoded), read its formula and identify its inputs — building a 2-level dependency tree.
+3. **Estimate sensitivity coefficients**: for each terminal hardcoded input reachable within 2 hops, estimate `|∂CE/∂param × param / CE|` ≈ multiply fractional contributions up the chain. Example: a parameter driving 30% of the benefit numerator where benefits = 40% of CE has coefficient ≈ 0.12. This is an approximation; it need not be exact.
+4. **Rank by coefficient** and select the top 5.
+
+Fallback when the formula chain is too complex to trace precisely (e.g., SUMPRODUCT across many adjustments): identify cells labeled "Guess," "estimate," or "assumption" in rows directly feeding the CE numerator — interrogate those.
+
+**Required declaration before beginning interrogation**: "Top-5 algorithm result: [list each parameter with row label, cell ref, and estimated sensitivity coefficient]. Method: [algorithm / fallback-label-scan]." Do not begin the interrogation until this declaration is written.
+
+For each of the top 5:
 
 1. **Sourced?** Does the cell have a traceable external citation?
 2. **Verifiable?** Is the source external and independently checkable, or internal/judgment-based ("GW estimate," "our assumption," unpublished analysis)?
@@ -95,7 +106,21 @@ When this check fires and a proxy pathway is suspected, run a targeted WebSearch
 
 **Subgroup analysis validity**: When the model relies on a subgroup analysis from a trial (e.g., applying an effect only to high-burden areas, specific age groups, or certain population characteristics), flag as Medium/H and ask: (a) was the subgroup pre-specified or exploratory? (b) can the program actually target on this characteristic ex ante in implementation? GiveWell has explicitly been skeptical of subgroup analyses for neonatal VAS (NVAS — beneficial in some regions but harmful in others); conversely, has accepted geographic targeting in PLA programs where participation can be predicted. When relying on a subgroup, verify the model acknowledges the exploratory nature of the finding and applies an additional downward adjustment if the subgroup was not pre-registered.
 
-**Benefit transfer documentation**: When a key effect size (mortality reduction %, disease burden multiplier, prevalence change, coverage-to-outcome ratio) is sourced from a study conducted in a different country or region than the target geography, verify that a cell note or supporting tab documents the contextual fit. The note need not defend the transfer in detail — a brief acknowledgment is sufficient (e.g., "Applying Ghana RCT estimate to Nigeria; similar burden profile" or "GiveWell standard for SMC in West Africa"). If no documentation exists and the source context visibly differs from the target (different country, different disease burden tier, or different delivery system), file as **Low/H** with Researcher judgment needed ✓: "Effect size for [parameter] is sourced from [study/geography] and applied to [target geography] without a note explaining why the transfer is appropriate. Add a brief note confirming the source context is sufficiently similar, or noting any adjustments made." Do not flag transfers where: (a) the source and target geography are the same country; (b) a GiveWell cross-cutting standard is cited (these are pre-validated transfers); or (c) the IV/EV adjustment text already names the transfer gap (e.g., "applying Ghana IV estimate to DRC with 20% additional EV discount for lower burden").
+**Benefit transfer documentation — geographic tier classification**: When a key effect size (mortality reduction %, disease burden multiplier, prevalence change, coverage-to-outcome ratio) is sourced from a study conducted in a different country or region than the target geography, apply this tier-based rule to determine whether documentation is required and what finding severity is appropriate.
+
+**Geographic tier definitions**:
+- **Tier 1 (high-income)**: any OECD member country or World Bank high-income country (e.g., UK, US, Australia, South Korea)
+- **Tier 2–3 (LMIC)**: all other countries — low-income and middle-income countries, including all sub-Saharan Africa, South Asia, Southeast Asia, and most of Latin America
+
+**Benefit transfer classification**:
+1. **Source and target are the same country** → no flag needed regardless of tier.
+2. **Source and target are both Tier 2–3, same WHO region** (e.g., both West Africa, both South Asia) → Low/H if no note, unless a GiveWell cross-cutting standard is cited.
+3. **Source Tier 1, target Tier 2–3** (or vice versa) → **High/D** unless the IV/EV adjustment text explicitly acknowledges the tier crossing AND applies a material downward adjustment. A brief acknowledgment without an adjustment is insufficient for a Tier 1 → Tier 2–3 cross.
+4. **Source and target both Tier 2–3, different WHO regions** (e.g., source is South Asia, target is West Africa) → **Medium/H** unless a note explains why the transfer is appropriate across regions.
+
+A GiveWell cross-cutting standard citation (`"GiveWell standard for [program type]"`) counts as pre-validated and does not require additional documentation regardless of tier. The IV/EV adjustment text that already names the transfer gap (e.g., "applying Ghana IV estimate to DRC with 20% additional EV discount for lower burden") also satisfies the documentation requirement.
+
+File using the severity above with Researcher judgment needed ✓: "Effect size for [parameter] is sourced from [study/geography — Tier X] and applied to [target geography — Tier Y]. [Describe tier mismatch.] Add a note explaining why the transfer is appropriate, or document any adjustment applied for contextual differences."
 
 **Mandatory check log — write this before filing any findings.** For each item below, write `ran: [brief result or finding cell]` or `n/a: [one-word reason — e.g., not a top-charity, no income benefit]`. A blank or placeholder entry is not acceptable — it means the check was not considered. The log must be complete before any findings are written to the sheet.
 

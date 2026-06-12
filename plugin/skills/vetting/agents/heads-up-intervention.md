@@ -207,7 +207,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `heads-up-intervention`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Row allocation: [start]–[end].`
+- Column F: `Checked [N] rows across [sheet name(s)]. Filed [K] Findings rows, [M] Publication Readiness rows. Scope: [A / B]. Section run: [A — Intervention-Specific Checks / B — TA Grant Checks or non-TA fast exit]. Checks run: [comma-separated list of named checks actually run]. Checks skipped per scope: [comma-separated list with reason]. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150]. Row allocation: [start]–[end].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).

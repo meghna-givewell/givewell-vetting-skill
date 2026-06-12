@@ -30,3 +30,20 @@ Flag deviations from these values unless the sheet provides an explicit document
 | Discount rate — TA death-averting programs | **1.4%** per year | Temporal uncertainty component only; used for TA grants where the primary benefit is near-term mortality reduction; use **4%** for income/consumption streams in the same model |
 | TA — p(failure to shift status quo) | Default **30%** | Probability TA engagement fails to change government behavior; distinct from VOI p(trial fails) = 10%; calibrate lower if government is already publicly committed or has co-funded the program. **Quality-improvement TA scope**: The 30% default is calibrated for scale-up TA (shifting a government to adopt a new program or scale coverage). For grants that improve the quality of an existing program already in operation (e.g., fortification standards enforcement, improving quality of ongoing iron fortification delivery), the standard p(failure) framing may not apply. Flag absence as **Low/H with Researcher judgment needed ✓** only, not Medium — do not auto-file as Medium for quality-improvement TA structures without first confirming with the researcher that scale-up p(failure) logic applies. |
 | TA speed-up benchmarks (years to reach steady-state coverage) | RTS,S: **2**; DtW: **4**; IFA: **4**; Dual tests: **5**; HPV: **6**; ILC: **13** | Cross-program reference for the "speed-up of steady state due to TA" parameter; ILC is high due to dual steady-state structure |
+
+## Acceptable Ranges for Algorithmic Comparison
+
+These bounds are used by the consistency-check agent for algorithmic parameter validation. A value outside the range triggers a finding at the indicated severity.
+
+| Parameter | Exact Value | Min | Max | Flag if outside range |
+|---|---|---|---|---|
+| Benchmark (UoV per $) | 0.00333 | 0.003 | 0.0034 | Yes — High |
+| Neonatal moral weight | 84 | 76 | 92 | Yes — High |
+| Avert under-5 death (malaria/vaccines) | 116 | 110 | 122 | Yes — High |
+| Avert over-5 death (malaria) | 73 | 69 | 77 | Yes — High |
+| Avert death 6–59m VAS | 119 | 113 | 125 | Yes — High |
+| Avert maternal death | 125 | 119 | 131 | Yes — High |
+| Discount rate | 4% | 3% | 5% | Yes — Medium |
+| Income effects malaria | 0.58088% | 0.55% | 0.65% | Yes — Medium |
+| Long-term income ratio | 0.3064 | 0.25 | 0.35 | Low flag only |
+| Years to benefits | 10 | 8 | 15 | Low flag only |

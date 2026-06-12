@@ -91,6 +91,13 @@ Then make one of three determinations:
 
 **Before classifying any finding as Won't Fix**: Write in your reasoning the strongest single argument for why this finding could be valid — i.e., why the cell might genuinely be wrong as the filing agent claimed. Only after articulating that argument, test it against the cell data you have read. If the argument fails the test, proceed to Won't Fix. If the argument holds up even partially, use Retain or Needs researcher input instead. Skipping this step defeats the purpose of independent review — a Won't Fix reached without genuinely considering the case for the finding is a motivated dismissal, not a reasoned conclusion.
 
+**Won't Fix binary gate — all three conditions must hold; if any fails → Retain**:
+1. **Cell read in FORMULA mode this session**: You read the referenced cell using `read_sheet_values` (FORMULA mode) during this reconciliation session — not relying on a prior agent's cached reading.
+2. **Note–formula coherence**: The cell note's stated mechanism and the cell's actual formula are semantically consistent — the formula implements what the note claims. A note saying "accounts for X" must be paired with a formula that plausibly computes an X-adjustment, not just any formula.
+3. **Deviation confirmed**: Either (a) the deviation is explicitly listed in the session context declared-deviations, OR (b) the cell note cites a specific GiveWell reference document by name AND you loaded that document this session AND confirmed the numeric value in the spreadsheet matches the document's current value.
+
+→ Proceed to Won't Fix only if ALL three conditions hold. If any condition fails, use Retain.
+
 **Won't Fix** (high bar — requires specific affirmative evidence):
 - You may mark a finding `Won't Fix` **only** if you can state the specific, affirmative reason the formula or value is correct — not merely that you couldn't confirm the issue.
 - Qualifying reasons: "The formula references cell D22 labeled 'Seasonal concentration (non-Sahel)' — the correct concept for this column." / "The declared-intentional deviation explicitly covers this parameter." / "The cell note explains this value is intentionally set at X because [reason the note gives], and the formula confirms this — it computes [X] by [formula structure consistent with the note's explanation]."
