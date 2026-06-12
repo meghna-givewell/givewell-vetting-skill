@@ -120,6 +120,29 @@ Example: Thomas et al 2024 C17 = 51% = mortality among non-KMC-initiated babies 
 
 ---
 
+### SC-008 (2026-06) — GBD vintage staleness: High when CE chain confirmed, Medium otherwise
+FN-001 sets the floor (always flag GBD vintage staleness, Medium minimum). SC-003 determines when Medium should be High (parameter in direct CE chain). Both rules apply together:
+- Stale GBD vintage cell AND confirmed in direct CE chain (FORMULA-mode trace ≥2 hops to CE output) → **High**
+- Stale GBD vintage cell, CE chain not confirmed in FORMULA mode → **Medium**
+
+Do not cite FN-001 ("Medium is acceptable") to justify filing a CE-chain GBD vintage finding as Medium. FN-001 ensures you always file; SC-003 + this entry determine whether to file High or Medium. The key step is the FORMULA trace — without it, use Medium.
+
+**Applies to**: formula-check-data, formula-check-arithmetic, heads-up-epi
+
+---
+
+### SC-009 (2026-06) — Missing source on a parameter: Medium only when CE chain or key-parameters.md confirmed
+Medium severity rule #3 ("key input in the direct CE calculation chain lacks an external source") is frequently over-applied, causing Low-severity documentation gaps to be filed as Medium. Apply the threshold precisely:
+- Row label appears in `key-parameters.md` AND has no source note → **Medium** (the parameter's correctness cannot be independently verified without the source)
+- Cell is confirmed in the direct CE chain via FORMULA mode (≥2 hops to CE output) AND no external source or cell note explains the value → **Medium**
+- All other missing-source cases → **Low**
+
+Do not upgrade to Medium because a row "looks important" or "is probably in the CE chain" without FORMULA-mode confirmation. Both conditions (chain confirmed OR key-parameters.md match) must be checked before claiming Medium.
+
+**Applies to**: formula-check-data, formula-check-arithmetic, notes-scan, source-check agents
+
+---
+
 ## Cross-Agent Scope Reference
 
 This section identifies which agent **owns** each check category. When a non-owning agent encounters a potential issue that falls in an owned category, it should note the observation in its reasoning but defer the actual finding to the owning agent rather than filing independently. This prevents the same issue type from being filed with different severities by different agents across runs — a primary source of inter-run inconsistency.

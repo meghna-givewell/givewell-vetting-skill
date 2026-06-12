@@ -74,7 +74,7 @@ Apply the decision tree below in order — stop at the first rule that matches.
 
 **High** — file as High if ANY of the following are true:
 1. **Confirmed factual error against an authoritative standard**: A GW standard parameter (benchmark, moral weight, discount rate) deviates from `key-parameters.md` with no cell note rationale; a formula is confirmed (FORMULA mode) to reference a demonstrably wrong cell or deleted range; a logical impossibility (direct benefit cost > total grant cost; probability > 100%; deaths averted > all-cause deaths in the target population).
-2. **Estimated CE impact ≥2%**: You have estimated the CE impact of correcting the finding and it is at or above 2%. When impact is unknown but the affected parameter sits in the confirmed direct CE calculation chain, treat as High.
+2. **Estimated CE impact ≥2%**: You have estimated the CE impact of correcting the finding and it is at or above 2%. When impact is unknown but the affected parameter sits in the confirmed direct CE calculation chain, treat as High. **"Confirmed in the CE chain" requires tracing ≥2 consecutive FORMULA-mode hops from the flagged cell to the final CE output** — an assumption that a parameter "probably feeds into CE" without FORMULA-mode verification is not confirmation; use Medium (direction or magnitude unknown) instead.
 3. **Silent omission**: An adjustment was calculated in the model but is confirmed absent from the CE chain. **Exception: discount rate omission is filed as Low/H per `reference/key-parameters.md` calibration** — the discount rate is present in virtually all models and its omission from the chain is almost always intentional (it applies at the UoV level). Check `key-parameters.md` for per-parameter severity overrides before applying rule 3.
 
 **Medium** — none of the High conditions apply, and ANY of the following are true:
@@ -88,7 +88,9 @@ Apply the decision tree below in order — stop at the first rule that matches.
 - Rounding differences within tolerance: ≤15% relative deviation from the source value AND estimated CE impact <2%.
 - Hidden rows/columns with no active formula dependencies in visible cells.
 
-**Tie-breaker**: When the decision tree is genuinely ambiguous between two levels, ask: "Would a researcher triaging by severity want to see this in their first pass?" If yes, use the higher level.
+**Tie-breaker**: When the decision tree is genuinely ambiguous, apply these defaults by level pair:
+- **Low vs. Medium**: Use Medium only if you can name the specific Medium criterion it meets (rules 1–4 above). If none of the Medium criteria clearly apply, use Low — do not upgrade based on the finding "seeming important."
+- **Medium vs. High**: Use Medium. Never escalate to High unless you have (a) a computed CE impact ≥2%, (b) confirmed a factual error against an authoritative standard in FORMULA mode, or (c) traced ≥2 consecutive FORMULA-mode hops confirming the cell is in the direct CE chain. Intuition about importance is not a substitute for computation or verification.
 
 ### Grouping and Sorting
 Sort by sheet (column B), then row number. Where the same issue applies to multiple cells, **group into a single finding** listing all affected cells (e.g., "B14, B18, B22"). Only create separate rows when the issue, explanation, or recommended fix differs meaningfully. Aim for ~15–25 grouped findings rather than 50+ individual entries.
