@@ -96,6 +96,8 @@ Then make one of three determinations:
 - **Unexplained numeric constants — higher bar**: When the finding is specifically about an unexplained numeric constant in a formula (e.g., `×2`, `÷3`, a hardcoded scalar), Won't Fix requires that the cell note explicitly state the value *and* the reason for that specific constant — not merely that the note explains the general concept. A note that says "accounts for double burden" does not explain why the multiplier is 2 rather than 1.5 or 2.5. If the note does not directly justify the magnitude of the constant, use **Needs researcher input** and ask the researcher to confirm the specific value.
 - When marking Won't Fix: delete the row from the sheet.
 
+**High-severity protection**: When A and B rate the same finding at different severities and either instance rated it High — retain at High. Do not resolve to a lower severity through severity reconciliation. Write both ratings in column F: "Instance A: [severity]. Instance B: [severity]. Retaining High per high-severity protection rule." A Won't Fix for a finding rated High by either instance requires a specific affirmative reason that directly refutes the High-severity claim — "I couldn't confirm the issue" or "the other instance rated it Medium" do not qualify. If only the lower-severity claim can be affirmatively confirmed correct, downgrade to Medium/H rather than Won't Fix.
+
 **Needs researcher input** (when validity depends on intent):
 - Leave the finding as-is.
 - Append to Explanation: "Reconciliation review: validity depends on researcher intent. Question: [specific question]."

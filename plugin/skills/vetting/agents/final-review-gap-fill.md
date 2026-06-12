@@ -74,6 +74,26 @@ Coverage declaration: "Coverage gap scan complete. Gaps of 15+ rows found: [N, w
 
 ---
 
+## Check 2.5 — Cross-band root cause trace (band-split runs only)
+
+**Only run this check if session context includes a `band1_end` value** (indicating that band-split was used for this vet). If no `band1_end` is provided, skip entirely and write: "Check 2.5: skipped — band-split not active."
+
+When band-split is active, agents scanned the spreadsheet in row-range bands (band 1: rows 1–`band1_end`, band 2: rows `band1_end+1` and above). Each band pair's reconcile agent was explicitly prohibited from cross-reconciling with other bands. This creates a gap: a High/D finding in band 2 whose root cause is a cell in band 1 may not be linked to the upstream error.
+
+1. From the confirmed findings list built in Step 1, filter to all **High/D findings** whose cell reference row number exceeds `band1_end` (i.e., they fall in band 2 or later).
+
+2. For each such finding: read the referenced cell in FORMULA mode on the source spreadsheet. Extract all cell references the formula uses.
+
+3. For each referenced cell that falls in band 1 (row number ≤ `band1_end`): check whether that cell is referenced in any confirmed finding already on the Findings sheet. If it is, this finding has a traceable root cause in band 1.
+
+4. For each High/D finding with a confirmed band-1 root cause: **do not file a new finding** — instead, append to its Explanation in column F (using `modify_sheet_values`): " Root cause traces to [band-1 cell], which is the subject of finding [F-NNN]. Resolve [F-NNN] first — this finding may resolve automatically." This is an annotation, not a new row.
+
+5. For each High/D finding whose formula references a band-1 cell that is **not** in any confirmed finding: file as **Low/H** with Researcher judgment needed ✓: "High finding at [cell] (band 2) references [band-1 cell] in its formula chain, but that band-1 cell was not flagged by the band-1 agents. Verify [band-1 cell] is correct; if it is wrong, the fix required here may change."
+
+Coverage declaration: "Cross-band root cause trace complete. Band1_end: [N]. High/D findings in band 2+: [N]. Band-1 root causes identified: [N]. Annotations added: [N]. New Low/H cross-band flags filed: [N]."
+
+---
+
 ## Check 3 — Won't Fix verification
 
 Reconciliation agents delete rows they mark Won't Fix. The only evidence a Won't Fix decision was made is a gap in Finding IDs in the output (e.g., IDs jump from F-003 to F-005). This check verifies a sample of those decisions.
