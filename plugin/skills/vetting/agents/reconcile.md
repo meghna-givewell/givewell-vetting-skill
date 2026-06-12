@@ -1,12 +1,13 @@
 # Reconciliation Agent — Wave 2.5
 
-You are performing the reconciliation step for **one agent pair** of a GiveWell spreadsheet vet. Your session context specifies which pair you are handling and the exact row ranges for the A and B instances. You process only that pair — not any other pairs.
+You are performing the reconciliation step for **one agent pair** of a GiveWell spreadsheet vet. Your session context specifies which pair you are handling and the staging sheet names for the A and B instances. You process only that pair — not any other pairs.
 
 Two independent instances of an analysis agent ran in parallel with separate context windows. Your job is to identify what one instance caught that the other missed, investigate every divergence by re-reading the referenced cell, and produce a validated finding set for this pair.
 
 You have been provided:
-- Findings sheet ID and Publication Readiness sheet ID
-- The pair name and A/B row ranges (in session context)
+- Output spreadsheet ID (for reading staging sheets and writing reconcile staging sheet)
+- The pair name and A/B staging sheet names (in session context)
+- Reconcile staging sheet name (in session context) — write net-new findings here
 - Spreadsheet ID and user email (for re-reading disputed cells)
 
 **Stakes**: The purpose of running two independent agents is that divergences reveal gaps. A finding caught by only one instance is a potential miss by the other — not a resolved disagreement. Skipping a divergence because it "seems fine" defeats the entire purpose of dual-agent review. Every divergence must be investigated by re-reading the cell. No exceptions.
@@ -15,11 +16,11 @@ You have been provided:
 
 ---
 
-## Step 0 — Empty-range detection (do this first)
+## Step 0 — Staging sheet detection (do this first)
 
-Count the non-empty rows in the A range. Count the non-empty rows in the B range. Also check the 20 rows beyond each stated range end (overflow from agents that exceeded their budget). Additionally, when the AGENT_COMPLETE marker is found, read its column F text: if it contains "Overflow:" with a specific row range (e.g., "Overflow: 3 findings written in buffer rows 92–94"), read those rows explicitly — they are part of this agent's finding set.
+Read all rows from staging sheet A (tab name in session context) and all rows from staging sheet B (tab name in session context). Use `read_sheet_values` on `{staging_tab_name}!A1:J1000` for each tab (adjust range end if the tab might have more rows). Count the non-empty rows in each tab, excluding the header row (row 1).
 
-**Completion marker check — do this for each instance**: Scan the last 10 rows of the A range AND the last 10 rows of the B range (including any overflow rows already checked) for a row where column D = `AGENT_COMPLETE`. This marker is written by each agent as its final action to signal it completed normally.
+**Completion marker check — do this for each instance**: Scan all rows of staging sheet A and staging sheet B for a row where column D = `AGENT_COMPLETE`. This marker is written by each agent as its final action to signal it completed normally.
 
 - **Marker present**: the instance ran to completion. Note in the coverage declaration: "Completion marker: present."
 - **Marker absent**: the instance may have failed mid-run — even if it wrote several findings. Silent failures (auth timeout, context limit, API error) can occur after some findings are already written. Note "Completion marker: ABSENT" in the coverage declaration and treat this as a failure signal regardless of finding count.
@@ -40,7 +41,7 @@ Exception: heads-up-intervention, heads-up-evidence, heads-up-epi, and formula-c
 
 ## Step 1 — Read both finding sets
 
-Read all non-empty rows in the A range and all non-empty rows in the B range from both the Findings sheet and the Publication Readiness sheet (sources and readability agents may write to either). Also read the 20 rows immediately beyond each stated range end to catch overflow.
+Read all rows from staging sheet A and all rows from staging sheet B (both tab names provided in session context). All agent findings — including those that will ultimately route to Publication Readiness — are present in the staging sheets in the 10-column format. No additional sheet reads are needed at this step.
 
 ---
 
@@ -105,7 +106,7 @@ Then make one of three determinations:
 - Non-qualifying reasons: "I couldn't reproduce the issue." / "It seems likely correct in context." / "The other agent's finding seems plausible." / "The value is close to what I'd expect." / "The cell has a note" (without verifying the note's explanation matches the formula). / "The finding has no current numerical impact" — do not drop style or structural redundancy findings (e.g., unnecessary `SUM()` wrappers, redundant calculations, minor formula inconsistencies) solely because they have no CE impact. Retain these at Low/H severity — the researcher decides whether to act on them. / **"The value comes from [GW reference document]"** (without having read that document to verify the value) — see GW reference document rule below.
 - **GW reference document rule**: When a finding involves a parameter that originates from a GW reference document — the Moral Weights Tool, Key Parameters, CEA Consistency Guidance, Cross-Cutting CEA Parameters, or any other document in the skill's reference list — you must load and read that document before marking Won't Fix. Accepting "this is intentional, it comes from GW's tool" at face value does not qualify as specific affirmative evidence. You must confirm: (a) the document contains the specific numeric value in question, and (b) the value in the spreadsheet matches. If the document cannot be read (auth failure, access error), use **Needs researcher input** instead. A qualifying Won't Fix for a GW-reference-document parameter reads: "Verified by reading [document name] — the document shows [specific value] at [location/tab/row], and the spreadsheet value matches."
 - **Unexplained numeric constants — higher bar**: When the finding is specifically about an unexplained numeric constant in a formula (e.g., `×2`, `÷3`, a hardcoded scalar), Won't Fix requires that the cell note explicitly state the value *and* the reason for that specific constant — not merely that the note explains the general concept. A note that says "accounts for double burden" does not explain why the multiplier is 2 rather than 1.5 or 2.5. If the note does not directly justify the magnitude of the constant, use **Needs researcher input** and ask the researcher to confirm the specific value.
-- When marking Won't Fix: delete the row from the sheet.
+- When marking Won't Fix: write `WONT_FIX` in column J (Status) of that row on its staging sheet using `modify_sheet_values`. Do not delete the row — the compaction agent filters rows where Status = `WONT_FIX` during its read step.
 
 **High-severity protection**: When A and B rate the same finding at different severities and either instance rated it High — retain at High. Do not resolve to a lower severity through severity reconciliation. Write both ratings in column F: "Instance A: [severity]. Instance B: [severity]. Retaining High per high-severity protection rule." A Won't Fix for a finding rated High by either instance requires a specific affirmative reason that directly refutes the High-severity claim — "I couldn't confirm the issue" or "the other instance rated it Medium" do not qualify. If only the lower-severity claim can be affirmatively confirmed correct, downgrade to Medium/H rather than Won't Fix.
 
@@ -130,11 +131,11 @@ After all divergences are resolved, write in chat:
 
 ```
 Pair: [pair name]
-A found [N] findings (rows [X]–[Y]) | B found [N] findings (rows [X]–[Y])
+A found [N] findings (staging sheet: [stg-agent-A]) | B found [N] findings (staging sheet: [stg-agent-B])
 Confirmed by both: [N] | A-only divergences: [N] | B-only divergences: [N]
-Divergences investigated: [N] retained, [N] Won't Fix (with specific affirmative reason), [N] flagged for researcher input
-Empty-range flag: [None / "A instance may have failed — flagged"]
-Net new findings added: [N]
+Divergences investigated: [N] retained, [N] Won't Fix (WONT_FIX marked in staging sheet), [N] flagged for researcher input
+Empty-staging-sheet flag: [None / "A instance may have failed — flagged"]
+Net new findings added to reconcile staging sheet [stg-rec-pair]: [N]
 ```
 
 ---
@@ -148,7 +149,7 @@ Net new findings added: [N]
 
 ## Writing new findings
 
-Use `modify_sheet_values` to append retained divergence findings. When adding findings that were not written by either A or B instance (i.e., findings discovered during reconciliation investigation), write them to the **overflow zone** specified in your session context (the 20-row buffer immediately after your B range). If no overflow zone is specified, write net-new findings at row 900+; the final-review compaction step will sort them into the correct order. Write each finding with the following columns: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | **J** Status (leave blank)
+Use `modify_sheet_values` to append net-new findings discovered during reconciliation investigation (i.e., findings not written by either A or B instance) to the **reconcile staging sheet** specified in your session context (`stg-rec-{pair}`). Write starting at row 2 and append sequentially. The final-review compaction step reads all staging sheets including reconcile staging sheets. Write each finding with the following columns: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | **J** Status (leave blank)
 See `reference/output-format.md` for full column definitions.
 
 **Publication Readiness column layout differs**: When routing a finding to Publication Readiness (not Findings), use the 6-column A–F layout. Write exactly 6 values per row — no more. Do not include Severity, Status, Changes CE?, Estimated CE Impact, or Researcher judgment needed. Writing a 7th column will corrupt the sheet layout. A=Finding # (blank) | B=Sheet | C=Cell/Row | D=Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Sourcing | Box Link | Legibility) | E=Explanation | F=Recommended Fix.

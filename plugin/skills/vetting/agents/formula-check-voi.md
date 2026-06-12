@@ -182,22 +182,22 @@ formula-check-voi check log:
 
 Before writing any finding, confirm: (1) exact cell reference(s), (2) specific formula or value issue, (3) precise fix.
 
-**Your row start position is pre-assigned in session context** — do not auto-detect. Append findings using `modify_sheet_values`. See `reference/column-reference.md` for full column specifications.
+**Your staging sheet name is provided in session context** — write all findings to that staging tab starting at row 2. Append findings using `modify_sheet_values`. See `reference/column-reference.md` for full column specifications.
 
 Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula; plain language; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include exact replacement formula or value) | **H** Estimated CE Impact (write exactly one of these standard phrases: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown) | **I** Researcher judgment needed (✓ only for intent/decision questions) | **J** Status (leave blank)
 
-**Row budget**: Do not write beyond your allocated range (including its 10-row inter-pair buffer). Your session context states your start row and buffer end row. If you have more findings than budget allows, prioritize by severity (High first) and note any omitted findings in your AGENT_COMPLETE column F. Do not overflow into adjacent agents' pre-allocated rows.
+**No row budget**: Write all findings to your staging sheet. There is no row limit.
 
 ---
 
 ## Final step — write completion marker
 
-After all checks are complete (or after the self-detection step if no VOI content is found), write ONE final row to the Findings sheet at the next available row within your allocated range (or at the first row of your allocated range if no findings were written). This is the absolute last action you take.
+After all checks are complete (or after the self-detection step if no VOI content is found), write ONE final row to your staging sheet at the next available row after your last finding (or row 2 if no findings were written). This is the absolute last action you take.
 
 Write the row with:
 - Column B: `formula-check-voi`
 - Column D: `AGENT_COMPLETE`
-- Column F: If VOI content was found: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] VOI rows across [sheet name(s)]. Filed [K] Findings rows. Row allocation: [start]–[end].` If no VOI content found: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | No VOI content found across vetted sheets. Checks skipped. Row allocation: [start]–[end].`
+- Column F: If VOI content was found: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] VOI rows across [sheet name(s)]. Staging sheet: [stg-voi-A or stg-voi-B]. Filed [K] findings in rows 2–[K+1].` If no VOI content found: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | No VOI content found across vetted sheets. Checks skipped. Staging sheet: [stg-voi-A or stg-voi-B].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure.

@@ -10,7 +10,7 @@ You are performing Step 10a of a GiveWell spreadsheet vet. This is the first of 
 
 Before reading or modifying anything, write the following in your reasoning:
 
-> Pre-compaction state: No rows have been read or modified yet. Will read Findings sheet in 50-row batches (A2:J51, A52:J101, A102:J151, … continuing until two consecutive empty batches) and Publication Readiness in 50-row batches (A2:F51, A52:F101, … continuing until two consecutive empty batches). If compaction fails partway through, this declaration establishes the pre-compaction state.
+> Pre-compaction state: No rows have been read or modified yet. Will read each staging tab listed in session context (stg-arith-A through stg-rec-ceta) in full, then route and merge all findings. The Findings sheet and Publication Readiness sheet are currently empty (written only by this compaction agent). If compaction fails partway through, this declaration establishes the pre-compaction state.
 
 This declaration serves as a checkpoint. If the rewrite step fails mid-execution (e.g., an MCP error after partial writes), it confirms that the original data had not yet been overwritten as of Step 0.
 
@@ -24,22 +24,23 @@ This declaration serves as a checkpoint. If the rewrite step fails mid-execution
 
 ## Step 1 — Read all rows
 
-**Row filtering — apply while reading, before any further processing**: Three types of non-finding rows must be excluded from all subsequent steps (routing, deduplication, sorting, ID assignment). Filter them out as you read:
-1. **Divider rows**: column D is empty AND column B contains `───`
+**Row filtering — apply while reading, before any further processing**: Four types of non-finding rows must be excluded from all subsequent steps (routing, deduplication, sorting, ID assignment). Filter them out as you read:
+1. **Header rows**: row 1 of each staging tab (the column label row written during output setup).
 2. **Completion marker rows**: column D = `AGENT_COMPLETE`
-3. **Meta-findings about the vetting process**: Any row whose Explanation (column F) or Error Type (column E) references the vetting pipeline itself — e.g., "agent," "Instance A," "Instance B," "readability agent," "vetting process," "this agent," "pipeline," or any description whose subject is how the vet was conducted rather than the model being vetted. These are process quality observations, not model findings. Discard them entirely.
+3. **Won't Fix rows**: column J (Status) = `WONT_FIX` — these rows were marked by a reconcile agent as invalid findings; exclude them entirely.
+4. **Meta-findings about the vetting process**: Any row whose Explanation (column F) or Error Type (column E) references the vetting pipeline itself — e.g., "agent," "Instance A," "Instance B," "readability agent," "vetting process," "this agent," "pipeline," or any description whose subject is how the vet was conducted rather than the model being vetted. These are process quality observations, not model findings. Discard them entirely.
 
 Completion marker rows are written by Wave 2 agents as their final action to signal a clean run. They are metadata, not findings. Do not route, deduplicate, sort, or assign IDs to them — discard them entirely after noting their presence in your coverage declaration.
 
-Read the Findings sheet in **50-row batches**: `A2:J51`, `A52:J101`, `A102:J151`, and so on in 50-row increments. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Continue until two consecutive batches return no non-empty rows.
+Read each staging tab listed in your session context. The session context provides the full list of staging tab names (all stg-* tabs created during output setup). For each tab, call `read_sheet_values` with range `{tab_name}!A1:J500` — adjust the upper bound upward if any tab might exceed 500 rows. Read all tabs before taking any further action.
 
-**Do not stop after one empty batch.** Buffer zones between pre-allocated agent ranges produce empty batches in the middle of the sheet — data may resume after a gap. Stop only after two consecutive empty batches.
+**Session context staging tab list**: If the full staging tab list is not in session context, read Dashboard cell A99 onward of the output spreadsheet to recover the staging sheet log (written during output setup).
 
-After each batch completes, write the line: `"Batch [N] (rows [start]–[end]): [X] non-empty rows found."` Do this before reading the next batch. If you proceed to processing without reading until two consecutive empty batches, you will silently miss findings — and GiveWell may act on an incomplete vet.
+After reading each tab, write: `"Tab [tab_name]: [X] non-empty rows found (excluding header row 1)."` Do this after each tab read.
 
-Read the Publication Readiness sheet the same way: `A2:F51`, `A52:F101`, `A102:F151`, continuing in 50-row increments until two consecutive batches return no non-empty rows.
+The Findings sheet and Publication Readiness sheet should be empty at this point — all findings are in the staging tabs. Do not read the Findings or Publication Readiness sheets in Step 1.
 
-Coverage declaration: "Read complete. Findings: [N] batches read, total non-empty rows: [N] ([X] divider rows, [Y] AGENT_COMPLETE markers, [Z] finding rows). Completion markers present for: [list agent names or 'none found']. Publication Readiness: [M] batches read, [M] total non-empty rows."
+Coverage declaration: "Read complete. Staging tabs read: [N]. Total non-empty rows across all tabs: [N] ([X] header rows, [Y] AGENT_COMPLETE markers, [Z] WONT_FIX rows, [W] finding rows). Completion markers present for: [list agent names or 'none found']."
 
 ---
 
@@ -49,7 +50,7 @@ Before making any modification to the Findings sheet or Publication Readiness sh
 
 1. Call `ToolSearch` with query `select:mcp__hardened-workspace__create_sheet` to ensure the tool schema is loaded.
 2. Call `mcp__hardened-workspace__create_sheet` to add a tab named `Findings_backup` to the output spreadsheet. If the tool returns an error indicating the tab already exists (e.g., from a prior partial run), skip creation — the existing backup remains available.
-3. Use a single `modify_sheet_values` call to write a header row and all [Z] finding rows (excluding AGENT_COMPLETE markers and divider rows) from your Step 1 read into `Findings_backup`, starting at row 1. Header row: `Finding # | Sheet | Cell/Row | Severity | Error Type/Issue | Explanation | Recommended Fix | Estimated CE Impact | Researcher judgment needed | Status`.
+3. Use a single `modify_sheet_values` call to write a header row and all [W] finding rows (excluding AGENT_COMPLETE markers, WONT_FIX rows, and header rows) from your Step 1 read into `Findings_backup`, starting at row 1. Header row: `Finding # | Sheet | Cell/Row | Severity | Error Type/Issue | Explanation | Recommended Fix | Estimated CE Impact | Researcher judgment needed | Status`.
 4. Announce: `✓ Backup complete: [Z] finding rows written to Findings_backup tab.`
 
 If `create_sheet` cannot be called after one ToolSearch retry, announce: `⚠️ Backup skipped — could not create Findings_backup tab. Proceeding with compaction; if interrupted, original data may be lost.` and continue to Step 2.
@@ -151,7 +152,7 @@ Coverage declaration: "Label normalization complete. Findings: [N] labels normal
 
 ## Step 4 — Rewrite and sort both sheets
 
-Rewrite both sheets sequentially from row 2, closing all gaps left by Wave 2's pre-allocated row ranges.
+Rewrite both sheets sequentially from row 2. The Findings sheet and Publication Readiness sheet are initially empty (all findings were in staging tabs until this step) — write directly from row 2 with no gaps to close.
 
 Sort all Findings rows in memory using four sort keys:
 1. **Primary**: Severity (High → Medium → Low)
