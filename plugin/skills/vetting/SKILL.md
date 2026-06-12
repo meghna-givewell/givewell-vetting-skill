@@ -69,12 +69,14 @@ Load each document only when the step that requires it begins.
 1. Extract the spreadsheet ID from the URL (long string between `/d/` and `/edit` or `/view`)
 2. Use `get_spreadsheet_info` to list all sheet names. In a **single message**, ask: (a) which sheets to vet, (b) the two Step 0.5 program context questions (see Step 0.5 below), (c) "Is this headed toward publication or external review, or is it internal/early-stage?", and (d) "Should I run source citation verification for Study-Derived and Org-Reported hardcoded inputs? This pre-fills the Verified? and Auto-check evidence columns in the Hardcoded Values sheet using the Anthropic Citations API — each value gets a matched/contradicted/could-not-verify verdict plus the verbatim sentence from the source. GiveWell parameter consistency is always checked regardless. [Yes / No]" Combining all four into one ask means the user responds once and reads + literature searches can fire in parallel immediately after. Present only sheet names — do not display grid dimensions (rows × cols), as these reflect allocated space, not actual data, and will mislead the user about sheet size.
 
+**"All sheets" definition**: If the researcher answers "vet all sheets" or "everything," include all tabs returned by `get_spreadsheet_info` **except**: (a) tabs whose names begin with `-->` (section dividers), (b) tabs named with a single character or symbol only (formatting artifacts). For any tab that is hidden or protected, note it explicitly: "I see a hidden/protected tab named [X] — do you want me to include it?" Do not silently exclude any named data tab.
+
 > **Publication / external review** (default): Full checks — formula errors, assumptions, sources, readability, and citations.
 >
 > **Internal / early-stage**: Formula and assumption checks only. Sources, readability, and citation checks are skipped.
 3. **Fire all reads and literature searches in a single parallel batch** — once the user answers: simultaneously fire `read_sheet_values` (FORMATTED_VALUE and FORMULA), `read_sheet_notes`, `read_sheet_hyperlinks`, and `read_spreadsheet_comments` (once for the workbook) for each vetted sheet — AND 1–2 literature web searches using the intervention type from the user's Step 0.5 answers. If the user provided a grant document link, include `get_doc_content` on that link in the same parallel batch.
 
-**Step 3 read verification and pre-read cache**: After the parallel batch completes, verify each sheet's read was complete: (a) row count approximately matches the expected populated row count from the `get_spreadsheet_info` results; (b) the last returned row in the FORMULA read is non-empty; (c) no error message was returned by any batch call. Re-read any failed range before proceeding. Once all reads are verified, record each sheet's FORMATTED_VALUE data, FORMULA data, notes, and hyperlinks as the **pre-read cache** for this session. For sheets with ≤ 150 populated rows, pass the pre-read cache to sub-agents — they use it for row-by-row scanning and make targeted `read_sheet_values` calls only for specific cell verification.
+**Step 3 read verification and pre-read cache**: After the parallel batch completes, verify each sheet's read was complete: (a) the last row index returned in the FORMATTED_VALUE read matches the last row index returned in the FORMULA read (both reads must agree on the final non-empty row — a mismatch indicates a partial read); (b) the last returned row in the FORMULA read is non-empty; (c) no error message was returned by any batch call. Do **not** use `get_spreadsheet_info` grid dimensions for this check — grid size reflects allocated space, not populated rows, and will produce false failures on sparse sheets. Re-read any failed range before proceeding. Once all reads are verified, record each sheet's FORMATTED_VALUE data, FORMULA data, notes, and hyperlinks as the **pre-read cache** for this session. For sheets with ≤ 150 populated rows, pass the pre-read cache to sub-agents — they use it for row-by-row scanning and make targeted `read_sheet_values` calls only for specific cell verification.
 
 **Pre-vet acknowledged-issue extraction**: After the parallel batch, scan `read_spreadsheet_comments` results for RESOLVED threads where a researcher acknowledged a known issue (e.g., "keeping this for comparability," "reviewed and comfortable"). Add each to the declared-intentional deviations list as "Acknowledged in resolved comment [author, date]: [description]." Agents treat these as declared-intentional deviations — cap at Low/H **unless the agent's own analysis finds the issue is materially worse than what was acknowledged** (e.g., a CE impact >10% when the comment implied the issue was immaterial, or a formula error the researcher described as cosmetic that turns out to affect the CE chain). In that case, file at the appropriate severity and include in column F: "Previously acknowledged in resolved comment ([author, date]) — current vet finds this issue materially affects CE and upgrades severity to [new severity]."
 
@@ -98,7 +100,15 @@ Produces `output/extracted_<filename>.txt` with the full workbook structure.
 
 ### No-MCP / Local output mode
 
-Triggered when the user responds with `no MCP — local output: <path>` (optionally with an output sheet URL). This mode runs a condensed inline analysis on locally extracted content and writes findings to CSV files. Sub-agents are not spawned — analysis runs inline in a single pass.
+**Trigger**: Local output mode activates when `mcp__hardened-workspace__get_spreadsheet_info` does not appear in the available tool list (detected automatically during the MCP availability check at the top of this file). Claude announces this condition and asks the user to supply a `.xlsx` file path. The user's expected response format is:
+
+```
+no MCP — local output: /path/to/file.xlsx | output sheet: https://docs.google.com/spreadsheets/d/...
+```
+
+(The output sheet URL is optional — it can be omitted and added later.) Do not wait for the user to type this exact phrase if you already know MCP is unavailable — announce the condition and prompt for the path directly.
+
+This mode uses the **full wave-based sub-agent structure** — Wave 1, Wave 2, Wave 2.5, and Wave 3 all run with the Agent tool exactly as in standard mode. Sub-agents are spawned in parallel. The only differences are data transport (agents receive extracted spreadsheet content in session context instead of reading via MCP) and output format (agents emit prefixed pipe-delimited lines instead of calling `modify_sheet_values`). No agent files are modified — behavior is controlled entirely by the local mode context block appended to each agent's session context.
 
 ---
 
@@ -129,9 +139,7 @@ no MCP — local output: /path/to/file.xlsx
 
 ---
 
-**What Claude does in this mode:**
-
-Local output mode uses the **same wave-based sub-agent structure** as a standard vet — Wave 1, Wave 2, Wave 2.5 (reconciliation), and Wave 3 (final review) all run. Agents execute in parallel via the Agent tool exactly as in standard mode. The only differences are data transport: agents receive extracted spreadsheet content in their session context rather than reading via MCP, and output findings as prefixed lines in their response rather than calling `modify_sheet_values`. No agent files are modified — behavior is controlled entirely by what is appended to each agent's session context.
+**What Claude does in this mode:** *(description matches trigger section above — see "No-MCP / Local output mode" for the mode definition)*
 
 **Step 1 — Extract and orient**
 
@@ -174,7 +182,12 @@ Spawn agents using the same wave tables from the Analysis Steps section. Skip or
 - **sources A/B**: Run, but skip hyperlink verification. For any row whose value or formula contains a URL string, output: `PUBREADY|<sheet>|<cell>|Sourcing|URL present in formula/value but hyperlink metadata unavailable in .xlsx extraction — verify manually|Confirm source hyperlink is correctly attached to this cell`
 - **Reference doc lookups**: Skip fetching Google Docs/Sheets reference documents (requires MCP). key-params-check runs from `reference/key-parameters.md` already in its context; consistency-check moral weights check runs from values declared in session context
 
-Wait for all Wave 1 agents to complete before spawning Wave 2. Wait for all Wave 2 agents to complete before Wave 2.5.
+Wait for all Wave 1 agents to complete before spawning Wave 1.5. Wait for Wave 1.5 to complete before spawning Wave 2. Wait for all Wave 2 agents to complete before Wave 2.5.
+
+**Wave 1.5 in local mode**: Wave 1.5 (source-citation-verify) runs in local mode using its Bash fallback path — it does not require MCP. After Wave 1 completes:
+- **If the researcher declined source citation verification at startup**: skip Wave 1.5 and announce `⏭️ Wave 1.5 skipped — source citation verification declined by researcher.`
+- **If the hardcoded-values agent produced no `HARDCODED|Study-Derived` or `HARDCODED|Org-Reported` lines with a source URL field**: skip Wave 1.5 and announce `⏭️ Wave 1.5 skipped — no verifiable source citations found in local extraction.`
+- **Otherwise**: spawn one `source-citation-verify` agent. Append the standard local mode block. Also append: `"Hardcoded values are provided as HARDCODED| lines below — use the source URL field for WebFetch verification. Write results as HARDCODED_VERIFIED| lines: HARDCODED_VERIFIED|Sheet|Cell|Matched ✓/Contradicted ✗/Could not verify|verbatim sentence from source or reason."` After the agent completes, merge `HARDCODED_VERIFIED|` lines into the hardcoded values collection.
 
 **Step 4 — Collect findings after each wave**
 
@@ -230,6 +243,25 @@ After Wave 3, write four local files using the Write tool, using `|` as the colu
 > 4. **Confidentiality Flags tab**: repeat with `output/confidentiality_flags.csv`
 >
 > Scope note: notes-scan and source hyperlink verification skipped (not available in .xlsx). All other checks — formula, CE chain, leverage, readability, key params, consistency, hardcoded values, sensitivity scan, heads-up — ran at full quality with independent A/B verification. To run a complete vet including notes and hyperlinks, configure the Hardened Google Workspace MCP (see setup instructions above).
+
+**Step 8 — Feedback collection in local mode**
+
+After presenting results, ask the same six feedback questions as in standard mode. After the researcher responds:
+- **If the output sheet URL was provided**: attempt to write the feedback row to the canonical feedback sheet using MCP. This will fail in local mode — if it does, skip silently and proceed.
+- **Always**: write the feedback to a local file `output/feedback.txt` using the Write tool in the format:
+  ```
+  Date: [today]
+  Researcher: [email if known, else "unknown"]
+  Spreadsheet: [filename from extract.py path]
+  1. False positives: [answer or "skipped"]
+  2. Missed findings: [answer or "skipped"]
+  3. Most useful: [answer or "skipped"]
+  4. Calibration suggestion: [answer or "skipped"]
+  5. Confidentiality flags missed: [answer or "skipped"]
+  6. Box links missed: [answer or "skipped"]
+  ```
+- Tell the researcher: "Feedback saved to `output/feedback.txt`. If you'd like it recorded in the shared pilot log, email or Slack the contents to meghna.ray@givewell.org."
+- **Do not** attempt the Slack DM in local mode — MCP is unavailable.
 
 ---
 
@@ -453,9 +485,11 @@ Reconcile staging tabs (one per reconcile agent, for net-new findings discovered
 | `stg-rec-uov` | leverage-uov-check |
 | `stg-rec-ceta` | ce-chain-trace-ta |
 
-**Band-split extra staging tabs**: When `band_count > 1`, create additional staging tabs for each extra band before spawning banded agents. Example for formula-check-data with 2 bands: create `stg-data-C`, `stg-data-D`. For reconcile staging, create `stg-rec-data-b2`, `stg-rec-data-b3`, etc. Follow the same naming convention for all banded agents. Write header rows to all extra tabs immediately after creation.
+**Band-split extra staging tabs**: `band_count` is computable from `populated_rows`, which is known from the Step 2 structure review — before output setup runs. When `band_count > 1`, create all extra band staging tabs in the **same parallel batch** as the main staging tabs above. Do not defer this to just before spawning banded agents. Example for formula-check-data with 2 bands: create `stg-data-C`, `stg-data-D`. For reconcile staging, create `stg-rec-data-b2`, `stg-rec-data-b3`, etc. Follow the same naming convention for all banded agents. Write header rows to all extra tabs immediately after creation, in the same `modify_sheet_values` batch as the main header rows.
 
-**Persist staging tab log to Dashboard at A99**: Write "Staging Sheet Log" in A99, then one row per staging tab (agent name | staging tab name). This log survives context compaction and lets Wave 3 compaction recover the full staging tab list if the session is interrupted before Wave 3 begins.
+**Staging tab pre-expand**: Immediately after writing all header rows, write a single blank value to row 500 of each staging tab (e.g., `stg-arith-A!A500`, `stg-data-A!A500`, etc.) using `modify_sheet_values`. This forces Google Sheets to allocate at least 500 rows per staging tab and prevents silent row-drop failures for agents with large output sets. Fire all pre-expand writes in a single parallel batch.
+
+**Persist staging tab log to Dashboard at A99**: Write "Staging Sheet Log" in A99, then one row per staging tab (agent name | staging tab name) — including all extra band tabs created above. This log survives context compaction and lets Wave 3 compaction recover the full staging tab list if the session is interrupted before Wave 3 begins. The log must be complete at the time of writing; do not append to it later.
 
 ---
 
@@ -587,7 +621,7 @@ This restriction applies to MCP tools and external search/fetch tools only. Buil
 
 **Each sub-agent must execute its full checklist exhaustively, on every row.** No check in any agent file is optional or skippable because the sheet is small or because a prior agent already noticed something nearby. The formula-check agent must audit every formula row against its label — not just rows that match a named pattern. The sources agent must complete the full column F text audit on every row. The readability agent must read every row label top-to-bottom. The consistency agent must compare against the VOI template structure row-by-row. A sub-agent that shortcuts because "this is a small BOTEC" will miss findings the same way inline execution does. **The named checks in each agent file are patterns to look for on top of the row-by-row baseline — they are not a substitute for it.**
 
-Agents run in four phases (Wave 1, Wave 2, Wave 2.5, Wave 3) with Wave 1.5 as a conditional sub-phase between Waves 1 and 2. Progress announcements use Phase 1/4, 1.5/4, 2/4, 3/4, 4/4 accordingly. Before spawning Wave 1, announce progress: `[Phase 1/4] Wave 1 starting — 21 agents (formula checks, parameter accuracy, sensitivity scan, hardcoded values).`
+Agents run in four phases (Wave 1, Wave 2, Wave 2.5, Wave 3) with Wave 1.5 as a conditional sub-phase between Waves 1 and 2. Progress announcements use Phase 1/4, 1.5/4, 2/4, 3/4, 4/4 accordingly. The Wave 1 progress announcement is emitted **after** all conditional skips and band-split evaluations are complete — see the "Spawn Wave 1 agents" section below for the announcement instruction with the computed count.
 
 ---
 
@@ -599,10 +633,10 @@ Agents run in four phases (Wave 1, Wave 2, Wave 2.5, Wave 3) with Wave 1.5 as a 
 
 2. **Source data tabs list**: From the `get_spreadsheet_info` results already in hand, collect all tab names whose names contain (case-insensitive): `Coverage Data`, `WUENIC`, `DHS`, `IHME`, `IGME`, `GBD`, `MICS`, `EPI`, `SAE`, `WorldPop`, `Population`, `Mortality`, `Subnational Data`. Exclude section-divider tabs (names containing `-->`) and calculated/output tabs. Pass this list and the in-scope geographies to the source-data-check agent.
 
-3. **Conditional skips** — evaluate before spawning:
-   - **Source-data-check skip**: If the source data tabs list is empty, skip source-data-check A and B. Announce: `⏭️ source-data-check: skipped — no source data tabs found.` Their pre-allocated row ranges (322–381) remain reserved but unused.
-   - **Formula-check-arithmetic 2-instance mode**: If `populated_rows ≤ 80` on the primary vetted sheet, skip instances C and D. A and B each audit **all rows** (1 through `populated_rows`). Announce: `⏭️ formula-check-arithmetic: 2-instance mode (≤80 rows) — C and D skipped.` In session context for A and B, replace the sheet row scope with: "Audit all rows 1 through {populated_rows}. No row-splitting applies." Their Findings row allocations are unchanged (A: rows 2–41, B: rows 42–81); C and D ranges (92–171) remain reserved but empty.
-   - **Key-params-check 1-instance mode**: If `populated_rows ≤ 80`, skip key-params-check B. A runs only. Announce: `⏭️ key-params-check: 1-instance mode (≤80 rows) — B skipped.` Row range 552–571 remains reserved but unused.
+3. **Conditional skips** — evaluate before spawning; record each skip decision explicitly in session context:
+   - **Source-data-check skip**: If the source data tabs list is empty, skip source-data-check A and B. Record: `source-data-check: SKIPPED (no source data tabs)`.
+   - **Formula-check-arithmetic 2-instance mode**: If `populated_rows ≤ 80` on the primary vetted sheet, skip instances C and D. A and B each audit **all rows** (1 through `populated_rows`). In session context for A and B, set: "Sheet row scope: all rows 1 through {populated_rows}. No row-splitting applies." **Also override the cache scope**: pass FORMATTED_VALUE, FORMULA, notes, and hyperlinks for all rows 1 through `populated_rows` (not "Rows 1–split_row"). Record: `formula-check-arithmetic: 2-INSTANCE MODE (≤80 rows) — C and D skipped; A/B each cover all rows`. Their staging tabs (stg-arith-C and stg-arith-D) remain created but empty.
+   - **Key-params-check 1-instance mode**: If `populated_rows ≤ 80`, skip key-params-check B. A runs only. Record: `key-params-check: 1-INSTANCE MODE (≤80 rows) — B skipped`. stg-kp-B remains created but empty.
    - **Formula-check-voi — always launch**: Do not skip formula-check-voi at spawn time, even if no VOI tab is detected by name. VOI content can appear within any CEA tab as an embedded section. The agent self-detects and exits cleanly (writing only an AGENT_COMPLETE marker) if no VOI content is found across any vetted sheet.
 
 4. **Band-split protocol** — evaluate before spawning:
@@ -641,7 +675,16 @@ Agents run in four phases (Wave 1, Wave 2, Wave 2.5, Wave 3) with Wave 1.5 as a 
 
    Add all band reconcile pairs after the standard Wave 2.5 pairs in the reconcile spawn batch. Announce: `Wave 2.5 reconciliation: [N] standard pairs + [M] band-split pairs ([band_count−1] extra bands × [affected agent count] agents).`
 
-#### Spawn Wave 1 agents simultaneously (up to 21; fewer based on conditional skips above)
+**After completing steps 1–4 above**, compute the actual Wave 1 agent count:
+- Start with base count 21
+- Subtract 2 if source-data-check is skipped
+- Subtract 2 if formula-check-arithmetic is in 2-instance mode (C and D skipped)
+- Subtract 1 if key-params-check is in 1-instance mode (B skipped)
+- Add `(band_count − 1) × 2` for each banded agent with extra band pairs
+
+Then announce: `[Phase 1/4] Wave 1 starting — [actual_count] agents ([list any skips or band additions]).`
+
+#### Spawn Wave 1 agents simultaneously
 
 Assign staging sheets before spawning:
 
@@ -723,10 +766,12 @@ Wait for all spawned Wave 1 agents to complete before proceeding.
 | ce-chain-trace | **No** — every CEA has a CE chain that must be traced. 0 findings means the trace was not completed. |
 | formula-check-voi | Yes — self-detecting; 0 findings is valid when no VOI content is found. Check AGENT_COMPLETE text. |
 | ce-chain-trace-ta | Yes — self-detecting; 0 findings is valid when no TA signals are found. Check AGENT_COMPLETE text. |
-
-Also check the Confidentiality Flags sheet and Hardcoded Values sheet: if sensitivity-scan wrote no rows and the spreadsheet has any populated cells, or if hardcoded-values wrote no rows and the spreadsheet has any non-formula input cells, flag as potential silent failures — a real spreadsheet will always have at least a few hardcoded values.
+| sensitivity-scan | **No** — every populated spreadsheet has at least one cell worth scanning for sensitive data. Check the Confidentiality Flags sheet: if it has only the header row (no data rows and no AGENT_COMPLETE), this is a failure signal. Read `'Confidentiality Flags'!A1:D5` to confirm. |
+| hardcoded-values | **No** — every spreadsheet has at least one hardcoded input cell. Check the Hardcoded Values sheet: if it has only the header row (no data rows and no AGENT_COMPLETE), this is a failure signal. Read `'Hardcoded Values'!A1:H5` to confirm. |
 
 **Researcher-confirm checkpoint**: After all Wave 1 agents complete and before spawning Wave 2, read the Findings sheet and collect all rows with `✓` in the **Researcher judgment needed** column (column I). If **no such rows exist**, skip this checkpoint entirely and proceed immediately to Wave 2. If flagged rows exist, present them to the user as a numbered list: cell reference, finding type, and the specific question. Explain that subsequent agents will proceed on current assumptions unless they respond. Then continue — do not wait indefinitely. This checkpoint exists so intent questions (e.g., "is this $0 intentional?") can be answered before plausibility and readability agents analyze the same cells. **For any checkpoint item that is High severity or tagged D**: add a sentence flagging that downstream agents will analyze this cell using the current (potentially wrong) value — if the researcher's answer changes the value, the plausibility findings for that section may need to be revisited.
+
+**Declared-deviation update before spawning Wave 2**: If the researcher responds to the checkpoint and any answer (a) confirms that a parameter was set intentionally, (b) clarifies that a $0 or zero value is intentional, or (c) changes whether a finding should be treated as a declared deviation — update the **declared-intentional deviations** list in session context before spawning Wave 2 agents. Pass the updated list to all Wave 2 agents in the standard session context block. Do not pass the original (stale) list if the researcher has since clarified intent. If the researcher does not respond before proceeding, pass the original list unchanged and note in the Wave 2 session context: `Researcher checkpoint: no response received; Wave 2 proceeds on pre-checkpoint assumptions.`
 
 ---
 
@@ -734,9 +779,15 @@ Also check the Confidentiality Flags sheet and Hardcoded Values sheet: if sensit
 
 **Pre-Wave-1.5 guard — check hardcoded-values agent completed**: Before spawning the source-citation-verify agent, read the Hardcoded Values sheet's last non-empty row. If the row contains `AGENT_COMPLETE` in column D, the hardcoded-values agent completed normally. If no AGENT_COMPLETE row is found: announce `⚠️ hardcoded-values agent appears not to have completed — Hardcoded Values sheet may be incomplete or empty. Wave 1.5 source citation verification requires a populated Hardcoded Values sheet to run. Options: (1) re-run the hardcoded-values agent and then re-run Wave 1.5, or (2) skip Wave 1.5 by proceeding to Wave 2. Ask the researcher which to do before continuing.` Do not skip silently.
 
-**Skip if the researcher declined source citation verification at startup** (announce: `⏭️ Wave 1.5 skipped — source citation verification declined by researcher.`). GiveWell parameter consistency (key-params-check, Wave 1) always runs regardless of this choice.
+**Wave 1.5 skip conditions** — evaluate in order; skip on the first matching condition:
 
-**Progress announcement**: `[Phase 1.5/4] Source citation verification starting — pre-filling Hardcoded Values sheet.`
+1. **Researcher declined at startup**: skip. Announce: `⏭️ Wave 1.5 skipped — source citation verification declined by researcher.` GiveWell parameter consistency (key-params-check, Wave 1) always runs regardless of this choice.
+2. **Hardcoded Values sheet incomplete**: check per the pre-Wave-1.5 guard above. If no AGENT_COMPLETE is found, ask the researcher whether to (a) re-run hardcoded-values then re-run Wave 1.5, or (b) skip Wave 1.5.
+3. **No verifiable rows**: if the Hardcoded Values sheet has no `Study-Derived` or `Org-Reported` rows that include a source URL in column F, skip. Announce: `⏭️ Wave 1.5 skipped — no Study-Derived or Org-Reported rows with source URLs found.`
+
+If none of the above conditions match, run Wave 1.5.
+
+**Progress announcement** (only when Wave 1.5 runs): `[Phase 1.5/4] Source citation verification starting — pre-filling Hardcoded Values sheet.`
 
 Spawn one `source-citation-verify` agent. Pass: Hardcoded Values sheet ID and user email. This agent uses the Anthropic Citations API to pre-fill the **Verified?** (column G) and **Auto-check evidence** (column H) columns for every `Study-Derived` and `Org-Reported` row that cites an accessible source URL.
 
@@ -745,8 +796,6 @@ Spawn one `source-citation-verify` agent. Pass: Hardcoded Values sheet ID and us
 **Bash tool fallback**: If the Bash tool is unavailable in the spawned agent's context, the source-citation-verify agent should fall back to manual `WebFetch` verification for the top 5 `Study-Derived` parameters only (by CE impact proximity in the Hardcoded Values sheet), write its AGENT_COMPLETE marker noting `Bash unavailable — fell back to manual spot-check of top-5 Study-Derived parameters; full citation verification not completed. [N] spot-checked.`, and not attempt to write the verification script. After the agent completes, check its AGENT_COMPLETE column F for the phrase `Bash unavailable`. If present, announce: `⚠️ Wave 1.5 ran in manual fallback mode — Bash unavailable; only top-5 parameters spot-checked. Consider re-running with Bash access for full citation coverage.` and surface this alongside any Contradicted findings.
 
 Wait for this agent to complete before announcing Wave 2. After it completes, if the coverage declaration lists any `Contradicted ✗` rows, surface them to the researcher before proceeding: "Source citation check found [N] contradicted value(s): [list]. Review column H for the verbatim sentence from the source. Wave 2 will proceed — plausibility agents will independently flag these if they are materially significant."
-
-**Skip Wave 1.5** if the Hardcoded Values sheet has no `Study-Derived` or `Org-Reported` rows with a source URL (announce: `⏭️ Wave 1.5 skipped — no verifiable source citations found.`).
 
 ---
 
@@ -831,8 +880,8 @@ For each instance, append to session context:
 
 | Pair | Staging sheet A | Staging sheet B | Reconcile staging sheet |
 |---|---|---|---|
-| formula-check-arithmetic (first half) | `stg-arith-A` | `stg-arith-B` | `stg-rec-arith1` |
-| formula-check-arithmetic (second half) | `stg-arith-C` | `stg-arith-D` | `stg-rec-arith2` |
+| formula-check-arithmetic (A/B pair — rows 1–split_row, or all rows in 2-instance mode) | `stg-arith-A` | `stg-arith-B` | `stg-rec-arith1` |
+| formula-check-arithmetic (C/D pair — rows split_row+1–end in 4-instance mode, or band-2 rows when banding is active; skip if 2-instance mode) | `stg-arith-C` | `stg-arith-D` | `stg-rec-arith2` |
 | formula-check-data | `stg-data-A` | `stg-data-B` | `stg-rec-data` |
 | formula-check-edge-cases | `stg-edge-A` | `stg-edge-B` | `stg-rec-edge` |
 | source-data-check | `stg-srcdt-A` | `stg-srcdt-B` | `stg-rec-srcdt` |
@@ -884,6 +933,35 @@ If either staging tab contains any non-header row, notes-scan is presumed to hav
 
 **Progress announcement** before starting: `[Phase 3/4 done → Phase 4/4] Reconciliation complete — starting final review (4 sequential steps). If this session is interrupted before Wave 3 completes, run /givewell-vetting:vetting-finalize (plugin) or /vetting-finalize (standalone) with the output and source spreadsheet URLs to resume.`
 
+**Self-verification pre-pass — required before spawning any Wave 3 agent**: Before compaction begins, verify that all required agents ran. For each agent in the table below, check that its staging tab contains an AGENT_COMPLETE row. Read each tab with `read_sheet_values` on `{tab}!A1:J5` — an AGENT_COMPLETE row in row 2 (or any row with "AGENT_COMPLETE" in column A or column J) confirms completion.
+
+| Required agent | Staging tab | Is 0-findings a plausible clean pass? |
+|---|---|---|
+| formula-check-arithmetic A | `stg-arith-A` | No |
+| formula-check-arithmetic B | `stg-arith-B` | No |
+| formula-check-data A | `stg-data-A` | Yes (check AGENT_COMPLETE text) |
+| formula-check-edge-cases A | `stg-edge-A` | Yes |
+| formula-check-structure A | `stg-struct-A` | No |
+| consistency-check A | `stg-consist-A` | No |
+| key-params-check A | `stg-kp-A` | Yes |
+| formula-check-voi A | `stg-voi-A` | Yes (self-detecting) |
+| formula-check-parameters | `stg-params` | Yes |
+| hardcoded-values | `'Hardcoded Values'!A:H` | No |
+| sensitivity-scan | `'Confidentiality Flags'!A:D` | No |
+| ce-chain-trace A | `stg-ce-A` | No |
+| ce-chain-trace B | `stg-ce-B` | No |
+| heads-up-evidence A | `stg-evid-A` | No |
+| heads-up-epi A | `stg-epi-A` | No |
+| leverage-funging A | `stg-lev-A` | Yes (if no leverage tab) |
+
+For any required agent whose staging tab is empty and where 0-findings is **not** a plausible clean pass: announce `⚠️ Pre-Wave-3 self-verification failed: [agent] staging tab [tab] is empty. Consider re-running this agent before compaction.` Proceed only after either re-running the missing agent or obtaining explicit researcher approval to proceed with incomplete coverage.
+
+**Wave 3 session context** — pass to each Wave 3 agent:
+
+> `Output spreadsheet ID: <id>` | `Source spreadsheet ID: <id>` | `Source spreadsheet URL: <url>` | `Vet scope: <full or formula-only>` | `CE baseline: <geography = cell = value, one per geography>` | `All staging tabs: [read from Dashboard A99 if not in context]` | `User email: <email>` | `Current date: <today>`
+>
+> **Staging tab recovery**: If the full staging tab list is not in current context (context may have been compacted since Wave 1), read Dashboard cells A99 onward of the output spreadsheet to recover the complete list before proceeding.
+
 Run the four steps in order — each must complete before the next begins. Announce each step as it starts:
 - Before 10a: `[Wave 3 — Step 1/4] Running compaction.`
 - Before 10b: `[Wave 3 — Step 2/4] Running gap-fill.`
@@ -926,7 +1004,9 @@ Vetting skill feedback — 6 quick questions (answers go into a shared log to im
 (You can skip any question — just reply with the numbers you want to answer.)
 ```
 
-After the researcher responds, record their answers in the shared pilot feedback log:
+**Local mode**: If running in local mode (MCP unavailable), follow the feedback instructions in the "No-MCP / Local output mode" section (Step 8 — Feedback collection in local mode). Do not attempt to write to the Google Sheet or send a Slack DM. Skip steps a–d below entirely.
+
+**Standard mode**: After the researcher responds, record their answers in the shared pilot feedback log:
 
 **a. Use the canonical feedback sheet**
 
