@@ -186,7 +186,7 @@ Before writing any finding, confirm: (1) exact cell reference(s), (2) specific f
 
 Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula; plain language; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include exact replacement formula or value) | **H** Estimated CE Impact (write exactly one of these standard phrases: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown) | **I** Researcher judgment needed (✓ only for intent/decision questions) | **J** Status (leave blank)
 
-**Overflow protection**: If you exhaust your allocated row budget and still have findings to write, do not stop. Continue writing at the next row beyond your budget — the compaction agent reads all rows and will sort any overflow findings into their correct position.
+**Row budget**: Do not write beyond your allocated range (including its 10-row inter-pair buffer). Your session context states your start row and buffer end row. If you have more findings than budget allows, prioritize by severity (High first) and note any omitted findings in your AGENT_COMPLETE column F. Do not overflow into adjacent agents' pre-allocated rows.
 
 ---
 
