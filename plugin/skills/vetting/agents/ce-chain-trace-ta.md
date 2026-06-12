@@ -3,7 +3,7 @@
 You are performing a dedicated TA cost denominator consistency check for a GiveWell spreadsheet vet. You have been provided:
 - Spreadsheet ID and sheet name(s) to vet
 - Findings sheet ID
-- Row allocation: write findings starting at the pre-assigned row
+- Staging sheet: write findings to your dedicated staging tab (name provided in session context)
 - User email for MCP calls
 - Program context from Step 0.5
 
@@ -16,7 +16,7 @@ Do not rely solely on the researcher's Step 0.5 classification — structural si
 
 **Scope**: This agent covers exactly one check — TA cost denominator consistency between the Main CEA and Simple CEA tabs. The main `ce-chain-trace` agent handles all other chain integrity checks. Do not re-run those checks here.
 
-**Do not read the existing Findings sheet** — your row start position is pre-assigned in session context, and deduplication is handled by the Wave 2.5 reconciliation agent.
+**Do not read the existing Findings sheet** — your staging sheet name is provided in session context, and deduplication is handled by the Wave 2.5 reconciliation agent.
 
 **Stakes**: A TA BOTEC that uses different cost denominators in its Main CEA and Simple CEA tabs produces CE multiples that are not directly comparable — but they appear comparable side-by-side on the page. This inconsistency can misrepresent cost-effectiveness to decision-makers without any formula error being visible.
 
@@ -45,7 +45,7 @@ Coverage declaration: "TA denominator check complete. Main CEA cost: [ref] = [la
 
 Before writing any finding, confirm: (1) exact cell reference(s) for both the Main CEA and Simple CEA cost rows, (2) the specific inconsistency or missing documentation, (3) precise fix.
 
-**Your row start position is pre-assigned in session context** — do not auto-detect. Append findings using `modify_sheet_values`.
+Append findings using `modify_sheet_values` to your staging sheet. Start at row 2 and append sequentially. Your staging sheet name is provided in session context.
 
 Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula; plain language; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include exact replacement formula or value) | **H** Estimated CE Impact (write exactly one of these standard phrases: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown) | **I** Researcher judgment needed (✓ only for intent/decision questions) | **J** Status (leave blank)
 
@@ -53,14 +53,14 @@ Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row |
 
 ## Final step — write completion marker
 
-After all checks are complete (or after the self-detection step if no TA signals are found), write ONE final row to the Findings sheet at the next available row within your allocated range (or at the first row of your allocated range if no findings were written). This is the absolute last action you take.
+After all checks are complete (or after the self-detection step if no TA signals are found), write ONE final row to your staging sheet immediately after your last finding (or at row 2 if no findings were written). This is the absolute last action you take.
 
 Write the row with:
 - Column B: `ce-chain-trace-ta`
 - Column D: `AGENT_COMPLETE`
 - Column F:
-  - If TA signals found: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | TA signals confirmed: [list which signals detected — e.g., session-context-flag=Y, tab-names=Y/N (tabs found: [list]), row-labels=Y/N]. Checked Main CEA and Simple CEA cost denominators. Filed [K] Findings rows. Row allocation: [start]–[end].`
-  - If no TA signals found: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | TA signals checked: session-context-flag=[Y/N], tab-names=[Y/N — names checked: [list]], Main-CEA-row-labels=[Y/N]. No TA grant signals found on any of the 3 detection methods — checks skipped. Row allocation: [start]–[end].`
+  - If TA signals found: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | TA signals confirmed: [list which signals detected — e.g., session-context-flag=Y, tab-names=Y/N (tabs found: [list]), row-labels=Y/N]. Checked Main CEA and Simple CEA cost denominators. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
+  - If no TA signals found: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | TA signals checked: session-context-flag=[Y/N], tab-names=[Y/N — names checked: [list]], Main-CEA-row-labels=[Y/N]. No TA grant signals found on any of the 3 detection methods — checks skipped. Staging sheet: [name from session context].`
 - All other columns: blank
 
 Stating the detection outcome explicitly (rather than just "no signals found") allows the orchestrator to distinguish a thorough negative result from a silent failure in which the self-detection step was skipped.

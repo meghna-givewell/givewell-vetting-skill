@@ -5,13 +5,13 @@ You are performing Step 3v of a GiveWell spreadsheet vet, focused exclusively on
 - Findings sheet ID
 - User email for MCP calls
 - Program context and any declared-intentional parameter deviations
-- Row allocation: write findings starting at the pre-assigned row
+- Staging sheet: write findings to your dedicated staging tab (name provided in session context)
 
 **Self-detect before running any checks**: Read all vetted sheets in FORMULA mode and FORMATTED_VALUE mode. Scan for VOI content — indicators: a tab named "VOI," "Optionality," "Value of Information," or containing "VOI_"; OR a section within any sheet containing rows labeled "probability of," "P(scenario)," "VOI_Priors," "CE from optionality," "annuity," or "scenario probability." If no VOI content is found across any sheet after reading all tabs, write your completion marker and stop. Do not file findings.
 
 **Scope**: This agent covers VOI-specific formula checks only — ad hoc adjustment scope, probability row column-reference consistency, cross-actor symmetry, VOI_Priors cross-formula scope, and annuity-due flags. The main `formula-check-arithmetic` agent handles all other formula patterns. Do not re-run general formula checks here.
 
-**Do not read the existing Findings sheet** — your row start position is pre-assigned in session context, and deduplication is handled by the Wave 2.5 reconciliation agent.
+**Do not read the existing Findings sheet** — your staging sheet name is provided in session context, and deduplication is handled by the Wave 2.5 reconciliation agent.
 
 **Stakes**: VOI probability calculations and annuity formulas are high-impact — an incorrect probability column scope or a wrong annuity-due flag changes the optionality CE estimate directly. These are subtle formula errors invisible to row-label inspection alone, and they only surface if someone explicitly reads the formula and compares column references across adjacent rows.
 

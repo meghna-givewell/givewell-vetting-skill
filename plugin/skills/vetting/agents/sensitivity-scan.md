@@ -63,10 +63,10 @@ After all flags are written (or if no flags were found), write ONE final row to 
 - Column D: `Scanned [N] rows across [sheet name(s)]. Filed [K] flags.`
 - All other columns: blank
 
-Then write a second AGENT_COMPLETE row to the **Findings sheet**. Call `read_sheet_values` on the Findings sheet (`A2:A2100`) to find the last non-empty row, then write to the row immediately after it (or row 2 if the sheet is empty):
+Then write a second AGENT_COMPLETE row to your staging sheet at row 2:
 - Column B: `sensitivity-scan`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Scanned [N] rows across [sheet name(s)]. Filed [K] flags to Confidentiality Flags sheet.`
+- Column F: `Scanned [N] rows across [sheet name(s)]. Filed [K] flags to Confidentiality Flags sheet. Staging sheet: [name from session context].`
 - All other columns: blank
 
-Use a separate `modify_sheet_values` call for each sheet. The Findings sheet marker ensures compaction and validation agents can detect this agent's completion alongside all other Wave 1 agents.
+Use a separate `modify_sheet_values` call for each sheet. The staging sheet marker ensures compaction and validation agents can detect this agent's completion alongside all other Wave 1 agents.

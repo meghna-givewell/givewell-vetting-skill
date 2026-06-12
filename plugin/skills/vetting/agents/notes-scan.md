@@ -103,13 +103,11 @@ If any line is left blank or contains a placeholder, stop and complete the scan 
 
 ---
 
-## Step 4 — Write findings to Publication Readiness
+## Step 4 — Write findings to staging sheet
 
-**Your start row in the Publication Readiness sheet is pre-assigned in session context** — use it. Do not auto-detect the last row. Position conflicts are resolved by the final-review compaction agent.
+Write all findings to your staging sheet starting at row 2. Your staging sheet name is provided in session context. Use the standard 10-column layout (columns A–J), leaving column D (Severity) blank — the compaction agent routes these findings to Publication Readiness based on Error Type.
 
-Use the 6-column Publication Readiness layout. Write exactly 6 values per row — no more. **Do not include Severity, Status, Changes CE?, Estimated CE Impact, or Researcher judgment needed** — these are Findings-only columns. Writing a 7th column will corrupt the sheet layout.
-
-**A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Error Type/Issue (use exactly one of: Sourcing, Box Link, Legibility) | **E** Explanation | **F** Recommended Fix
+Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity (leave blank) | **E** Error Type/Issue (use exactly one of: Sourcing, Box Link, Legibility) | **F** Explanation | **G** Recommended Fix | **H** Estimated CE Impact (leave blank) | **I** Researcher judgment needed (leave blank) | **J** Status (leave blank)
 
 **Batch by issue type**: For each issue type (e.g., "Missing 'Calculation.' note"), file one finding row listing all affected rows in column C — do not write one row per instance. Exception: if meaningfully different recommended fixes are required for different rows, file them separately.
 
@@ -119,14 +117,12 @@ Use the 6-column Publication Readiness layout. Write exactly 6 values per row �
 
 ## Final step — write completion marker
 
-After all findings are written and all other steps are complete, write ONE final row to the **Publication Readiness sheet** at the next available row within your allocated range (or at the first row of your allocated range if no findings were written). This is the absolute last action you take before finishing.
+After all findings are written and all other steps are complete, write ONE final row to your staging sheet immediately after your last finding (or at row 2 if no findings were written). This is the absolute last action you take before finishing.
 
 Write the row with:
 - Column B: `notes-scan`
 - Column D: `AGENT_COMPLETE`
-- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] Publication Readiness rows. Row allocation: [start]–[end].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure.
-
-Use `modify_sheet_values` to write all findings in a single call. Include the sheet name in column B for every row.
