@@ -7,11 +7,13 @@ You are performing Step 3v of a GiveWell spreadsheet vet, focused exclusively on
 - Program context and any declared-intentional parameter deviations
 - Staging sheet: write findings to your dedicated staging tab (name provided in session context)
 
+**Pre-read cache**: If a pre-read cache is provided in session context (sheet ≤150 populated rows), use it as your primary data source. Make targeted reads only for cells or modes outside your cache scope. Your cache covers FORMATTED_VALUE, FORMULA, Notes, and Hyperlinks. Proceed with batch reads only if no pre-read cache was provided (sheet >150 rows).
+
 **Self-detect before running any checks**: Read all vetted sheets in FORMULA mode and FORMATTED_VALUE mode. Scan for VOI content — indicators: a tab named "VOI," "Optionality," "Value of Information," or containing "VOI_"; OR a section within any sheet containing rows labeled "probability of," "P(scenario)," "VOI_Priors," "CE from optionality," "annuity," or "scenario probability." Note: 'annuity' alone in a row label is not sufficient to trigger VOI detection — it must appear alongside at least one probability or scenario row label in the same tab section (e.g., 'p(trial succeeds)', 'Scenario 1', 'p(we influence funders)'). If no VOI content is found across any sheet after reading all tabs, write your completion marker and stop. Do not file findings.
 
 **Scope**: This agent covers VOI-specific formula checks only — ad hoc adjustment scope, probability row column-reference consistency, cross-actor symmetry, VOI_Priors cross-formula scope, and annuity-due flags. The main `formula-check-arithmetic` agent handles all other formula patterns. Do not re-run general formula checks here.
 
-**Do not read the existing Findings sheet** — your staging sheet name is provided in session context, and deduplication is handled by the Wave 2.5 reconciliation agent.
+**Do not read or write to the existing Findings sheet** — write all findings to your staging tab only. Deduplication is handled by the Wave 2.5 reconciliation agent.
 
 **Stakes**: VOI probability calculations and annuity formulas are high-impact — an incorrect probability column scope or a wrong annuity-due flag changes the optionality CE estimate directly. These are subtle formula errors invisible to row-label inspection alone, and they only surface if someone explicitly reads the formula and compares column references across adjacent rows.
 
@@ -21,15 +23,17 @@ You are performing Step 3v of a GiveWell spreadsheet vet, focused exclusively on
 
 ## Check 0 — VOI structural comparison vs. Optionality/VoI BOTEC Template
 
-Before running formula checks, first call `get_spreadsheet_info` on the Optionality/VoI BOTEC Template (doc #3, spreadsheet ID `1wYsQZGsavXJQFSGF6Ea1k-p55C6dMbLPHhb0LKgNDZc`) to identify the tab name containing the canonical row structure, then read that specific tab by name using `read_sheet_values` (FORMATTED_VALUE mode, `A1:A100`). Do not read the spreadsheet without specifying a sheet name — the first tab may not be the structural reference tab. Extract all non-empty row labels from column A.
+Before running formula checks, read the VOI BOTEC Template's canonical structural tab directly. The tab name is 'Structure' (or the first tab if 'Structure' is not present — use `read_sheet_values` with the known tab name and range `A1:A100` in FORMATTED_VALUE mode). Do not call `get_spreadsheet_info` — 'si' is not in your permitted tools. The Optionality/VoI BOTEC Template spreadsheet ID is `1wYsQZGsavXJQFSGF6Ea1k-p55C6dMbLPHhb0LKgNDZc`. Extract all non-empty row labels from column A.
 
-Compare against the target VOI model's row labels (already read during self-detection). Check for three deviation types:
+Compare against the target VOI model's row labels (already read during self-detection). To avoid duplicating consistency-check findings: focus exclusively on formula-level structure (required calculation concept-classes, undocumented row additions, semantically renamed rows). Do not file findings about moral weights, discount rates, or cross-cutting CEA parameter values — those belong to the consistency-check agent.
 
-1. **Missing required concept-classes**: The following calculation concept-classes must be present in any GiveWell VOI model. For each absent class, flag as **Medium/H** Legibility with Researcher judgment needed ✓: "Required VOI concept '[class]' not found in model — confirm this calculation is handled elsewhere or add the missing row." Required classes: (a) probability of research updating recommendation, (b) expected CE if recommendation is updated, (c) expected CE if recommendation is not updated, (d) wait time / time to resolution, (e) discount rate applied to optionality value, (f) VOI/optionality CE output row (the row whose value feeds into the main CE chain).
+Check for three deviation types:
 
-2. **Undocumented row additions**: For each row in the target model that has no semantic equivalent in the template and no cell note explaining the addition, flag as **Low/H** Legibility: "Row '[label]' is present in this model but has no equivalent in the standard VOI BOTEC Template — add a cell note confirming the addition is intentional and describing its purpose."
+1. **Missing required concept-classes**: The following calculation concept-classes must be present in any GiveWell VOI model. For each absent class, flag as **Medium** Assumption with Researcher judgment needed ✓: "Required VOI concept '[class]' not found in model — confirm this calculation is handled elsewhere or add the missing row." Required classes: (a) probability of research updating recommendation, (b) expected CE if recommendation is updated, (c) expected CE if recommendation is not updated, (d) wait time / time to resolution, (e) discount rate applied to optionality value, (f) VOI/optionality CE output row (the row whose value feeds into the main CE chain).
 
-3. **Semantically renamed rows**: For each template row concept that appears in the target model under a materially different label with no cell note, flag as **Low/H** Legibility: "Template row '[template label]' appears as '[model label]' in this model — confirm the concept is the same and add a note if the renaming is intentional." A material rename is one that changes the apparent scope or direction of the row (e.g., 'GiveWell opportunity cost CE' → 'CE of counterfactual across all funders').
+2. **Undocumented row additions**: For each row in the target model that has no semantic equivalent in the template and no cell note explaining the addition, flag as **Low** Legibility: "Row '[label]' is present in this model but has no equivalent in the standard VOI BOTEC Template — add a cell note confirming the addition is intentional and describing its purpose."
+
+3. **Semantically renamed rows**: For each template row concept that appears in the target model under a materially different label with no cell note, flag as **Low** Legibility: "Template row '[template label]' appears as '[model label]' in this model — confirm the concept is the same and add a note if the renaming is intentional." A material rename is one that changes the apparent scope or direction of the row (e.g., 'GiveWell opportunity cost CE' → 'CE of counterfactual across all funders').
 
 Skip this check if: (a) the researcher's Step 0.5 notes describe the VOI model as a standalone non-template-based model, or (b) the template read fails — note the failure in your coverage declaration and proceed to Check 0.5. **A Check 0 failure does not reduce your obligation to run Checks 0.5 through 10 at full coverage.**
 
@@ -67,7 +71,7 @@ Coverage declaration: `COVERAGE | formula-check-voi | probability row column-ref
 
 ## Check 3 — Cross-actor symmetry assumption check
 
-When a VOI sheet defines parallel parameters for different actors (e.g., GiveWell opportunity cost CE and other philanthropic funders' opportunity cost CE), identify any two structurally parallel cells that hold identical values for actors with plausibly different cost-effectiveness thresholds. Flag as **Low/Assumption** with Researcher judgment needed ✓: "Row [X] assumes [actor 1]'s [parameter] equals [actor 2]'s [parameter] (both = [value]). Equal values across different modeled actors are a non-obvious assumption — if intentional, add a cell note explaining why both actors share this assumption." Do not flag where a cell note already explains the equality.
+When a VOI sheet defines parallel parameters for different actors (e.g., GiveWell opportunity cost CE and other philanthropic funders' opportunity cost CE), identify any two structurally parallel cells that hold identical values for actors with plausibly different cost-effectiveness thresholds. Flag as **Low/Assumption**: "Row [X] assumes [actor 1]'s [parameter] equals [actor 2]'s [parameter] (both = [value]). Equal values across different modeled actors are a non-obvious assumption — if intentional, add a cell note explaining why both actors share this assumption." Do not flag where a cell note already explains the equality.
 
 Coverage declaration: `COVERAGE | formula-check-voi | cross-actor symmetry | [cells checked] | issues found: [N] | status: complete`
 
@@ -83,7 +87,7 @@ Coverage declaration: `COVERAGE | formula-check-voi | VOI_Priors column-scope co
 
 ## Check 5 — Annuity-due vs. annuity-immediate
 
-For every `PV()` formula in all VOI sections, inspect the `type` argument. `type=0` is annuity-immediate (standard). `type=1` is annuity-due, which overstates PV by approximately `(1 + r)`. For every `PV()` formula where `type=1` and no cell note explains why beginning-of-period is appropriate, file as **Medium/Formula** with Researcher judgment needed ✓: "[cell] uses PV() with type=1 (annuity-due), which applies payments at the start of each period and overstates present value by ~(1+r) relative to the standard annuity-immediate (type=0). Add a note if beginning-of-period timing is intentional; otherwise change type to 0."
+For every `PV()` formula in all VOI sections, inspect the `type` argument. `type=0` is annuity-immediate (standard). `type=1` is annuity-due, which overstates PV by approximately `(1 + r)`. For every `PV()` formula where `type=1` and no cell note explains why beginning-of-period is appropriate, file as **Medium/Formula**: "[cell] uses PV() with type=1 (annuity-due), which applies payments at the start of each period and overstates present value by ~(1+r) relative to the standard annuity-immediate (type=0). Add a note if beginning-of-period timing is intentional; otherwise change type to 0."
 
 Coverage declaration: `COVERAGE | formula-check-voi | annuity-due check | [PV() formulas checked] | issues found: [N] | status: complete`
 
@@ -95,7 +99,7 @@ Locate the row that assigns probability weights to CE-bar scenarios — typicall
 
 Sum the values. If the sum deviates from 1.0 by more than 1%, flag as **High/Formula**: "[weight row ref] scenario weights sum to [X]% rather than 100%. The final weighted-average CE (typically `=SUMPRODUCT(CE_row, weight_row)`) will be scaled to [X]% of the correct value — verify that all scenario columns are included and weights were updated when scenarios were added or removed."
 
-Also check: if any scenario column in the weight row has a value of 0%, flag as **Low/Legibility**: "Scenario column [ref] has a weight of 0% — its CE calculations do not contribute to the weighted average. Remove the column if inactive, or set the weight to its intended value."
+Also check: if any scenario column in the weight row has a value of 0%, flag as **Low Assumption**: "Scenario column [ref] has a weight of 0% — its CE calculations do not contribute to the weighted average. Remove the column if inactive, or set the weight to its intended value."
 
 Coverage declaration: `COVERAGE | formula-check-voi | scenario weight sum | [row ref] | sum: [X%] | issues found: [N] | status: complete`
 
@@ -109,7 +113,7 @@ For each of these rows (locate by label: "best guess on CE," "cost-effectiveness
 
 1. Read the cell formula in FORMULA mode.
 2. If the formula is a plain hardcoded number: note as hardcoded in your coverage declaration; skip steps 3–5.
-3. If the formula contains a cross-sheet reference (e.g., `='Main CEA'!B48`): extract the referenced cell and read its row label using `read_sheet_values` (FORMATTED_VALUE, column A of the referenced row).
+3. If the formula contains a cross-sheet reference (e.g., `='Main CEA'!B48`): extract the referenced cell and read its row label using `read_sheet_values` (FORMATTED_VALUE, column A of the referenced row). Reading the referenced cell in an out-of-scope sheet (e.g., Main CEA) is permitted for formula-tracing purposes — you may call `read_sheet_values` on a specific cell in any sheet when following a cross-sheet formula reference. This is a targeted trace read, not a full sheet audit.
 4. Verify the row label contains "final," "after adjustments," "post-adjustment," or equivalent phrasing indicating this is the terminal CE output.
 5a. If the label contains "before adjustments," "unadjusted," "initial," or similar — or if the referenced row visually precedes the adjustments section — flag as **High/Formula**: "[VOI cell ref] references [source cell] (label: '[label]') — this appears to be a pre-adjustment CE value. The VOI benefit calculation should reference the final post-adjustment CE output."
 5b. If the label is ambiguous (neither clearly final nor clearly pre-adjustment), flag as **Medium/Formula** with Researcher judgment needed ✓: "[VOI cell ref] references [source cell] (label: '[label]') — confirm this is the final post-adjustment CE, not a pre-adjustment subtotal."
@@ -126,9 +130,9 @@ The GiveWell VOI guidance (Section 2.1.8) establishes explicit rules of thumb vi
 
 1. If the value is **0% or positive**: flag as **High/Parameter**: "P(wrong) = [value] — the GiveWell VOI guidance requires a negative downward adjustment for all studies (Table 2 floor: −10% even for a very precise trial). A value of 0% or higher eliminates the wrong-risk penalty entirely. Set to at least −10% and add a cell note if a deviation from the table is intentional."
 
-2. If the value is between **−1% and −9%** (exclusive): flag as **Medium/Parameter** with Researcher judgment needed ✓: "P(wrong) = [value], which is smaller in magnitude than the guidance minimum of −10% (the floor for a very precise, strongly significant trial, t≈3). Values less negative than −10% are not supported by the documented rules-of-thumb — add a cell note if this deviation is intentional."
+2. If the value is between **−1% and −9%** (exclusive): flag as **Medium/Parameter**: "P(wrong) = [value], which is smaller in magnitude than the guidance minimum of −10% (the floor for a very precise, strongly significant trial, t≈3). Values less negative than −10% are not supported by the documented rules-of-thumb — set to at least −10% and add a cell note if this deviation is intentional."
 
-Even when a cell note explains the deviation, if the deviation was not pre-declared in session context, file as Medium/H with Researcher judgment needed ✓ rather than suppressing the finding entirely. Do not flag if the researcher's Step 0.5 notes (i.e., session context) declare this as an intentional deviation.
+Even when a cell note explains the deviation, if the deviation was not pre-declared in session context, file as Medium with Researcher judgment needed ✓ rather than suppressing the finding entirely. Do not flag if the researcher's Step 0.5 notes (i.e., session context) declare this as an intentional deviation.
 
 Coverage declaration: `COVERAGE | formula-check-voi | P(wrong) floor | [cell ref] | value: [X%] | issues found: [N] | status: complete`
 
@@ -138,11 +142,11 @@ Coverage declaration: `COVERAGE | formula-check-voi | P(wrong) floor | [cell ref
 
 Locate the "CE of reallocated funding" row (row 20 in the standard template; also labeled "best guess CE of reallocated cash," "CE if we fund the program," or equivalent). Locate the "cost-effectiveness of counterfactual opportunity" / funding bar row (row 9 in the standard template). Read both values in FORMATTED_VALUE mode.
 
-The GiveWell VOI guidance (Section 2.1.6) states the conservative default is "1–2x above the given funding bar" (e.g., 7–8× for a 6× bar). If CE of reallocated funding ≤ funding bar, expected reallocated CE is no better than the counterfactual — the optionality value is directionally reversed and the BOTEC output is misleading. If CE of reallocated funding is >3x above the bar without documentation, it is materially outside the conservative default and should be explained.
+The GiveWell VOI guidance (Section 2.1.6) states the conservative default is "1–2x above the given funding bar" (e.g., 7–8× for a 6× bar). If CE of reallocated funding ≤ funding bar, expected reallocated CE is no better than the counterfactual — the optionality value is directionally reversed and the BOTEC output is misleading. If CE of reallocated funding is more than 2× above the bar without documentation, it is materially outside the conservative default and should be explained.
 
 1. If **CE of reallocated funding ≤ funding bar**: flag as **High/Parameter**: "CE of reallocated funding ([value]) is at or below the funding bar ([bar value]). The GiveWell VOI guidance (Section 2.1.6) requires this parameter to be above the bar — at or below the bar means expected reallocated CE is no better than the counterfactual, reversing the direction of optionality value. Set this to at least [bar + 1] (guidance conservative default: bar + 1 to bar + 2)."
 
-2. If **CE of reallocated funding > funding bar × 3** (i.e., more than 3× the bar, which is the outer edge of the key-parameters.md guidance of 1–2× above the bar): flag as **Low/Parameter** with Researcher judgment needed ✓: "CE of reallocated funding ([value]) exceeds 3× the funding bar ([bar value]). The GiveWell VOI guidance conservative default is 1–2x above bar — a larger premium is non-standard and should be documented. Add a cell note if this assumption is intentional."
+2. If **CE of reallocated funding > funding bar + 2** (i.e., more than 2× above the bar, the outer edge of the key-parameters.md guidance range of 1–2× above the bar): flag as **Medium** Assumption with Researcher judgment needed ✓: "CE of reallocated funding ([value]) is more than 2× above the funding bar ([bar value]). The GiveWell VOI guidance conservative default is 1–2× above bar — a larger premium is non-standard and should be documented. Add a cell note if this assumption is intentional."
 
 Do not flag either case if a cell note documents the assumption or if it appears in the researcher's Step 0.5 declared deviations.
 
@@ -168,7 +172,7 @@ Coverage declaration: `COVERAGE | formula-check-voi | SUMPRODUCT range alignment
 
 ## Mandatory check log
 
-Before filing any findings, write the check log to your **reasoning output only** (not to the staging sheet — the log is for your reference during this run). For each item write `ran: [brief result or cell range]` or `n/a: [one-word reason]`:
+Before filing any findings, write the check log as plain text in your response before filing any findings to the staging sheet — it must be visible in the agent's response for coverage auditing during this run. For each item write `ran: [brief result or cell range]` or `n/a: [one-word reason]`:
 
 ```
 formula-check-voi check log:
@@ -192,9 +196,11 @@ formula-check-voi check log:
 
 Before writing any finding, confirm: (1) exact cell reference(s), (2) specific formula or value issue, (3) precise fix.
 
+When column E is Formula, begin column F with one of: [Copy-paste] | [Wrong reference] | [Year range] | [Sign error] | [Wrong operator] | [Off-by-one].
+
 **Your staging sheet name is provided in session context** — write all findings to that staging tab starting at row 2. Append findings using `modify_sheet_values`. See `reference/column-reference.md` for full column specifications.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula; plain language; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include exact replacement formula or value) | **H** Estimated CE Impact (write exactly one of these standard phrases: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown) | **I** Researcher judgment needed (✓ only for intent/decision questions) | **J** Status (leave blank)
+Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity (write just 'High', 'Medium', or 'Low' — severity uses two-axis notation: High/D (Defect), Medium/H (Gap), but the /D or /H notation appears only in filing instructions in this document as guidance, not as a literal cell value) | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula; plain language; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include exact replacement formula or value) | **H** Estimated CE Impact (write exactly one of these standard phrases: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown) | **I** Researcher judgment needed (✓ only for intent/decision questions) | **J** Status (leave blank)
 
 **No row budget**: Write all findings to your staging sheet. There is no row limit.
 
@@ -207,7 +213,7 @@ After all checks are complete (or after the self-detection step if no VOI conten
 Write the row with:
 - Column B: `formula-check-voi`
 - Column D: `AGENT_COMPLETE`
-- Column F: If VOI content was found: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] VOI rows across [sheet name(s)]. Staging sheet: [stg-voi-A or stg-voi-B]. Filed [K] findings in rows 2–[K+1].` If no VOI content found: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | No VOI content found across vetted sheets. Checks skipped. Staging sheet: [stg-voi-A or stg-voi-B].`
+- Column F: If VOI content was found: `COVERAGE_ROWS: [row ranges scanned] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]. (Checked [N] rows across [sheet name(s)].)` If no VOI content found: `COVERAGE_ROWS: [row ranges scanned] | No VOI content found across vetted sheets. Checks skipped. Staging sheet: [name from session context].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure.

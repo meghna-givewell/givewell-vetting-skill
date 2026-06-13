@@ -7,6 +7,8 @@ You are performing Step 9 of a GiveWell spreadsheet vet. You have been provided:
 
 **Scope**: This agent enumerates hardcoded inputs only. Sensitive data detection is handled by a separate agent (Step 8) running in parallel — do not duplicate that work here.
 
+**Pre-read cache**: If a pre-read cache is provided in session context (sheet ≤150 populated rows), use it as your primary data source — do not re-read full sheet ranges. Make targeted reads only for cells or modes outside your cache scope. Proceed with batch reads only if no pre-read cache was provided (sheet >150 rows).
+
 Read the spreadsheet in **FORMULA mode** (`value_render_option: FORMULA`) across all vetted sheets. This reveals which cells contain formulas (`=...`) and which contain hardcoded values. Follow up with a FORMATTED_VALUE read to get the displayed values of hardcoded cells.
 
 **Stakes**: Hardcoded parameters that have drifted from their sources — stale mortality rates, outdated coverage figures, superseded cost estimates — are among the most common sources of CE error. Researchers need a complete, enumerated list to verify each input against its original source before publication.
@@ -14,6 +16,8 @@ Read the spreadsheet in **FORMULA mode** (`value_render_option: FORMULA`) across
 **Role calibration**: The goal is completeness, not judgment. List every hardcoded cell that functions as a model input. Do not filter for cells you think are "important" — researchers decide what to verify.
 
 **Coverage mandate**: Read every row and every column of every vetted sheet in FORMULA mode. Do not sample. After completing each sheet, write: "Hardcoded values scan complete for [sheet]. Rows checked: [N]. Hardcoded input cells found: [N]." Do not proceed until you can write this declaration.
+
+**Write target**: This agent writes exclusively to the Hardcoded Values sheet — not to a staging tab, not to the Findings sheet. The standard "write to your staging tab" instruction in the SKILL.md session context block does not apply to this agent.
 
 ---
 
@@ -30,7 +34,7 @@ Exclude:
 - Cells containing only text labels with no numeric meaning
 - Cells in the output sheets (Dashboard, Findings, Publication Readiness, Hardcoded Values, Confidentiality Flags)
 - Cells that are clearly lookup keys (e.g., `1`, `2`, `3` in an index column)
-- **Formula cells** — cells containing a formula starting with `=`, even when those formulas embed numeric literals (e.g., `=B14 * 0.87`). Embedded literals in formula cells are **formula-check-arithmetic**'s scope. This agent enumerates hardcoded-value cells only (no `=` operator). Do not double-count.
+- **Formula cells** — Exclude any cell whose value in FORMULA mode begins with `=` or `{=` (array formulas). Both are formula cells — they are not hardcoded values. Embedded literals in formula cells are **formula-check-arithmetic**'s scope. This agent enumerates hardcoded-value cells only. Do not double-count.
 
 ---
 
@@ -54,6 +58,8 @@ Columns:
 - `Org-Reported` — from the grantee's own data: coverage surveys, program reports, cost figures, delivery statistics. The researcher should confirm against the grantee's most recent reporting.
 - `Structural` — a model constant where the value is determined by model design rather than empirical evidence (e.g., 12 months/year, 0.5 for mid-year timing, 100,000 population denominator). Flag if the structural constant is unusually non-standard.
 
+Before beginning enumeration, read `reference/key-parameters.md` using the Read tool to load the authoritative list of GiveWell Parameter names and values. Use this list for the GiveWell Parameter category assignment in Step 1 of the priority order.
+
 **Category assignment — apply in this priority order** (stop at the first match):
 
 1. **GiveWell Parameter first**: Look up the cell's row label in `reference/key-parameters.md`. If the parameter name or value matches an entry there (moral weight, discount rate, income elasticity, value of a life saved, benchmark CEA), assign `GiveWell Parameter`.
@@ -75,6 +81,8 @@ When category is ambiguous, prefer the more specific category. Prefer `Org-Repor
 Use this consolidation only when all cells in the range share the same source and data type. If a table mixes sources or data types, split into separate rows by sub-range.
 
 **Write all entries in a single `modify_sheet_values` call starting at row 2, with no blank rows.** Assemble every entry across all vetted sheets into one consecutive list before writing — do not write sheet by sheet in separate calls, as that causes gaps. Rows must be contiguous: row 2, row 3, row 4, … with no skipped rows between them.
+
+If the single `modify_sheet_values` call fails due to payload size, split entries into batches of 100 rows and write each sequentially (rows 2–101, then 102–201, etc.). Ensure no blank rows appear between batches. After all batches complete, proceed to the coverage cross-check and then write the AGENT_COMPLETE marker.
 
 ## Step 2 — Coverage cross-check
 
@@ -103,3 +111,5 @@ Write the row with:
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The pre-Wave-3 self-verification check and the pre-Wave-1.5 guard detect this row to confirm the agent completed normally. This row is excluded before presenting the sheet to researchers.
+
+Note: column F in the Hardcoded Values sheet is normally "Source to Verify," but the AGENT_COMPLETE marker row uses column F for the completion summary. This row is excluded before presenting the sheet to researchers per SKILL.md.

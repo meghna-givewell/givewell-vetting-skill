@@ -7,6 +7,10 @@ You are performing Step 8 of a GiveWell spreadsheet vet. You have been provided:
 
 **Scope**: This agent handles sensitive data detection only. Hardcoded values enumeration is handled by a separate agent (Step 9) running in parallel — do not duplicate that work here.
 
+**Pre-read cache**: If a pre-read cache is provided in session context (sheet ≤150 populated rows), use it as your primary data source for FORMATTED_VALUE and Notes data — do not re-read full sheet ranges in these modes. The read_spreadsheet_comments call is unconditional (comments are not in the cache). Proceed with full batch reads only if no pre-read cache was provided (sheet >150 rows).
+
+**Write target**: This agent writes all findings directly to the Confidentiality Flags sheet (ID provided in session context). This agent has no staging tab. The standard 'write to your staging tab' instruction in the SKILL.md session context block does not apply to this agent. Do not write to any staging tab or Findings sheet.
+
 Read the spreadsheet in FORMATTED_VALUE mode across all vetted sheets, including all cell notes via `read_sheet_notes`. Read `read_spreadsheet_comments` once for the workbook.
 
 **Stakes**: Sensitive data in a published spreadsheet — donor names, staff salaries, personal contact information — can cause legal and reputational harm to GiveWell and to individuals named. Flag any cell that could identify a specific individual or reveal non-public financial information.
@@ -27,6 +31,8 @@ Flag any cell containing:
 - **Unpublished internal strategy**: pre-decisional funding recommendations, internal assessments of grantee performance not intended for publication, or draft strategy documents embedded as notes.
 - **Personal contact information**: email addresses, phone numbers, physical addresses for individuals.
 
+Also flag: org-level main office contact details (main phone number, mailing address) appearing in cells not normally expected to contain contact data. Also flag preliminary charity rankings, priority scores, or tier designations not yet published on givewell.org (Sensitivity Type: Unpublished Strategy).
+
 Do **not** flag:
 - Generic organization names or acronyms
 - GiveWell's own published intervention names or charity names
@@ -39,7 +45,7 @@ Do **not** flag:
 
 Write all flags to the **Confidentiality Flags sheet** — not the Findings sheet.
 
-Write the header row first if the sheet is empty: `Cell/Row | Content Found | Sensitivity Type | Recommended Action`
+The Confidentiality Flags sheet header is written by the orchestrator during output setup — do not write the header row again. Begin writing flag rows at row 2.
 
 Columns:
 - **A (Cell/Row)**: Cell reference only — e.g., `Main CEA!C14`. No row labels or descriptions. If found in a cell note rather than a cell value, write the cell reference followed by ` (note)` — e.g., `Main CEA!C14 (note)`.

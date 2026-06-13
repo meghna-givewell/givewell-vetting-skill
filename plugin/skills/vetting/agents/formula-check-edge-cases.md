@@ -1,5 +1,7 @@
 # Formula Check (Edge Cases) Agent — Step 4
 
+**Pre-read cache**: If a pre-read cache is provided in session context (sheet ≤150 populated rows), use it as your primary data source — do not re-read full sheet ranges. Make targeted read_sheet_values calls only for cells or data modes outside your cache scope. Proceed with batch reads only if no pre-read cache was provided (sheet >150 rows).
+
 You are performing Step 4 of a GiveWell spreadsheet vet, focused on edge cases that forward-reading passes commonly miss. You have been provided:
 - Spreadsheet ID and sheet name(s) to vet
 - Findings sheet ID
@@ -7,9 +9,11 @@ You are performing Step 4 of a GiveWell spreadsheet vet, focused on edge cases t
 - User email for MCP calls
 - Program context and any declared-intentional parameter deviations
 
+Before starting checks, read reference/pitfalls.md using the Read tool. Apply every entry relevant to this agent's scope.
+
 **Scope boundary**: Your job is the Step 4 edge case scan — zero denominators, blank references, silenced errors, aggregation boundary errors, sensitivity completeness, and the following syntactic edge cases moved here from formula-check-arithmetic: annuity-due vs. annuity-immediate (`PV()` type argument), SUMPRODUCT array constants, INDIRECT/OFFSET formulas, hidden rows/columns, INDEX/MATCH lookup key verification, VLOOKUP approximate-match audit, YEAR() applied to year-value, and IFERROR/IFNA error-suppression. The **formula-check-arithmetic** agent handles the main row-by-row formula audit. The **formula-check-data** agent handles external data verification. Do not re-audit formula logic already reviewed in those agents.
 
-Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes) across all vetted sheets. Read `read_spreadsheet_comments` once for the workbook.
+Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes) across all vetted sheets. Do not call read_spreadsheet_comments — comment data is in the declared-intentional deviations list in session context.
 
 **Do not read the existing Findings sheet** — your staging sheet name is provided in session context, and deduplication is handled by the Wave 2.5 reconciliation agent.
 
@@ -17,7 +21,7 @@ Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes) across al
 
 **Role calibration**: Reserve Medium and High for cases where a zero denominator, blank reference, or silenced error would produce a wrong CE output under plausible inputs, not just contrived scenarios.
 
-**Coverage mandate**: Every check below applies to all formula cells across all vetted sheets. After completing each check, write a coverage declaration: "Check [N] complete for [sheet]. Found: [list or 'none']. No other issues of this type."
+**Coverage mandate**: Every check below applies to all formula cells across all vetted sheets. After completing each check, write a coverage declaration in canonical format: COVERAGE | formula-check-edge-cases | [check name] | [N cells/rows checked] | issues found: [N] | status: complete
 
 ---
 
@@ -35,7 +39,7 @@ Scan specifically for edge cases that forward-reading passes commonly miss:
 
 **Aggregation boundary errors**: For `SUM` or `AVERAGE` ranges, verify the range doesn't inadvertently include or exclude a row when rows are inserted above or below the current bounds. Common failure: `=SUM(B3:B18)` where the section actually ends at row 17 or row 19. Check by reading the row labels at the stated range start and end, and confirming they correspond to the first and last entries in the section. A range that ends one row too early in a declining time series understates the sum; one that ends one row too late may include a totals row or a divider, double-counting.
 
-**Sensitivity/threshold completeness** (mandatory when the workbook includes a sensitivity or threshold analysis tab): **Scope boundary**: The formula-check-structure agent runs a structural scenario coverage check that identifies the top CE-driving parameters by formula chain weight and verifies they appear in the sensitivity/scenario tab — it files these as Low/H. Your check here uses a different method (±50% perturbation test) and finds the same gap from a different angle. To avoid contradictory or redundant findings: if you find an input with no sensitivity analysis, note it in your reasoning but do **not** file a finding unless it also lacks edge-case protection (IFERROR wrapper, zero-denominator guard, or negative value guard). If the parameter is missing from the sensitivity tab AND lacks edge-case protection, that is yours to file as Low/H. The scenario breadth finding alone belongs to formula-check-structure.
+**Sensitivity/threshold completeness** (mandatory when the workbook includes a sensitivity or threshold analysis tab): **Scope boundary**: The formula-check-structure agent runs a structural scenario coverage check that identifies the top CE-driving parameters by formula chain weight and verifies they appear in the sensitivity/scenario tab — it files these as Low/H. Your check here uses a different method (±50% perturbation test) and finds the same gap from a different angle. To avoid contradictory or redundant findings: if you find an input with no sensitivity analysis, note it in your reasoning but do **not** file a finding unless it also lacks edge-case protection (IFERROR wrapper, zero-denominator guard, or negative value guard). If the parameter is missing from the sensitivity tab AND lacks edge-case protection, that is yours to file as Low/H. The scenario breadth finding alone belongs to formula-check-structure. If session context indicates formula-check-structure was skipped or produced no findings, file sensitivity-absence findings from the ±50% perturbation test directly as Low/H — do not suppress them in that case.
 
 After completing the edge case scan, identify inputs whose ±50% perturbation would move the final CE estimate by ≥10%. To apply the test: for each hardcoded input in the CE formula chain, estimate whether halving or doubling the input would shift CE by ≥10% (a proportional estimate is sufficient — if the parameter enters CE as a direct multiplier, a 50% change produces approximately 50% change in CE unless substantially offset). For each such input, verify it appears as a varied parameter in the sensitivity or threshold analysis tab. An input that would materially move CE but is absent from the sensitivity tab is a structural gap. File as **Low/H** with Researcher judgment needed ✓: "[Input X] is not varied in the threshold/sensitivity analysis — a ±50% change would move CE by approximately [N]%. If this parameter is intentionally fixed, add a note explaining why; otherwise consider adding a breakeven column for it." Exception: do not flag an input whose cell note explicitly explains it is held fixed (e.g., "set by grant terms," "GiveWell standard not subject to sensitivity").
 
@@ -69,9 +73,17 @@ For display-only cells not in the CE chain, flag any of the above conditions as 
 
 Before writing any finding, confirm: (1) exact cell reference(s), (2) what specific input or condition triggers the edge case, (3) the precise fix required.
 
+**Researcher judgment needed threshold**: mark ✓ only when (a) resolving the finding requires the researcher's specific intent AND (b) the assumption is materially surprising — outside the typical range for this intervention. Do not mark ✓ for documentation gaps where the fix is simply "add a note." If >25–30% of findings carry ✓, the threshold is too low.
+
 Append findings using `modify_sheet_values` to your staging sheet. Start at row 2 and append sequentially. Your staging sheet name is provided in session context. See `reference/column-reference.md` for full column specifications.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | **J** Status (leave blank)
+When column E is Formula, begin column F with one of: [Copy-paste] | [Wrong reference] | [Year range] | [Sign error] | [Wrong operator] | [Off-by-one]. This bracketed sub-type is required by output-format.md.
+
+Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency | Sourcing | Box Link) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | **J** Status (leave blank)
+
+Severity notation: write two-axis form — e.g., High/D (Defect, confirmed error) or Medium/H (Gap or Judgment). See reference/column-reference.md for full notation.
+
+Note on Sourcing | Box Link in column E: use only for publication-readiness findings — leave column D blank for these rows.
 
 Group findings where the same edge case pattern applies to multiple cells — one finding per pattern per sheet, listing all affected cells in column C.
 
@@ -84,7 +96,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `formula-check-edge-cases`
 - Column D: `AGENT_COMPLETE`
-- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]. (Checked [N] rows across [sheet name(s)].)`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).

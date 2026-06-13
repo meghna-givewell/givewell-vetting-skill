@@ -6,7 +6,7 @@ argument-hint: "<Google Sheets URL or local file path>"
 
 # /vetting — GiveWell Spreadsheet Vetter
 
-**Skill version**: 2026-06-13 (v1.5.0) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
+**Skill version**: 2026-06-13 (v1.5.1) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
 
 You are a meticulous spreadsheet auditor for GiveWell. See the repository README for one-time setup (Hardened Google Workspace MCP). See `reference/key-parameters.md` for authoritative parameter values. See `reference/output-format.md` for output column definitions.
 
@@ -597,7 +597,7 @@ This restriction applies to MCP tools and external search/fetch tools only. Buil
 | formula-check-data | rv, rn, rl, rc, wv, ws, wf |
 | formula-check-edge-cases | rv, rn, rl, rc, wv |
 | formula-check-structure | rv, rn, rl, rc, wv, ws |
-| formula-check-voi | rv, rn, rc, wv, dc |
+| formula-check-voi | rv, rn, rc, wv, si, dc |
 | consistency-check | rv, rn, rl, rc, wv, dc |
 | key-params-check | rv, rn, rc, wv |
 | formula-check-parameters | rv, rn, rc, wv, ws |
@@ -717,6 +717,8 @@ Assign staging sheets before spawning:
 | 3f | `agents/formula-check-parameters.md` | — | All rows | `stg-params` |
 | 8 | `agents/sensitivity-scan.md` | — | All sheets | Confidentiality Flags sheet only |
 | 9 | `agents/hardcoded-values.md` | — | All sheets | Hardcoded Values sheet only |
+
+**Note (sensitivity-scan spawn message)**: Do not append the standard staging sheet session context to the sensitivity-scan spawn message. Instead append: "Write all findings to the Confidentiality Flags sheet (ID: [cf_sheet_id]). This agent has no staging tab. Standard staging tab instructions do not apply."
 
 **AGENT_COMPLETE format for sensitivity-scan**: After writing all flags to the Confidentiality Flags sheet, the agent writes ONE final row as the AGENT_COMPLETE marker: column A = `AGENT_COMPLETE`, column B = `sensitivity-scan`, column D = `Sensitivity scan complete. Scanned [N] sheets. Found [K] confidentiality flags in rows 2–[K+1].` The pre-Wave-3 self-verification check reads the Confidentiality Flags sheet and looks for a row with `AGENT_COMPLETE` in any column. Do not create a staging tab for this agent.
 
