@@ -64,4 +64,6 @@ After all flags are written (or if no flags were found), write ONE final row to 
 - Column C: (blank)
 - Column D: `Sensitivity scan complete. Scanned [N] sheets. Found [K] confidentiality flags in rows 2–[K+1].`
 
+(Note: column D in the Confidentiality Flags sheet is labeled "Recommended Action" for finding rows; the AGENT_COMPLETE marker row reuses this column for the completion summary. This row should be removed or noted as non-finding before sharing the sheet with stakeholders.)
+
 Use a single `modify_sheet_values` call. **Do not write to any staging sheet** — sensitivity-scan has no staging tab. The pre-Wave-3 self-verification check reads the Confidentiality Flags sheet directly for this marker. The compaction agent does not read the Confidentiality Flags sheet — it is excluded from the staging tab list.

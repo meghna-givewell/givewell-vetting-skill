@@ -138,7 +138,9 @@ To check: scan the Findings sheet for at least one finding in the relevant error
 
 **Do not file** a gap finding when: (a) the relevant agent's AGENT_COMPLETE row is present and its completion message confirms the check ran; (b) program context contains a declared-intentional deviation that would make the check not applicable; or (c) the workbook has no source data tabs (geography consistency check does not apply).
 
-Coverage declaration: "Category coverage check complete. Categories confirmed covered: [N/5]. Gaps filed: [list of categories or 'none']."
+**key-params-check coverage log**: Read the AGENT_COMPLETE row(s) from stg-kp-A and stg-kp-B. In each row's column F, look for a coverage count like 'N of M applicable parameters checked.' If N < M and the unchecked parameters are not explained, file a gap-fill finding: Low/H, Researcher judgment needed ✓: 'key-params-check coverage log shows [N] of [M] parameters checked — confirm remaining [M-N] parameters were intentionally excluded (e.g., not applicable to this model type) or re-run the agent.'
+
+Coverage declaration: "Category coverage check complete. Categories confirmed covered: [N/5]. Gaps filed: [list of categories or 'none']. key-params-check coverage log: [N of M — complete / incomplete / staging tab not found]."
 
 ---
 

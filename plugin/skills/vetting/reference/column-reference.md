@@ -1,6 +1,8 @@
 # Column Reference — GiveWell Vetting Output
 
-This is the canonical column specification for the four output sheets: Findings, Publication Readiness, Hardcoded Values, and Confidentiality Flags. All agents reference this file rather than repeating the column list inline.
+This is the canonical column specification for the Findings and Publication Readiness output sheets. All agents reference this file rather than repeating the column list inline.
+
+For Hardcoded Values (A–H) and Confidentiality Flags (A–D) column layouts, see reference/output-format.md.
 
 ---
 

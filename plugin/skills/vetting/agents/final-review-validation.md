@@ -20,7 +20,7 @@ You are performing Step 10c of a GiveWell spreadsheet vet. This step runs after 
 
 ## Step 1 — Read all findings
 
-Read all rows from row 2 onward on the Findings sheet using batched `read_sheet_values` calls: `A2:J51`, then `A52:J101`, `A102:J151`, continuing in 50-row increments until two consecutive batches return no non-empty rows. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Skip divider rows (column D empty, column B contains `───`). Collect all finding rows.
+Read all rows from row 2 onward on the Findings sheet using batched `read_sheet_values` calls: `A2:J51`, then `A52:J101`, `A102:J151`, continuing in 50-row increments until two consecutive batches return no non-empty rows. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Skip divider rows (column D empty, column B contains `───`). Collect all finding rows. Also read all rows from row 2 onward on the Publication Readiness sheet using the same 50-row batched pattern (A2:F51, A52:F101, etc.). Collect all PR column A values (PR-* IDs) for the ID integrity check. Do not skip this read — the ID uniqueness and sequence checks require both the Findings sheet AND Publication Readiness sheet IDs.
 
 ---
 
@@ -136,7 +136,7 @@ If this pass surfaces genuinely new findings not already covered, add them to th
 
 Before writing any new finding, confirm: (1) exact cell reference(s), (2) specific issue, (3) precise fix required.
 
-Assign the next sequential Finding ID continuing from where compaction left off (e.g., if last ID was F-015, write F-016).
+Assign the next sequential Finding ID continuing from the highest existing Finding ID in the Findings sheet (which includes IDs assigned by both compaction and gap-fill — read the last F-NNN row to determine the current maximum before assigning any new IDs).
 
 **Findings sheet** (A–J): A=Finding # | B=Sheet | C=Cell/Row | D=Severity | E=Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | F=Explanation | G=Recommended Fix | H=Estimated CE Impact (use exactly one of: Raises CE — [estimate], Lowers CE — [estimate], Raises CE — magnitude unknown, Lowers CE — magnitude unknown, No CE impact, Direction unknown) | I=Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | J=Status (leave blank)
 

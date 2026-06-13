@@ -53,7 +53,9 @@ If session context does not set an `is_ta_botec` flag or identify a counterfactu
 - **IGME (UN child mortality)**: expected current vintage is UNICEF IGME 2024 (released March 2025). If the cited vintage is IGME 2022 or earlier, flag as **Medium/H** (Parameter). If the cited vintage is IGME 2023, flag as **Low/H** with Researcher judgment needed ✓ asking whether the researcher has checked IGME 2024. Recommended fix: "Update to UNICEF IGME 2024 estimates and recheck the mortality rate used in the model." Write "Direction unknown" in column H.
 - **No vintage year cited at all**: flag as Low/O (Readability) as above; do not proceed to the staleness check until the year is identified.
 
-This explicit extraction step is required because the general GBD vintage check above can fail to fire when the vintage year is embedded in a URL rather than the note text, or when the citation is on a different tab from the hardcoded value. Do not rely on a single scan — check the notes column, the source column, any linked GBD vizhub URLs (which often embed the year in the query string), and any cell-level comments. Note: this check is in addition to, not a replacement for, the GBD vizhub value-verification performed by the formula-check-data agent (Check 2).
+This explicit extraction step is required because the general GBD vintage check above can fail to fire when the vintage year is embedded in a URL rather than the note text, or when the citation is on a different tab from the hardcoded value. Do not rely on a single scan — check the notes column, the source column, any linked GBD vizhub URLs (which often embed the year in the query string), and any cell-level comments. Note: this check is in addition to, not a replacement for, the GBD vizhub value-verification performed by the formula-check-arithmetic agent (Check 2).
+
+Before filing the GBD vintage staleness finding, read the GBD vintage cell in FORMULA mode and trace one to two hops toward the CE output. If the cell feeds the CE output within two formula hops (confirmed in FORMULA mode), file as High/D per pitfalls.md SC-008. If the chain cannot be confirmed in FORMULA mode within this check, file as Medium/H as before.
 
 **Indirect deaths multiplier cap**: When a model applies the standard GiveWell indirect deaths multiplier for malaria (×1.75 of direct malaria deaths — i.e., adding 75% more indirect deaths on top of direct), verify that total malaria-attributable mortality does not exceed 100% of all-cause mortality in the target age group. In high-direct-burden geographies where malaria directly accounts for >57% of under-5 deaths (e.g., Lagos, Chad, South Sudan), a blanket 75% indirect multiplier would produce implausible results (>100% of deaths from malaria). In these cases, the indirect deaths multiplier should be scaled down — for example, GiveWell used ~40% for Lagos (where direct share was ~50–55%), resulting in ~75% total malaria attribution. Flag as High/D if the model applies the standard 75% add-on in a geography where this would exceed 100% total attribution.
 
@@ -152,7 +154,50 @@ Heads-up epi-B check log — Model Structure & Timing Checks + adversarial Secti
   disease burden multi-source — adversarial pass [___]
   GBD/IGME vintage staleness — adversarial pass [___]
   counterfactual coverage floor — adversarial pass [___]
-  source footnote check — adversarial challenge to any Section A filed findings (verify downgrade rationale) [___]
+  GBD vintage findings filed; deduplication with formula-check-arithmetic handled by Wave 2.5 reconciliation [___]
+```
+
+**heads-up-epi-C log** (TA burden tab, Section A only):
+```
+Heads-up epi-C check log — Epidemiological Parameter Checks (TA burden tab):
+  source footnote check [___]
+  disease burden multi-source [___]
+  indirect deaths multiplier cap [___]
+  GBD vintage year extracted + staleness check [___]
+  IGME vintage year extracted + staleness check [___]
+  GBD intervention adjustment note present [___]
+  sub-national burden estimates [___]
+  IHME age range adjustment [___]
+  counterfactual coverage floor [___]
+  program-reported vs. independent coverage [___]
+  population denominator accuracy [___]
+  screening program new vs. repeat tester prevalence [___]
+  selection into programs [___]
+  program interaction / overlap [___]
+  multi-program substitution [___]
+```
+
+**heads-up-epi-D log** (TA burden tab, Section B primary + adversarial Section A pass):
+```
+Heads-up epi-D check log — Model Structure & Timing Checks + adversarial Section A pass (TA burden tab):
+  pre/post-adjustment UoV [___]
+  double-counting [___]
+  adjustment combination method [___]
+  probability-chain enumeration [___]
+  cross-tab time-parameter sourcing [___]
+  full-scale-up assumption (undocumented 100%) [___]
+  cost denominator scope [___]
+  benefit/cost allocation for leverage [___]
+  Global Fund funging calculation [___]
+  cost estimate inflation adjustment [___]
+  VOI wait-time plausibility [___]
+  VOI P(trial/study fails) [___]
+  TA program duration [___]
+  TA benefit horizon — AVERAGE range endpoint [___]
+  ceiling analysis — impossible outputs [___]
+  disease burden multi-source — adversarial pass [___]
+  GBD/IGME vintage staleness — adversarial pass [___]
+  counterfactual coverage floor — adversarial pass [___]
   GBD vintage findings filed; deduplication with formula-check-arithmetic handled by Wave 2.5 reconciliation [___]
 ```
 
@@ -180,7 +225,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `heads-up-epi`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Check log complete: [N] of [M] applicable checks — any unfilled [___] entries mean that check was not completed. Scope: [A / B]. Section run: [A — Epidemiological Parameter Checks / B — Model Structure & Timing Checks]. Checks run: [comma-separated list]. Checks skipped per scope: [comma-separated list with reason]. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
+- Column F: `Check log complete: [N] of [M] applicable checks — any unfilled [___] entries mean that check was not completed. Scope: [A / B / C (TA burden tab, Section A) / D (TA burden tab, Section B)]. Section run: [A — Epidemiological Parameter Checks / B — Model Structure & Timing Checks]. Checks run: [comma-separated list]. Checks skipped per scope: [comma-separated list with reason]. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
 - All other columns: blank
 
 **Do not write AGENT_COMPLETE if the check log contains any unfilled `[___]` entry** — complete all applicable checks first, or mark inapplicable ones with `n/a — [reason]`.

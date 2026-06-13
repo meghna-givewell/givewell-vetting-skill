@@ -72,7 +72,7 @@ Rules:
 
 ---
 
-## Step 10d — Delete Findings_backup tab
+## Cleanup — Delete Findings_backup tab
 
 After Step 3 is written to chat, clean up the `Findings_backup` tab created by the compaction agent:
 

@@ -17,7 +17,7 @@ You are performing Step 7c of a GiveWell spreadsheet vet. You have been provided
 
 ## Step 1 — Read the spreadsheet
 
-Read all vetted sheets in a parallel batch: FORMATTED_VALUE mode and FORMULA mode. Also read sheet notes (`read_sheet_notes`). Also call `read_spreadsheet_comments` once for the full workbook (this is the call that H2 depends on — do not defer it). Identify the Notes column (typically column F) for each sheet — confirm the column letter before beginning the scan. If the Notes column is not column F, note which column it is.
+Read notes with `read_sheet_notes` (full sheet range in one call). Also call `read_spreadsheet_comments` once for the full workbook (this is the call that H2 depends on — do not defer it). Immediately after the `read_spreadsheet_comments` call completes, record in your reasoning: "Unresolved threads found: [N] at [cell refs list]." This checkpoint preserves the H2 (unresolved comment) check data if context compaction occurs before Step 3. For specific cell values needed during checks, make targeted `read_sheet_values` calls in FORMATTED_VALUE mode only — do not re-read the full sheet in FORMATTED_VALUE and FORMULA modes (the SKILL.md cache scoping table shows notes-scan receives only Notes in its cache; FORMULA data is not pre-cached for this agent). Identify the Notes column (typically column F) for each sheet — confirm the column letter before beginning the scan. If the Notes column is not column F, note which column it is.
 
 ---
 

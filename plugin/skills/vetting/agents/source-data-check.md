@@ -31,7 +31,7 @@ For each source tab:
 
 1. Read the header row (row 1) using `read_sheet_values` to understand column structure. Identify: (a) which column holds the geographic identifier (country, region, state name or ISO code — typically column A, B, or C), and (b) which columns hold data values.
 
-2. Scan the geographic identifier column in batches of 50 rows to locate rows matching in-scope geographies. Read column A only for the scan (`A1:A50`, then `A51:A100`, `A101:A150`, etc.) — do not read full rows until you have located the target geography. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Stop scanning after 5,000 rows if the geography is not found; note it and move to the next tab.
+2. Scan the geographic identifier column in batches of 50 rows to locate rows matching in-scope geographies. Read column A only for the scan using non-overlapping ranges: `A1:A50`, `A51:A100`, `A101:A150`, etc. (not `A1:A50`, `A50:A100`, which would double-count row 50) — do not read full rows until you have located the target geography. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Stop scanning after 5,000 rows if the geography is not found; note it and move to the next tab. If more than 100 batch calls are needed (i.e., the tab appears to exceed 5,000 rows), stop scanning and note "Tab too large to scan exhaustively — stopped at row [N]" in the coverage declaration.
 
 3. Once the target geography row(s) are located, read the full row including all data columns using a targeted `read_sheet_values` call.
 
@@ -118,7 +118,7 @@ Coverage declaration: "Geography/country consistency check complete. Source tabs
 
 After completing all six checks on all in-scope rows across all source tabs, write in your reasoning:
 
-> Source data check complete. Tabs checked: [list]. In-scope geographies located: [list]. Tabs where geographies not found in first 5,000 rows: [list or "none"]. Check A (co-vaccine ordering) issues: [list of cells or "none"]. Check B (adjacent transposition) issues: [list or "none"]. Check C (year-over-year >30pp) issues: [list or "none"]. Check D (sub-national aggregation) issues: [list of cells or "none"]. Check E (cross-tab data vintage) issues: [list or "none"]. Check F (geography/country consistency) issues: [list of cells or "none"].
+> Source data check complete. Tabs checked: [list]. In-scope geographies located: [list]. Tabs where geographies not found in first 5,000 rows: [list or "none"]. Check A (co-vaccine ordering) issues: [list of cells or "none"]. Check B (adjacent transposition) issues: [list or "none"]. Check C (year-over-year >30pp) issues: [list or "none"]. Check D (sub-national aggregation) issues: [list of cells or "none"]. Check E (cross-tab vintage consistency) issues: [list or none]. Check F (geography/country consistency) issues: [list or none]. Check E (cross-tab data vintage) issues: [list or "none"]. Check F (geography/country consistency) issues: [list of cells or "none"].
 
 Do not proceed to Writing Findings until this declaration is complete.
 

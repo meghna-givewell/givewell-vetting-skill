@@ -7,7 +7,7 @@ You are performing Step 3v of a GiveWell spreadsheet vet, focused exclusively on
 - Program context and any declared-intentional parameter deviations
 - Staging sheet: write findings to your dedicated staging tab (name provided in session context)
 
-**Self-detect before running any checks**: Read all vetted sheets in FORMULA mode and FORMATTED_VALUE mode. Scan for VOI content — indicators: a tab named "VOI," "Optionality," "Value of Information," or containing "VOI_"; OR a section within any sheet containing rows labeled "probability of," "P(scenario)," "VOI_Priors," "CE from optionality," "annuity," or "scenario probability." If no VOI content is found across any sheet after reading all tabs, write your completion marker and stop. Do not file findings.
+**Self-detect before running any checks**: Read all vetted sheets in FORMULA mode and FORMATTED_VALUE mode. Scan for VOI content — indicators: a tab named "VOI," "Optionality," "Value of Information," or containing "VOI_"; OR a section within any sheet containing rows labeled "probability of," "P(scenario)," "VOI_Priors," "CE from optionality," "annuity," or "scenario probability." Note: 'annuity' alone in a row label is not sufficient to trigger VOI detection — it must appear alongside at least one probability or scenario row label in the same tab section (e.g., 'p(trial succeeds)', 'Scenario 1', 'p(we influence funders)'). If no VOI content is found across any sheet after reading all tabs, write your completion marker and stop. Do not file findings.
 
 **Scope**: This agent covers VOI-specific formula checks only — ad hoc adjustment scope, probability row column-reference consistency, cross-actor symmetry, VOI_Priors cross-formula scope, and annuity-due flags. The main `formula-check-arithmetic` agent handles all other formula patterns. Do not re-run general formula checks here.
 
@@ -21,7 +21,7 @@ You are performing Step 3v of a GiveWell spreadsheet vet, focused exclusively on
 
 ## Check 0 — VOI structural comparison vs. Optionality/VoI BOTEC Template
 
-Before running formula checks, load the Optionality/VoI BOTEC Template (doc #3, spreadsheet ID `1wYsQZGsavXJQFSGF6Ea1k-p55C6dMbLPHhb0LKgNDZc`) using `read_sheet_values` (FORMATTED_VALUE mode, `A1:A100`). Extract all non-empty row labels from column A.
+Before running formula checks, first call `get_spreadsheet_info` on the Optionality/VoI BOTEC Template (doc #3, spreadsheet ID `1wYsQZGsavXJQFSGF6Ea1k-p55C6dMbLPHhb0LKgNDZc`) to identify the tab name containing the canonical row structure, then read that specific tab by name using `read_sheet_values` (FORMATTED_VALUE mode, `A1:A100`). Do not read the spreadsheet without specifying a sheet name — the first tab may not be the structural reference tab. Extract all non-empty row labels from column A.
 
 Compare against the target VOI model's row labels (already read during self-detection). Check for three deviation types:
 
@@ -128,7 +128,7 @@ The GiveWell VOI guidance (Section 2.1.8) establishes explicit rules of thumb vi
 
 2. If the value is between **−1% and −9%** (exclusive): flag as **Medium/Parameter** with Researcher judgment needed ✓: "P(wrong) = [value], which is smaller in magnitude than the guidance minimum of −10% (the floor for a very precise, strongly significant trial, t≈3). Values less negative than −10% are not supported by the documented rules-of-thumb — add a cell note if this deviation is intentional."
 
-Do not flag if a cell note documents why a less-negative value is appropriate, or if the researcher's Step 0.5 notes declare this as an intentional deviation.
+Even when a cell note explains the deviation, if the deviation was not pre-declared in session context, file as Medium/H with Researcher judgment needed ✓ rather than suppressing the finding entirely. Do not flag if the researcher's Step 0.5 notes (i.e., session context) declare this as an intentional deviation.
 
 Coverage declaration: `COVERAGE | formula-check-voi | P(wrong) floor | [cell ref] | value: [X%] | issues found: [N] | status: complete`
 
@@ -142,7 +142,7 @@ The GiveWell VOI guidance (Section 2.1.6) states the conservative default is "1�
 
 1. If **CE of reallocated funding ≤ funding bar**: flag as **High/Parameter**: "CE of reallocated funding ([value]) is at or below the funding bar ([bar value]). The GiveWell VOI guidance (Section 2.1.6) requires this parameter to be above the bar — at or below the bar means expected reallocated CE is no better than the counterfactual, reversing the direction of optionality value. Set this to at least [bar + 1] (guidance conservative default: bar + 1 to bar + 2)."
 
-2. If **CE of reallocated funding > funding bar + 3**: flag as **Low/Parameter** with Researcher judgment needed ✓: "CE of reallocated funding ([value]) is more than 3x above the funding bar ([bar value]). The GiveWell VOI guidance conservative default is 1–2x above bar — a larger premium is non-standard and should be documented. Add a cell note if this assumption is intentional."
+2. If **CE of reallocated funding > funding bar × 3** (i.e., more than 3× the bar, which is the outer edge of the key-parameters.md guidance of 1–2× above the bar): flag as **Low/Parameter** with Researcher judgment needed ✓: "CE of reallocated funding ([value]) exceeds 3× the funding bar ([bar value]). The GiveWell VOI guidance conservative default is 1–2x above bar — a larger premium is non-standard and should be documented. Add a cell note if this assumption is intentional."
 
 Do not flag either case if a cell note documents the assumption or if it appears in the researcher's Step 0.5 declared deviations.
 

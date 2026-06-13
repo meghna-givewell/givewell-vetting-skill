@@ -87,7 +87,7 @@ Then make one of three determinations:
 
 **Retain** (default): The finding is valid, or you cannot confirm it is invalid.
 - If the finding is already on the sheet (from the A instance): leave the Explanation unchanged.
-- If the finding is not yet on the sheet (B-only and A wrote nothing): add it as a new row on the correct sheet (Findings for model-integrity findings; Publication Readiness for publication-readiness findings). Write all columns; do not add any meta-commentary to the Explanation.
+- If the finding is not yet on the sheet (B-only and A wrote nothing): add it as a new row to your reconcile staging sheet (stg-rec-{pair}) using modify_sheet_values. Do not write to the Findings or Publication Readiness sheets directly. Write all columns; do not add any meta-commentary to the Explanation.
 - **When in doubt, retain. The cost of a false positive is one minute of researcher review. The cost of a false Won't Fix is a missed error in a published CEA.**
 
 **Before classifying any finding as Won't Fix**: Write in your reasoning the strongest single argument for why the **cell might be correct** — i.e., why the filing agent's finding might be wrong. Frame it as: "The cell value/formula could be right because [specific reason it is valid as written]." Only after articulating that argument, test it against the cell data you have read. If the cell-correct argument holds up — the formula or value is actually valid — proceed to Won't Fix. If the cell-correct argument fails — the formula or value is actually wrong as the filing agent claimed — use Retain. Skipping this step defeats the purpose of independent review — a Won't Fix reached without genuinely testing whether the cell is correct is a motivated dismissal, not a reasoned conclusion.
@@ -152,8 +152,6 @@ Net new findings added to reconcile staging sheet [stg-rec-pair]: [N]
 Use `modify_sheet_values` to append net-new findings discovered during reconciliation investigation (i.e., findings not written by either A or B instance) to the **reconcile staging sheet** specified in your session context (`stg-rec-{pair}`). Write starting at row 2 and append sequentially. The final-review compaction step reads all staging sheets including reconcile staging sheets. Write each finding with the following columns: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | **J** Status (leave blank)
 See `reference/output-format.md` for full column definitions.
 
-**Publication Readiness column layout differs**: When routing a finding to Publication Readiness (not Findings), use the 6-column A–F layout. Write exactly 6 values per row — no more. Do not include Severity, Status, Changes CE?, Estimated CE Impact, or Researcher judgment needed. Writing a 7th column will corrupt the sheet layout. A=Finding # (blank) | B=Sheet | C=Cell/Row | D=Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Sourcing | Box Link | Legibility) | E=Explanation | F=Recommended Fix.
-
 Before writing any new finding, confirm: (1) exact cell reference, (2) specific issue, (3) precise fix required.
 
 ---
@@ -165,7 +163,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `reconcile`
 - Column D: `AGENT_COMPLETE`
-- Column F: `COVERAGE_ROWS: [pair assignment, e.g., sources-A vs sources-B] | Compared [N] rows from [stg-agent-A] and [N] rows from [stg-agent-B]. Net-new findings filed: [K]. WONT_FIX decisions: [M]. Staging sheet: [stg-rec-pair from session context].`
+- Column F: `COVERAGE_ROWS: [pair assignment, e.g., sources-A vs sources-B] | Compared [N] rows from [stg-agent-A] and [N] rows from [stg-agent-B]. Net-new findings filed: [K]. WONT_FIX decisions: [M]. Staging sheet: [stg-rec-pair from session context].` This field serves as a human-readable coverage record for the reconcile agent and researcher — it is not programmatically parsed.
 - All other columns: blank
 
 Use a single `modify_sheet_values` call.

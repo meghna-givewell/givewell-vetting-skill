@@ -11,7 +11,7 @@ You are performing Step 3d of a GiveWell spreadsheet vet, focused on external da
 
 **Scope distinction — formula-check-data vs. source-data-check**: formula-check-data handles "this cell's hardcoded value or row reference points to the wrong row within the source tab" (e.g., the cell note cites GBD 2021 but the formula references the GBD 2019 row). source-data-check handles "the source tab itself has data only through 2019 when a 2021 vintage is available" (i.e., the entire source tab is stale). Both checks are required; neither is a subset of the other — do not skip this check assuming source-data-check covers it.
 
-Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes) across all vetted sheets. Focus on hardcoded cells with source citations. Read `read_spreadsheet_comments` once for the workbook.
+Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes) across all vetted sheets. Focus on hardcoded cells with source citations. Read `read_spreadsheet_comments` once for the workbook. Read in 50-row batches — call read_sheet_values using ranges A1:ZZ50, A51:ZZ100, A101:ZZ150 (continuing in 50-row increments until a batch returns no non-empty rows), once in FORMATTED_VALUE mode and once in FORMULA mode. **The MCP tool returns at most 50 rows per call — a single large range silently drops rows beyond row 50.**
 
 **Do not read the existing Findings sheet** — your staging sheet name is provided in session context, and deduplication is handled by the Wave 2.5 reconciliation agent.
 

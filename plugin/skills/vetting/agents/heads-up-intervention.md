@@ -55,7 +55,7 @@ Before running any intervention-specific checks, determine which intervention(s)
 
 ## Intervention-Specific Plausibility Calibration
 
-### Section A — Intervention-Specific Checks *(heads-up-intervention-A only)*
+### Section A — Intervention-Specific Checks *(heads-up-intervention-A primary; heads-up-intervention-B adversarial pass for non-TA grants — see Instance scope section)*
 
 **Bidirectional magnitude check — applies to all checks below**: For every adjustment or parameter labeled "Guess," "estimate," or "assumption" with no external source, check the magnitude in *both directions* — not only whether it is implausibly high (too optimistic) but also whether it is implausibly low (too conservative). A conservative-looking value is not automatically correct: an understated downward adjustment means CE is overstated, but an overstated downward adjustment means CE is understated and the program may appear less cost-effective than it is. Both directions affect funding allocation.
 
@@ -214,9 +214,10 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `heads-up-intervention`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Routing decision: [A — non-TA / B — TA] based on: [signal, e.g., 'session context is_ta_botec flag set' or 'workbook title contains TA' or 'non-TA: no TA signals found in Step 0']. Check log complete: [N] of [M] applicable checks — any unfilled [___] entries mean that check was not completed. Scope: [A / B]. Section run: [A — Intervention-Specific Checks / B — TA Grant Checks or non-TA fast exit]. Checks run: [comma-separated list]. Checks skipped per scope: [comma-separated list with reason]. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
+- **For A instances**, Column F: `Section run: A — Intervention-Specific Checks (TA routing deferred to B instance). Check log complete: [N] of [M] applicable checks — any unfilled [___] entries mean that check was not completed. Scope: A. Checks run: [comma-separated list]. Checks skipped per scope: [comma-separated list with reason]. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
+- **For B instances**, Column F: `Routing decision: [B — TA / A — non-TA] based on: [signal, e.g., 'session context is_ta_botec flag set' or 'workbook title contains TA' or 'non-TA: no TA signals found in Step 0']. Check log complete: [N] of [M] applicable checks — any unfilled [___] entries mean that check was not completed. Scope: B. Section run: [B — TA Grant Checks / adversarial non-TA Section A pass]. Checks run: [comma-separated list]. Checks skipped per scope: [comma-separated list with reason]. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
 
-**The `Routing decision:` field must be the first element in column F** — it is machine-read by the TA misclassification cross-check in Wave 2.5. Do not reorder this field.
+**Note**: The A instance does not write a `Routing decision:` field — only B does. The TA cross-check in Wave 2.5 reads only `stg-int-B`. **The `Routing decision:` field must be the first element in the B instance's column F** — it is machine-read by the TA misclassification cross-check in Wave 2.5. Do not reorder this field.
 - All other columns: blank
 
 **Do not write AGENT_COMPLETE if the check log contains any unfilled `[___]` entry** — an unfilled entry means the check was not run, not that no issues were found. Complete all applicable checks first.

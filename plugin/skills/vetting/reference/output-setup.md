@@ -34,15 +34,15 @@ Immediately after writing headers, before the formatting batch, write a single b
 
 Fire all formatting in a single parallel batch immediately after writing headers:
 
-- `add_conditional_formatting`: Severity D3:D2000 on Findings — High → `#FFB3B3`, Medium → `#FFE5B3`, Low → `#B3D9B3`
-- `add_conditional_formatting`: Researcher judgment needed I3:I2000 on Findings — if value = `✓`, background → `#FFFF99`
-- `add_conditional_formatting`: Status J3:J2000 on Findings — `Fixed` → `#B3D9B3`, `Won't Fix` → `#E0E0E0`
+- `add_conditional_formatting`: Severity D2:D2000 on Findings — High → `#FFB3B3`, Medium → `#FFE5B3`, Low → `#B3D9B3`
+- `add_conditional_formatting`: Researcher judgment needed I2:I2000 on Findings — if value = `✓`, background → `#FFFF99`
+- `add_conditional_formatting`: Status J2:J2000 on Findings — `Fixed` → `#B3D9B3`, `Won't Fix` → `#E0E0E0`
 - `add_conditional_formatting`: Section dividers A2:J2000 on Findings — CUSTOM_FORMULA `=ISNUMBER(SEARCH("───",$B2))`, background `#D9D9D9`
 - `format_sheet_range`: header row 1 on Findings (A1:J1) — dark blue `#1F4E79`, white text, bold; freeze row 1 and columns A–C
 - `format_sheet_range`: header row 1 on Publication Readiness (A1:F1) — dark blue `#1F4E79`, white text, bold; freeze row 1 and columns A–C
 - `format_sheet_range`: header row 1 on Hardcoded Values (A1:H1) — dark blue `#1F4E79`, white text, bold
 - `add_conditional_formatting`: Category C2:C1000 on Hardcoded Values — `GiveWell Parameter` → `#D9E1F2`, `Study-Derived` → `#E2EFDA`, `Org-Reported` → `#FFF2CC`, `Structural` → `#EDEDED`
-- `add_conditional_formatting`: Dashboard B24:D24 — `High` → `#FFB3B3`, `Medium` → `#FFE5B3`, `Low` → `#B3D9B3`
+- `add_conditional_formatting`: Dashboard B24:D60 — `High` → `#FFB3B3`, `Medium` → `#FFE5B3`, `Low` → `#B3D9B3`
 - `format_sheet_range`: header row 1 on CE Baseline (A1:B1) — dark blue `#1F4E79`, white text, bold
 - `format_sheet_range`: header row 1 on Confidentiality Flags (A1:D1) — dark blue `#1F4E79`, white text, bold
 - `format_sheet_range`: column widths on Findings — A=80, B=120, C=120, D=100, E=140, F=290, G=400, H=150, I=100, J=120

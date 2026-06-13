@@ -6,7 +6,7 @@ argument-hint: "<Google Sheets URL or local file path>"
 
 # /vetting — GiveWell Spreadsheet Vetter
 
-**Skill version**: 2026-06-13 (v1.4.3) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
+**Skill version**: 2026-06-13 (v1.5.0) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
 
 You are a meticulous spreadsheet auditor for GiveWell. See the repository README for one-time setup (Hardened Google Workspace MCP). See `reference/key-parameters.md` for authoritative parameter values. See `reference/output-format.md` for output column definitions.
 
@@ -37,7 +37,7 @@ git -C ~/.claude/skills/vetting rev-list HEAD..origin/main --count 2>/dev/null
 - **Count = N (N > 0)**: print `⚠️ SKILL OUT OF DATE — [N] commit(s) available on origin/main that are not in your local copy. Run \`git pull --rebase origin main\` in \`~/.claude/skills/vetting\` and restart before proceeding. To skip the update and proceed with this version anyway, type SKIP (this will be noted in the Vetting Summary).` Then **stop and wait**.
 - **Either command fails** (network error, no remote configured, directory not found): fall through to the date fallback below.
 
-If the researcher types `SKIP`: proceed and add to the Vetting Summary doc: `⚠️ Skill freshness: researcher skipped a [N]-commit update on [today's date]. Vetting ran on version [VERSION_DATE].`
+If the researcher types `SKIP`: proceed and announce in chat: `⚠️ Skill freshness: researcher skipped a [N]-commit update on [today's date]. Vetting ran on version [VERSION_DATE].`
 
 ### Fallback — date (if git check fails)
 
@@ -49,7 +49,7 @@ Read the skill version date from this file's header (`**Skill version**: YYYY-MM
 | 61–90 | Print: `⚠️ SKILL MAY BE OUT OF DATE (git check unavailable) — last updated [VERSION_DATE] ([N] days ago). Confirm you are running the current version before proceeding. Continuing automatically.` |
 | > 90 | Print: `🛑 SKILL BLOCKED (git check unavailable) — last updated [VERSION_DATE] ([N] days ago). Type CONFIRM to override and proceed with this version.` Then **stop and wait**. |
 
-If the researcher types `CONFIRM` after a block: proceed and add to the Vetting Summary doc: `⚠️ Skill freshness: git check unavailable; researcher confirmed version [VERSION_DATE] ([N] days old) on [today's date].`
+If the researcher types `CONFIRM` after a block: proceed and announce in chat: `⚠️ Skill freshness: git check unavailable; researcher confirmed version [VERSION_DATE] ([N] days old) on [today's date].`
 
 **When to update the version date**: Bump the `**Skill version**:` date at the top of this file whenever any agent file, SKILL.md, or `reference/` file changes. This keeps the date fallback calibrated.
 
@@ -104,14 +104,14 @@ Load each document only when the step that requires it begins.
 
 ### Google Sheets link
 1. Extract the spreadsheet ID from the URL (long string between `/d/` and `/edit` or `/view`)
-2. Use `get_spreadsheet_info` to list all sheet names. In a **single message**, ask: (a) which sheets to vet, (b) the two Step 0.5 program context questions (see Step 0.5 below), (c) "Is this headed toward publication or external review, or is it internal/early-stage?", and (d) "Should I run source citation verification for Study-Derived and Org-Reported hardcoded inputs? This pre-fills the Verified? and Auto-check evidence columns in the Hardcoded Values sheet using the Anthropic Citations API — each value gets a matched/contradicted/could-not-verify verdict plus the verbatim sentence from the source. GiveWell parameter consistency is always checked regardless. [Yes / No]" Combining all four into one ask means the user responds once and reads + literature searches can fire in parallel immediately after. Present only sheet names — do not display grid dimensions (rows × cols), as these reflect allocated space, not actual data, and will mislead the user about sheet size.
+2. Use `get_spreadsheet_info` to list all sheet names. In a **single message**, ask: (a) which sheets to vet, (b) the three Step 0.5 program context questions (see Step 0.5 below), (c) "Is this headed toward publication or external review, or is it internal/early-stage?", and (d) "Should I run source citation verification for Study-Derived and Org-Reported hardcoded inputs? This pre-fills the Verified? and Auto-check evidence columns in the Hardcoded Values sheet using the Anthropic Citations API — each value gets a matched/contradicted/could-not-verify verdict plus the verbatim sentence from the source. GiveWell parameter consistency is always checked regardless. [Yes / No]" Combining all four into one ask means the user responds once and reads + literature searches can fire in parallel immediately after. Present only sheet names — do not display grid dimensions (rows × cols), as these reflect allocated space, not actual data, and will mislead the user about sheet size.
 
 **"All sheets" definition**: If the researcher answers "vet all sheets" or "everything," include all tabs returned by `get_spreadsheet_info` **except**: (a) tabs whose names begin with `-->` (section dividers), (b) tabs named with a single character or symbol only (formatting artifacts). For any tab that is hidden or protected, note it explicitly: "I see a hidden/protected tab named [X] — do you want me to include it?" Do not silently exclude any named data tab.
 
 > **Publication / external review** (default): Full checks — formula errors, assumptions, sources, readability, and citations.
 >
 > **Internal / early-stage**: Formula and assumption checks only. Sources, readability, and citation checks are skipped.
-3. **Fire all reads and literature searches in a single parallel batch** — once the user answers: simultaneously fire `read_sheet_values` (FORMATTED_VALUE and FORMULA), `read_sheet_notes`, `read_sheet_hyperlinks`, and `read_spreadsheet_comments` (once for the workbook) for each vetted sheet — AND 1–2 literature web searches using the intervention type from the user's Step 0.5 answers. If the user provided a grant document link, include `get_doc_content` on that link in the same parallel batch.
+3. **Fire all reads and literature searches in a single parallel batch** — once the user answers: simultaneously fire `read_sheet_values` (FORMATTED_VALUE and FORMULA), `read_sheet_notes`, `read_sheet_hyperlinks`, and `read_spreadsheet_comments` (once for the workbook) for each vetted sheet — AND up to 4 targeted web searches (per the Intervention-area literature scan section in Step 0.5) using the intervention type from the user's Step 0.5 answers. If the user provided a grant document link, include `get_doc_content` on that link in the same parallel batch.
 
 **Step 3 read verification and pre-read cache**: After the parallel batch completes, verify each sheet's read was complete: (a) the last row index returned in the FORMATTED_VALUE read matches the last row index returned in the FORMULA read (both reads must agree on the final non-empty row — a mismatch indicates a partial read); (b) the last returned row in the FORMULA read is non-empty; (c) no error message was returned by any batch call. Do **not** use `get_spreadsheet_info` grid dimensions for this check — grid size reflects allocated space, not populated rows, and will produce false failures on sparse sheets. Re-read any failed range before proceeding. Once all reads are verified, record each sheet's FORMATTED_VALUE data, FORMULA data, notes, and hyperlinks as the **pre-read cache** for this session. For sheets with ≤ 150 populated rows, pass the pre-read cache to sub-agents — they use it for row-by-row scanning and make targeted `read_sheet_values` calls only for specific cell verification.
 
@@ -125,7 +125,7 @@ Load each document only when the step that requires it begins.
 
 **Restricted sheet scope — lite pass on standard tabs**: Instruct readability agents to lite-pass any standard CEA tab not in scope (Simple CEA, External Validity, Leverage/Funging). Lite pass: (a) section ordering — derived values appear after inputs; (b) column/row labels — no placeholders or stale labels; (c) obvious structural issues only. No cell-level formula audit. File as Low/O. Pass in-scope vs. lite-pass tab lists in session context.
 
-**"Formula/heads-up only" scope boundary**: Activated when the researcher selects "formula/heads-up only" in the upfront question (or otherwise restricts scope to exclude pub readiness). Skip sources, readability, and notes-scan agents. Value-correctness verification (GBD vizhub URLs, study extractions) is a formula-correctness check, not pub-readiness — it stays in formula-check scope. Pass to formula-check agents: "Pub readiness out of scope; value-correctness verification is in scope." Record the scope choice at the top of the Vetting Summary doc.
+**"Formula/heads-up only" scope boundary**: Activated when the researcher selects "formula/heads-up only" in the upfront question (or otherwise restricts scope to exclude pub readiness). Skip sources, readability, and notes-scan agents. Value-correctness verification (GBD vizhub URLs, study extractions) is a formula-correctness check, not pub-readiness — it stays in formula-check scope. Pass to formula-check agents: "Pub readiness out of scope; value-correctness verification is in scope." Record the scope choice in chat when announcing scope confirmation.
 
 **If `get_spreadsheet_info` returns "This operation is not supported"**: The file is an `.xlsx` upload, not a native Google Sheet. Tell the user to either convert via File → Save as Google Sheets and share the new link, or explicitly acknowledge values-only analysis with that limitation noted at the top of the output. Do not proceed until the user responds.
 
@@ -157,7 +157,7 @@ Go to [sheets.new](https://sheets.new) and create a blank spreadsheet. Create ex
 2. `CE Baseline` — enter these values across row 1, one per cell: `Geography/Scenario`, `Cost-Effectiveness`
 3. `Findings` — enter these values across row 1: `Finding #`, `Sheet`, `Cell/Row`, `Severity`, `Error Type/Issue`, `Explanation`, `Recommended Fix`, `Estimated CE Impact`, `Researcher judgment needed`, `Status`
 4. `Publication Readiness` — enter these values across row 1: `Finding #`, `Sheet`, `Cell/Row`, `Error Type/Issue`, `Explanation`, `Recommended Fix`
-5. `Hardcoded Values` — enter these values across row 1: `Sheet`, `Cell`, `Category`, `Current Value`, `Description`, `Source to Verify`, `Verified?`
+5. `Hardcoded Values` — enter these values across row 1: `Sheet`, `Cell`, `Category`, `Current Value`, `Description`, `Source to Verify`, `Verified?`, `Auto-check evidence`
 6. `Confidentiality Flags` — enter these values across row 1: `Cell/Row`, `Content Found`, `Sensitivity Type`, `Recommended Action`
 
 Copy the URL from your browser bar once the sheet is ready.
@@ -230,7 +230,7 @@ Wait for all Wave 1 agents to complete before spawning Wave 1.5. Wait for Wave 1
 After Wave 1 completes and again after Wave 2, parse all agent responses:
 - Lines beginning `FINDING|` → append to findings collection
 - Lines beginning `PUBREADY|` → append to pub readiness collection
-- Lines beginning `HARDCODED|` → append to hardcoded values collection (7 fields: Sheet|Cell|Category|Value|Description|SourceURL — field 6 (SourceURL) is used by Wave 1.5 source-citation-verify for WebFetch verification)
+- Lines beginning `HARDCODED|` → append to hardcoded values collection (7 fields: Sheet|Cell|Category|Value|Description|SourceURL (the 8th field Auto-check evidence is populated by Wave 1.5 HARDCODED_VERIFIED lines, not by the hardcoded-values agent) — field 6 (SourceURL) is used by Wave 1.5 source-citation-verify for WebFetch verification)
 - Lines beginning `CONFLAG|` → append to confidentiality flags collection
 - Check each response for `AGENT_COMPLETE|` — flag any agent missing this marker as a potential silent failure, same as standard mode
 
@@ -265,7 +265,7 @@ After Wave 3, write four local files using the Write tool, using `|` as the colu
 
 - `output/findings.csv` — all final `FINDING|` lines, header: `Finding #|Sheet|Cell/Row|Severity|Error Type/Issue|Explanation|Recommended Fix|Estimated CE Impact|Researcher judgment needed|Status`
 - `output/publication_readiness.csv` — all `PUBREADY|` lines, header: `Finding #|Sheet|Cell/Row|Error Type/Issue|Explanation|Recommended Fix`
-- `output/hardcoded_values.csv` — all `HARDCODED|` lines, header: `Sheet|Cell|Category|Current Value|Description|Source to Verify|Verified?` (the SourceURL field maps to "Source to Verify"; leave the Verified? column blank for researcher follow-up)
+- `output/hardcoded_values.csv` — all `HARDCODED|` lines, header: `Sheet|Cell|Category|Current Value|Description|Source to Verify|Verified?|Auto-check evidence` (the SourceURL field maps to "Source to Verify"; leave the Verified? column blank for researcher follow-up)
 - `output/confidentiality_flags.csv` — all `CONFLAG|` lines, header: `Cell/Row|Content Found|Sensitivity Type|Recommended Action`
 
 **After writing the CSVs**, show the user:
@@ -513,7 +513,7 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 >
 > **Pre-read cache** (sheets ≤ 150 populated rows): Each agent receives a scoped subset — data modes and row range as specified in the **Cache scoping table** below (under "Analysis Steps — Sub-Agents" intro). Use the provided cache as your primary data source for row-by-row scanning. Make targeted `read_sheet_values` calls only for cells or data modes outside your cache scope (e.g., a formula referencing a row outside your assigned range, or a FORMULA-mode read not included in your cache). Do not re-read full sheet ranges. If no pre-read cache is provided, the sheet exceeds 150 populated rows — proceed with your normal batch reads.
 >
-> **Sheet routing**: Write model-integrity findings (formula errors, wrong/stale parameters, undocumented assumptions that affect model outputs or interpretation) to the Findings sheet. Write publication-readiness findings (permission flags, broken links, citation format, terminology, style issues that do not affect model outputs) to the Publication Readiness sheet. When in doubt, use Findings.
+> **Sheet routing**: Sheet routing for compaction (all findings go to your staging tab regardless of routing): model-integrity findings → Findings sheet (compaction routes these); publication-readiness findings → Publication Readiness sheet (compaction routes these). Do not write directly to either output sheet. When in doubt, use Findings routing.
 >
 > **Parameter finding validity**: Never downgrade a parameter finding (benchmark, moral weight, GBD vintage) to false positive or Low on the grounds that the spreadsheet predates the parameter update. key-parameters.md and the current GBD vintage are authoritative at the time of vetting. For GBD vintage findings, you cannot compute CE impact from updated data — write "Lowers CE — magnitude unknown" or "Direction unknown" in column H; do not skip or downgrade the finding because CE impact cannot be quantified.
 >
@@ -523,15 +523,15 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 >
 > **Never mark Researcher judgment needed for**: formula errors with a single unambiguous correct fix (e.g., replacing one cell reference with another — the fix is clear regardless of intent); missing source notes where the value itself is not in dispute; terminology renames; or documentation gaps where the recommended fix is simply "add a note." The test is whether the researcher's answer changes what you recommend — if the fix is identical regardless of their response, Researcher judgment needed is wrong.
 >
-> **Staging sheet — write all findings here**: Your session context specifies your staging sheet name. Write ALL findings to that staging tab using `modify_sheet_values`, prefixing the range with the tab name (e.g., for staging sheet `stg-arith-A`: write to `stg-arith-A!A2:J2`). Write your first finding to row 2, then row 3, and so on — appending sequentially. There is no row budget or overflow limit. Do not write to the Findings sheet or Publication Readiness sheet directly. For publication-readiness findings (Error Type: Sourcing, Box Link, or Legibility): write them to your staging sheet in the same 10-column format, with column D (Severity) left blank — the compaction agent routes them to Publication Readiness based on Error Type. In your AGENT_COMPLETE marker's column F, state: "Staging sheet: [name]. Filed [K] findings in rows 2–[K+1]." The compaction agent (Wave 3) reads all staging sheets and merges findings into the final Findings and Publication Readiness sheets.
+> **Staging sheet — write all findings here**: Your session context specifies your staging sheet name. Write ALL findings to that staging tab using `modify_sheet_values`, prefixing the range with the tab name (e.g., for staging sheet `stg-arith-A`: write to `stg-arith-A!A2:J2`). Write your first finding to row 2, then row 3, and so on — appending sequentially. There is no row budget or overflow limit. Do not write to the Findings sheet or Publication Readiness sheet directly. For publication-readiness findings (Error Type: Sourcing, Box Link, or Legibility): write them to your staging sheet in the same 10-column format, with column D (Severity) left blank — the compaction agent routes them to Publication Readiness based on Error Type. The compaction agent (Wave 3) reads all staging sheets and merges findings into the final Findings and Publication Readiness sheets.
 >
 > **CE impact gate — mandatory before filing Medium or High**: Classify each finding by Nature and Materiality before assigning severity.
 >
 > **Nature**: **Defect** (formula error, confirmed wrong value, GW standard param violation with no note) | **Gap** (required element absent: missing source, missing adjustment) | **Judgment** (defensible choice you'd question)
 >
-> **Materiality — estimate using FORMULA mode before assigning**: Trace the affected cell through the CE formula chain and apply in order — stop at first match: (1) CE impact computable and ≥5% → **Material**; write `Raises CE — [estimate]` or `Lowers CE — [estimate]`. (2) CE impact computable and <5% → **Immaterial**; write `Raises CE — magnitude unknown`, `Lowers CE — magnitude unknown`, or `No CE impact`. (3) Direction clear but magnitude not traceable → **unknown (round up)**; write `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown`. (4) Direction requires researcher input → **unknown (round up)**; write `Direction unknown`. (5) No CE chain connection → **Zero**.
+> **Materiality — estimate using FORMULA mode before assigning**: Trace the affected cell through the CE formula chain and apply in order — stop at first match: (1) CE impact computable and ≥5% → **Material**; write `Raises CE — [estimate]` or `Lowers CE — [estimate]`. (2) CE impact computable and <5% → **Immaterial**; write `Raises CE — [estimate]` or `Lowers CE — [estimate]` (direction and magnitude are both known — do not write 'magnitude unknown' when magnitude is computable). Write `No CE impact` when confirmed zero. (3) Direction clear but magnitude not traceable → **unknown (round up)**; write `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown`. (4) Direction requires researcher input → **unknown (round up)**; write `Direction unknown`. (5) No CE chain connection → **Zero**.
 >
-> **Severity from Nature × Materiality**: High = any Defect/Gap that is Material, Decision-changing, or unknown materiality; any GW standard parameter violation with no note rationale. Medium = Defect + Immaterial or Zero (Defect floor — formula errors never below Medium); Gap + Immaterial. Low = Gap + Zero; Judgment + Immaterial or Zero.
+> **Severity from Nature × Materiality**: High = any Defect/Gap that is Material, Decision-changing, or unknown materiality; any benchmark or moral weight deviation from key-parameters.md with no documented cell note rationale (discount rate deviations are always Medium/H per key-parameters.md, not High). Medium = Defect + Immaterial or Zero (Defect floor — formula errors never below Medium); Gap + Immaterial. Low = Gap + Zero; Judgment + Immaterial or Zero.
 >
 > **Do not file High without at least one of**: (a) CE impact computed ≥5%; (b) GW standard parameter violation with no documented cell note; (c) FORMULA-mode ≥2 hops confirming cell is in direct CE chain (unknown materiality → round-up rule applies). Filing High based on "this looks important" without computation or FORMULA-mode confirmation is the primary source of cross-run severity inconsistency — use Medium.
 >
@@ -587,7 +587,7 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 
 This restriction applies to MCP tools and external search/fetch tools only. Built-in workspace tools (Bash, Read, Write, Edit) are always available and are not restricted by this table. Expand shorthand to full names before passing. All Sheets tools use the prefix `mcp__hardened-workspace__`.
 
-**Legend**: `rv` = `read_sheet_values` · `rn` = `read_sheet_notes` · `rl` = `read_sheet_hyperlinks` · `rc` = `read_spreadsheet_comments` · `wv` = `modify_sheet_values` · `si` = `get_spreadsheet_info` · `dc` = `get_doc_content` · `ws` = `WebSearch` · `wf` = `WebFetch`
+**Legend**: `rv` = `read_sheet_values` · `rn` = `read_sheet_notes` · `rl` = `read_sheet_hyperlinks` · `rc` = `read_spreadsheet_comments` · `wv` = `modify_sheet_values` · `si` = `get_spreadsheet_info` · `dc` = `get_doc_content` · `ws` = `WebSearch` · `wf` = `WebFetch` · `cs` = `create_sheet` · `ds` = `delete_sheet`
 
 **Deferred tool loading for sub-agents**: All hardened-workspace tools (`rn`, `rl`, etc.) are available when the MCP is configured. In some environments they appear as deferred — listed by name but not yet callable. If a tool returns `InputValidationError` on first call, load its schema via `ToolSearch` (e.g., `select:mcp__hardened-workspace__read_sheet_notes,mcp__hardened-workspace__read_sheet_hyperlinks`) and retry. Do not skip or report the tool as unavailable.
 
@@ -609,16 +609,16 @@ This restriction applies to MCP tools and external search/fetch tools only. Buil
 | heads-up-epi | rv, rn, rl, rc, wv, dc, ws, wf |
 | heads-up-intervention | rv, rn, rl, rc, wv, dc, ws, wf |
 | readability | rv, rn, rl, rc, wv, dc |
-| leverage-funging | rv, rn, rc, wv |
+| leverage-funging | rv, rn, rc, wv, dc |
 | ce-chain-trace | rv, rn, rc, wv |
 | ce-chain-trace-ta | rv, rn, rc, wv, dc |
 | leverage-uov-check | rv, rn, rc, wv |
 | notes-scan | rv, rn, rc, wv |
 | reconcile | rv, rn, wv, dc |
-| final-review-compaction | rv, wv, si |
+| final-review-compaction | rv, wv, si, cs |
 | final-review-gap-fill | rv, rn, wv |
-| final-review-validation | rv, wv, si |
-| final-review-dashboard | rv, wv, si |
+| final-review-validation | rv, rn, wv, si |
+| final-review-dashboard | rv, wv, si, ds |
 | source-citation-verify | rv, wv, dc, wf |
 
 ---
@@ -675,7 +675,7 @@ Agents run in four phases (Wave 1, Wave 2, Wave 2.5, Wave 3) with Wave 1.5 as a 
 
    **Pre-read cache per band**: Pass only the cache slice for that band's row range (FORMATTED_VALUE, FORMULA, notes, hyperlinks for rows `band_start`–`band_end`). Do not pass the full-sheet cache to any band instance when `band_count > 1`.
 
-   **Band agent tracking**: After spawning all band-split instances, write all extra band instance entries to the staging sheet log at Dashboard A99 in a single batch call (one row per extra band instance): `[agent name] band [k] [instance letter] | [staging tab name]`. This extends the existing staging sheet log so Wave 3 compaction and gap-fill can identify which staging tab belongs to which agent pair and band. No separate row-allocation log is maintained.
+   **Band agent tracking**: Band instance entries were already written to the staging sheet log at Dashboard A99 during output setup (same batch as the main staging tabs — see the Band-split extra staging tabs section above). Do not write to A99 again here.
 
    **Wave 2.5 — one reconcile agent per band pair per agent type**: Each band pair (A/B, C/D, E/F, G/H) for each affected agent gets its own reconcile agent. Do not cross-reconcile between bands — if the same cell appears in both the A/B reconciled set and the C/D reconciled set, the Wave 3 compaction agent deduplicates it. Pass to each band reconcile agent: `"Band [k] of [band_count]: rows [start]–[end]. Compare only within this band's pair. Do not attempt to read or reconcile findings from other bands."`
 
@@ -704,8 +704,8 @@ Assign staging sheets before spawning:
 | 3d | `agents/formula-check-data.md` | B | All rows | `stg-data-B` |
 | 4 | `agents/formula-check-edge-cases.md` | A | All rows | `stg-edge-A` |
 | 4 | `agents/formula-check-edge-cases.md` | B | All rows | `stg-edge-B` |
-| — | `agents/source-data-check.md` | A | Source tabs only | `stg-srcdt-A` |
-| — | `agents/source-data-check.md` | B | Source tabs only | `stg-srcdt-B` |
+| — | `agents/source-data-check.md` | A | Source tabs only | `stg-srcdt-A` | Skip if no source data tabs (per conditional skips above) |
+| — | `agents/source-data-check.md` | B | Source tabs only | `stg-srcdt-B` | Skip if no source data tabs (per conditional skips above) |
 | 3b | `agents/formula-check-structure.md` | A | All rows | `stg-struct-A` |
 | 3b | `agents/formula-check-structure.md` | B | All rows | `stg-struct-B` |
 | 4b | `agents/consistency-check.md` | A | All rows | `stg-consist-A` |
@@ -751,7 +751,7 @@ Wait for all spawned Wave 1 agents to complete before proceeding.
 
 **Consistency-check always runs — including for BOTECs**: Do not skip the consistency-check agent for simple BOTECs, single-sheet models, or workbooks with no declared deviations. Every model uses moral weights, and moral weight drift is one of the most common silent errors. Pass this note in the consistency-check session context: "For simple BOTECs and non-standard models that lack VOI content: skip the VOI structural completeness check and the cross-cutting CEA parameters check. Always run the moral weights numeric verification regardless of model type."
 
-**Progress — Wave 1 complete**: Before reading the Findings sheet, announce: `[Phase 1/4 done] Wave 1 complete.`
+**Progress — Wave 1 complete**: Announce: `[Phase 1/4 done] Wave 1 complete.`
 
 **Wave 1 exit conditions** — confirm all before proceeding to Wave 1.5 or Wave 2:
 - [ ] All required Wave 1 staging tabs contain an AGENT_COMPLETE marker (confirmed by the silent failure check below).
@@ -759,7 +759,7 @@ Wait for all spawned Wave 1 agents to complete before proceeding.
 - [ ] Confidentiality Flags sheet contains an AGENT_COMPLETE marker row.
 - [ ] Researcher checkpoint completed (presented or skipped if no flagged rows).
 
-**Silent failure check — do this before the researcher checkpoint**: For each Wave 1 agent, read its staging sheet and check whether any non-header, non-AGENT_COMPLETE rows exist. An agent that has no AGENT_COMPLETE row and no finding rows in its staging sheet may have failed silently (auth timeout, context limit, API error) rather than genuinely found no issues. Read each staging tab with `read_sheet_values` on `{staging_tab_name}!A1:J10` to check for the AGENT_COMPLETE marker. Report any empty staging sheet in chat:
+**Silent failure check — do this before the researcher checkpoint**: For each Wave 1 agent, read its staging sheet and check whether any non-header, non-AGENT_COMPLETE rows exist. An agent that has no AGENT_COMPLETE row and no finding rows in its staging sheet may have failed silently (auth timeout, context limit, API error) rather than genuinely found no issues. Read each staging tab with `read_sheet_values` on `{staging_tab_name}!A1:J500` to check for the AGENT_COMPLETE marker. Report any empty staging sheet in chat:
 
 > ⚠️ Silent failure warning: [agent name] staging sheet `[staging_tab_name]` is empty (no AGENT_COMPLETE marker and no findings). This may indicate agent failure. Consider re-running this agent before proceeding to Wave 2.
 
@@ -831,9 +831,9 @@ Do not use a hardcoded count. Count the rows in the staging tab table that will 
 
 Spawn agents simultaneously after the researcher checkpoint. Each of the eight core analysis agents (sources, heads-up-evidence, heads-up-epi, heads-up-intervention, readability, leverage-funging, ce-chain-trace, leverage-uov-check) runs as two independent instances (A and B) with separate context windows and no knowledge of each other. notes-scan now also runs as two independent instances (A and B) — both write to their dedicated staging sheets (stg-nscn-A and stg-nscn-B); the compaction agent routes their findings to Publication Readiness based on Error Type and deduplicates overlapping findings in its standard PR dedup pass. sensitivity-scan and hardcoded-values have moved to Wave 1 and do not run here.
 
-**Leverage-uov-check skip condition**: Before spawning, check the tab list from `get_spreadsheet_info` for a Leverage/Funging tab (names containing `Leverage`, `Funging`, or `L/F`). If no such tab exists, skip leverage-uov-check A and B. Announce: `⏭️ leverage-uov-check A and B: skipped — no Leverage/Funging tab found.` Their pre-allocated row ranges remain reserved but unused. leverage-funging A and B still run — they check leverage treatment in the Main CEA regardless of tab structure.
+**Leverage-uov-check skip condition**: Before spawning, check whether any leverage activity exists: (a) does a dedicated Leverage/Funging tab exist (names containing Leverage, Funging, or L/F)? OR (b) is there a leverage/funging section in the Main CEA tab (leverage-funging A or B filed leverage-related findings)? Skip leverage-uov-check only when both (a) and (b) are false. Announce: `⏭️ leverage-uov-check A and B: skipped — no Leverage/Funging tab found.` Their pre-allocated row ranges remain reserved but unused. leverage-funging A and B still run — they check leverage treatment in the Main CEA regardless of tab structure.
 
-**If formula/heads-up only scope was selected**: skip sources-A, sources-B, readability-A, readability-B, and `agents/notes-scan.md` entirely — spawn 14 agents instead of 19. Their pre-allocated row ranges remain reserved but unused. Notes are still *read* in the initial batch (step 3) and remain available to all formula-check and heads-up agents as formula context — only the pub-readiness audit of notes documentation (missing "Calculation." entries, source annotations, style) is skipped. Pass to all spawned agents: "Pub readiness out of scope; value-correctness verification (GBD vizhub URLs, study extractions) is in scope." Also pass to all Wave 2 heads-up agents (heads-up-evidence, heads-up-epi, heads-up-intervention): "Pub readiness out of scope for this vet. Do not route any finding to Publication Readiness — route all issues including source quality and notation concerns to the Findings sheet as Parameter or Assumption findings." Wave 1.5 follows the standard skip conditions (see Wave 1.5 section) — the skip decision is based solely on whether the researcher declined at startup and whether verifiable rows exist, not on scope mode.
+**If formula/heads-up only scope was selected**: skip sources-A, sources-B, readability-A, readability-B, and `agents/notes-scan.md` entirely — spawn 14 agents instead of 20. Their pre-allocated row ranges remain reserved but unused. Notes are still *read* in the initial batch (step 3) and remain available to all formula-check and heads-up agents as formula context — only the pub-readiness audit of notes documentation (missing "Calculation." entries, source annotations, style) is skipped. Pass to all spawned agents: "Pub readiness out of scope; value-correctness verification (GBD vizhub URLs, study extractions) is in scope." Also pass to all Wave 2 heads-up agents (heads-up-evidence, heads-up-epi, heads-up-intervention): "Pub readiness out of scope for this vet. Do not route any finding to Publication Readiness — route all issues including source quality and notation concerns to the Findings sheet as Parameter or Assumption findings." Wave 1.5 follows the standard skip conditions (see Wave 1.5 section) — the skip decision is based solely on whether the researcher declined at startup and whether verifiable rows exist, not on scope mode.
 
 Each Wave 2 agent has a pre-created staging tab (created before Wave 1 during output setup). No row-range calculation is needed. Assign staging sheets from the table below:
 
@@ -883,8 +883,6 @@ For A instances, pass the standard session context only. The only difference bet
 - [ ] All spawned Wave 2 agents have completed (staging tabs contain AGENT_COMPLETE markers or were pre-approved as legitimate skips).
 - [ ] Wave 2 silent failure check complete — any empty staging tabs flagged.
 
-**Progress — Wave 2 complete**: After all Wave 2 agents finish, announce: `[Phase 2/4 done] Wave 2 complete.`
-
 **Silent failure check — Wave 2 agents (run before spawning Wave 2.5)**: For each Wave 2 staging tab in the table above, read the first 5 rows using `read_sheet_values` on `{tab}!A1:J5` and check for an AGENT_COMPLETE row. An agent whose staging tab contains only the header row and no AGENT_COMPLETE marker may have failed silently. Apply the same per-agent zero-findings thresholds from the Wave 1 thresholds table above:
 
 - For agents where 0-findings is **not** plausible (heads-up-evidence, heads-up-epi, ce-chain-trace), an empty staging tab with no AGENT_COMPLETE is a failure signal regardless.
@@ -907,7 +905,7 @@ Announce before spawning: `[Phase 2/4 done → Phase 3/4] Wave 2 complete — st
 
 **Staging sheet name recovery — do this first if names are not in context**: If the staging sheet names are not available in the current session context (e.g., context was compacted between Wave 2 and Wave 2.5), read Dashboard cells A99 onward of the output spreadsheet to recover the full staging sheet log written during output setup.
 
-**Pre-flight empty pair check**: Before spawning, fire a parallel batch of `read_sheet_values` calls — one per pair — reading the last few rows of each staging-A and staging-B tab to check whether they contain an AGENT_COMPLETE marker or any finding rows. For any pair where **both** staging-A and staging-B tabs contain only the header row (no AGENT_COMPLETE, no findings): skip spawning that reconcile agent and announce: `⏭️ Skipping [pair name] reconcile — both A and B wrote zero findings.` Only skip when both tabs are confirmed empty; if either tab has any non-header row, spawn the reconcile agent as normal. Update the agent count in your announcement accordingly.
+**Pre-flight empty pair check**: Before spawning, fire a parallel batch of `read_sheet_values` calls — one per pair — reading `{tab}!A1:J500` for each staging-A and staging-B tab (AGENT_COMPLETE may be at any row after all findings) to check whether they contain an AGENT_COMPLETE marker or any finding rows. For any pair where **both** staging-A and staging-B tabs contain only the header row (no AGENT_COMPLETE, no findings): skip spawning that reconcile agent and announce: `⏭️ Skipping [pair name] reconcile — both A and B wrote zero findings.` Only skip when both tabs are confirmed empty; if either tab has any non-header row, spawn the reconcile agent as normal. Update the agent count in your announcement accordingly.
 
 Spawn **up to 18 reconciliation agents simultaneously** (17 standard agents, or 18 if a TA BOTEC is present; consistency-check and key-params-check share one combined agent; fewer if empty pairs are skipped), using `agents/reconcile.md`. Each agent receives the standard session context plus its specific pair assignment. Do not tell any reconcile agent about the other pairs being processed.
 
@@ -985,7 +983,7 @@ If either staging tab contains any non-header row, notes-scan is presumed to hav
 
 **Progress announcement** before starting: `[Phase 3/4 done → Phase 4/4] Reconciliation complete — starting final review (4 sequential steps). If this session is interrupted before Wave 3 completes, run /givewell-vetting:vetting-finalize (plugin) or /vetting-finalize (standalone) with the output and source spreadsheet URLs to resume.`
 
-**Self-verification pre-pass — required before spawning any Wave 3 agent**: Before compaction begins, verify that all required agents ran. For each agent in the table below, check that its staging tab contains an AGENT_COMPLETE row. Read each tab with `read_sheet_values` on `{tab}!A1:J100` (use a full range — AGENT_COMPLETE may not be in row 2 if the agent filed many findings) — an AGENT_COMPLETE row (any row with "AGENT_COMPLETE" in **column D**) confirms completion.
+**Self-verification pre-pass — required before spawning any Wave 3 agent**: Before compaction begins, verify that all required agents ran. For each agent in the table below, check that its staging tab contains an AGENT_COMPLETE row. Read each tab with `read_sheet_values` on `{tab}!A1:J100` (use a full range — AGENT_COMPLETE may not be in row 2 if the agent filed many findings) — an AGENT_COMPLETE row confirms completion. For standard staging-tab agents, AGENT_COMPLETE is in **column D**. For hardcoded-values and sensitivity-scan, check for AGENT_COMPLETE in any column — see the table notes at lines ending 'check for AGENT_COMPLETE row in any column' below.
 
 | Required agent | Staging tab | Is 0-findings a plausible clean pass? |
 |---|---|---|

@@ -95,7 +95,7 @@ Every finding has a **Nature** and a **Materiality**. Determine both, then read 
 1. **Defect floor**: A confirmed objective error is never below Medium, even with zero CE impact. An orphaned formula error, a confirmed value mismatch in a non-CE tab — both remain Medium. Errors may become material if inputs change; they also undermine confidence in adjacent calculations.
 2. **Unknown materiality rounds up**: If CE impact cannot be estimated, treat materiality as one tier higher. A Defect or Gap with unknown materiality → High. A Judgment with unknown materiality → Medium. Write `Raises/Lowers CE — magnitude unknown` or `Direction unknown` in column H accordingly.
 3. **Decision-changing always wins**: Any finding that could flip whether the program clears the bar is High regardless of category.
-4. **GW standard parameters always High**: Any deviation from a benchmark, moral weight, or discount rate in `key-parameters.md` with no documented cell note rationale is always High — these parameters are cross-cutting and a miscalibration in one CEA propagates to others.
+4. **GW standard parameters always High**: Any deviation from a benchmark or moral weight in `key-parameters.md` with no documented cell note rationale is always High — these parameters are cross-cutting and a miscalibration in one CEA propagates to others. Discount rate deviations are always Medium/H — key-parameters.md governs parameter-specific severity overrides.
 
 **Nature disambiguation when ambiguous**:
 - Defect vs. Gap: default to Defect — treat as objectively wrong until the researcher confirms the absence was intentional.

@@ -26,7 +26,7 @@ These are the authoritative current values. They must match `reference/key-param
 | Avert death, 6–59 month child (VAS) | 119 UoV | ±5% tolerance |
 | Avert maternal death (MNH/reproductive health) | 125 UoV | ±5% tolerance |
 | Discount rate | 4% | |
-| Income effects — malaria programs | 0.58088% | Values above 0.65% are outside the Acceptable Range (max 0.65%) — flag as Medium/H; values 0.60%–0.65% are within range but were common in pre-Nov 2025 models |
+| Income effects — malaria programs | 0.58088% | See Acceptable Ranges in reference/key-parameters.md for boundary values — do not hardcode boundaries here as they may become stale |
 | Long-term income ratio | 0.3064 | |
 | Years to benefits (benefit horizon) | 10 | Applies to malaria and other mortality-reduction programs; flag values other than 10 |
 
@@ -134,7 +134,7 @@ See `reference/output-format.md` for full column definitions.
 
 ## Final step — write completion marker
 
-**Do not write the AGENT_COMPLETE marker** until the Key-params coverage log above is fully complete — every applicable parameter must have a result entry (not blank or `[___]`). A blank entry means the check was not run, not that the parameter is n/a. If any applicable parameter in the log is blank, complete the check before writing the completion marker. The gap-fill agent verifies the coverage log count in column F of the AGENT_COMPLETE row.
+**Do not write the AGENT_COMPLETE marker** until the Key-params coverage log above is fully complete — every applicable parameter must have a result entry (not blank or `[___]`). A blank entry means the check was not run, not that the parameter is n/a. If any applicable parameter in the log is blank, complete the check before writing the completion marker. The gap-fill agent reads your AGENT_COMPLETE column F and checks that the 'N of M applicable parameters' count is complete — ensure your column F completion summary includes this count clearly.
 
 After all findings are written and all other steps are complete, write ONE final row to your staging sheet immediately after your last finding (or at row 2 if no findings were written). This is the absolute last action you take before finishing.
 

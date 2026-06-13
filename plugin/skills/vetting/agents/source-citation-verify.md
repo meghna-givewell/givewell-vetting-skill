@@ -231,7 +231,7 @@ Read `A2:G500` from the Hardcoded Values sheet (extend range if needed; stop whe
 - Column C is `Structural` (model constants — no external source)
 - Column F is a Google Sheets URL (not accepted as a document block — write `Could not verify — source is a spreadsheet` for these rows)
 - Column F contains plain text without a URL — e.g., `"Smith et al 2023"`, `"GBD estimate"`, `"internal communication"`, `"GiveWell analysis"`, or any value that does not begin with `http` or `https`. These are text citations, not fetchable sources; write `Could not verify — non-URL citation; verify manually` for these rows and skip the fetch step.
-- Column G is already non-empty (e.g., `Matched ✓`, `Contradicted ✗`, `Could not verify`) — row was verified in a prior run; do not overwrite
+- Column G contains exactly one of: `Matched ✓`, `Contradicted ✗`, `Could not verify` — row was verified in a prior run; do not overwrite. Any other non-blank value in column G should be overwritten with the verified verdict — do not treat arbitrary non-blank values as completed verifications.
 
 Eligible rows: category is `Study-Derived` or `Org-Reported` AND column F contains a URL starting with `http` or `https` AND column G is blank.
 
@@ -243,9 +243,7 @@ Group eligible rows by `source_url`. For each unique source URL:
 
 ### 3a — Fetch as plain text
 
-**GBD / IHME sources** — detect before fetching. A row is a GBD/IHME source if column F matches any of:
-- URL containing `vizhub.healthdata.org`, `ghdx.healthdata.org`, `healthdata.org`, or `ihmeuw.org`
-- Text that does not start with `http` but contains `GBD`, `IHME`, or `Global Burden` (a citation, not a URL)
+**GBD / IHME sources** — detect before fetching. A row is a GBD/IHME source if column F contains a URL with `vizhub.healthdata.org`, `ghdx.healthdata.org`, `healthdata.org`, or `ihmeuw.org`.
 
 For these rows write `Could not verify — GBD/IHME interactive source; verify the vizhub query or GHDX download manually` and skip the fetch. Do not attempt WebFetch on vizhub or GHDx URLs — they return JavaScript shell pages with no data content.
 
@@ -286,6 +284,8 @@ python3 /tmp/citation_verify.py /tmp/citation_source.txt < /tmp/citation_params.
 For each row that had a blank column G in Step 2 (either processed or skipped as ineligible): prepare the write as `[verdict, evidence]` or `["", ""]` respectively. **Do not write to any row whose column G was already non-empty in Step 2** — those rows were already verified and must not be overwritten.
 
 Because already-verified rows may be interspersed with new rows, write results **row by row** using individual `modify_sheet_values` calls (one call per eligible row) rather than a single contiguous `G2:H{last_row}` array. A single array write would overwrite already-verified cells in the gaps with blank values.
+
+If a single-row write fails (MCP error), retry once. If retry also fails, record the row number in your reasoning and continue. After all writes, read back column G for all eligible rows in a single `read_sheet_values` call and compare against intended verdicts — any discrepancy indicates a silent write failure. Include failed row numbers in AGENT_COMPLETE column F.
 
 ---
 

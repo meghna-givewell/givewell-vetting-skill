@@ -2,6 +2,7 @@
 
 You are performing Step 3f of a GiveWell spreadsheet vet, focused on parameter value accuracy and data vintage verification. You have been provided:
 - Spreadsheet ID and sheet name(s) to vet
+- Findings sheet ID
 - Staging sheet: write findings to your dedicated staging tab (name provided in session context)
 - User email for MCP calls
 - Program context and any declared-intentional parameter deviations
@@ -47,6 +48,8 @@ A note reading "GBD 2019" in a 2025–2027 grant model is a trigger to check whe
 - **Drift ≥2%**: file as **Medium/H** and include both values in the Explanation: "Cell [ref] cites [year] — current [source] value is [X] vs. model's [Y] ([Z]% difference)."
 - **No updated value found after searching**: file as **Medium/H** with Researcher judgment needed ✓ (**Parameter**): "Cell [ref] note cites [year] data for a key parameter in a [grant period] model — verify the value reflects the most recent available vintage and update the note."
 
+**WebSearch fallback**: If WebSearch returns a source URL but the numeric value cannot be extracted from the search snippet alone, file as Medium/H with Researcher judgment needed ✓ citing the URL found — do not attempt to estimate drift without the actual value. Do not attempt WebFetch (not in permitted tools for this agent).
+
 **GBD/IHME-specific rule**: When the cited source is GBD (Global Burden of Disease) or IHME data and the vintage is ≥2 years before the model's grant period start year, file as **Medium/H** by vintage alone — do not require drift evidence before escalating from Low. Write 'Direction unknown' in column H. GBD data is updated annually and the direction of change for any specific parameter is not predictable without looking it up; the vintage staleness alone is a material parameter quality issue for GBD-derived values. This rule applies regardless of whether a WebSearch finds a current value — if the search finds an updated value and drift ≥2%, include both values; if the search finds no updated value, use the standard no-updated-value phrasing.
 
 **SC-008 escalation — stale GBD vintage in direct CE chain**: When the stale GBD vintage cell is confirmed to be in the direct CE chain (traceable to the final CE output with no intermediate flags or documented overrides), escalate from Medium/H to **High/D**. Confirm CE chain membership by tracing the formula chain from the cell to the CE output; if any link is ambiguous or broken, retain Medium/H.
@@ -88,6 +91,8 @@ When any hardcoded value corresponds to a parameter listed in `reference/key-par
 - **Deviation >5% with no explanatory cell note** → **High/H**: "[Cell] = [value], which deviates [X]% from the key-parameters.md standard of [standard]. Add a note documenting why the deviation is intentional, or update to the standard value."
 - **Deviation >5% with a note explaining the reason** → **Medium/H**: "[Cell] uses [value] (note: [summary]) vs. key-parameters.md standard of [standard]. Confirm the deviation is still appropriate."
 - **Deviation ≤5% with no note** → **Low/H**: "[Cell] = [value] vs. key-parameters.md standard of [standard] — minor deviation; add a note if this is intentional."
+
+**Exception**: benchmark and moral weight deviations (High/D per key-parameters.md bright-line rule) remain High even when a cell note exists explaining the deviation. The note does not override the bright-line rule for benchmark and moral weight parameters. The Medium-with-note downgrade applies only to program-specific parameters (discount rate, years-to-benefits, income effects) where intentional variation is explicitly documented.
 
 This rule applies regardless of whether the deviation is directionally conservative. A conservative deviation still misstates CE and should be documented. The key-params-check agent also applies this rule; reconciliation will deduplicate overlapping findings.
 

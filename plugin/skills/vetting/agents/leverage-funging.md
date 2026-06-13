@@ -33,7 +33,7 @@ Leverage/funging section detection:
   Sections identified: [named sections with row ranges, e.g., "Leverage section (rows 45–55), Funging section (rows 60–72)"; or 'none']
 ```
 
-If the report shows "Matching rows: none" and "Leverage/Funging tab: absent": write "No leverage or funging sections identified in this workbook. Checks 1–6 skipped." Write the AGENT_COMPLETE marker and stop.
+If the report shows "Matching rows: none" and "Leverage/Funging tab: absent": write "No leverage or funging sections identified in this workbook. Checks 1–7 skipped." Write the AGENT_COMPLETE marker and stop.
 
 ---
 

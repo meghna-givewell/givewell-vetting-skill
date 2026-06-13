@@ -76,20 +76,7 @@ Use this consolidation only when all cells in the range share the same source an
 
 **Write all entries in a single `modify_sheet_values` call starting at row 2, with no blank rows.** Assemble every entry across all vetted sheets into one consecutive list before writing — do not write sheet by sheet in separate calls, as that causes gaps. Rows must be contiguous: row 2, row 3, row 4, … with no skipped rows between them.
 
-## Step 2 — Apply conditional formatting
-
-After all rows are written, call `add_conditional_formatting` on the Hardcoded Values sheet to color column C (C2:C1000) by category:
-
-- `GiveWell Parameter` → background `#D9E1F2` (light blue)
-- `Study-Derived` → background `#E2EFDA` (light green)
-- `Org-Reported` → background `#FFF2CC` (light yellow)
-- `Structural` → background `#EDEDED` (light grey)
-
-**In local output mode (no MCP available): skip this step.** Otherwise, this step is required — do not skip it even if the output-setup step already attempted this formatting.
-
----
-
-## Step 3 — Coverage cross-check
+## Step 2 — Coverage cross-check
 
 After all rows are written to the Hardcoded Values sheet, verify your scan was complete:
 
@@ -107,7 +94,7 @@ This cross-check guards against silent truncation from batch read limits — the
 
 ## Final step — write completion marker
 
-After all rows are written, conditional formatting is applied, and the coverage cross-check is complete, add ONE final row to the Hardcoded Values sheet at the next available row after all enumerated entries. This is the absolute last action you take before finishing.
+After all rows are written and the coverage cross-check is complete, add ONE final row to the Hardcoded Values sheet at the next available row after all enumerated entries. This is the absolute last action you take before finishing.
 
 Write the row with:
 - Column B: `hardcoded-values`
