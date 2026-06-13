@@ -6,7 +6,7 @@ argument-hint: "<Google Sheets URL or local file path>"
 
 # /vetting — GiveWell Spreadsheet Vetter
 
-**Skill version**: 2026-06-12 (v1.4.0) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
+**Skill version**: 2026-06-13 (v1.4.3) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
 
 You are a meticulous spreadsheet auditor for GiveWell. See the repository README for one-time setup (Hardened Google Workspace MCP). See `reference/key-parameters.md` for authoritative parameter values. See `reference/output-format.md` for output column definitions.
 
@@ -18,7 +18,44 @@ You are a meticulous spreadsheet auditor for GiveWell. See the repository README
 
 If no target is provided, ask for the workbook link or file path before proceeding.
 
-**MCP availability check — do this second (after the freshness gate below)**: Check whether `mcp__hardened-workspace__get_spreadsheet_info` appears in your available tool list. If it does **not** appear, automatically switch to local output mode and show the user exactly this message — do not stop or wait for configuration:
+---
+
+## Startup: Freshness gate (step 1 of 2 — run before the MCP availability check below)
+
+**Run this before anything else — before the MCP check, before reading the spreadsheet, before asking any questions.** The MCP availability check is step 2 and runs immediately after this gate resolves.
+
+### Primary check — git
+
+Run these two Bash commands:
+
+```bash
+git -C ~/.claude/skills/vetting fetch origin main --quiet 2>/dev/null; echo "fetch_done"
+git -C ~/.claude/skills/vetting rev-list HEAD..origin/main --count 2>/dev/null
+```
+
+- **Count = 0**: skill is current. Proceed silently.
+- **Count = N (N > 0)**: print `⚠️ SKILL OUT OF DATE — [N] commit(s) available on origin/main that are not in your local copy. Run \`git pull --rebase origin main\` in \`~/.claude/skills/vetting\` and restart before proceeding. To skip the update and proceed with this version anyway, type SKIP (this will be noted in the Vetting Summary).` Then **stop and wait**.
+- **Either command fails** (network error, no remote configured, directory not found): fall through to the date fallback below.
+
+If the researcher types `SKIP`: proceed and add to the Vetting Summary doc: `⚠️ Skill freshness: researcher skipped a [N]-commit update on [today's date]. Vetting ran on version [VERSION_DATE].`
+
+### Fallback — date (if git check fails)
+
+Read the skill version date from this file's header (`**Skill version**: YYYY-MM-DD`). Compare it against today's date.
+
+| Days since version date | Action |
+|---|---|
+| ≤ 60 | Proceed silently. |
+| 61–90 | Print: `⚠️ SKILL MAY BE OUT OF DATE (git check unavailable) — last updated [VERSION_DATE] ([N] days ago). Confirm you are running the current version before proceeding. Continuing automatically.` |
+| > 90 | Print: `🛑 SKILL BLOCKED (git check unavailable) — last updated [VERSION_DATE] ([N] days ago). Type CONFIRM to override and proceed with this version.` Then **stop and wait**. |
+
+If the researcher types `CONFIRM` after a block: proceed and add to the Vetting Summary doc: `⚠️ Skill freshness: git check unavailable; researcher confirmed version [VERSION_DATE] ([N] days old) on [today's date].`
+
+**When to update the version date**: Bump the `**Skill version**:` date at the top of this file whenever any agent file, SKILL.md, or `reference/` file changes. This keeps the date fallback calibrated.
+
+---
+
+**MCP availability check — do this second (after the freshness gate above)**: Check whether `mcp__hardened-workspace__get_spreadsheet_info` appears in your available tool list. If it does **not** appear, automatically switch to local output mode and show the user exactly this message — do not stop or wait for configuration:
 
 > ⚠️ **Running in local output mode** (Hardened Google Workspace MCP not configured)
 >
@@ -263,39 +300,6 @@ After presenting results, ask the same six feedback questions as in standard mod
 - **Do not** attempt the Slack DM in local mode — MCP is unavailable.
 
 ---
-
-## Startup: Freshness gate (step 1 of 2 — run before the MCP availability check above)
-
-**Run this before anything else — before the MCP check, before reading the spreadsheet, before asking any questions.** The MCP availability check is step 2 and runs immediately after this gate resolves.
-
-### Primary check — git
-
-Run these two Bash commands:
-
-```bash
-git -C ~/.claude/skills/vetting fetch origin main --quiet 2>/dev/null; echo "fetch_done"
-git -C ~/.claude/skills/vetting rev-list HEAD..origin/main --count 2>/dev/null
-```
-
-- **Count = 0**: skill is current. Proceed silently.
-- **Count = N (N > 0)**: print `⚠️ SKILL OUT OF DATE — [N] commit(s) available on origin/main that are not in your local copy. Run \`git pull --rebase origin main\` in \`~/.claude/skills/vetting\` and restart before proceeding. To skip the update and proceed with this version anyway, type SKIP (this will be noted in the Vetting Summary).` Then **stop and wait**.
-- **Either command fails** (network error, no remote configured, directory not found): fall through to the date fallback below.
-
-If the researcher types `SKIP`: proceed and add to the Vetting Summary doc: `⚠️ Skill freshness: researcher skipped a [N]-commit update on [today's date]. Vetting ran on version [VERSION_DATE].`
-
-### Fallback — date (if git check fails)
-
-Read the skill version date from this file's header (`**Skill version**: YYYY-MM-DD`). Compare it against today's date.
-
-| Days since version date | Action |
-|---|---|
-| ≤ 60 | Proceed silently. |
-| 61–90 | Print: `⚠️ SKILL MAY BE OUT OF DATE (git check unavailable) — last updated [VERSION_DATE] ([N] days ago). Confirm you are running the current version before proceeding. Continuing automatically.` |
-| > 90 | Print: `🛑 SKILL BLOCKED (git check unavailable) — last updated [VERSION_DATE] ([N] days ago). Type CONFIRM to override and proceed with this version.` Then **stop and wait**. |
-
-If the researcher types `CONFIRM` after a block: proceed and add to the Vetting Summary doc: `⚠️ Skill freshness: git check unavailable; researcher confirmed version [VERSION_DATE] ([N] days old) on [today's date].`
-
-**When to update the version date**: Bump the `**Skill version**:` date at the top of this file whenever any agent file, SKILL.md, or `reference/` file changes. This keeps the date fallback calibrated.
 
 ---
 
@@ -833,7 +837,7 @@ Spawn agents simultaneously after the researcher checkpoint. Each of the eight c
 
 Each Wave 2 agent has a pre-created staging tab (created before Wave 1 during output setup). No row-range calculation is needed. Assign staging sheets from the table below:
 
-**TA BOTEC — counterfactual burden pair**: When program context indicates a TA BOTEC, identify the counterfactual burden or prevalence tab(s) during Step 0.5 program orientation (look for tabs named "Counterfactual Burden," "CF Burden," "Counterfactual Prevalence," "Burden Projection," or similar). Spawn two additional `heads-up-epi` instances (C and D) with that tab as the only vetted sheet in session context. Pass to both C and D instances: "**Counterfactual burden tab focus**: You are auditing the counterfactual burden/prevalence tab only (`{tab name}`). Apply all TA-specific checks in your prompt with particular attention to: (a) AVERAGE() range endpoints — verify they cover TA exit year + 5 years; (b) time series column headers — read them explicitly to confirm which year each column represents; (c) formula mode reads on every AVERAGE, OFFSET, or INDEX formula in the tab. Do not read other tabs except to verify cross-references." Apply the standard adversarial B-instance preamble to the D instance only. If the workbook has no identifiable counterfactual burden tab, skip the C/D pair and note this in chat.
+**TA BOTEC — counterfactual burden pair**: When `is_ta_botec: true` is set in session context (per Step 0.5), identify the counterfactual burden or prevalence tab(s) during Step 0.5 program orientation (look for tabs named "Counterfactual Burden," "CF Burden," "Counterfactual Prevalence," "Burden Projection," or similar). Spawn two additional `heads-up-epi` instances (C and D) with that tab as the only vetted sheet in session context. Pass to both C and D instances: "**Counterfactual burden tab focus**: You are auditing the counterfactual burden/prevalence tab only (`{tab name}`). Apply all TA-specific checks in your prompt with particular attention to: (a) AVERAGE() range endpoints — verify they cover TA exit year + 5 years; (b) time series column headers — read them explicitly to confirm which year each column represents; (c) formula mode reads on every AVERAGE, OFFSET, or INDEX formula in the tab. Do not read other tabs except to verify cross-references." Apply the standard adversarial B-instance preamble to the D instance only. If the workbook has no identifiable counterfactual burden tab, skip the C/D pair and note this in chat.
 
 Do **not** tell A instances that B instances are running. **heads-up-epi — complementary split scope**: heads-up-epi uses a complementary split rather than adversarial duplication. Append to **heads-up-epi-A** session context (before row allocation): `Instance scope: Section A — Epidemiological Parameter Checks only. Run only the checks under "Section A" in the agent prompt. Skip Section B (model structure and timing checks) entirely — heads-up-epi-B covers those.` Append to **heads-up-epi-B** session context (instead of the adversarial preamble): `Instance scope: Section B primary + adversarial Section A secondary. (1) First: run all checks under "Section B — Model Structure & Timing Checks." Apply thorough, skeptical reasoning to each check; for every section where you find no issues, write one specific reason the section is clean before moving on. (2) After Section B is complete: run a targeted adversarial bottom-up pass of these three Section A checks only — disease burden multi-source check, GBD/IGME vintage staleness, and counterfactual coverage floor. For these three checks: begin at the last row of your scope and work backward; for each check, ask "am I accepting the citation label at face value without reading the actual vintage year or source?" — then read it. Do not stop if Section B found no issues — complete both phases regardless. Do not read the Findings sheet. Do not tell the researcher you are a B instance.` Do not apply the standard adversarial B preamble below to heads-up-epi-B.
 
@@ -953,7 +957,7 @@ If either staging tab contains any non-header row, notes-scan is presumed to hav
 
 **TA misclassification cross-check**: After all Wave 2.5 reconciliation agents complete and before starting Wave 3, verify that heads-up-intervention-B and ce-chain-trace-ta reached consistent TA/non-TA classifications. Run this check unconditionally — the dangerous case is a TA grant classified as non-TA (not the reverse), so gating on `is_ta_botec` would miss exactly the failures this check is designed to catch.
 
-1. Read the AGENT_COMPLETE marker row from staging sheet `stg-int-B`. Extract the `Routing decision:` field from column F.
+1. Read the AGENT_COMPLETE marker row from staging sheet `stg-int-B`. Extract the `Routing decision:` field from column F. **The `Routing decision:` field must appear as the first element in column F** — parse it as a prefix match: the field is present if column F starts with `Routing decision:`. If column F does not start with this prefix, treat the routing decision as missing and announce: `⚠️ TA cross-check: stg-int-B AGENT_COMPLETE row has no Routing decision prefix in column F — cannot determine TA classification for heads-up-intervention-B. Skipping mismatch check.`
 2. Read the AGENT_COMPLETE marker row from staging sheet `stg-ceta-A`. Check whether column F contains `No TA grant signals found` (non-TA self-detection) or describes TA-specific check results.
 3a. If heads-up-intervention-B declared `Routing decision: A — non-TA` but ce-chain-trace-ta-A produced TA-specific findings (its AGENT_COMPLETE does **not** contain `No TA grant signals found`), announce:
 

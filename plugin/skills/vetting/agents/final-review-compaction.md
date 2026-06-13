@@ -42,7 +42,7 @@ The Findings sheet and Publication Readiness sheet should be empty at this point
 
 Coverage declaration: "Read complete. Staging tabs read: [N]. Total non-empty rows across all tabs: [N] ([X] header rows, [Y] AGENT_COMPLETE markers, [Z] WONT_FIX rows, [W] finding rows). Completion markers present for: [list agent names or 'none found']."
 
-**Note**: stg-rec-* (reconciliation staging) tabs do not write AGENT_COMPLETE markers — treat a reconcile tab with any non-header rows as complete. Only check for AGENT_COMPLETE in non-reconcile staging tabs.
+**Note**: stg-rec-* (reconciliation staging) tabs DO write AGENT_COMPLETE markers (column B: `reconcile`, column D: `AGENT_COMPLETE`). Check for AGENT_COMPLETE in these tabs the same way as all other staging tabs. If no AGENT_COMPLETE row is found in a stg-rec-* tab but non-header rows are present, treat the tab as potentially incomplete and flag it in the coverage declaration — do not assume it is complete based on non-header-row presence alone.
 
 ---
 

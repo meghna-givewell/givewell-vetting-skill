@@ -85,7 +85,7 @@ After all rows are written, call `add_conditional_formatting` on the Hardcoded V
 - `Org-Reported` → background `#FFF2CC` (light yellow)
 - `Structural` → background `#EDEDED` (light grey)
 
-This step is required — do not skip it even if the output-setup step already attempted this formatting.
+**In local output mode (no MCP available): skip this step.** Otherwise, this step is required — do not skip it even if the output-setup step already attempted this formatting.
 
 ---
 

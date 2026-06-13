@@ -128,14 +128,12 @@ def extract_sheet(zf, path, shared_strings):
             }
     return cells
 
-def cells_to_text(cells, sheet_name, max_col=None):
+def cells_to_text(cells, sheet_name):
     """Render cells as a readable text table."""
     if not cells:
         return f"[Sheet '{sheet_name}' is empty]\n"
     rows = sorted(set(r for r, c in cells))
     cols = sorted(set(c for r, c in cells))
-    if max_col:
-        cols = [c for c in cols if c <= max_col]
     lines = [f"=== Sheet: {sheet_name} ==="]
     lines.append(f"Rows: {min(rows)}–{max(rows)}, Cols: {col_letter(min(cols))}–{col_letter(max(cols))}")
     lines.append("")

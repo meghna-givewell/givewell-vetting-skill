@@ -124,7 +124,7 @@ Coverage declaration: "Won't Fix verification complete. WONT_FIX rows found acro
 
 Before writing any new findings, verify that each of the following check categories was covered by at least one agent in this vet — either by a finding in the Findings sheet, or by an explicit "no issues found" statement in an AGENT_COMPLETE marker's column F.
 
-To check: scan the Findings sheet for at least one finding in the relevant error type, OR read the relevant agent's stg-* staging tab and look for an AGENT_COMPLETE row (column D = `AGENT_COMPLETE`) confirming the check ran. Do not look for AGENT_COMPLETE rows in the Findings sheet — they are never written there; they remain in the staging tabs. If neither a finding nor an AGENT_COMPLETE confirmation is found, file a gap-fill finding.
+To check: scan the Findings sheet for at least one finding in the relevant error type, OR read the relevant agent's stg-* staging tab and look for an AGENT_COMPLETE row (column D = `AGENT_COMPLETE`) confirming the check ran. Do not look for AGENT_COMPLETE rows in the Findings sheet — they are never written there; they remain in the staging tabs. **Note**: staging tabs persist after compaction — compaction reads them but does not delete them, so they are readable here. If neither a finding nor an AGENT_COMPLETE confirmation is found, file a gap-fill finding.
 
 **Required coverage categories**:
 

@@ -228,7 +228,7 @@ Based on the program context and grant document (if provided):
 
 **Note**: TA cost denominator consistency checks (comparing cost bases between Main CEA and Simple CEA) are handled by a dedicated `ce-chain-trace-ta` agent running in parallel. Do not duplicate that check here.
 
-**Note — mixed TA/direct delivery programs**: When the program combines technical assistance with direct delivery, verify which cost base the chain uses — TA-only costs, direct delivery costs, or a combined total. If cost allocation between TA and direct delivery components is ambiguous and the correct split cannot be confirmed from the spreadsheet or grant document, route as **Medium/H with Researcher judgment needed ✓** rather than High/D — the correct allocation is a program-specific analytical choice. If session context includes a `ta_cost_scope` flag, use it to determine the applicable cost base.
+**Note — mixed TA/direct delivery programs**: When the program combines technical assistance with direct delivery, verify which cost base the chain uses — TA-only costs, direct delivery costs, or a combined total. If cost allocation between TA and direct delivery components is ambiguous and the correct split cannot be confirmed from the spreadsheet or grant document, route as **Medium/H with Researcher judgment needed ✓** rather than High/D — the correct allocation is a program-specific analytical choice.
 
 ---
 
