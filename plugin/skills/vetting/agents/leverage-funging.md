@@ -15,9 +15,11 @@ Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes) across al
 
 **Role calibration**: GiveWell does not treat cost-effectiveness estimates as literally true — deep uncertainty is inherent to all CEAs. Your role is to catch genuine errors and surface undocumented assumptions, not to second-guess defensible modeling choices. When the approach is reasonable but undocumented, prefer a clarifying question (Low) over a finding (Medium/High). Reserve Medium and High for factual errors, internal inconsistencies, or missing required elements.
 
-**Coverage mandate**: Read every cell in every leverage, funging, and counterfactual section of every vetted sheet. Do not sample. After completing each check, write a coverage declaration: "Check [N] complete for [section]. Found: [list or 'none']. No other issues of this type." Do not proceed to the next check until you can write it.
+**Coverage mandate**: Read every cell in every leverage, funging, and counterfactual section of every vetted sheet. Do not sample. After completing each check, write a coverage declaration using the format: `COVERAGE | leverage-funging | [check name] | [rows/cells checked] | issues found: [N] | status: complete`. Do not proceed to the next check until you can write it.
 
 ---
+
+Before running any check, read reference/pitfalls.md using the Read tool. Apply every entry relevant to leverage, funging, and cost-effectiveness adjustments.
 
 ## Identifying leverage and funging sections
 
@@ -33,7 +35,7 @@ Leverage/funging section detection:
   Sections identified: [named sections with row ranges, e.g., "Leverage section (rows 45–55), Funging section (rows 60–72)"; or 'none']
 ```
 
-If the report shows "Matching rows: none" and "Leverage/Funging tab: absent": write "No leverage or funging sections identified in this workbook. Checks 1–5 skipped." and proceed to Check 6.
+If the report shows "Matching rows: none" and "Leverage/Funging tab: absent": write "No leverage or funging sections identified in this workbook. Checks 1–7 skipped." Write the AGENT_COMPLETE marker with: Column B: leverage-funging | Column D: AGENT_COMPLETE | Column F: COVERAGE_ROWS: none | Staging sheet: [name from session context]. Filed 0 findings. No leverage or funging sections identified — Checks 1–7 skipped. And stop.
 
 ---
 
@@ -49,11 +51,14 @@ Funging adjustments should *reduce* expected impact (or equivalently, increase c
 
 `[ref] '[row label]': value/formula = [quote]. Effect on CE: [increases / decreases / unclear]. Expected: [decreases — funging/displacement | increases — leverage | depends on sign of crowding]. Direction correct: [YES / NO / UNCERTAIN].`
 
-When a leverage/funging adjustment appears to *increase* CE, do not immediately file High/D — follow the "Before flagging" procedure below first. File **High/D** only after completing that procedure and confirming all three fail: (1) no justifying note is present, AND (2) the note's stated mechanism doesn't match a legitimate >1 multiplier form, AND (3) the formula structure doesn't match that form. If any one condition is **uncertain** — genuinely ambiguous from the note and formula — file **Medium/H with Researcher judgment needed ✓** instead. For certainty guidance: condition (1) is never uncertain — a note either exists or it does not; condition (2) is **definitively met** (not uncertain) when the note explicitly uses the words "leverage," "uplift," or "additionality," since these confirm a legitimate >1 mechanism; condition (2) is **definitively failed** (not uncertain) when the note explicitly uses "displacement," "funging," or "counterfactual reduction"; uncertainty in condition (2) applies only when the note's language could describe either an increasing or decreasing effect without specifying which.
+When a leverage/funging adjustment appears to *increase* CE, do not immediately file High severity (column D), Error Type: Formula (column E) — follow the "Before flagging" procedure below first. File **High severity (column D), Error Type: Formula (column E)** only after completing that procedure and confirming all three fail: (1) no justifying note is present, AND (2) the note's stated mechanism doesn't match a legitimate >1 multiplier form, AND (3) the formula structure doesn't match that form. If any one condition is **uncertain** — genuinely ambiguous from the note and formula — file **Medium severity (column D) with Researcher judgment needed ✓** instead. For certainty guidance: condition (1) is never uncertain — a note either exists or it does not; condition (2) is **definitively met** (not uncertain) when the note explicitly uses the words "leverage" or "uplift," since these confirm a legitimate >1 mechanism; condition (2) is **definitively failed** (not uncertain) when the note explicitly uses "displacement," "funging," or "counterfactual reduction"; 'Additionality' describes absence of displacement, not presence of leverage — notes using only 'additionality' are uncertain in condition (2) and require the Before flagging procedure; uncertainty in condition (2) applies only when the note's language could describe either an increasing or decreasing effect without specifying which.
 
-**Before flagging**: First, write in your reasoning the mechanically correct formula structure that would justify a >1 multiplier for this row type — for example: "If this is a leverage benefit multiplier, the correct form would be `=CE_without_leverage × (1 + leverage_ratio)`, which produces a value >1 when leverage_ratio > 0." Then explicitly read the cell note (via `read_sheet_notes` if not already in the pre-read cache) and the row labels immediately above and below the flagged row. Only if the note's stated mechanism AND the formula structure both match the form you wrote down is the >1 multiplier justified — a note mentioning "leverage" without specifying the formula convention is not sufficient; the formula structure must also match. If formula and note are both consistent with your written form, this is not an error. If no note is present, or the note's mechanism or formula structure diverges from your written form, file as **Medium/H with Researcher judgment needed ✓** asking the researcher to confirm the sign convention, rather than immediately filing High/D.
+**Before flagging**: First, write in your reasoning the mechanically correct formula structure that would justify a >1 multiplier for this row type — for example: "If this is a leverage benefit multiplier, the correct form would be `=CE_without_leverage × (1 + leverage_ratio)`, which produces a value >1 when leverage_ratio > 0." Then explicitly read the cell note (via `read_sheet_notes` if not already in the pre-read cache) and the row labels immediately above and below the flagged row. Only if the note's stated mechanism AND the formula structure both match the form you wrote down is the >1 multiplier justified — a note mentioning "leverage" without specifying the formula convention is not sufficient; the formula structure must also match. If formula and note are both consistent with your written form, this is not an error. If no note is present, or the note's mechanism or formula structure diverges from your written form, file as **Medium severity (column D) with Researcher judgment needed ✓** asking the researcher to confirm the sign convention, rather than immediately filing High severity (column D), Error Type: Formula (column E).
 
-**Program-type direction consistency**: After verifying the sign convention and formula structure for each funging adjustment, verify the net direction is consistent with program-type expectations. Load CEA Consistency Guidance (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) via `get_doc_content`. For the program type identified in session context, find the guidance on expected funging direction. If the model's funging adjustment net-increases CE (i.e., benefits after funging exceed benefits before) but the Guidance indicates funging for this program type should net-decrease CE — or vice versa — file as **Medium/H** with Researcher judgment needed ✓: "The funging adjustment at [cell] net-[increases/decreases] CE from [X]x to [Y]x. CEA Consistency Guidance indicates funging for [program type] should [expected direction]. If the model's adjustment represents leverage rather than funging, rename the row label and add a note describing the leverage mechanism. If this is intentional funging in an unusual direction, add a note documenting why." Do not file if: (a) a cell note already explains the unusual direction; (b) the row is explicitly labeled as a leverage (positive) adjustment rather than a funging (typically negative) adjustment; (c) the Guidance does not specify a direction for this program type.
+**Coverage declaration for Check 1**: After completing all direction and program-type checks, write:
+`COVERAGE | leverage-funging | Check 1 — Direction of funging adjustment | [rows/cells checked] | issues found: [N] | status: complete`
+
+**Program-type direction consistency**: After verifying the sign convention and formula structure for each funging adjustment, verify the net direction is consistent with program-type expectations. Load CEA Consistency Guidance (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) via `get_doc_content`. For the program type identified in session context, find the guidance on expected funging direction. If the model's funging adjustment net-increases CE (i.e., benefits after funging exceed benefits before) but the Guidance indicates funging for this program type should net-decrease CE — or vice versa — file as **Medium severity (column D)** with Researcher judgment needed ✓: "The funging adjustment at [cell] net-[increases/decreases] CE from [X]x to [Y]x. CEA Consistency Guidance indicates funging for [program type] should [expected direction]. If the model's adjustment represents leverage rather than funging, rename the row label and add a note describing the leverage mechanism. If this is intentional funging in an unusual direction, add a note documenting why." Do not file if: (a) a cell note already explains the unusual direction; (b) the row is explicitly labeled as a leverage (positive) adjustment rather than a funging (typically negative) adjustment; (c) the Guidance does not specify a direction for this program type.
 
 ---
 
@@ -63,7 +68,12 @@ Leverage and funging adjustments can be applied multiplicatively (scaling the wh
 
 - If the model or cell notes describe a "X% funging discount," verify this is implemented as multiplication (e.g., `× (1 - funge_rate)`), not as subtraction of a fixed amount.
 - If the model describes a "leverage ratio of Y:1," verify the formula compounds correctly and does not also apply a separate coverage or funging adjustment that double-adjusts the same effect.
-- If leverage is applied in both a numerator scaling and a denominator adjustment simultaneously, flag as Medium/H — this is a common double-adjustment pattern.
+- If leverage is applied in both a numerator scaling and a denominator adjustment simultaneously, flag as Medium severity (column D) — this is a common double-adjustment pattern.
+
+**Required Error Type**: Adjustment
+
+**Coverage declaration**: After completing this check, write:
+`COVERAGE | leverage-funging | Check 2 — Multiplicative vs. additive application | [rows/cells checked] | issues found: [N] | status: complete`
 
 ---
 
@@ -75,6 +85,11 @@ When government co-financing is present:
 - If GiveWell funding "unlocks" or "leverages" government funding, the treatment of the government's contribution must be consistent throughout the model. Read cell notes and adjacent labels for the stated approach; flag if the formula diverges from what the note describes.
 - Check that the leverage ratio denominator (the GiveWell funding base) matches what is actually counted in the cost column — not a different definition of "GiveWell spending."
 
+**Required Error Type**: Formula (if the formula is wrong) or Assumption (if the assumption is undocumented)
+
+**Coverage declaration**: After completing this check, write:
+`COVERAGE | leverage-funging | Check 3 — Government co-financing double-count | [rows/cells checked] | issues found: [N] | status: complete`
+
 ---
 
 ## Check 4 — Coverage counterfactual
@@ -84,6 +99,11 @@ If coverage is a benefit driver:
 - Verify whether coverage values represent **GiveWell-funded incremental coverage** or **total program coverage**. These produce very different CE estimates and the model should be explicit about which it uses.
 - If the model claims to use incremental coverage, verify that the coverage values sourced from a raw data tab are not total program coverage inadvertently pulled for the incremental calculation.
 - Flag if coverage and funging are **both** applied as separate adjustments in the same model — there is a risk of double-adjusting for the counterfactual (once via coverage being incremental, once via a funging discount on top).
+
+**Required Error Type**: Assumption
+
+**Coverage declaration**: After completing this check, write:
+`COVERAGE | leverage-funging | Check 4 — Coverage counterfactual | [rows/cells checked] | issues found: [N] | status: complete`
 
 ---
 
@@ -95,6 +115,11 @@ When a program has multiple cost components (e.g., direct delivery + government 
 - Check that the sum of cost components used as the leverage denominator matches the total cost figure used in the CE calculation.
 - Flag if any cost component is included in the leverage ratio calculation but excluded from the headline cost-per-outcome figure, or vice versa.
 
+**Required Error Type**: Formula (if the formula allocates incorrectly) or Adjustment (if the allocation method is inconsistent with the model's approach)
+
+**Coverage declaration**: After completing this check, write:
+`COVERAGE | leverage-funging | Check 5 — Leverage allocation across cost components | [rows/cells checked] | issues found: [N] | status: complete`
+
 ---
 
 ## Check 6 — Documentation
@@ -104,7 +129,7 @@ For each leverage/funging parameter and formula found:
 - Is there a cell note or adjacent label explaining what the parameter represents and its source?
 - If the model deviates from GiveWell's standard leverage/funging methodology (as described in program context or grant documents), is the deviation documented?
 
-Flag undocumented leverage parameters as Low/H with `Researcher judgment needed ✓` if the value is outside typical ranges for this intervention type, or as Low/O if the value is plausible and the only issue is missing documentation.
+Flag undocumented leverage parameters as Low severity (column D) with `Researcher judgment needed ✓` if the value is outside typical ranges for this intervention type, or as Low severity (column D), Error Type: Legibility (column E), column D blank (Publication Readiness routing) if the value is plausible and the only issue is missing documentation.
 
 ---
 
@@ -116,7 +141,7 @@ For each upward adjustment in the "Adjustments to VoI" section (or equivalent):
 
 1. Read the adjustment's label.
 2. If the label references funder influence, research community, other philanthropic funders, or policy uptake — check whether the VOI model also has a dedicated section with probability and funding-change calculations for the same category.
-3. If both exist and no cell note explains why both are needed: flag as **Medium/H Adjustment** with Researcher judgment needed ✓: "Ad hoc +[X]% adjustment '[label]' may double-count with the dedicated '[section name]' section that already models funding changes from other funders. If this adjustment captures a genuinely distinct mechanism (e.g., WHO policy uptake beyond what the modeled funders represent), add a cell note documenting the distinction."
+3. If both exist and no cell note explains why both are needed: flag as **Medium severity (column D), Error Type: Adjustment (column E)** with Researcher judgment needed ✓: "Ad hoc +[X]% adjustment '[label]' may double-count with the dedicated '[section name]' section that already models funding changes from other funders. If this adjustment captures a genuinely distinct mechanism (e.g., WHO policy uptake beyond what the modeled funders represent), add a cell note documenting the distinction."
 
 This check does not apply when the ad hoc adjustment is clearly labeled as covering a *different* funder category than the dedicated section (e.g., dedicated section covers bilateral donors; adjustment covers government policy uptake).
 
@@ -124,13 +149,15 @@ This check does not apply when the ad hoc adjustment is clearly labeled as cover
 
 ## Writing findings
 
+**Two-axis notation note**: Two-axis notation (e.g., /D, /H) in check instructions describes Nature — write only 'High', 'Medium', or 'Low' in column D.
+
 Before writing any finding, confirm: (1) exact cell reference(s), (2) specific issue (which sign is wrong, which components are double-counted, etc.), (3) precise fix required.
 
 **Before filing any Assumption or Inconsistency finding**: ask: "What would a researcher who trusts this value point to as their evidence?" Write it as a single sentence in your reasoning before deciding whether to file. Only after writing that sentence, test it against the available evidence. If the defense holds up even partially, downgrade severity or mark Researcher judgment needed ✓. If it fails, file with confidence.
 
 Append findings using `modify_sheet_values` to your staging sheet. Start at row 2 and append sequentially. Your staging sheet name is provided in session context.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | **J** Status (leave blank)
+Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency | Sourcing | Box Link (for publication-readiness findings only — leave column D blank)) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | **J** Status (leave blank)
 
 See `reference/output-format.md` for full column definitions.
 
@@ -143,7 +170,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `leverage-funging`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Section detection: [N] leverage/funging rows found; Leverage/Funging tab: [present/absent]. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).

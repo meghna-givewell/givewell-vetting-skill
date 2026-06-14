@@ -1,6 +1,8 @@
 # Column Reference — GiveWell Vetting Output
 
-This is the canonical column specification for the two output sheets. All agents reference this file rather than repeating the column list inline.
+This is the canonical column specification for the Findings and Publication Readiness output sheets. All agents reference this file rather than repeating the column list inline.
+
+For Hardcoded Values (A–H) and Confidentiality Flags (A–D) column layouts, see reference/output-format.md.
 
 ---
 
@@ -29,7 +31,7 @@ This is the canonical column specification for the two output sheets. All agents
 | B | Sheet | Tab name from source spreadsheet |
 | C | Cell/Row | Cell reference or row description |
 | D | Error Type/Issue | Use **exactly one of**: Sourcing, Box Link, Legibility |
-| E | Explanation | 1–2 sentences: what is wrong and why it matters |
+| E | Explanation | One short sentence (≤25 words): what is wrong and why it matters |
 | F | Recommended Fix | Lead with an imperative verb |
 
 ---

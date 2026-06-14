@@ -55,18 +55,21 @@ def load_shared_strings(zf):
     return strings
 
 def load_sheet_names(zf):
-    """Returns list of (name, sheet_id, rId) tuples."""
-    with zf.open('xl/workbook.xml') as f:
-        tree = ET.parse(f)
+    """Returns list of (name, rId) tuples."""
+    try:
+        with zf.open('xl/workbook.xml') as f:
+            tree = ET.parse(f)
+    except KeyError:
+        print("Warning: 'xl/workbook.xml' not found in ZIP — cannot read sheet names.")
+        return []
     root = tree.getroot()
     sheets_el = root.find('ss:sheets', NS)
     result = []
     if sheets_el is not None:
         for s in sheets_el.findall('ss:sheet', NS):
             name = s.get('name', '')
-            sid = s.get('sheetId', '')
             rid = s.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id', '')
-            result.append((name, sid, rid))
+            result.append((name, rid))
     return result
 
 def load_sheet_rels(zf):
@@ -128,14 +131,12 @@ def extract_sheet(zf, path, shared_strings):
             }
     return cells
 
-def cells_to_text(cells, sheet_name, max_col=None):
+def cells_to_text(cells, sheet_name):
     """Render cells as a readable text table."""
     if not cells:
         return f"[Sheet '{sheet_name}' is empty]\n"
     rows = sorted(set(r for r, c in cells))
     cols = sorted(set(c for r, c in cells))
-    if max_col:
-        cols = [c for c in cols if c <= max_col]
     lines = [f"=== Sheet: {sheet_name} ==="]
     lines.append(f"Rows: {min(rows)}–{max(rows)}, Cols: {col_letter(min(cols))}–{col_letter(max(cols))}")
     lines.append("")
@@ -165,39 +166,43 @@ def main():
         print(f"File not found: {path}")
         sys.exit(1)
 
+    try:
+        zf = zipfile.ZipFile(path)
+    except zipfile.BadZipFile:
+        sys.exit(f"Error: '{path}' is not a valid ZIP/XLSX file.")
+
     os.makedirs('output', exist_ok=True)
     base = os.path.splitext(os.path.basename(path))[0]
     out_path = os.path.join('output', f'extracted_{base}.txt')
 
-    with zipfile.ZipFile(path) as zf:
+    all_cells = {}
+    with zf:
         shared_strings = load_shared_strings(zf)
         sheet_names = load_sheet_names(zf)
         rels = load_sheet_rels(zf)
 
         with open(out_path, 'w', encoding='utf-8') as out:
             out.write(f"Workbook: {os.path.basename(path)}\n")
-            out.write(f"Sheets: {', '.join(n for n,_,_ in sheet_names)}\n")
+            out.write(f"Sheets: {', '.join(n for n,_ in sheet_names)}\n")
             out.write("=" * 80 + "\n\n")
 
-            for name, sid, rid in sheet_names:
+            for name, rid in sheet_names:
                 target = rels.get(rid, '')
                 if not target:
                     out.write(f"[Could not find sheet target for '{name}']\n")
+                    all_cells[name] = {}
                     continue
                 cells = extract_sheet(zf, target, shared_strings)
+                all_cells[name] = cells
                 out.write(cells_to_text(cells, name))
                 out.write("\n" + "=" * 80 + "\n\n")
 
     print(f"Extracted to: {out_path}")
-    # Print summary
-    with zipfile.ZipFile(path) as zf:
-        sheet_names = load_sheet_names(zf)
-        rels = load_sheet_rels(zf)
-        for name, sid, rid in sheet_names:
-            target = rels.get(rid, '')
-            cells = extract_sheet(zf, target, shared_strings) if target else {}
-            rows = sorted(set(r for r, c in cells)) if cells else []
-            print(f"  {name}: {len(rows)} rows, {len(cells)} cells")
+    # Print summary from already-built cells dict
+    for name, rid in sheet_names:
+        cells = all_cells.get(name, {})
+        rows = sorted(set(r for r, c in cells)) if cells else []
+        print(f"  {name}: {len(rows)} rows, {len(cells)} cells")
 
 if __name__ == '__main__':
     main()

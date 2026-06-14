@@ -80,7 +80,7 @@ The severity rule already states: "When impact is unknown but the affected param
 
 Example: Mengstie et al 2025 C20 = 33.1% per 100 person-years used as a cumulative probability. C20 → weighted average C21 → baseline mortality CEA!B11 → mortality reduction B13 → final CE B36: direct chain confirmed. File High, not Low.
 
-**Applies to**: all formula-check and source-check agents
+**Applies to**: all formula-check agents and source-data-check, source-citation-verify, sources
 
 ---
 
@@ -139,7 +139,7 @@ Medium severity rule #3 ("key input in the direct CE calculation chain lacks an 
 
 Do not upgrade to Medium because a row "looks important" or "is probably in the CE chain" without FORMULA-mode confirmation. Both conditions (chain confirmed OR key-parameters.md match) must be checked before claiming Medium.
 
-**Applies to**: formula-check-data, formula-check-arithmetic, notes-scan, source-check agents
+**Applies to**: formula-check-data, formula-check-arithmetic, notes-scan, source-data-check, source-citation-verify, sources
 
 ---
 

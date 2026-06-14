@@ -13,11 +13,13 @@ Your job is narrow and concrete: check the raw data extract tabs for transpositi
 
 **Role calibration**: This is a factual correctness check, not a methodology review. Flag ordering violations and transpositions you can actually demonstrate — not values that merely look low or high in isolation. When a value is plausible but unverified, prefer Medium/H with Researcher judgment needed ✓ over High/D.
 
+**Before running any checks**, read `reference/pitfalls.md` using the Read tool. Apply every relevant entry — specifically FN-003 (WebFetch for weighted-average sources), SC-003 (CE chain confirmation before High), SC-004 (wrong subgroup requires WebFetch), SC-005 (methodology mismatch), SC-007 (intentional subgroup), and SC-009 (missing-source severity threshold).
+
 ---
 
 ## Step 1 — Identify source data tabs
 
-The session context passes a "Source data tabs" list. Use it directly. If the list is missing or empty, call `get_spreadsheet_info` to get all tab names, then filter for tabs whose names contain any of these strings (case-insensitive): `Coverage Data`, `WUENIC`, `DHS`, `IHME`, `IGME`, `GBD`, `MICS`, `EPI`, `SAE`, `WorldPop`, `Population`, `Mortality`, `Subnational Data`.
+The session context passes a "Source data tabs" list. Use it directly. If the list is missing or empty, report to the researcher: "Source data tabs list was not provided in session context — cannot identify source tabs without get_spreadsheet_info (not permitted for this agent). Please re-run and provide the source data tabs list in session context." Then write the AGENT_COMPLETE marker and stop.
 
 Exclude tabs that are section dividers (`-->`, `---->` in name), purely structural tabs (`Key`, `Inputs`, `Changelog`), or calculated/output tabs (`Disease burden`, `Vaccine coverage`, `Main CEA`, `Simple CEA`, `Treatment effect`, `Vaccine efficacy`).
 
@@ -31,7 +33,7 @@ For each source tab:
 
 1. Read the header row (row 1) using `read_sheet_values` to understand column structure. Identify: (a) which column holds the geographic identifier (country, region, state name or ISO code — typically column A, B, or C), and (b) which columns hold data values.
 
-2. Scan the geographic identifier column in batches of 50 rows to locate rows matching in-scope geographies. Read column A only for the scan (`A1:A50`, then `A51:A100`, `A101:A150`, etc.) — do not read full rows until you have located the target geography. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Stop scanning after 5,000 rows if the geography is not found; note it and move to the next tab.
+2. Scan the geographic identifier column in batches of 50 rows to locate rows matching in-scope geographies. Read column A only for the scan using non-overlapping ranges: `A1:A50`, `A51:A100`, `A101:A150`, etc. (not `A1:A50`, `A50:A100`, which would double-count row 50) — do not read full rows until you have located the target geography. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Stop scanning after 5,000 rows if the geography is not found; note it and move to the next tab. If more than 100 batch calls are needed (i.e., the tab appears to exceed 5,000 rows), stop scanning and note "Tab too large to scan exhaustively — stopped at row [N]" in the coverage declaration.
 
 3. Once the target geography row(s) are located, read the full row including all data columns using a targeted `read_sheet_values` call.
 
@@ -41,11 +43,13 @@ Do not attempt to read full tabs. Very large tabs (IHME, WUENIC, IGME) have tens
 
 ---
 
-## Step 3 — Three checks per in-scope row
+## Step 3 — Six checks per in-scope row
 
-Run all three checks on every in-scope row you locate. No check is skippable because "the tab looks clean."
+Run all six checks on every in-scope row you locate. No check is skippable because "the tab looks clean."
 
 ### Check A — Co-vaccine ordering plausibility
+
+**Applies only when the source tab contains vaccine coverage data** (column headers include BCG, OPV, Penta, DPT, PCV, Rota, MCV, or equivalent abbreviations). If the source tab contains non-vaccine data (mortality rates, disease burden, DHS nutrition indicators, WorldPop population), write `COVERAGE | source-data-check | check-A | not applicable (non-vaccine tab) | issues found: 0 | status: complete` and proceed to Check C.
 
 From the column headers, identify which columns correspond to which vaccines. Then verify:
 
@@ -58,21 +62,30 @@ Flag any violation as: (a) **High/D** if the values appear to be directly swappe
 
 ### Check B — Adjacent column transposition
 
+**Applies only when the source tab contains vaccine coverage data** (column headers include BCG, OPV, Penta, DPT, PCV, Rota, MCV, or equivalent abbreviations). If the source tab contains non-vaccine data (mortality rates, disease burden, DHS nutrition indicators, WorldPop population), write `COVERAGE | source-data-check | check-B | not applicable (non-vaccine tab) | issues found: 0 | status: complete` and proceed to Check C.
+
 Scan adjacent vaccine columns in the same row. The clearest transposition signal is when column X's value is numerically consistent with what column Y's label implies, and column Y's value is numerically consistent with what column X's label implies.
 
 Example: a tab has columns BCG | OPV0 | Penta1. If BCG = 34.2 and OPV0 = 87.6 in a country where BCG coverage is typically high and OPV0 is typically similar, this is a reversal. Cross-reference: does the BCG value (34.2) look more like an OPV0 estimate for this country, and vice versa?
 
 Do not flag differences that are plausibly real country-specific variation. Flag only when the swap hypothesis is the parsimonious explanation.
 
+**WebFetch for transposition confirmation**: When Check A or B identifies a plausible transposition and the source tab provides a URL or citation for the data, use WebFetch to retrieve the original source and confirm the correct column order. Per pitfalls.md FN-003: when a data value carries >=5% weight in a weighted average visible in the source tab, attempt WebFetch on the cited source URL before classifying the finding severity — confirming the source table column order upgrades a Medium to High when misidentification is confirmed.
+
 ### Check C — Year-over-year anomaly
 
-If the source tab includes multiple years for the same geography (common in IHME, WUENIC, GBD), compare the most recent in-scope row against the value 2–3 years prior for the same vaccine/indicator. A change of >30 percentage points in a single year without a changelog note or methodology flag is anomalous. Changes of 10–30pp are noteworthy but may be real (e.g., a coverage campaign); flag as Low/H if there is no cell note explaining the jump.
+If the source tab includes multiple years for the same geography (common in IHME, WUENIC, GBD), compare the most recent in-scope row against the value 2–3 years prior for the same vaccine/indicator.
+
+- **Vaccine coverage tabs** (values expressed as percentages 0–100): flag year-over-year changes >30 percentage points as anomalous. Changes of 10–30pp are noteworthy but may be real (e.g., a coverage campaign); flag as Low/H if there is no cell note explaining the jump.
+- **Non-coverage tabs** (mortality rates, incidence rates, burden estimates — values expressed as rates per 1,000 or proportions): flag year-over-year changes >50% relative change (i.e., the new value is less than half or more than double the prior value) as anomalous.
+
+In both cases, a changelog note or methodology flag on the relevant row reduces the severity to Low/H.
 
 ### Check D — Sub-national aggregation consistency
 
 If a source tab contains both sub-national rows (states, provinces, districts) and a national or regional summary row for the same geography and year, verify the summary row value is consistent with the sub-national rows.
 
-1. Identify whether the summary row is a sum or a population-weighted average from its column header or a nearby note.
+1. Identify whether the summary row is a sum or a population-weighted average from its column header or a nearby note. If the aggregation method is population-weighted: look for a population column in the same tab (column header typically labeled "Population," "Denominator," or "N"). If no population column is present in the source tab, search for a corresponding population tab by name (e.g., WorldPop, Population). If population weights cannot be located after checking the same tab and the most obviously named population tab, write "Cannot verify population-weighted aggregate — population weights not found in tab or in a clearly named population tab" in your coverage declaration and skip the numerical comparison for this check.
 2. Read all sub-national rows and the summary row (FORMATTED_VALUE mode).
 3. Compute the expected aggregate from the sub-national values and compare to the summary row.
 
@@ -110,15 +123,24 @@ File as **Medium/H** if the tab is secondary or supplementary: "[Tab name] conta
 
 Do not flag tabs where: (a) the cell note or tab header explicitly acknowledges the proxy geography; (b) the wrong-country rows are reference/comparison rows, not the rows being used in formulas; or (c) the program intentionally models a multi-country portfolio.
 
-Coverage declaration: "Geography/country consistency check complete. Source tabs checked: [N]. Target geography: [country]. Tabs with matching geography: [N]. Tabs flagged for wrong or unexplained geography: [list or 'none']."
+`COVERAGE | source-data-check | check-F geography consistency | [N tabs checked] | issues found: [N] | status: complete`
 
 ---
 
 ## Coverage declaration
 
-After completing all six checks on all in-scope rows across all source tabs, write in your reasoning:
+After completing all six checks on all in-scope rows across all source tabs, write the following pipe-delimited COVERAGE declarations in your reasoning (one per check):
 
-> Source data check complete. Tabs checked: [list]. In-scope geographies located: [list]. Tabs where geographies not found in first 5,000 rows: [list or "none"]. Check A (co-vaccine ordering) issues: [list of cells or "none"]. Check B (adjacent transposition) issues: [list or "none"]. Check C (year-over-year >30pp) issues: [list or "none"]. Check D (sub-national aggregation) issues: [list of cells or "none"]. Check E (cross-tab data vintage) issues: [list or "none"]. Check F (geography/country consistency) issues: [list of cells or "none"].
+```
+COVERAGE | source-data-check | check-A co-vaccine ordering | [N rows checked] | issues found: [N] | status: complete
+COVERAGE | source-data-check | check-B adjacent transposition | [N rows checked] | issues found: [N] | status: complete
+COVERAGE | source-data-check | check-C year-over-year anomaly | [N rows checked] | issues found: [N] | status: complete
+COVERAGE | source-data-check | check-D sub-national aggregation | [N rows checked] | issues found: [N] | status: complete
+COVERAGE | source-data-check | check-E cross-tab vintage consistency | [N tabs checked] | issues found: [N] | status: complete
+COVERAGE | source-data-check | check-F geography consistency | [N tabs checked] | issues found: [N] | status: complete
+```
+
+Also note in your reasoning: Tabs checked: [list]. In-scope geographies located: [list]. Tabs where geographies not found in first 5,000 rows: [list or "none"].
 
 Do not proceed to Writing Findings until this declaration is complete.
 
@@ -141,9 +163,9 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `source-data-check`
 - Column D: `AGENT_COMPLETE`
-- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).
 
-Group findings where multiple vaccines in the same row show the same transposition pattern — one finding covering "BCG and OPV0 appear transposed in [tab] for [country], cells [X] and [Y]" rather than two separate findings.
+Group findings where multiple vaccines in the same row show the same transposition pattern — one finding listing all affected cells in column C (e.g., "BCG and OPV0 appear transposed in [tab] for [country], cells [X] and [Y]") rather than two separate findings.

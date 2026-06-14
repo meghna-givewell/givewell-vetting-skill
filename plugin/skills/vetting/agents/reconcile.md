@@ -7,18 +7,42 @@ Two independent instances of an analysis agent ran in parallel with separate con
 You have been provided:
 - Output spreadsheet ID (for reading staging sheets and writing reconcile staging sheet)
 - The pair name and A/B staging sheet names (in session context)
-- Reconcile staging sheet name (in session context) — write net-new findings here
+- Reconcile staging sheet name (in session context) — write net-new and retained B-only findings here
 - Spreadsheet ID and user email (for re-reading disputed cells)
 
 **Stakes**: The purpose of running two independent agents is that divergences reveal gaps. A finding caught by only one instance is a potential miss by the other — not a resolved disagreement. Skipping a divergence because it "seems fine" defeats the entire purpose of dual-agent review. Every divergence must be investigated by re-reading the cell. No exceptions.
 
-**Coverage mandate**: Every divergence in this pair must be investigated. After completing all divergence investigations, write a single coverage declaration: "Pair: [name]. A found [N], B found [N], [N] confirmed by both, [N] divergences investigated: [N] validated, [N] Won't Fix, [N] flagged for researcher review." Do not write the declaration until every divergence has been resolved.
+**Coverage mandate**: Every divergence in this pair must be investigated. After completing all divergences for a pair, write a single coverage declaration using the pipe-delimited format (see Step 5). Do not write the declaration for a pair until every divergence for that pair has been resolved. In combined-pair mode (consistency-check + key-params-check), write a declaration after completing each pair sequentially — do not wait for both pairs to finish before writing the first declaration.
+
+---
+
+## Before starting: read pitfalls.md
+
+Before executing any step, read `reference/pitfalls.md` using the Read tool (if local) or `get_doc_content` (if remote). The pitfalls file documents systematic errors that prior agents make during review — understanding them is required to correctly calibrate whether a divergence represents a genuine miss or a known pitfall pattern. Do not proceed until pitfalls.md is loaded.
+
+---
+
+## Combined-pair mode
+
+If your session context specifies two pairs to reconcile (consistency-check AND key-params-check), process them sequentially. Complete all steps (0–5 plus Final) for the first pair (consistency-check) before starting Step 0 for the second pair (key-params-check). For each pair:
+- Read only that pair's A and B staging sheets.
+- Write net-new findings only to that pair's reconcile staging sheet (stg-rec-con for consistency-check; stg-rec-kp for key-params-check).
+- Write a separate AGENT_COMPLETE marker to each reconcile staging sheet immediately after the last finding for that pair.
+- Write a separate coverage declaration after completing each pair.
+
+---
+
+## Banded-run mode
+
+If your session context specifies that band-split mode is active and provides band row ranges: your A and B staging sheets contain findings only for rows within your assigned band. Process only those findings — do not attempt to read or reconcile findings from rows outside your band. Write net-new findings covering only rows within your assigned band to your reconcile staging sheet (named in session context with band notation, e.g., stg-rec-arith1 for band 1). In your coverage declaration (Step 5), include: `Band: [band range, e.g., rows 1–80] | Rows assigned: [count]`.
 
 ---
 
 ## Step 0 — Staging sheet detection (do this first)
 
-Read all rows from staging sheet A (tab name in session context) and all rows from staging sheet B (tab name in session context). Use `read_sheet_values` on `{staging_tab_name}!A1:J1000` for each tab (adjust range end if the tab might have more rows). Count the non-empty rows in each tab, excluding the header row (row 1).
+**Verify tab names**: Before reading, confirm the stg-rec-{pair} tab name from session context matches the pair name you were given. If the tab name does not contain the pair name as a substring (e.g., stg-rec-sources does not contain 'sources'), stop and write to chat: 'Session context mismatch — pair name is [pair] but reconcile staging sheet is [tab name]. Cannot proceed safely. Orchestrator must re-spawn with corrected context.'
+
+Read all rows from staging sheet A (tab name in session context) and all rows from staging sheet B (tab name in session context). Use `read_sheet_values` on `{staging_tab_name}!A1:J1000` for each tab. After reading each tab, check whether row 1000 is non-empty. If it is, re-read using `A1:J2000`. Repeat doubling the range until the last returned row is empty. For most staging tabs, 1000 rows is sufficient — this check is a safety guard for unexpectedly large agents. Count the non-empty rows in each tab, excluding the header row (row 1).
 
 **Completion marker check — do this for each instance**: Scan all rows of staging sheet A and staging sheet B for a row where column D = `AGENT_COMPLETE`. This marker is written by each agent as its final action to signal it completed normally.
 
@@ -31,23 +55,27 @@ Read all rows from staging sheet A (tab name in session context) and all rows fr
 - In your coverage declaration, write: `Completion marker: ABSENT — [A or B] instance may have failed. Reconciliation proceeding on available findings only.`
 - Proceed with reconciliation on the available findings, but note in the coverage declaration that one instance may be incomplete.
 
-Exception: heads-up-intervention, heads-up-evidence, heads-up-epi, and formula-check-structure may legitimately produce fewer than 3 findings if the intervention type or sheet structure doesn't trigger their checks — use judgment. If the sheet is a simple BOTEC and sources found 1 finding, that may be valid. If formula-check found 0 findings on a 100-row CEA, that is not plausible. The completion marker absence is a stronger signal than low finding count — always flag if the marker is absent.
+Exception: any agent may legitimately produce fewer than 3 findings on a clean, simple BOTEC. The completion marker is the primary signal — if the marker is present and its text contains a plausible completion statement, low finding count alone is not sufficient to flag failure. Flag as potential failure only when the completion marker is absent OR when the marker text is generic (no self-detection outcome) AND finding count is 0 on an agent that has no self-detection exit path.
 
 **Self-detecting agent exception**: formula-check-voi (and ce-chain-trace-ta) may legitimately produce zero findings if no VOI or TA content is detected. Before flagging as a potential failure, read the completion marker text. If it contains 'No VOI content found' or 'No TA grant signals found,' the zero-finding result is valid — do not flag. Only flag as potential failure if the marker text is generic (no self-detection outcome statement) or is absent.
 
-**Check log validation**: For agents that write a mandatory check log (heads-up-evidence, heads-up-epi, consistency-check, key-params-check, heads-up-intervention): verify the AGENT_COMPLETE marker's column F text contains 'Coverage log complete:' or 'check log' or 'Pre-filing check log' or equivalent. If not present, note: 'Agent completed but check log summary absent from AGENT_COMPLETE — cannot confirm all named checks were run.' Additionally, scan the check log text for any entries containing `[___]` — a placeholder that was never filled in. Any `[___]` in a check log entry means the agent did not complete that specific check. Note each unfilled check by name: 'Check log contains unfilled placeholder(s) at: [check name(s)] — these checks were not completed.' Treat this pair with extra scrutiny during divergence analysis for those specific check areas.
+**Check log validation**: For agents that write a mandatory check log (heads-up-evidence, heads-up-epi, consistency-check, key-params-check, heads-up-intervention): verify the AGENT_COMPLETE marker's column F text contains 'Coverage log complete:' or 'check log' or 'Pre-filing check log' or equivalent. Exception for heads-up-intervention-B: column F of its AGENT_COMPLETE marker must begin with 'Routing decision:' (B — TA or A — non-TA). Do not flag absence of a check log phrase for heads-up-intervention-B — instead verify that the Routing decision field is present as the first element. If check log not present (and not heads-up-intervention-B), note: 'Agent completed but check log summary absent from AGENT_COMPLETE — cannot confirm all named checks were run.' Additionally, scan the check log text for any entries containing `[___]` — a placeholder that was never filled in. Any `[___]` in a check log entry means the agent did not complete that specific check. Note each unfilled check by name: 'Check log contains unfilled placeholder(s) at: [check name(s)] — these checks were not completed.' For divergences in a check area whose placeholder was unfilled: do not apply Won't Fix even if the three-condition gate would otherwise allow it. Retain all divergences in those check areas and set column I = ✓ with note: 'Check [name] was not completed by the filing agent — treating as Needs researcher input regardless of cell read.'
+
+**Zero-finding asymmetry**: When one instance produced 0 findings (excluding AGENT_COMPLETE), every finding from the other instance becomes a divergence requiring Step 4 investigation. Proceed with reconciliation on available findings. Note in your coverage declaration (Step 5): 'Note: [A or B] instance produced 0 findings — all [N] findings from [B or A] instance treated as divergences and investigated individually. This is expected when the instance failure flag was raised in Step 0.'
 
 ---
 
-## Step 1 — Read both finding sets
+## Step 1 — Confirm finding sets
 
-Read all rows from staging sheet A and all rows from staging sheet B (both tab names provided in session context). All agent findings — including those that will ultimately route to Publication Readiness — are present in the staging sheets in the 10-column format. No additional sheet reads are needed at this step.
+All agent findings — including those that will ultimately route to Publication Readiness — are present in the staging sheets in the 10-column format that were read in Step 0. No additional sheet reads are needed at this step.
+
+While reviewing the findings from each staging tab, record the row number for each finding alongside its content (e.g., stg-sources-A row 3 = finding for C48/Formula). Store these row-number associations in working memory. When writing WONT_FIX in Step 4, reference these stored row numbers. If two findings in the same staging tab share the same cell reference (column C) but differ in column E (issue type), confirm column E matches before writing WONT_FIX to avoid updating the wrong row.
 
 ---
 
 ## Step 2 — Match findings
 
-Two findings **match** if they reference the same cell or overlapping row range (column A) AND describe the same underlying issue type (column E). Wording differences don't matter — "C48: GBD age group references 'All ages' row" and "C48: wrong age band in Busia column" match. Err toward treating findings as matching rather than distinct.
+Two findings **match** if they reference the same cell or overlapping row range (column C) AND describe the same underlying issue type (column E). Overlapping row range: finding A at cell X overlaps finding B at range X:Y if X is included in the range X:Y, or if any cell in A's range appears in B's range. Use the broadest range as the normalized cell reference for the confirmed finding. Example: A files C5, B files C5-C10 → treat as matching on C5-C10. Wording differences don't matter — "C48: GBD age group references 'All ages' row" and "C48: wrong age band in Busia column" match. Err toward treating findings as matching rather than distinct.
 
 **Granularity normalization — do this before classifying**: Before moving to Step 3, scan for findings where A and B described the same underlying issue at different granularity levels. Signs of granularity divergence:
 - A has one grouped finding listing cells X, Y, Z while B has three separate findings each covering one of X, Y, or Z (or vice versa)
@@ -55,7 +83,7 @@ Two findings **match** if they reference the same cell or overlapping row range 
 
 When granularity divergence exists:
 1. Treat all related findings as a single confirmed issue — do not classify the individual cells as A-only or B-only divergences.
-2. Normalize to the **grouped form** (all cells in one finding) unless the recommended fixes differ meaningfully between cells, in which case keep them separate.
+2. Normalize to the **grouped form** (all cells in one finding) unless the recommended fixes differ. When the per-cell recommended fix differs only in the specific citation or cell reference (not in the type of action), follow the Constraints rule: keep separate. Normalize to grouped form only when the Recommended Fix is word-for-word identical or differs only in cell coordinates within a single shared formula pattern.
 3. The content of the normalized finding uses the most complete Explanation and Recommended Fix across all component findings.
 4. Apply the grouping rules from `reference/output-format.md` (Grouping and Sorting section): same root cause + same fix → one finding; keep separate only when fixes differ or severities differ.
 
@@ -64,12 +92,18 @@ When granularity divergence exists:
 ## Step 3 — Classify
 
 - **Confirmed**: both A and B caught it → keep the version with more complete Explanation and Recommended Fix. If A and B assigned different severities, **apply the severity decision tree from `reference/output-format.md`** to determine the correct severity:
-  1. Re-read the referenced cell in FORMULA mode if not already in context.
-  2. Work through the High → Medium → Low decision tree using the actual cell data and the criteria in `output-format.md` (confirmed factual error / CE impact ≥2% / silent omission → High; plausibly affects CE / documented deviation / undocumented assumption → Medium; no CE impact / within rounding tolerance → Low).
+  1. Re-read the referenced cell in FORMULA mode using `read_sheet_values` on the source spreadsheet. Do not rely on prior context — always re-read.
+  2. Work through the High → Medium → Low decision tree using the actual cell data and the criteria in `output-format.md` (confirmed factual error / CE impact ≥5% / silent omission → High; plausibly affects CE / documented deviation / undocumented assumption → Medium; no CE impact / within rounding tolerance → Low).
   3. Use the severity the decision tree produces — this may match A, may match B, or may match neither.
-  4. **Tie-breaker when the decision tree produces the same ambiguity A and B already diverged on**: retain the higher severity. A finding elevated to High by one instance requires specific affirmative evidence (a computed CE impact <2%, or confirmed factual source showing the value is correct) to downgrade — the decision tree producing Medium is not sufficient if the underlying evidence is unchanged. Err high; the researcher can downgrade at review time with a note explaining why. Do not silently resolve divergence to the lower severity.
+  4. **Tie-breaker when the decision tree produces the same ambiguity A and B already diverged on**: retain the higher severity. A finding elevated to High by one instance requires specific affirmative evidence (a computed CE impact <5%, or confirmed factual source showing the value is correct) to downgrade — the decision tree producing Medium is not sufficient if the underlying evidence is unchanged. Err high; the researcher can downgrade at review time with a note explaining why. Do not silently resolve divergence to the lower severity.
+  5. **After running the decision tree**: if either instance rated this finding High, apply the High-severity protection rule from Step 4 before accepting the decision tree result. The decision tree producing Medium does not override the protection rule — retain High and note both ratings in column I. The decision tree result is used only when neither instance rated the finding High.
+
+  **Sourcing/Box Link severity guard**: When the finding's Error Type (column E) is Sourcing or Box Link, column D (Severity) must be left **blank** — not High/Medium/Low. These findings route to the Publication Readiness sheet via the compaction agent, which reads a blank column D as the routing signal. If A or B filed a Sourcing/Box Link finding with a non-blank severity in column D, correct it to blank in the surviving confirmed row. Do not apply the severity decision tree to Sourcing or Box Link findings.
+
+  **To record the severity comparison in column I** (when either instance rated High): identify which staging sheet (A or B) holds the surviving version of the Confirmed finding. Use `modify_sheet_values` to write the severity comparison string to that row's column I (e.g., 'Instance A: High. Instance B: Medium. High retained per high-severity protection rule.'). If both instances held the finding at different rows, write to the row in staging sheet A (prefer A for confirmed findings). Leave column I blank on the row in staging sheet B.
 
   Do not note the severity comparison in the Explanation. Do not append any meta-commentary (e.g., "Confirmed by both independent agents", "Two independent agents assessed this at different severities") to the surviving row's Explanation.
+
 - **A-only**: A caught it, B did not → investigate (Step 4).
 - **B-only**: B caught it, A did not → investigate (Step 4).
 
@@ -83,19 +117,22 @@ For each A-only or B-only finding, do **all** of the following before making any
 2. Read the cell note using `read_sheet_notes` if not already in context.
 3. Check whether the declared-intentional deviations in session context cover this cell.
 
-Then make one of three determinations:
+Then make one of four determinations:
 
 **Retain** (default): The finding is valid, or you cannot confirm it is invalid.
-- If the finding is already on the sheet (from the A instance): leave the Explanation unchanged.
-- If the finding is not yet on the sheet (B-only and A wrote nothing): add it as a new row on the correct sheet (Findings for model-integrity findings; Publication Readiness for publication-readiness findings). Write all columns; do not add any meta-commentary to the Explanation.
+- **A-only retained**: leave the row in stg-A as-is; do not copy to stg-rec-{pair}.
+- **B-only retained**: copy the row from stg-B to stg-rec-{pair}, resetting column J to blank. Do not write to the Findings or Publication Readiness sheets directly. Write all columns; do not add any meta-commentary to the Explanation.
+- **Confirmed retained** (applies to Step 3 confirmed findings): leave the more-complete version in its original staging sheet; do not copy to stg-rec-{pair}.
 - **When in doubt, retain. The cost of a false positive is one minute of researcher review. The cost of a false Won't Fix is a missed error in a published CEA.**
+
+**Implausible (retain without flag)**: The finding describes an error that you have affirmatively disproved by reading the cell in FORMULA mode. Retain classification (do not mark Won't Fix), but do NOT set column I to ✓. Write in column I: 'Finding implausible — cell reads [actual formula/value]: [specific reason the error described cannot exist]. No researcher action required.' This path applies when the cell is affirmatively correct but the formal Won't Fix conditions cannot all be met (e.g., no note exists, no declared deviation, but the formula is unambiguously correct).
 
 **Before classifying any finding as Won't Fix**: Write in your reasoning the strongest single argument for why the **cell might be correct** — i.e., why the filing agent's finding might be wrong. Frame it as: "The cell value/formula could be right because [specific reason it is valid as written]." Only after articulating that argument, test it against the cell data you have read. If the cell-correct argument holds up — the formula or value is actually valid — proceed to Won't Fix. If the cell-correct argument fails — the formula or value is actually wrong as the filing agent claimed — use Retain. Skipping this step defeats the purpose of independent review — a Won't Fix reached without genuinely testing whether the cell is correct is a motivated dismissal, not a reasoned conclusion.
 
 **Won't Fix binary gate — all three conditions must hold; if any fails → Retain**:
 1. **Cell read in FORMULA mode this session**: You read the referenced cell using `read_sheet_values` (FORMULA mode) during this reconciliation session — not relying on a prior agent's cached reading.
-2. **Note–formula coherence**: The cell note's stated mechanism and the cell's actual formula are semantically consistent — the formula implements what the note claims. Coherence requires BOTH: (a) the note specifies a direction or operation (increase, decrease, multiply, discount) AND the formula's operator and sign match that direction; AND (b) the note names a specific quantity or mechanism AND the formula references a cell whose row label matches that quantity. Coherence **fails** — use Retain — if: the note describes an adjustment mechanism but the formula is a bare reference to an unrelated cell with no multiplier; the formula references a cell labeled for a different concept than the note names; or the note's language is silent on how the value is computed. A note that merely mentions a concept ("accounts for seasonal concentration") without specifying a formula convention is not sufficient — the formula structure must also match.
-3. **Deviation confirmed**: Either (a) the deviation is explicitly listed in the session context declared-deviations AND you have called `read_sheet_notes` on the cell and confirmed the note (if present) does not contradict the declared reason — a note describing a different source or different value than the declared deviation means condition 3 fails, use Retain; OR (b) the cell note cites a specific GiveWell reference document by name AND you loaded that document this session AND confirmed the numeric value in the spreadsheet matches the document's current value AND either the deviation is also in the declared list or the document's stated acceptable range explicitly covers this value. Path (b) without any declared-deviation entry requires Retain — escalate to Needs researcher input so the researcher can formally declare the deviation.
+2. **Note–formula coherence**: The cell note's stated mechanism and the cell's actual formula are semantically consistent — the formula implements what the note claims. Coherence requires BOTH: (a) the note specifies a direction or operation (increase, decrease, multiply, discount) AND the formula's operator and sign match that direction; AND (b) the note names a specific quantity or mechanism AND the formula references a cell whose row label matches that quantity. To verify that the formula references a cell whose row label matches the note's stated quantity: look up the referenced cell's row in the pre-read cache (FORMATTED_VALUE data) or call `read_sheet_values` in FORMATTED_VALUE mode on the label cell (typically column A or B of the same row). Do not infer the row label from the formula alone. Coherence **fails** — use Retain — if: the note describes an adjustment mechanism but the formula is a bare reference to an unrelated cell with no multiplier; the formula references a cell labeled for a different concept than the note names; or the note's language is silent on how the value is computed. A note that merely mentions a concept ("accounts for seasonal concentration") without specifying a formula convention is not sufficient — the formula structure must also match. **If the cell has no note** (`read_sheet_notes` returns empty): condition 2 is automatically satisfied — there is no stated mechanism to be incoherent with. Proceed to condition 3. A finding about an undocumented assumption or missing note cannot reach Won't Fix on this path; use Retain and flag for the researcher to add a note.
+3. **Deviation confirmed**: Either (a) the deviation is explicitly listed in the session context declared-deviations AND you have called `read_sheet_notes` on the cell and confirmed the note (if present) does not contradict the declared reason — a note describing a different source or different value than the declared deviation means condition 3 fails, use Retain; OR (b) the cell note cites a specific GiveWell reference document by name AND you loaded that document this session AND confirmed the numeric value in the spreadsheet matches the document's current value AND either the deviation is also in the declared list or the document's stated acceptable range explicitly covers this value. Path (b) without any declared-deviation entry requires Retain — escalate to Needs researcher input so the researcher can formally declare the deviation. When path (b) applies but no declared-deviation entry exists: append to column F: 'Value matches [document name] as of [date read]. No declared-deviation entry — researcher confirmation needed to formally declare.' Set column I = ✓. Use Retain classification (not Won't Fix).
 
 → Proceed to Won't Fix only if ALL three conditions hold. If any condition fails, use Retain.
 
@@ -103,12 +140,12 @@ Then make one of three determinations:
 - You may mark a finding `Won't Fix` **only** if you can state the specific, affirmative reason the formula or value is correct — not merely that you couldn't confirm the issue.
 - Qualifying reasons: "The formula references cell D22 labeled 'Seasonal concentration (non-Sahel)' — the correct concept for this column." / "The declared-intentional deviation explicitly covers this parameter." / "The cell note explains this value is intentionally set at X because [reason the note gives], and the formula confirms this — it computes [X] by [formula structure consistent with the note's explanation]."
 - **Cell-note Won't Fix requires formula coherence**: When the basis for Won't Fix is a cell note explanation, you must also read the cell's formula (FORMULA mode) and confirm the formula actually implements what the note claims. Apply the Note–formula coherence test from condition (2): a note that says "intentionally set to X to account for seasonal concentration" must be paired with a formula whose operator and sign match an adjustment mechanism for seasonal concentration AND that references a cell labeled for that concept — not just any formula. If the formula and note are structurally inconsistent (e.g., the note describes a multiplicative adjustment but the formula is a bare cell reference with no multiplier), the note may be stale; use **Needs researcher input** instead.
-- Non-qualifying reasons: "I couldn't reproduce the issue." / "It seems likely correct in context." / "The other agent's finding seems plausible." / "The value is close to what I'd expect." / "The cell has a note" (without verifying the note's explanation matches the formula). / "The finding has no current numerical impact" — do not drop style or structural redundancy findings (e.g., unnecessary `SUM()` wrappers, redundant calculations, minor formula inconsistencies) solely because they have no CE impact. Retain these at Low/H severity — the researcher decides whether to act on them. / **"The value comes from [GW reference document]"** (without having read that document to verify the value) — see GW reference document rule below.
+- Non-qualifying reasons: "I couldn't reproduce the issue." / "It seems likely correct in context." / "The other agent's finding seems plausible." / "The value is close to what I'd expect." / "The cell has a note" (without verifying the note's explanation matches the formula). / "The finding has no current numerical impact" — do not drop style or structural redundancy findings (e.g., unnecessary `SUM()` wrappers, redundant calculations, minor formula inconsistencies) solely because they have no CE impact. Retain these at Low severity (column D = Low) — the researcher decides whether to act on them. / **"The value comes from [GW reference document]"** (without having read that document to verify the value) — see GW reference document rule below.
 - **GW reference document rule**: When a finding involves a parameter that originates from a GW reference document — the Moral Weights Tool, Key Parameters, CEA Consistency Guidance, Cross-Cutting CEA Parameters, or any other document in the skill's reference list — you must load and read that document before marking Won't Fix. Accepting "this is intentional, it comes from GW's tool" at face value does not qualify as specific affirmative evidence. You must confirm: (a) the document contains the specific numeric value in question, and (b) the value in the spreadsheet matches. If the document cannot be read (auth failure, access error), use **Needs researcher input** instead. A qualifying Won't Fix for a GW-reference-document parameter reads: "Verified by reading [document name] — the document shows [specific value] at [location/tab/row], and the spreadsheet value matches."
 - **Unexplained numeric constants — higher bar**: When the finding is specifically about an unexplained numeric constant in a formula (e.g., `×2`, `÷3`, a hardcoded scalar), Won't Fix requires that the cell note explicitly state the value *and* the reason for that specific constant — not merely that the note explains the general concept. A note that says "accounts for double burden" does not explain why the multiplier is 2 rather than 1.5 or 2.5. If the note does not directly justify the magnitude of the constant, use **Needs researcher input** and ask the researcher to confirm the specific value.
-- When marking Won't Fix: write `WONT_FIX` in column J (Status) of that row on its staging sheet using `modify_sheet_values`. Do not delete the row — the compaction agent filters rows where Status = `WONT_FIX` during its read step.
+- When marking Won't Fix: write `WONT_FIX` in column J (Status) of **the original staging tab that contained the finding** (stg-A or stg-B — whichever tab held that specific row) using `modify_sheet_values`, referencing the row number recorded in Step 1. Do not delete the row — the compaction agent reads all staging tabs including A and B, and filters rows where column J = `WONT_FIX` during its read step. Do **not** write Won't Fix to the reconcile staging sheet (stg-rec-*) — that sheet holds net-new and B-only retained findings only.
 
-**High-severity protection**: When A and B rate the same finding at different severities and either instance rated it High — retain at High. Do not resolve to a lower severity through severity reconciliation. Write both ratings in column F: "Instance A: [severity]. Instance B: [severity]. Retaining High per high-severity protection rule." A Won't Fix for a finding rated High by either instance requires a specific affirmative reason that directly refutes the High-severity claim — "I couldn't confirm the issue" or "the other instance rated it Medium" do not qualify. If only the lower-severity claim can be affirmatively confirmed correct, downgrade to Medium/H rather than Won't Fix.
+**High-severity protection**: When A and B rate the same finding at different severities and either instance rated it High — retain at High. Do not resolve to a lower severity through severity reconciliation. Write both ratings in column I: "Instance A: [severity]. Instance B: [severity]. Retaining High per high-severity protection rule." A Won't Fix for a finding rated High by either instance requires a specific affirmative reason that directly refutes the High-severity claim — "I couldn't confirm the issue" or "the other instance rated it Medium" do not qualify. If only the lower-severity claim can be affirmatively confirmed correct, downgrade to Medium (column D = Medium) rather than Won't Fix.
 
 **Reference doc access for parameter divergences**: When a divergence involves a GiveWell standard parameter — a moral weight, benchmark CEA, discount rate, income elasticity, or cross-cutting CEA parameter — and you cannot determine the correct value from the spreadsheet alone, you are permitted to load the relevant reference document to resolve the divergence *before* escalating to "Needs researcher input." Use `get_doc_content` or `read_sheet_values` on:
 - **Cross-Cutting CEA Parameters** (`1ru1SNtgj0D9-vLAHEdTM27GEq_P17ySzG-aTxKD6Fzg`)
@@ -127,16 +164,24 @@ Use these only to verify that a specific numeric value matches or deviates from 
 
 ## Step 5 — Coverage declaration
 
-After all divergences are resolved, write in chat:
+After all divergences for this pair are resolved, write in chat using the pipe-delimited format:
 
 ```
-Pair: [pair name]
-A found [N] findings (staging sheet: [stg-agent-A]) | B found [N] findings (staging sheet: [stg-agent-B])
+COVERAGE | reconcile | [pair name] | [A-count] A findings + [B-count] B findings | divergences investigated: [N] | status: complete
+```
+
+Followed by detail fields:
+
+```
 Confirmed by both: [N] | A-only divergences: [N] | B-only divergences: [N]
-Divergences investigated: [N] retained, [N] Won't Fix (WONT_FIX marked in staging sheet), [N] flagged for researcher input
+Retained: [N] | Won't Fix (WONT_FIX marked in staging sheet): [N] | Flagged for researcher input: [N]
 Empty-staging-sheet flag: [None / "A instance may have failed — flagged"]
 Net new findings added to reconcile staging sheet [stg-rec-pair]: [N]
 ```
+
+When one instance produced 0 findings (excluding AGENT_COMPLETE), add a line: 'Note: [A or B] instance produced 0 findings — all [N] findings from [B or A] instance treated as divergences and investigated individually. This is expected when the instance failure flag was raised in Step 0.'
+
+In banded-run mode, add: `Band: [band range, e.g., rows 1–80] | Rows assigned: [count]`
 
 ---
 
@@ -145,13 +190,41 @@ Net new findings added to reconcile staging sheet [stg-rec-pair]: [N]
 - **Never skip a divergence** — "it seems likely correct" does not substitute for re-reading the cell.
 - **Never merge distinct findings** — if A and B flagged the same cell for different issues (e.g., A: formula error; B: missing source note), keep both.
 - **Never mark Won't Fix without a specific affirmative reason** — retain by default.
-- **Never consolidate separate missing-source findings** — each hardcoded cell lacking a source citation is a distinct action item for the researcher. Do not bundle multiple missing-source findings for different cells into a single omnibus finding. Merge only when the exact same cell is flagged for the exact same issue by both A and B instances.
+- **Never merge findings for different cells whose fixes differ** — do not merge missing-source findings for different rows where each requires a different citation, as these are distinct action items. For findings covering the same class of issue across multiple cells where one fix resolves all instances (e.g., 'add GBD citation to all epidemiological input rows'), follow the standard granularity normalization rule in Step 2.
+- **Companion findings**: When two retained findings reference the same cell but have different Error Types (e.g., Formula and Legibility for cell C5), append to each finding's column I: 'Note: companion finding exists for this cell (E=[other type]).' This helps the researcher understand why one cell appears twice in the Findings sheet.
+
+---
 
 ## Writing new findings
 
-Use `modify_sheet_values` to append net-new findings discovered during reconciliation investigation (i.e., findings not written by either A or B instance) to the **reconcile staging sheet** specified in your session context (`stg-rec-{pair}`). Write starting at row 2 and append sequentially. The final-review compaction step reads all staging sheets including reconcile staging sheets. Write each finding with the following columns: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | **J** Status (leave blank)
+The reconcile staging sheet (`stg-rec-{pair}`) holds TWO categories of rows:
+1. **B-only divergences retained after Step 4 investigation** — findings B caught that A missed, confirmed valid. Copy the row from stg-B verbatim, resetting column J to blank.
+2. **Genuinely net-new findings** discovered by the reconcile agent during cell re-reads that neither A nor B filed.
+
+Write both categories to stg-rec. Wave 3 compaction reads stg-A, stg-B, and stg-rec and deduplicates — B-only findings appearing in stg-B will be filtered if column J = WONT_FIX, and the same finding in stg-rec (retained) is the authoritative copy.
+
+Use `modify_sheet_values` to append findings to the **reconcile staging sheet** specified in your session context (`stg-rec-{pair}`). Write starting at row 2 and append sequentially. Write each finding with the following columns: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency | Sourcing | Box Link) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces; when E = Formula, begin with a bracketed sub-type: [Copy-paste] | [Wrong reference] | [Year range] | [Sign error] | [Wrong operator] | [Off-by-one]) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x; use an em-dash ( — ) with exactly one space on each side — never an en-dash (–) or hyphen (-); punctuation variants break the compaction agent's lexicographic sort on column H) | **I** Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | **J** Status (leave blank)
+
+For Sourcing and Box Link findings, leave column D (Severity) blank — the compaction agent routes these to Publication Readiness based on the Error Type.
+
+When a net-new finding depends on researcher intent (i.e., it would qualify as Needs researcher input if it were an existing finding), set column I = ✓ in the new row and include the reconciliation question in column F as: '[finding description]. Reconciliation review: validity depends on researcher intent. Question: [specific question].'
+
 See `reference/output-format.md` for full column definitions.
 
-**Publication Readiness column layout differs**: When routing a finding to Publication Readiness (not Findings), use the 6-column A–F layout. Write exactly 6 values per row — no more. Do not include Severity, Status, Changes CE?, Estimated CE Impact, or Researcher judgment needed. Writing a 7th column will corrupt the sheet layout. A=Finding # (blank) | B=Sheet | C=Cell/Row | D=Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Sourcing | Box Link | Legibility) | E=Explanation | F=Recommended Fix.
-
 Before writing any new finding, confirm: (1) exact cell reference, (2) specific issue, (3) precise fix required.
+
+---
+
+## Final step — write completion marker
+
+After all findings are written and all other steps are complete, write ONE final completion marker row to **each** reconcile staging sheet you wrote to during this session:
+- **Single-pair agents**: write to your one reconcile staging sheet immediately after your last finding (or at row 2 if no findings were written). This is the absolute last action.
+- **Combined consistency-check + key-params-check agent**: write to stg-rec-con immediately after completing the consistency-check pair, and write to stg-rec-kp immediately after completing the key-params-check pair. Each marker is that pair's absolute last action.
+
+Write each marker row with:
+- Column B: `reconcile`
+- Column D: `AGENT_COMPLETE`
+- Column F: `RECONCILE_PAIR: [pair name] | Compared [N] rows from [stg-agent-A] and [N] rows from [stg-agent-B]. Confirmed by both: [N]. Net-new findings filed: [K]. WONT_FIX decisions: [M]. Needs researcher input: [P]. Staging sheet: [stg-rec-pair from session context].`
+- All other columns: blank
+
+Use a single `modify_sheet_values` call per staging sheet.

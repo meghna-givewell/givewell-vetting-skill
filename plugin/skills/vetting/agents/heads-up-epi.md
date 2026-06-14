@@ -6,7 +6,7 @@ You are performing Step 6b of a GiveWell spreadsheet vet. You have been provided
 - User email for MCP calls
 - Program context from Step 0.5, including any declared-intentional deviations
 
-Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes, hyperlinks) and `read_spreadsheet_comments` (once for the workbook). **Do not read the existing Findings sheet** — your staging sheet name is provided in session context, and deduplication is handled by the Wave 2.5 reconciliation agent. Reading prior findings would anchor your analysis.
+Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes, hyperlinks). **Do not read the existing Findings sheet** — your staging sheet name is provided in session context, and deduplication is handled by the Wave 2.5 reconciliation agent. Reading prior findings would anchor your analysis. Comment data is provided in session context as declared-intentional deviations — do not call read_spreadsheet_comments.
 
 **Scope delineation — three heads-up agents run in parallel**:
 - **heads-up-evidence**: effect sizes, benefit transfer documentation, trial design quality, study pathway directness, benefit stream completeness, CE plausibility
@@ -30,13 +30,13 @@ Load CEA Consistency Guidance (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) v
 This agent runs as two complementary instances covering distinct check sets. Check your instance scope in session context before starting:
 
 - **heads-up-epi-A**: Run **Section A — Epidemiological Parameter Checks** only. Skip Section B entirely.
-- **heads-up-epi-B**: Primary scope is **Section B — Model Structure & Timing Checks**. After Section B, run a targeted adversarial pass of three Section A checks (disease burden multi-source, GBD/IGME vintage staleness, counterfactual coverage floor) as specified in the B instance session context preamble from SKILL.md.
+- **heads-up-epi-B**: Primary scope is **Section B — Model Structure & Timing Checks**. After Section B, run a targeted adversarial pass of three Section A checks: (1) disease burden multi-source check, (2) GBD/IGME vintage staleness check, (3) counterfactual coverage floor check.
 
 The C and D instances apply only when the model is a TA BOTEC with a dedicated counterfactual burden tab:
 - **heads-up-epi-C**: Run **Section A — Epidemiological Parameter Checks** on the TA BOTEC counterfactual burden tab only. Skip Section B.
-- **heads-up-epi-D**: Run **Section B — Model Structure & Timing Checks** on the TA BOTEC counterfactual burden tab only. Also run the three targeted Section A adversarial checks (disease burden multi-source, GBD/IGME vintage staleness, counterfactual coverage floor) on that tab.
+- **heads-up-epi-D**: Run **Section B — Model Structure & Timing Checks** on the TA BOTEC counterfactual burden tab only. After Section B, run a targeted adversarial pass of three Section A checks: (1) disease burden multi-source check, (2) GBD/IGME vintage staleness check, (3) counterfactual coverage floor check.
 
-If session context does not set an `is_ta_botec` flag or identify a counterfactual burden tab, skip the C/D scope and do not run these checks.
+If session context does not set an `is_ta_botec` flag or identify a counterfactual burden tab, skip the C/D scope and do not run these checks. When skipping, write a single AGENT_COMPLETE row to your staging sheet with: Column B: `heads-up-epi`; Column D: `AGENT_COMPLETE`; Column F: `COVERAGE_ROWS: none | Staging sheet: [name from session context]. Filed 0 findings. [reason for skip: no is_ta_botec flag / no counterfactual burden tab identified in session context].`
 
 ---
 
@@ -46,14 +46,16 @@ If session context does not set an `is_ta_botec` flag or identify a counterfactu
 
 **Source footnote check before assumption findings**: Before filing a finding that a value **misapplies its source** (e.g., "uses treated cohort as untreated baseline," "applies a pediatric study to adults without adjustment"), read the full text of the cell note and any source description in the notes column. If the note describes a conversion, back-calculation, or adjustment applied to the raw source value, the appropriate finding is "verify and document the conversion methodology" (Medium/Assumption Issue, Researcher judgment needed ✓) — not "incorrect application of source" (High). Reserve High for cases where no conversion is described in any note and the misapplication is unambiguous. A note that says "converted from treated cohort using [method]" is sufficient to downgrade from High to Medium even if the conversion methodology is itself worth questioning.
 
-**Disease burden multi-source check**: When a model's mortality burden estimate for a specific geography derives from a single source (IHME/GBD alone, or WHO alone), flag as Medium/H and recommend triangulation. IHME estimates have been found 2.5× lower than UN IGME for Chad malaria burden (correcting this enabled $28M+ in new grants), and negatively correlated with IGME in Nigerian states for New Incentives. The recommended approach is to use at least two of: GBD, UN IGME, DHS, and — where available — RCT control-arm data. If IHME and UN IGME estimates differ by more than ~30%, flag as Medium/H and recommend deeper investigation. Note on source quality: recent DHS full birth history surveys (2021+, nationally representative, 5,000–30,000 HHs) should receive at least as much weight as IHME or IGME; HMIS/DHIS2 surveillance data is generally unreliable in sub-Saharan Africa and should not be given significant weight unless independently validated. If the model uses GBD 2019 data without noting that GBD 2021 estimates may differ materially, flag as **Medium/H**. You cannot rerun the model with updated GBD data to estimate CE impact — write "Direction unknown" in column H by default (updated GBD direction is geography- and cause-specific and should not be assumed). Before filing, run a targeted WebSearch for `"[disease] [country] burden GBD 2019 vs 2021"` or similar to check whether this specific cause/geography shows higher or lower burden in the more recent vintage. If the search establishes a clear direction, write "Raises CE — magnitude unknown" or "Lowers CE — magnitude unknown" accordingly; if inconclusive, write "Direction unknown." Flagging the vintage mismatch and recommending an update is the correct and complete action; do not downgrade severity because CE impact cannot be quantified.
+**Disease burden multi-source check**: When a model's mortality burden estimate for a specific geography derives from a single source (IHME/GBD alone, or WHO alone), flag as Medium/H and recommend triangulation. IHME estimates have been found 2.5× lower than UN IGME for Chad malaria burden (correcting this enabled $28M+ in new grants), and negatively correlated with IGME in Nigerian states for New Incentives. The recommended approach is to use at least two of: GBD, UN IGME, DHS, and — where available — RCT control-arm data. If IHME and UN IGME estimates differ by more than ~30%, flag as Medium/H and recommend deeper investigation. Note on source quality: recent DHS full birth history surveys (2021+, nationally representative, 5,000–30,000 HHs) should receive at least as much weight as IHME or IGME; HMIS/DHIS2 surveillance data is generally unreliable in sub-Saharan Africa and should not be given significant weight unless independently validated. If the model uses GBD 2019 data without noting that GBD 2021 estimates may differ materially, flag as **Medium/H**. Write "Direction unknown" in column H for all GBD/IHME vintage mismatch findings. Do not run a WebSearch to determine direction — direction is geography- and cause-specific and produces inconsistent results across parallel A/B instances. Flagging the vintage mismatch and recommending an update is the correct and complete action; do not downgrade severity because CE impact cannot be quantified.
 
-**GBD and IGME vintage year — explicit extraction step**: When any GBD or IGME citation appears in a cell note or source column, extract the vintage year before evaluating anything else. Do not assume the vintage is current. The extraction step is: (a) locate the year in the citation text (e.g., "GBD 2019," "IGME 2021," "IHME GBD Results Tool, accessed 2022"); (b) if no year is stated, flag as Low/O (Readability): "GBD/IGME citation at [cell] does not state the data vintage year — add the release year to the source note." Once extracted, apply the following vintage staleness rules:
-- **GBD**: expected current vintage is GBD 2021 (released October 2022); GBD 2024 (released May 2025) is now also available and may be preferred for 2025+ models. If the cited vintage is GBD 2019 or earlier, flag as **Medium/H** (Parameter) regardless of whether an intervention adjustment note is present. If the cited vintage is GBD 2021 and the model covers 2025+, flag as **Low/H** with Researcher judgment needed ✓ asking whether the researcher has checked GBD 2024 for material changes. Recommended fix: "Update burden estimates to GBD 2024 (or GBD 2021 minimum) and confirm whether the intervention adjustment logic still applies." Write "Direction unknown" in column H — updated GBD data typically shows higher burden (raising CE) but direction is geography- and cause-specific.
-- **IGME (UN child mortality)**: expected current vintage is UNICEF IGME 2024 (released March 2025). If the cited vintage is IGME 2022 or earlier, flag as **Medium/H** (Parameter). If the cited vintage is IGME 2023, flag as **Low/H** with Researcher judgment needed ✓ asking whether the researcher has checked IGME 2024. Recommended fix: "Update to UNICEF IGME 2024 estimates and recheck the mortality rate used in the model." Write "Direction unknown" in column H.
+**GBD and IGME vintage year — explicit extraction step**: When any GBD or IGME citation appears in a cell note or source column, extract the vintage year before evaluating anything else. Do not assume the vintage is current. The extraction step is: (a) locate the year in the citation text (e.g., "GBD 2019," "IGME 2021," "IHME GBD Results Tool, accessed 2022"); (b) if no year is stated, flag as Low/O (Legibility): "GBD/IGME citation at [cell] does not state the data vintage year — add the release year to the source note." Once extracted, apply the following vintage staleness rules:
+- **GBD**: expected current vintage is GBD 2021 (released October 2022); GBD 2024 (released May 2025) is now also available and may be preferred for 2025+ models. If the cited vintage is GBD 2019 or earlier, flag as **Medium/H** (Parameter) regardless of whether an intervention adjustment note is present. If the cited vintage is GBD 2021 and the model covers 2025+, flag as **Low/H** with Researcher judgment needed ✓ asking whether the researcher has checked GBD 2024 for material changes. Recommended fix: "Update burden estimates to GBD 2024 (or GBD 2021 minimum) and confirm whether the intervention adjustment logic still applies." Write "Direction unknown" in column H for all GBD vintage staleness findings. Do not run a WebSearch to determine direction — direction is geography- and cause-specific and produces inconsistent results across parallel A/B instances.
+- **IGME (UN child mortality)**: expected current vintage is UNICEF IGME 2024 (released March 2025). If the cited vintage is IGME 2022 or earlier, flag as **Medium/H** (Parameter). If the cited vintage is IGME 2023, flag as **Low/H** with Researcher judgment needed ✓ asking whether the researcher has checked IGME 2024. Recommended fix: "Update to UNICEF IGME 2024 estimates and recheck the mortality rate used in the model." Write "Direction unknown" in column H for all IGME vintage staleness findings. Do not run a WebSearch to determine direction — direction is geography- and cause-specific and produces inconsistent results across parallel A/B instances.
 - **No vintage year cited at all**: flag as Low/O (Readability) as above; do not proceed to the staleness check until the year is identified.
 
-This explicit extraction step is required because the general GBD vintage check above can fail to fire when the vintage year is embedded in a URL rather than the note text, or when the citation is on a different tab from the hardcoded value. Do not rely on a single scan — check the notes column, the source column, any linked GBD vizhub URLs (which often embed the year in the query string), and any cell-level comments. Note: this check is in addition to, not a replacement for, the GBD vizhub value-verification performed by the formula-check-data agent (Check 2).
+This explicit extraction step is required because the general GBD vintage check above can fail to fire when the vintage year is embedded in a URL rather than the note text, or when the citation is on a different tab from the hardcoded value. Do not rely on a single scan — check the notes column, the source column, any linked GBD vizhub URLs (which often embed the year in the query string), and any cell-level comments. Note: this check is in addition to, not a replacement for, the GBD vizhub value-verification performed by the formula-check-arithmetic agent (Check 2).
+
+Before filing the GBD vintage staleness finding, read the GBD vintage cell in FORMULA mode and trace one to two hops toward the CE output. If the cell feeds the CE output within two formula hops (confirmed in FORMULA mode), file as High/D per pitfalls.md SC-008. If the chain cannot be confirmed in FORMULA mode within this check, file as Medium/H as before.
 
 **Indirect deaths multiplier cap**: When a model applies the standard GiveWell indirect deaths multiplier for malaria (×1.75 of direct malaria deaths — i.e., adding 75% more indirect deaths on top of direct), verify that total malaria-attributable mortality does not exceed 100% of all-cause mortality in the target age group. In high-direct-burden geographies where malaria directly accounts for >57% of under-5 deaths (e.g., Lagos, Chad, South Sudan), a blanket 75% indirect multiplier would produce implausible results (>100% of deaths from malaria). In these cases, the indirect deaths multiplier should be scaled down — for example, GiveWell used ~40% for Lagos (where direct share was ~50–55%), resulting in ~75% total malaria attribution. Flag as High/D if the model applies the standard 75% add-on in a geography where this would exceed 100% total attribution.
 
@@ -114,6 +116,8 @@ This explicit extraction step is required because the general GBD vintage check 
 **heads-up-epi-A log** (Section A only):
 ```
 Heads-up epi-A check log — Epidemiological Parameter Checks:
+  pitfalls.md read and applied [___]
+  source footnote check [___]
   disease burden multi-source [___]
   indirect deaths multiplier cap [___]
   GBD vintage year extracted + staleness check [___]
@@ -125,11 +129,15 @@ Heads-up epi-A check log — Epidemiological Parameter Checks:
   program-reported vs. independent coverage [___]
   population denominator accuracy [___]
   screening program new vs. repeat tester prevalence [___]
+  selection into programs [___]
+  program interaction / overlap [___]
+  multi-program substitution [___]
 ```
 
-**heads-up-epi-B log** (Section B only):
+**heads-up-epi-B log** (Section B primary + adversarial Section A pass):
 ```
-Heads-up epi-B check log — Model Structure & Timing Checks:
+Heads-up epi-B check log — Model Structure & Timing Checks + adversarial Section A pass:
+  pitfalls.md read and applied [___]
   pre/post-adjustment UoV [___]
   double-counting [___]
   adjustment combination method [___]
@@ -141,14 +149,62 @@ Heads-up epi-B check log — Model Structure & Timing Checks:
   Global Fund funging calculation [___]
   cost estimate inflation adjustment [___]
   VOI wait-time plausibility [___]
+  VOI P(trial/study fails) [___]
   TA program duration [___]
   TA benefit horizon — AVERAGE range endpoint [___]
+  ceiling analysis — impossible outputs [___]
+  disease burden multi-source — adversarial pass [___]
+  GBD/IGME vintage staleness — adversarial pass [___]
+  counterfactual coverage floor — adversarial pass [___]
+  GBD vintage findings filed; deduplication with formula-check-arithmetic handled by Wave 2.5 reconciliation [___]
+```
+
+**heads-up-epi-C log** (TA burden tab, Section A only):
+```
+Heads-up epi-C check log — Epidemiological Parameter Checks (TA burden tab):
+  pitfalls.md read and applied [___]
+  source footnote check [___]
+  disease burden multi-source [___]
+  indirect deaths multiplier cap [___]
+  GBD vintage year extracted + staleness check [___]
+  IGME vintage year extracted + staleness check [___]
+  GBD intervention adjustment note present [___]
+  sub-national burden estimates [___]
+  IHME age range adjustment [___]
+  counterfactual coverage floor [___]
+  program-reported vs. independent coverage [___]
+  population denominator accuracy [___]
+  screening program new vs. repeat tester prevalence [___]
+  selection into programs [___]
   program interaction / overlap [___]
   multi-program substitution [___]
-  selection into programs [___]
+  AVERAGE range endpoints cover TA exit year + 5 years [___]
+  time series column headers read explicitly [___]
+```
+
+**heads-up-epi-D log** (TA burden tab, Section B primary + adversarial Section A pass):
+```
+Heads-up epi-D check log — Model Structure & Timing Checks + adversarial Section A pass (TA burden tab):
+  pitfalls.md read and applied [___]
+  pre/post-adjustment UoV [___]
+  double-counting [___]
+  adjustment combination method [___]
+  probability-chain enumeration [___]
+  cross-tab time-parameter sourcing [___]
+  full-scale-up assumption (undocumented 100%) [___]
+  cost denominator scope [___]
+  benefit/cost allocation for leverage [___]
+  Global Fund funging calculation [___]
+  cost estimate inflation adjustment [___]
+  VOI wait-time plausibility [___]
+  VOI P(trial/study fails) [___]
+  TA program duration [___]
+  TA benefit horizon — AVERAGE range endpoint [___]
   ceiling analysis — impossible outputs [___]
-  source footnote check — adversarial challenge to any Section A filed findings (verify downgrade rationale) [___]
-  GBD vintage staleness communicated to formula-check-arithmetic (per Cross-Agent Scope Reference) [___]
+  disease burden multi-source — adversarial pass [___]
+  GBD/IGME vintage staleness — adversarial pass [___]
+  counterfactual coverage floor — adversarial pass [___]
+  GBD vintage findings filed; deduplication with formula-check-arithmetic handled by Wave 2.5 reconciliation [___]
 ```
 
 ## Writing Findings
@@ -157,13 +213,13 @@ Before writing any finding, confirm you can answer all three of these: (1) the e
 
 **Before filing any finding**: For each finding you are about to file, ask: "What would a researcher who trusts this value point to as their evidence?" Write it as a single sentence in your reasoning before deciding whether to file (e.g., "Strongest defense: GBD 2021 was current when this model was built and this geography doesn't have substantially different estimates in GBD 2024"). Only after writing that sentence, test it against the available evidence. If the defense fails, file with confidence. If it holds up even partially, downgrade severity or mark Researcher judgment needed ✓ rather than filing Medium or High. Do not skip this step — it separates a finding grounded in evidence from one based on pattern-matching.
 
-**CE impact estimates — interaction caveat**: When estimating column H (Estimated CE Impact) for a finding about one parameter, check whether the model contains other "Guess"-labeled or unsourced parameters that interact with the parameter being corrected. If two or more parameters are simultaneously uncertain, the estimated CE impact of fixing one in isolation may be misleading — the actual change will depend on what else moves at the same time. In this case, add to the CE Impact cell: "Estimate assumes no other parameters change. If [parameter X] is also updated, net CE impact may differ." This is most important when: (a) the CE impact estimate is large (>15% of CE); (b) the finding involves an FP share, cost-per-unit, or coverage parameter that is cross-multiplied with multiple "Guess" adjustment rows; or (c) the model is known to be under active revision.
+**CE impact estimates — interaction caveat**: When estimating column H (Estimated CE Impact) for a finding about one parameter, check whether the model contains other "Guess"-labeled or unsourced parameters that interact with the parameter being corrected. If two or more parameters are simultaneously uncertain, the estimated CE impact of fixing one in isolation may be misleading — the actual change will depend on what else moves at the same time. In this case, add to column F (Explanation) — not column H — a note about the interaction: "Estimate assumes no other parameters change. If [parameter X] is also updated, net CE impact may differ." This is most important when: (a) the CE impact estimate is large (>15% of CE); (b) the finding involves an FP share, cost-per-unit, or coverage parameter that is cross-multiplied with multiple "Guess" adjustment rows; or (c) the model is known to be under active revision.
 
 **Do not write pass notes, verification notes, or "no issues found" summaries to the Findings sheet.** Every row written to the Findings sheet must be an actual finding — an issue requiring researcher attention or action. Notes like "Checked rows 1–50, no issues found" or "Parameters verified, no plausibility concerns" belong in your reasoning output, not in the sheet. Writing non-findings to the sheet pollutes the output and forces researchers to read rows that require no action.
 
 **Severity guard for uncertain findings**: A finding that uses language like "potential," "may be," "possibly," "appears to," or "might" in its Explanation cannot be filed as High. If you cannot confirm an issue is an actual error — as opposed to a question or concern — cap severity at Medium/H and mark Researcher judgment needed ✓. "This may be a double-counting error" is a Medium; "This is a double-counting error because [specific formula evidence]" can be High. This distinction matters: High findings signal confirmed errors that a researcher should fix, not hypotheses that require investigation.
 
-Append findings using `modify_sheet_values` to your staging sheet. Start at row 2 and append sequentially. Your staging sheet name is provided in session context. Column reference: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | **J** Status (leave blank)
+Append findings using `modify_sheet_values` to your staging sheet. Start at row 2 and append sequentially. Your staging sheet name is provided in session context. Column reference: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency | Sourcing | Box Link (Sourcing and Box Link are for publication-readiness findings only — leave column D blank; the compaction agent routes them to Publication Readiness)) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | **J** Status (leave blank)
 See `reference/output-format.md` for full column definitions. **Group findings by issue type**: when the same issue applies to multiple cells or parameters (e.g., multiple "Guess"-labeled parameters with no external anchor), file one finding listing all affected cells in column B, not one row per cell. Exhaustive checking is still required — find every instance — but write one consolidated row per issue type. **Publication-readiness findings — batch by issue type**: for publication-readiness findings (permission flags, broken links, citation format, terminology, style), file at most one row per issue type, listing all affected cells in column B.
 
 ---
@@ -175,7 +231,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `heads-up-epi`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Check log complete: [N] of [M] applicable checks — any unfilled [___] entries mean that check was not completed. Scope: [A / B]. Section run: [A — Epidemiological Parameter Checks / B — Model Structure & Timing Checks]. Checks run: [comma-separated list]. Checks skipped per scope: [comma-separated list with reason]. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
+- Column F: `Check log complete: [N] of [M] applicable checks — any unfilled [___] entries mean that check was not completed. Scope: [A / B / C (TA burden tab, Section A) / D (TA burden tab, Section B)]. Section run: [A — Epidemiological Parameter Checks / B — Model Structure & Timing Checks]. Checks run: [comma-separated list]. Checks skipped per scope: [comma-separated list with reason]. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]. Checked [N] rows across [sheet name(s)].`
 - All other columns: blank
 
 **Do not write AGENT_COMPLETE if the check log contains any unfilled `[___]` entry** — complete all applicable checks first, or mark inapplicable ones with `n/a — [reason]`.
