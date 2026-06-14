@@ -6,7 +6,7 @@ argument-hint: "<Google Sheets URL or local file path>"
 
 # /vetting — GiveWell Spreadsheet Vetter
 
-**Skill version**: 2026-06-13 (v1.5.3) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
+**Skill version**: 2026-06-14 (v1.5.4) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
 
 You are a meticulous spreadsheet auditor for GiveWell. See the repository README for one-time setup (Hardened Google Workspace MCP). See `reference/key-parameters.md` for authoritative parameter values. See `reference/output-format.md` for output column definitions.
 
@@ -901,15 +901,17 @@ Report any failed agent:
 **Wave 2.5 entry conditions** — confirm all before spawning any reconcile agent:
 - [ ] Wave 2 exit conditions satisfied (all spawned agents complete, silent failure check run).
 - [ ] Staging tab names available in session context or recovered from Dashboard A99.
-- [ ] Pre-flight empty pair check complete (empty pairs identified and recorded).
+- [ ] Pre-flight empty pair check complete — perform the check described below (under "Pre-flight empty pair check") before confirming this item. Empty pairs identified and recorded.
 
-Announce before spawning: `[Phase 2/4 done → Phase 3/4] Wave 2 complete — starting reconciliation (up to 17 agents, or 18 if TA BOTEC; fewer if empty pairs skipped in pre-flight check).`
+Announce before spawning: `[Phase 2/4 done → Phase 3/4] Wave 2 complete — starting reconciliation ([computed_count] agents: [list active pairs]; [list skipped pairs if any] skipped in pre-flight check).` Compute the count before announcing: start with 17 standard pairs (or 18 if a TA BOTEC adds the ce-chain-trace-ta pair), subtract skipped pairs (arith C/D if 2-instance mode; source-data-check if no source tabs), add any additional band-split pairs if banding is active.
 
 **Staging sheet name recovery — do this first if names are not in context**: If the staging sheet names are not available in the current session context (e.g., context was compacted between Wave 2 and Wave 2.5), read Dashboard cells A99 onward of the output spreadsheet to recover the full staging sheet log written during output setup.
 
 **Pre-flight empty pair check**: Before spawning, fire a parallel batch of `read_sheet_values` calls — one per pair — reading `{tab}!A1:J500` for each staging-A and staging-B tab (AGENT_COMPLETE may be at any row after all findings) to check whether they contain an AGENT_COMPLETE marker or any finding rows. For any pair where **both** staging-A and staging-B tabs contain only the header row (no AGENT_COMPLETE, no findings): skip spawning that reconcile agent and announce: `⏭️ Skipping [pair name] reconcile — both A and B wrote zero findings.` Only skip when both tabs are confirmed empty; if either tab has any non-header row, spawn the reconcile agent as normal. Update the agent count in your announcement accordingly.
 
-Spawn **up to 18 reconciliation agents simultaneously** (17 standard agents, or 18 if a TA BOTEC is present; consistency-check and key-params-check share one combined agent; fewer if empty pairs are skipped), using `agents/reconcile.md`. Each agent receives the standard session context plus its specific pair assignment. Do not tell any reconcile agent about the other pairs being processed.
+For the combined consistency-check + key-params-check agent, evaluate the two pairs independently. Skip the combined agent only if BOTH the consistency pair (stg-consist-A and stg-consist-B both empty) AND the key-params pair (stg-kp-A and stg-kp-B both empty) are confirmed empty. If either pair has any non-header row, spawn the combined agent as normal.
+
+Spawn reconciliation agents simultaneously (up to 17 standard agents, or 18 if a TA BOTEC is present; consistency-check and key-params-check share one combined agent; fewer if empty pairs are skipped), using `agents/reconcile.md`. Each agent receives the standard session context plus its specific pair assignment. Do not tell any reconcile agent about the other pairs being processed.
 
 For each instance, append to session context:
 > **Pair to reconcile**: [pair name]
@@ -919,6 +921,12 @@ For each instance, append to session context:
 
 **Combined consistency-check + key-params-check agent**: For this pair only, pass the following session context instead of the standard single-pair format:
 > **Pairs to reconcile**: consistency-check AND key-params-check. Process sequentially in this order: (1) reconcile consistency-check A/B first — staging sheet A: `stg-consist-A`, staging sheet B: `stg-consist-B`; write any net-new findings to reconcile staging sheet `stg-rec-con`. (2) Then reconcile key-params-check A/B — staging sheet A: `stg-kp-A`, staging sheet B: `stg-kp-B`; write any net-new findings to reconcile staging sheet `stg-rec-kp`. Complete consistency-check reconciliation fully before beginning key-params-check reconciliation. Write a coverage declaration after each pair.
+
+If key-params-check ran in 1-instance mode (populated_rows ≤ 80), also append: `Note: key-params-check ran in 1-instance mode — stg-kp-B was intentionally not written to and will contain only the header row. This is not a silent failure. Treat stg-kp-A as the complete finding set for key-params-check; the B-instance absent marker does not require investigation or flagging.`
+
+**heads-up-epi reconcile agent**: Append to this agent's session context: `Note: heads-up-epi A and B used a complementary section split. A covered Section A checks only (epidemiological parameters). B covered Section B checks (model structure, timing) plus an adversarial pass of three specific Section A checks. B-only findings whose Error Type or Explanation references model structure or timing checks are expected; treat them as Retain without escalating to Needs researcher input unless the cell read reveals a genuine error.`
+
+**heads-up-intervention reconcile agent** (TA grants only — when is_ta_botec is true): Append to this agent's session context: `Note: heads-up-intervention A covered Section A (intervention-specific) checks only; B covered Section B TA grant checks. The sections are complementary and non-overlapping on TA grants. B-only findings whose context clearly relates to TA grant structure are expected; treat as Retain unless the cell read reveals an error.`
 
 | Pair | Staging sheet A | Staging sheet B | Reconcile staging sheet |
 |---|---|---|---|
@@ -943,36 +951,40 @@ For each instance, append to session context:
 
 Note: notes-scan (Step 7c) has no reconciliation pair — it runs as A/B, each writing to its own staging tab (`stg-nscn-A`, `stg-nscn-B`); the Wave 3 compaction agent deduplicates their overlapping findings in its standard Step 3 dedup pass. No reconcile agent is needed. formula-check-parameters (Step 3f) also has no reconciliation pair — it runs as a single instance writing to `stg-params`. The final-review compaction step reads both alongside all other staging tabs. The heads-up-epi TA counterfactual burden pair has no reconciliation agent for non-TA models — skip that row entirely when program context is not a TA BOTEC.
 
-**Silent failure check after Wave 2.5 — do this before Wave 3**: After all reconciliation agents complete, check each reconcile staging sheet (stg-rec-*) for rows beyond its header to verify net-new findings were written if expected, and check whether each reconcile agent wrote its coverage declaration to chat. (Pairs confirmed empty in the pre-flight check are exempt — their skipped status was already logged.) A reconcile agent that wrote no coverage declaration and whose reconcile staging sheet contains only the header row is a silent failure risk. Report any pair where:
+**Silent failure check after Wave 2.5 — do this before Wave 3**: After all reconciliation agents complete, check each reconcile staging sheet (stg-rec-*) and check whether each reconcile agent wrote its coverage declaration to chat. (Pairs confirmed empty in the pre-flight check are exempt — their skipped status was already logged.) A reconcile agent is a silent failure risk if its reconcile staging sheet contains only the header row (no AGENT_COMPLETE, no findings) OR if no coverage declaration for this pair appears in the current session context. Report any pair where either condition holds:
 
 > ⚠️ Reconciliation failure warning: [pair name] reconcile agent produced no coverage declaration and its reconcile staging sheet (`stg-rec-[pair]`) contains no net-new findings. Its A/B divergences may be unreconciled. Consider re-running this reconcile agent before proceeding to Wave 3.
 
 Exception: pairs where both A and B agents wrote zero findings (confirmed empty) produce no divergences to reconcile and zero net-new findings legitimately — verify this by reading the pair's staging-A and staging-B tabs before flagging.
 
-**notes-scan completion check**: After all Wave 2.5 reconciliation agents complete, read staging sheets `stg-nscn-A` and `stg-nscn-B`. If both tabs contain only the header row — no AGENT_COMPLETE marker and no finding rows — surface a silent failure warning:
+**notes-scan completion check**: After all Wave 2.5 reconciliation agents complete, read staging sheets `stg-nscn-A` and `stg-nscn-B` separately. For each tab, check for an AGENT_COMPLETE marker independently:
 
-> ⚠️ notes-scan silent failure suspected: staging sheets `stg-nscn-A` and `stg-nscn-B` are both empty (no AGENT_COMPLETE, no findings). notes-scan has no reconciliation pair, so this gap will not be caught by any reconcile agent. Consider re-running notes-scan A and B before proceeding to Wave 3.
+If `stg-nscn-A` lacks an AGENT_COMPLETE marker:
+> ⚠️ notes-scan-A silent failure suspected: no AGENT_COMPLETE in `stg-nscn-A`. notes-scan has no reconciliation pair, so this gap will not be caught by any reconcile agent. Consider re-running notes-scan-A before proceeding to Wave 3.
 
-If either staging tab contains any non-header row, notes-scan is presumed to have run.
+If `stg-nscn-B` lacks an AGENT_COMPLETE marker:
+> ⚠️ notes-scan-B silent failure suspected: no AGENT_COMPLETE in `stg-nscn-B`. notes-scan has no reconciliation pair, so this gap will not be caught by any reconcile agent. Consider re-running notes-scan-B before proceeding to Wave 3.
+
+Issue each warning independently — a clean `stg-nscn-A` does not suppress a `stg-nscn-B` warning.
 
 **TA misclassification cross-check**: After all Wave 2.5 reconciliation agents complete and before starting Wave 3, verify that heads-up-intervention-B and ce-chain-trace-ta reached consistent TA/non-TA classifications. Run this check unconditionally — the dangerous case is a TA grant classified as non-TA (not the reverse), so gating on `is_ta_botec` would miss exactly the failures this check is designed to catch.
 
 1. Read the AGENT_COMPLETE marker row from staging sheet `stg-int-B`. Extract the `Routing decision:` field from column F. **The `Routing decision:` field must appear as the first element in column F** — parse it as a prefix match: the field is present if column F starts with `Routing decision:`. If column F does not start with this prefix, treat the routing decision as missing and announce: `⚠️ TA cross-check: stg-int-B AGENT_COMPLETE row has no Routing decision prefix in column F — cannot determine TA classification for heads-up-intervention-B. Skipping mismatch check.`
-2. Read the AGENT_COMPLETE marker row from staging sheet `stg-ceta-A`. Check whether column F contains `No TA grant signals found` (non-TA self-detection) or describes TA-specific check results.
-3a. If heads-up-intervention-B declared `Routing decision: A — non-TA` but ce-chain-trace-ta-A produced TA-specific findings (its AGENT_COMPLETE does **not** contain `No TA grant signals found`), announce:
+2. Read the AGENT_COMPLETE marker row from staging sheet `stg-ceta-A`. First check whether an AGENT_COMPLETE row exists at all — if no AGENT_COMPLETE row is found, announce: `⚠️ TA cross-check: stg-ceta-A has no AGENT_COMPLETE marker — ce-chain-trace-ta-A may have failed silently. Skipping TA mismatch check; consider re-running ce-chain-trace-ta before Wave 3.` Then proceed to Step 4 (silent agree). Do not evaluate Steps 3a or 3b when stg-ceta-A has no AGENT_COMPLETE. If an AGENT_COMPLETE row is found, check whether column F contains `No TA grant signals found` (non-TA) or `TA grant signals confirmed:` (TA-positive canonical phrase).
+3a. If heads-up-intervention-B declared `Routing decision: A — non-TA` but ce-chain-trace-ta-A column F contains `TA grant signals confirmed:` (its AGENT_COMPLETE does **not** contain `No TA grant signals found`), announce:
 
 > ⚠️ TA classification mismatch: heads-up-intervention-B identified this as non-TA (ran Section A intervention checks only) but ce-chain-trace-ta found TA signals. If this is a TA grant, Section B TA grant checks were skipped by heads-up-intervention-B. Consider re-running heads-up-intervention with `is_ta_botec = true` in session context before Wave 3.
 
-3b. If heads-up-intervention-B declared `Routing decision: B — TA` but ce-chain-trace-ta-A contains `No TA grant signals found`, announce:
+3b. If heads-up-intervention-B declared `Routing decision: B — TA` but ce-chain-trace-ta-A column F contains `No TA grant signals found` (not `TA grant signals confirmed:`), announce:
 
 > ⚠️ TA classification mismatch: heads-up-intervention-B ran TA grant checks but ce-chain-trace-ta found no TA signals. Confirm with the researcher whether this is a TA grant — if not, the Section B TA checks may not apply and can be disregarded.
 
 4. If both agree (both non-TA or both found TA signals), proceed silently.
 
 **Wave 2.5 exit conditions** — confirm all before proceeding to Wave 3:
-- [ ] All reconcile agents complete and coverage declarations written (or confirmed empty pairs).
+- [ ] All reconcile stg-rec-* sheets contain an AGENT_COMPLETE row (or confirmed empty pairs).
 - [ ] Wave 2.5 silent failure check run — any unreconciled pairs flagged.
-- [ ] notes-scan completion check run.
+- [ ] notes-scan completion check run — both stg-nscn-A and stg-nscn-B checked independently.
 - [ ] TA misclassification cross-check run (unconditionally — even for non-TA models).
 
 ---
