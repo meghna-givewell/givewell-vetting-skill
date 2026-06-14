@@ -7,7 +7,7 @@ You are performing Step 7c of a GiveWell spreadsheet vet. You have been provided
 
 **Write to your staging sheet only** — the compaction agent routes findings to Publication Readiness based on Error Type. Do not write to the Findings sheet and do not write directly to the Publication Readiness sheet.
 
-**Do not invoke any skills or load additional context files.** Your task is defined entirely within this prompt.
+**Do not invoke any skills or load additional context files other than reference/pitfalls.md, which you must read before starting your checks using the Read tool.**
 
 **Stakes**: GiveWell's convention requires every row to have a Notes column entry. A model with missing or boilerplate notes is harder to audit, harder to hand off, and harder to verify against sources. Missing "Calculation." entries in particular create a publication-readiness gap that appears on every GiveWell internal audit. This agent's sole job is exhaustive Notes column coverage — a check that gets shortchanged when bundled with other readability responsibilities.
 
@@ -46,7 +46,7 @@ As you scan each row's Notes entry, simultaneously check the row label in column
 - **Redundant labels** — e.g., "Total pilot cost - pilot - operational pilot" where "pilot" appears multiple times
 - **Directionally misleading labels** — e.g., "above/below bar" when the model only computes above-bar scenarios (the "below" implies content that isn't there)
 - **Scope-mismatched labels** — labels referencing a different org, geography, or program than what the formula actually computes
-- **Vague or opaque labels** — e.g., "value," "arbitrary value," "placeholder," "figure," "X," "TBD," or any single-word label that doesn't describe what the row computes. Recommended fix: rename to state what the row represents (e.g., "arbitrary value" → "Coverage adjustment factor — [source]").
+- **Vague or opaque labels** — e.g., "value," "arbitrary value," "placeholder," "figure," "X," "TBD," or any single-word label that doesn't describe what the row computes. Recommended fix: rename to state what the row represents (e.g., "arbitrary value" → "Coverage adjustment factor — [source]"). Scope this sub-item to structural placeholder-only labels: 'value', 'X', 'TBD', 'placeholder', '[blank]', '???'. Do not flag labels that are merely imprecise — imprecise-but-meaningful labels are readability agent scope.
 
 Check every row label — not just rows with unusual notes.
 
@@ -59,7 +59,9 @@ Flag any row where the label (column A), notes cell, or a resolved spreadsheet c
 - Entries beginning with "Note for [Name]," "Hey [Name]," or similar addressed-to patterns — e.g., "Note for CRA, this has not been vetted"
 - Entries containing action-item or work-in-progress language — e.g., "we should update this," "make sure to update," "need to revisit," "not yet vetted," "needs review," "check this," "TODO," "confirm before publishing," "to be updated," "will fix later"
 - **Source citations using only a staff member's first name** — e.g., "per Jack's model," "Bea's analysis," "from Meghna's spreadsheet," "per CRA" — are not traceable publication-ready citations and must be replaced with a link or full document title before publication
-These are working instructions, unfinished notes, or informal citations left in a cell rather than a published rationale and must be replaced or removed before publication. Also flag the following as pre-publication cleanup candidates even when no explicit "delete" language is present: (d) rows whose label contains "old," "previous," "prior [year]," "v1," "v2," "deprecated," or "archived" without a cell note explaining why the historical version is retained alongside the current version; (e) rows that appear to be duplicate calculations — same row label and same formula structure as an immediately adjacent row — suggesting a leftover from copy-paste editing that was never cleaned up; (f) rows containing only `#N/A`, `#VALUE!`, or `#REF!` error values in all data cells without a note explaining the error is intentional. Flag as Low/O with Legibility: "Row [ref] appears to be [an internal working note / a superseded calculation / a duplicate] — confirm whether it should be removed before publication." Do not flag rows where the internal-only status is structural and intentional (e.g., a Changelog tab that is consistently treated as internal).
+These are working instructions, unfinished notes, or informal citations left in a cell rather than a published rationale and must be replaced or removed before publication. Flag as Low/O with Legibility: "Row [ref] appears to be [an internal working note / a superseded calculation] — confirm whether it should be removed before publication." Do not flag rows where the internal-only status is structural and intentional (e.g., a Changelog tab that is consistently treated as internal).
+
+Rows labeled old/previous/v1, duplicate calculation rows, and error-value-only rows are audited by the readability agent — do not file here to avoid duplicate findings.
 
 **H2. Unresolved spreadsheet comments**: The `read_spreadsheet_comments` batch read in Step 1 returns all comment threads. After completing the row-by-row scan, read the spreadsheet comments results and flag any **unresolved** comment thread (i.e., a thread with no resolved marker and no reply closing it out) that: (a) raises a question or concern about a cell value — e.g., "should this be 0.3 or 0.31?", "is this the right source?", "check this number before publishing"; or (b) contains language suggesting the cell is under active revision or has a known issue. File in Publication Readiness as Legibility: "Unresolved comment thread at [cell/row] ([author, approximate date if available]): '[comment text]'. Resolve or close the thread before publication — open threads indicate unanswered questions or pending changes." Do not flag unresolved comment threads that are purely conversational or resolved by the surrounding context (e.g., a comment asking a question that is clearly answered in the cell note). The SKILL.md pre-vet extraction handles RESOLVED acknowledged-issue threads separately — this check covers open/unresolved threads only.
 
@@ -81,10 +83,11 @@ Do not flag if: (a) the Notes cell or a nearby cell note already explains the ra
 
 ## Step 3 — Mandatory declaration table
 
-After completing the full row-by-row scan for all sheets, write the following declaration table before writing any findings to the Publication Readiness sheet. Fill in every line. If a category has no instances, write "none." Do not write findings before this table is complete and all lines are filled.
+After completing the full row-by-row scan for all sheets, write the following declaration table before writing any findings to your staging sheet. Fill in every line. If a category has no instances, write "none." Do not write findings before this table is complete and all lines are filled.
 
 ```
 Notes column scan complete.
+pitfalls.md read and applied [___]
 Sheet(s) scanned: [list all sheet names]
 Total rows scanned: [N] (rows [first]–[last] on [sheet name], repeat per sheet)
 A. Formula rows missing "Calculation." note: [list row references, or "none"]
@@ -123,7 +126,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `notes-scan`
 - Column D: `AGENT_COMPLETE`
-- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure.
