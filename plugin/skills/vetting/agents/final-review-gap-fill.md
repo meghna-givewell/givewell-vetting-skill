@@ -8,7 +8,7 @@ You are performing Step 10b of a GiveWell spreadsheet vet. This step runs after 
 
 **Do not compact, sort, re-assign IDs, or redo any prior step's work.**
 
-**Findings_backup scope**: The compaction agent (Step 10a) creates a `Findings_backup` tab before modifying the Findings sheet. That backup captures the state of all staging tabs at compaction time — it does not include any findings added by this gap-fill agent. If the vet is later reviewed and a finding is traceable only to gap-fill (Finding IDs assigned after compaction's highest ID), it will not appear in `Findings_backup`. This is expected behavior, not an error.
+**Staging_backup scope**: The compaction agent (Step 10a) creates a `Staging_backup` tab before modifying the Findings sheet. That backup captures the state of all staging tabs at compaction time — it does not include any findings added by this gap-fill agent. If the vet is later reviewed and a finding is traceable only to gap-fill (Finding IDs assigned after compaction's highest ID), it will not appear in `Staging_backup`. This is expected behavior, not an error.
 
 **Scope**: This agent addresses what A/B parallel instances systematically tend to miss: (1) downstream cascade effects from confirmed formula errors, (2) long coverage gaps in the row sequence of findings, (3) Won't Fix decisions that may have been under-investigated. It does NOT re-run the full checklist — it reasons about the findings that already exist and fills in what they imply was missed.
 
@@ -32,7 +32,7 @@ Read reference/pitfalls.md using the Read tool. Apply every entry relevant to ca
 
 ## Step 1 — Read all confirmed findings
 
-Read the Findings sheet in full using batched `read_sheet_values` calls: `A2:J51`, then `A52:J101`, `A102:J151`, continuing in 50-row increments until two consecutive batches return no non-empty rows. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Skip divider rows (column D empty, column B contains `───`). Collect all finding rows with Finding IDs assigned.
+Read the Findings sheet in full using batched `read_sheet_values` calls: `A2:J51`, then `A52:J101`, `A102:J151`, continuing in 50-row increments until two consecutive batches return no non-empty rows. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Skip divider rows (column D empty, column B contains `───`). Also skip rows where column D = `AGENT_COMPLETE` — the compaction agent writes one such row to the Findings sheet as its completion marker; it is not a finding. Collect all finding rows with Finding IDs assigned.
 
 Build a working list of:
 - **All High findings** with `Formula` in column E — these are the cascade candidates.
@@ -137,17 +137,17 @@ Coverage declaration: "Won't Fix verification complete. WONT_FIX rows found acro
 
 After completing Checks 1, 2, and 2.5 above, and before writing findings to the sheet for those checks: verify that each of the following check categories was covered by at least one agent in this vet — either by a finding in the Findings sheet, or by an explicit "no issues found" statement in an AGENT_COMPLETE marker's column F.
 
-To check: scan the Findings sheet for at least one finding in the relevant error type, OR read the relevant agent's stg-* staging tab and look for an AGENT_COMPLETE row (column D = `AGENT_COMPLETE`) confirming the check ran. Do not look for AGENT_COMPLETE rows in the Findings sheet — they are never written there; they remain in the staging tabs. **Note**: staging tabs persist after compaction — compaction reads them but does not delete them, so they are readable here. If neither a finding nor an AGENT_COMPLETE confirmation is found, file a gap-fill finding.
+To check: scan the Findings sheet for at least one finding in the relevant error type, OR read the relevant agent's stg-* staging tab and look for an AGENT_COMPLETE row (column D = `AGENT_COMPLETE`) confirming the check ran. Look for AGENT_COMPLETE rows in the staging tabs — not in the Findings sheet. (The compaction agent does write an AGENT_COMPLETE row to the Findings sheet, but that row belongs to `final-review-compaction`, not to any Wave 1 agent — do not count it as confirmation that a Wave 1 check ran.) **Note**: staging tabs persist after compaction — compaction reads them but does not delete them, so they are readable here. If neither a finding nor an AGENT_COMPLETE confirmation is found, file a gap-fill finding.
 
 **Required coverage categories**:
 
-| Category | Agent expected to cover it | File this if absent |
+| Category | Staging tab(s) to check | File this if absent |
 |---|---|---|
-| Study data accuracy (cohort, metric type, comparison arm) | `formula-check-data` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration found for study data accuracy (cohort/metric/arm checks). Confirm formula-check-data ran and completed Check 5." |
-| Structural completeness (leverage/funging, Simple CEA, scenario tab) | `formula-check-structure` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for structural completeness checklist. Confirm formula-check-structure ran and completed the mandatory checklist." |
-| Geography/country consistency | `source-data-check` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for geography consistency. Confirm source-data-check ran and completed Check F (if source tabs were present)." |
-| Grant amount consistency | `formula-check-parameters` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for grant amount consistency. Confirm formula-check-parameters ran and completed Check 5." |
-| Formula fragility (DIV/0, negative value guards, IFERROR) | `formula-check-edge-cases` or `formula-check-arithmetic` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for formula fragility / edge case guards. Confirm formula-check-edge-cases ran." |
+| Study data accuracy (cohort, metric type, comparison arm) | `stg-data-A` and `stg-data-B` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration found for study data accuracy (cohort/metric/arm checks). Confirm formula-check-data ran and completed Check 5." |
+| Structural completeness (leverage/funging, Simple CEA, scenario tab) | `stg-struct-A` and `stg-struct-B` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for structural completeness checklist. Confirm formula-check-structure ran and completed the mandatory checklist." |
+| Geography/country consistency | `stg-srcdt-A` (single instance; will be absent if source-data-check was skipped — see Do not file conditions below) | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for geography consistency. Confirm source-data-check ran and completed Check F (if source tabs were present)." |
+| Grant amount consistency | `stg-params` (single instance) | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for grant amount consistency. Confirm formula-check-parameters ran and completed Check 5." |
+| Formula fragility (DIV/0, negative value guards, IFERROR) | `stg-edge-A` and `stg-edge-B` (or `stg-arith-A` / `stg-arith-B` if formula-check-edge-cases was not run separately) | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for formula fragility / edge case guards. Confirm formula-check-edge-cases ran." |
 
 **Do not file** a gap finding when: (a) the relevant agent's AGENT_COMPLETE row is present and its completion message confirms the check ran; (b) program context contains a declared-intentional deviation that would make the check not applicable; (c) the workbook has no source data tabs (geography consistency check does not apply); or (d) session context contains `source-data-check: SKIPPED` — this records the conditional skip from the orchestrator and is sufficient evidence the geography consistency check was intentionally omitted.
 

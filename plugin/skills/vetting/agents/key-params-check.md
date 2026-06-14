@@ -69,6 +69,8 @@ Key-params coverage log:
   Avert death 6–59m VAS (119): [cell ref or 'not found'] = [raw value]. Match: YES/NO.
   Avert maternal death (125): [cell ref or 'not found'] = [raw value]. Match: YES/NO.
   Discount rate (4%): [cell ref or 'not found'] = [raw value]. Match: YES/NO.
+  Discount rate — long-term health benefits (0.5%/year): [cell ref or 'not found' or 'n/a — program type'] = [raw value]. Match: YES/NO.
+  Discount rate — TA death-averting (1.4%/year): [cell ref or 'not found' or 'n/a — not-TA'] = [raw value]. Match: YES/NO.
   Income effects malaria (0.58088%): [cell ref or 'not found'] = [raw value]. Match: YES/NO.
   Long-term income ratio (0.3064): [cell ref or 'not found'] = [raw value]. Match: YES/NO.
   Years to benefits (10): [cell ref or 'not found'] = [raw value]. Match: YES/NO.

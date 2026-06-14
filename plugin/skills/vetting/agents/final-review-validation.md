@@ -26,11 +26,13 @@ Read `reference/pitfalls.md` using the Read tool. Apply every entry relevant to 
 
 ---
 
-## Step 1 — Read all findings
+## Step 1 — Read all findings and obtain spreadsheet info
 
-Read all rows from row 2 onward on the Findings sheet using batched `read_sheet_values` calls: `A2:J51`, then `A52:J101`, `A102:J151`, continuing in 50-row increments until two consecutive batches return no non-empty rows. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Skip divider rows (column D empty, column B contains `───`). Collect all finding rows. Also read all rows from row 2 onward on the Publication Readiness sheet using the same 50-row batched pattern (A2:F51, A52:F101, etc.). Collect all PR column A values (PR-* IDs) for the ID integrity check. Do not skip this read — the ID uniqueness and sequence checks require both the Findings sheet AND Publication Readiness sheet IDs.
+Read all rows from row 2 onward on the Findings sheet using batched `read_sheet_values` calls: `A2:J51`, then `A52:J101`, `A102:J151`, continuing in 50-row increments until two consecutive batches return no non-empty rows. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Skip divider rows (column D empty, column B contains `───`). Also skip rows where column D = `AGENT_COMPLETE` — these are pipeline completion markers written by gap-fill; they are not findings and must not be processed by any check below. Collect all finding rows. Also read all rows from row 2 onward on the Publication Readiness sheet using the same 50-row batched pattern (A2:F51, A52:F101, etc.). Collect all PR column A values (PR-* IDs) for the ID integrity check. Do not skip this read — the ID uniqueness and sequence checks require both the Findings sheet AND Publication Readiness sheet IDs.
 
 If the Publication Readiness sheet is empty (no rows after row 1), declare the PR ID integrity check clean: "Publication Readiness sheet is empty — no PR-* IDs to verify." Do not file a finding about missing PR IDs when the sheet is legitimately empty.
+
+**Call `get_spreadsheet_info` unconditionally now** — before any other check — on the source spreadsheet to obtain the complete tab list and tab-to-GID mapping. Store this result as `spreadsheet_info`; it is required by both Check 2 (CI sheet detection) and the hyperlink conversion step. Call it once here and do not call it again later. If `get_spreadsheet_info` fails, note the failure in your reasoning and announce: `⚠️ get_spreadsheet_info failed — Check 2 (CI sheet check) and hyperlink conversion cannot run. Proceed with all other checks.` Then skip Check 2 and the hyperlink conversion step.
 
 ---
 
@@ -81,12 +83,12 @@ Coverage declaration: "Fix-validation complete. Checked [N] High/Medium findings
 
 ## Check 2 — Confidence intervals sheet
 
-Use `get_spreadsheet_info` to list all tabs in the source spreadsheet. Check whether a "Confidence intervals" or "Uncertainty" sheet exists:
+Use the `spreadsheet_info` result obtained in Step 1 to check whether a "Confidence intervals" or "Uncertainty" sheet exists:
 - If present: verify it is populated (not blank) via a targeted `read_sheet_values` call. If blank, file as Medium/Assumption — write Assumption in column E, route to Findings.
-- If absent: file as Low, route to Publication Readiness with note that uncertainty ranges are a required component of published top-charity CEAs.
+- If absent: write directly to the Publication Readiness sheet with column D = Legibility, column E = "Confidence intervals or Uncertainty sheet not found — uncertainty ranges are a required component of published top-charity CEAs."
 - **Do not apply this check** to BOTECs, VOI models, or exploratory analyses that do not target a published CEA.
 
-**To determine whether this check applies**: check session context for a model type declaration (e.g., "program type: BOTEC" or "optionality model"). If not in session context, read the workbook title from `get_spreadsheet_info` — titles containing "BOTEC", "optionality", "VoI", or "exploratory" indicate this check does not apply. If model type is ambiguous, apply the check and mark the finding as Researcher judgment needed ✓ with note: "Apply only if this is a published top-charity CEA, not a BOTEC or exploratory analysis."
+**To determine whether this check applies**: check session context for a model type declaration (e.g., "program type: BOTEC" or "optionality model"). If not in session context, read the workbook title from the `spreadsheet_info` result obtained in Step 1 — titles containing "BOTEC", "optionality", "VoI", or "exploratory" indicate this check does not apply. If model type is ambiguous, apply the check and mark the finding as Researcher judgment needed ✓ with note: "Apply only if this is a published top-charity CEA, not a BOTEC or exploratory analysis."
 
 If a prior agent already flagged this, verify the finding exists — do not duplicate.
 
@@ -107,14 +109,14 @@ Using targeted `read_sheet_values` calls on column A and column B of each vetted
 - Cells containing `TBD`, `TODO`, `DRAFT`, `Placeholder`, `Update this`, or similar
 - Column headers with generic names like `Column X`, `Country A`, `Year N`
 - Cell notes containing internal-only markers (use `read_sheet_notes` on each vetted sheet to scan for notes beginning with `Note to self`, `INTERNAL`, or `ASK [name]`)
-- Workbook title (from `get_spreadsheet_info`) containing `draft`, `v1`, `wip`, or `copy of`
+- Workbook title (from the `spreadsheet_info` result obtained in Step 1) containing `draft`, `v1`, `wip`, or `copy of`
 - Any date visible in the workbook header, key tab, or title row that is more than 18 months before today — flag as Low/H if it appears to be a last-updated date rather than a data vintage date
 
 Do not limit to header rows — scan all populated rows.
 
 To distinguish last-updated from data vintage: a last-updated date typically appears in workbook metadata rows (e.g., a row labeled "Last updated:", "Version:", or "As of:"). A data vintage date typically appears in a row label describing a data source (e.g., "GBD 2021", "DHS 2020 data"). If the date context is ambiguous (e.g., a standalone year in a header row), treat as a last-updated date and apply the 18-month rule.
 
-File each unflagged instance as Low, route to Publication Readiness. If a prior agent already flagged it, verify the finding exists.
+Write each unflagged instance directly to the Publication Readiness sheet with Error Type: Legibility (column D of the PR sheet) — not to the Findings sheet. If a prior agent already flagged it, verify the finding exists in Publication Readiness before filing a duplicate.
 
 Coverage declaration: "Placeholder scan complete. Header rows and column A checked for all [N] vetted sheets. Instances found: [list or 'none']. No other instances."
 
@@ -128,9 +130,9 @@ Coverage declaration: "Placeholder scan complete. Header rows and column A check
 
 If Check 0 found a >1% discrepancy between the live cell value and the session context baseline and filed a High finding, use the live cell value (from Check 0 step 3) as the baseline for CE impact estimation, not the session context value — the live value is more likely to be correct.
 
-Rationale: Medium Formula, Parameter, and Adjustment findings can affect CE even if their impact is below the High threshold. Researchers need the CE direction to triage them against High findings. For Medium `Assumption`, `Legibility`, and `Inconsistency` findings where CE impact is confirmed zero, write `No CE impact` — do not leave blank. Leave blank only when you genuinely cannot determine whether there is a CE impact (rare for these types).
+Rationale: Medium Formula, Parameter, and Adjustment findings can affect CE even if their impact is below the High threshold. Researchers need the CE direction to triage them against High findings. For Medium `Assumption` findings where CE impact is confirmed zero, write `No CE impact` — do not leave blank. For Medium `Legibility` and `Inconsistency` findings: per output-format.md, blank column H is acceptable — write `No CE impact` only when you have positively confirmed the CE impact is zero; do not fill it automatically.
 
-**Pass B — quantify High "magnitude unknown"**: For every **High** finding where column H contains "magnitude unknown" (i.e., already filled but not quantified):
+**Pass B — quantify High "magnitude unknown" and flag unresolved directions**: For every **High** finding where column H contains "magnitude unknown" (i.e., already filled but not quantified):
 
 1. Read the cell(s) referenced in column C of that finding using `read_sheet_values` (UNFORMATTED_VALUE) on the source spreadsheet.
 2. Read the CE baseline cell (verified in Check 0) in UNFORMATTED_VALUE mode.
@@ -139,6 +141,8 @@ Rationale: Medium Formula, Parameter, and Adjustment findings can affect CE even
 5. If the cell is not in the CE chain (e.g., a labeling issue or structural issue that doesn't affect computation), change to `No CE impact` if that is accurate.
 
 The goal is that no High finding exits validation with a bare "magnitude unknown" — every High finding should either have a numerical estimate or a specific stated reason why one cannot be computed.
+
+**Pass B — `Direction unknown` High findings**: For every **High** finding where column H = `Direction unknown`: if column I (Researcher judgment needed) is blank, write `✓` to column I — the researcher must determine the CE direction to triage this finding. Do not attempt to resolve the direction yourself.
 
 Do not modify any other columns of existing findings.
 
@@ -166,7 +170,7 @@ Convert every cell reference in column C of both the Findings sheet and Publicat
 
 **Run hyperlink conversion after**: (1) all five checks are complete, (2) all new findings have been written, and (3) all in-place updates to column F and column H are complete. Do NOT run hyperlink conversion after writing the AGENT_COMPLETE marker — the AGENT_COMPLETE row does not need a hyperlink.
 
-1. **Get the GID mapping**: From the `get_spreadsheet_info` result already obtained in Check 2, extract the tab name → numeric GID mapping for every tab in the source spreadsheet (`sheetId` field in the sheets list).
+1. **Get the GID mapping**: From the `spreadsheet_info` result obtained in Step 1, extract the tab name → numeric GID mapping for every tab in the source spreadsheet (`sheetId` field in the sheets list). (Do not call `get_spreadsheet_info` again — it was called once in Step 1.)
 
 2. **Read all column C values**: Read Findings sheet columns A:C in batches until empty. Separately read Publication Readiness sheet columns A:C. Collect every non-divider, non-blank row with its sheet row number and current column C text.
 

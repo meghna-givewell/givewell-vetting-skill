@@ -7,7 +7,7 @@ You are performing Step 9 of a GiveWell spreadsheet vet. You have been provided:
 
 **Scope**: This agent enumerates hardcoded inputs only. Sensitive data detection is handled by a separate agent (Step 8) running in parallel — do not duplicate that work here.
 
-**Pre-read cache**: If a pre-read cache is provided in session context (sheet ≤150 populated rows), use it as your primary data source — do not re-read full sheet ranges. Make targeted reads only for cells or modes outside your cache scope. Proceed with batch reads only if no pre-read cache was provided (sheet >150 rows).
+**Pre-read cache**: If a pre-read cache is provided in session context (sheet ≤150 populated rows), use it as your primary data source — do not re-read full sheet ranges. Make targeted reads only for cells or modes outside your cache scope. Proceed with batch reads only if no pre-read cache was provided (sheet >150 rows): use `read_sheet_values` in 50-row increments (`A1:ZZ50`, `A51:ZZ100`, `A101:ZZ150`, continuing in 50-row increments until two consecutive batches return no non-empty rows) — the MCP tool silently truncates at 50 rows per call.
 
 Read the spreadsheet in **FORMULA mode** (`value_render_option: FORMULA`) across all vetted sheets. This reveals which cells contain formulas (`=...`) and which contain hardcoded values. Follow up with a FORMATTED_VALUE read to get the displayed values of hardcoded cells.
 

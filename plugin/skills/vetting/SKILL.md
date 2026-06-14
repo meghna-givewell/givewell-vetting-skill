@@ -450,8 +450,8 @@ Wave 2 staging tabs (always create these; skipped agents' tabs remain empty):
 | `stg-evid-B` | heads-up-evidence B |
 | `stg-epi-A` | heads-up-epi A |
 | `stg-epi-B` | heads-up-epi B |
-| `stg-epi-C` | heads-up-epi C (TA BOTEC counterfactual burden) |
-| `stg-epi-D` | heads-up-epi D (TA BOTEC counterfactual burden) |
+| `stg-epi-ta-A` | heads-up-epi TA-A (TA BOTEC counterfactual burden) |
+| `stg-epi-ta-B` | heads-up-epi TA-B (TA BOTEC counterfactual burden) |
 | `stg-int-A` | heads-up-intervention A |
 | `stg-int-B` | heads-up-intervention B |
 | `stg-rdbl-A` | readability A |
@@ -825,7 +825,7 @@ Wait for this agent to complete before announcing Wave 2. After it completes, if
 - [ ] Researcher checkpoint complete — declared deviations list is finalized or noted as "no response received."
 - [ ] Declared-deviation update applied if researcher responded.
 
-**Progress announcement** before spawning: compute the agent count at runtime from the staging tab table below, applying the applicable skips (leverage-uov-check skipped if no leverage tab; sources/readability/notes-scan skipped if formula-only scope; heads-up-epi C/D added only for TA BOTEC). Announce:
+**Progress announcement** before spawning: compute the agent count at runtime from the staging tab table below, applying the applicable skips (leverage-uov-check skipped if no leverage tab; sources/readability/notes-scan skipped if formula-only scope; heads-up-epi TA-A/TA-B added only for TA BOTEC). Announce:
 
 `[Phase 2/4] Wave 2 starting — [N] agents ([list the agent types being spawned, e.g., "sources A/B, heads-up A/B ×3, readability A/B, leverage A/B, CE chain A/B, CE chain TA A/B, leverage UoV A/B, notes-scan A/B"]; [list any skips, e.g., "leverage-uov-check skipped — no leverage tab"]).`
 
@@ -839,7 +839,7 @@ Spawn agents simultaneously after the researcher checkpoint. Each of the eight c
 
 Each Wave 2 agent has a pre-created staging tab (created before Wave 1 during output setup). No row-range calculation is needed. Assign staging sheets from the table below:
 
-**TA BOTEC — counterfactual burden pair**: When `is_ta_botec: true` is set in session context (per Step 0.5), identify the counterfactual burden or prevalence tab(s) during Step 0.5 program orientation (look for tabs named "Counterfactual Burden," "CF Burden," "Counterfactual Prevalence," "Burden Projection," or similar). Spawn two additional `heads-up-epi` instances (C and D) with that tab as the only vetted sheet in session context. Pass to both C and D instances: "**Counterfactual burden tab focus**: You are auditing the counterfactual burden/prevalence tab only (`{tab name}`). Apply all TA-specific checks in your prompt with particular attention to: (a) AVERAGE() range endpoints — verify they cover TA exit year + 5 years; (b) time series column headers — read them explicitly to confirm which year each column represents; (c) formula mode reads on every AVERAGE, OFFSET, or INDEX formula in the tab. Do not read other tabs except to verify cross-references." Apply the standard adversarial B-instance preamble to the D instance only. If the workbook has no identifiable counterfactual burden tab, skip the C/D pair and note this in chat.
+**TA BOTEC — counterfactual burden pair**: When `is_ta_botec: true` is set in session context (per Step 0.5), identify the counterfactual burden or prevalence tab(s) during Step 0.5 program orientation (look for tabs named "Counterfactual Burden," "CF Burden," "Counterfactual Prevalence," "Burden Projection," or similar). Spawn two additional `heads-up-epi` instances (TA-A and TA-B) with that tab as the only vetted sheet in session context. Assign staging tabs: TA-A → `stg-epi-ta-A`, TA-B → `stg-epi-ta-B`. Append to the TA-A instance context: `Instance scope: heads-up-epi-TA-A — Section A (Epidemiological Parameter Checks) only on the TA burden tab. Skip Section B entirely.` Append to the TA-B instance context: `Instance scope: heads-up-epi-TA-B — Section B primary + adversarial Section A on the TA burden tab.` Pass to both TA-A and TA-B instances: "**Counterfactual burden tab focus**: You are auditing the counterfactual burden/prevalence tab only (`{tab name}`). Apply all TA-specific checks in your prompt with particular attention to: (a) AVERAGE() range endpoints — verify they cover TA exit year + 5 years; (b) time series column headers — read them explicitly to confirm which year each column represents; (c) formula mode reads on every AVERAGE, OFFSET, or INDEX formula in the tab. Do not read other tabs except to verify cross-references." Apply the standard adversarial B-instance preamble to the TA-B instance only. If the workbook has no identifiable counterfactual burden tab, skip the TA-A/TA-B pair and note this in chat.
 
 Do **not** tell A instances that B instances are running. **heads-up-epi — complementary split scope**: heads-up-epi uses a complementary split rather than adversarial duplication. Append to **heads-up-epi-A** session context (before row allocation): `Instance scope: Section A — Epidemiological Parameter Checks only. Run only the checks under "Section A" in the agent prompt. Skip Section B (model structure and timing checks) entirely — heads-up-epi-B covers those.` Append to **heads-up-epi-B** session context (instead of the adversarial preamble): `Instance scope: Section B primary + adversarial Section A secondary. (1) First: run all checks under "Section B — Model Structure & Timing Checks." Apply thorough, skeptical reasoning to each check; for every section where you find no issues, write one specific reason the section is clean before moving on. (2) After Section B is complete: run a targeted adversarial bottom-up pass of these three Section A checks only — disease burden multi-source check, GBD/IGME vintage staleness, and counterfactual coverage floor. For these three checks: begin at the last row of your scope and work backward; for each check, ask "am I accepting the citation label at face value without reading the actual vintage year or source?" — then read it. Do not stop if Section B found no issues — complete both phases regardless. Do not read the Findings sheet. Do not tell the researcher you are a B instance.` Do not apply the standard adversarial B preamble below to heads-up-epi-B.
 
@@ -907,7 +907,7 @@ Announce before spawning: `[Phase 2/4 done → Phase 3/4] Wave 2 complete — st
 
 **Staging sheet name recovery — do this first if names are not in context**: If the staging sheet names are not available in the current session context (e.g., context was compacted between Wave 2 and Wave 2.5), read Dashboard cells A99 onward of the output spreadsheet to recover the full staging sheet log written during output setup.
 
-**Pre-flight empty pair check**: Before spawning, fire a parallel batch of `read_sheet_values` calls — one per pair — reading `{tab}!A1:J500` for each staging-A and staging-B tab (AGENT_COMPLETE may be at any row after all findings) to check whether they contain an AGENT_COMPLETE marker or any finding rows. For any pair where **both** staging-A and staging-B tabs contain only the header row (no AGENT_COMPLETE, no findings): skip spawning that reconcile agent and announce: `⏭️ Skipping [pair name] reconcile — both A and B wrote zero findings.` Only skip when both tabs are confirmed empty; if either tab has any non-header row, spawn the reconcile agent as normal. Update the agent count in your announcement accordingly.
+**Pre-flight empty pair check**: Before spawning, fire a parallel batch of `read_sheet_values` calls — one per pair — reading `{tab}!A1:J50` for each staging-A and staging-B tab to check whether they contain an AGENT_COMPLETE marker or any finding rows. **The MCP tool returns at most 50 rows per call — if you receive exactly 50 rows back from a call, there may be more rows; batch further (A51:J100, A101:J150, …) until you either find AGENT_COMPLETE or receive a batch with no non-empty rows.** An AGENT_COMPLETE marker may appear after many finding rows, so do not stop at the first non-empty response. For any pair where **both** staging-A and staging-B tabs contain only the header row (no AGENT_COMPLETE, no findings): skip spawning that reconcile agent and announce: `⏭️ Skipping [pair name] reconcile — both A and B wrote zero findings.` Only skip when both tabs are confirmed empty; if either tab has any non-header row, spawn the reconcile agent as normal. Update the agent count in your announcement accordingly.
 
 For the combined consistency-check + key-params-check agent, evaluate the two pairs independently. Skip the combined agent only if BOTH the consistency pair (stg-consist-A and stg-consist-B both empty) AND the key-params pair (stg-kp-A and stg-kp-B both empty) are confirmed empty. If either pair has any non-header row, spawn the combined agent as normal.
 
@@ -946,7 +946,7 @@ If key-params-check ran in 1-instance mode (populated_rows ≤ 80), also append:
 | leverage-funging | `stg-lev-A` | `stg-lev-B` | `stg-rec-lev` |
 | ce-chain-trace | `stg-ce-A` | `stg-ce-B` | `stg-rec-ce` |
 | leverage-uov-check | `stg-uov-A` | `stg-uov-B` | `stg-rec-uov` |
-| **heads-up-epi (TA counterfactual burden)** *(TA BOTEC only)* | `stg-epi-C` | `stg-epi-D` | `stg-rec-epi-ta` |
+| **heads-up-epi (TA counterfactual burden)** *(TA BOTEC only)* | `stg-epi-ta-A` | `stg-epi-ta-B` | `stg-rec-epi-ta` |
 | ce-chain-trace-ta *(self-detecting TA check)* | `stg-ceta-A` | `stg-ceta-B` | `stg-rec-ceta` |
 
 Note: notes-scan (Step 7c) has no reconciliation pair — it runs as A/B, each writing to its own staging tab (`stg-nscn-A`, `stg-nscn-B`); the Wave 3 compaction agent deduplicates their overlapping findings in its standard Step 3 dedup pass. No reconcile agent is needed. formula-check-parameters (Step 3f) also has no reconciliation pair — it runs as a single instance writing to `stg-params`. The final-review compaction step reads both alongside all other staging tabs. The heads-up-epi TA counterfactual burden pair has no reconciliation agent for non-TA models — skip that row entirely when program context is not a TA BOTEC.
@@ -957,7 +957,7 @@ Note: notes-scan (Step 7c) has no reconciliation pair — it runs as A/B, each w
 
 Exception: pairs where both A and B agents wrote zero findings (confirmed empty) produce no divergences to reconcile and zero net-new findings legitimately — verify this by reading the pair's staging-A and staging-B tabs before flagging.
 
-**notes-scan completion check**: After all Wave 2.5 reconciliation agents complete, read staging sheets `stg-nscn-A` and `stg-nscn-B` separately. For each tab, check for an AGENT_COMPLETE marker independently:
+**notes-scan completion check**: After all Wave 2.5 reconciliation agents complete, read staging sheets `stg-nscn-A` and `stg-nscn-B` separately in batched increments (`A1:J50`, `A51:J100`, continuing until two consecutive batches return no non-empty rows) — **the MCP tool returns at most 50 rows per call**; do not use a single large range. For each tab, check for an AGENT_COMPLETE marker independently:
 
 If `stg-nscn-A` lacks an AGENT_COMPLETE marker:
 > ⚠️ notes-scan-A silent failure suspected: no AGENT_COMPLETE in `stg-nscn-A`. notes-scan has no reconciliation pair, so this gap will not be caught by any reconcile agent. Consider re-running notes-scan-A before proceeding to Wave 3.
@@ -969,8 +969,8 @@ Issue each warning independently — a clean `stg-nscn-A` does not suppress a `s
 
 **TA misclassification cross-check**: After all Wave 2.5 reconciliation agents complete and before starting Wave 3, verify that heads-up-intervention-B and ce-chain-trace-ta reached consistent TA/non-TA classifications. Run this check unconditionally — the dangerous case is a TA grant classified as non-TA (not the reverse), so gating on `is_ta_botec` would miss exactly the failures this check is designed to catch.
 
-1. Read the AGENT_COMPLETE marker row from staging sheet `stg-int-B`. Extract the `Routing decision:` field from column F. **The `Routing decision:` field must appear as the first element in column F** — parse it as a prefix match: the field is present if column F starts with `Routing decision:`. If column F does not start with this prefix, treat the routing decision as missing and announce: `⚠️ TA cross-check: stg-int-B AGENT_COMPLETE row has no Routing decision prefix in column F — cannot determine TA classification for heads-up-intervention-B. Skipping mismatch check.`
-2. Read the AGENT_COMPLETE marker row from staging sheet `stg-ceta-A`. First check whether an AGENT_COMPLETE row exists at all — if no AGENT_COMPLETE row is found, announce: `⚠️ TA cross-check: stg-ceta-A has no AGENT_COMPLETE marker — ce-chain-trace-ta-A may have failed silently. Skipping TA mismatch check; consider re-running ce-chain-trace-ta before Wave 3.` Then proceed to Step 4 (silent agree). Do not evaluate Steps 3a or 3b when stg-ceta-A has no AGENT_COMPLETE. If an AGENT_COMPLETE row is found, check whether column F contains `No TA grant signals found` (non-TA) or `TA grant signals confirmed:` (TA-positive canonical phrase).
+1. Read staging sheet `stg-int-B` in batched increments (`A1:J50`, `A51:J100`, continuing until two consecutive empty batches) — **the MCP tool returns at most 50 rows per call; AGENT_COMPLETE appears after all findings and may be beyond row 50.** Find the AGENT_COMPLETE row and extract the `Routing decision:` field from column F. **The `Routing decision:` field must appear as the first element in column F** — parse it as a prefix match: the field is present if column F starts with `Routing decision:`. If column F does not start with this prefix, treat the routing decision as missing and announce: `⚠️ TA cross-check: stg-int-B AGENT_COMPLETE row has no Routing decision prefix in column F — cannot determine TA classification for heads-up-intervention-B. Skipping mismatch check.`
+2. Read staging sheet `stg-ceta-A` in batched increments (`A1:J50`, `A51:J100`, continuing until two consecutive empty batches) — find the AGENT_COMPLETE row. First check whether an AGENT_COMPLETE row exists at all — if no AGENT_COMPLETE row is found, announce: `⚠️ TA cross-check: stg-ceta-A has no AGENT_COMPLETE marker — ce-chain-trace-ta-A may have failed silently. Skipping TA mismatch check; consider re-running ce-chain-trace-ta before Wave 3.` Then proceed to Step 4 (silent agree). Do not evaluate Steps 3a or 3b when stg-ceta-A has no AGENT_COMPLETE. If an AGENT_COMPLETE row is found, check whether column F contains `No TA grant signals found` (non-TA) or `TA grant signals confirmed:` (TA-positive canonical phrase).
 3a. If heads-up-intervention-B declared `Routing decision: A — non-TA` but ce-chain-trace-ta-A column F contains `TA grant signals confirmed:` (its AGENT_COMPLETE does **not** contain `No TA grant signals found`), announce:
 
 > ⚠️ TA classification mismatch: heads-up-intervention-B identified this as non-TA (ran Section A intervention checks only) but ce-chain-trace-ta found TA signals. If this is a TA grant, Section B TA grant checks were skipped by heads-up-intervention-B. Consider re-running heads-up-intervention with `is_ta_botec = true` in session context before Wave 3.
@@ -997,12 +997,14 @@ Issue each warning independently — a clean `stg-nscn-A` does not suppress a `s
 
 **Progress announcement** before starting: `[Phase 3/4 done → Phase 4/4] Reconciliation complete — starting final review (4 sequential steps). If this session is interrupted before Wave 3 completes, run /givewell-vetting:vetting-finalize (plugin) or /vetting-finalize (standalone) with the output and source spreadsheet URLs to resume.`
 
-**Self-verification pre-pass — required before spawning any Wave 3 agent**: Before compaction begins, verify that all required agents ran. For each agent in the table below, check that its staging tab contains an AGENT_COMPLETE row. Read each tab with `read_sheet_values` on `{tab}!A1:J100` (use a full range — AGENT_COMPLETE may not be in row 2 if the agent filed many findings) — an AGENT_COMPLETE row confirms completion. For standard staging-tab agents, AGENT_COMPLETE is in **column D**. For hardcoded-values and sensitivity-scan, check for AGENT_COMPLETE in any column — see the table notes at lines ending 'check for AGENT_COMPLETE row in any column' below.
+**Self-verification pre-pass — required before spawning any Wave 3 agent**: Before compaction begins, verify that all required agents ran. For each agent in the table below, check that its staging tab contains an AGENT_COMPLETE row. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Read each tab in batched increments: `{tab}!A1:J50`, then `{tab}!A51:J100`, `{tab}!A101:J150`, continuing until two consecutive batches return no non-empty rows or you find the AGENT_COMPLETE row — AGENT_COMPLETE may not be in row 2 if the agent filed many findings. For standard staging-tab agents, AGENT_COMPLETE is in **column D**. For hardcoded-values and sensitivity-scan, check for AGENT_COMPLETE in any column — see the table notes at lines ending 'check for AGENT_COMPLETE row in any column' below.
 
 | Required agent | Staging tab | Is 0-findings a plausible clean pass? |
 |---|---|---|
 | formula-check-arithmetic A | `stg-arith-A` | No |
 | formula-check-arithmetic B | `stg-arith-B` | No |
+| formula-check-arithmetic C *(4-instance mode or band-split only — skip check if 2-instance mode)* | `stg-arith-C` | No |
+| formula-check-arithmetic D *(4-instance mode or band-split only — skip check if 2-instance mode)* | `stg-arith-D` | No |
 | formula-check-data A | `stg-data-A` | Yes (check AGENT_COMPLETE text) |
 | formula-check-data B | `stg-data-B` | Yes (check AGENT_COMPLETE text) |
 | formula-check-edge-cases A | `stg-edge-A` | Yes |
@@ -1020,12 +1022,16 @@ Issue each warning independently — a clean `stg-nscn-A` does not suppress a `s
 | sensitivity-scan | `'Confidentiality Flags'!A:D` | No — check for AGENT_COMPLETE row in any column |
 | source-data-check A | `stg-srcdt-A` | Yes (skip if no source data tabs) |
 | source-data-check B | `stg-srcdt-B` | Yes (skip if no source data tabs) |
+| sources A | `stg-src-A` | Yes (check AGENT_COMPLETE text) |
+| sources B | `stg-src-B` | Yes (check AGENT_COMPLETE text) |
 | ce-chain-trace A | `stg-ce-A` | No |
 | ce-chain-trace B | `stg-ce-B` | No |
 | heads-up-evidence A | `stg-evid-A` | No |
 | heads-up-evidence B | `stg-evid-B` | No |
 | heads-up-epi A | `stg-epi-A` | No |
 | heads-up-epi B | `stg-epi-B` | No |
+| heads-up-epi TA-A *(TA BOTEC only — skip check if not a TA BOTEC)* | `stg-epi-ta-A` | Yes (self-detecting — check AGENT_COMPLETE text) |
+| heads-up-epi TA-B *(TA BOTEC only — skip check if not a TA BOTEC)* | `stg-epi-ta-B` | Yes (self-detecting — check AGENT_COMPLETE text) |
 | heads-up-intervention A | `stg-int-A` | Yes (check AGENT_COMPLETE text) |
 | heads-up-intervention B | `stg-int-B` | Yes (check AGENT_COMPLETE text) |
 | readability A | `stg-rdbl-A` | Yes (if pub readiness out of scope) |
@@ -1039,7 +1045,7 @@ Issue each warning independently — a clean `stg-nscn-A` does not suppress a `s
 | ce-chain-trace-ta A | `stg-ceta-A` | Yes (self-detecting — check AGENT_COMPLETE text) |
 | ce-chain-trace-ta B | `stg-ceta-B` | Yes (self-detecting — check AGENT_COMPLETE text) |
 
-**Checking hardcoded-values and sensitivity-scan**: These agents write directly to their output sheets, not to staging tabs. Read the last non-empty row of `'Hardcoded Values'!A:H` and `'Confidentiality Flags'!A:D` — look for a row where any column contains `AGENT_COMPLETE`. If absent and 0-findings is not plausible, treat as a silent failure.
+**Checking hardcoded-values and sensitivity-scan**: These agents write directly to their output sheets, not to staging tabs. Read **all rows** of `'Hardcoded Values'!A:H` in batches (A1:H50, A51:H100, …, until two consecutive batches return no non-empty rows) — search every row for any column containing `AGENT_COMPLETE`. Verify **both** markers are present by agent name: a row where column B = `hardcoded-values` and column D = `AGENT_COMPLETE` (required always); and, if Wave 1.5 ran, a row where column B = `source-citation-verify` and column D = `AGENT_COMPLETE`. Do not stop at the last non-empty row — source-citation-verify writes its AGENT_COMPLETE after hardcoded-values' marker, so the last row only confirms source-citation-verify, not hardcoded-values. If the hardcoded-values marker is absent (and 0-findings is not plausible), treat as a silent failure. Similarly, read all rows of `'Confidentiality Flags'!A:D` in batches — look for a row where column A = `AGENT_COMPLETE` (sensitivity-scan writes its marker to column A, not column D).
 
 **Checking skipped agents**: For any agent that was explicitly skipped (source-data-check when no source tabs exist, leverage-uov-check when no leverage tab exists, notes-scan when formula-only scope, readability when formula-only scope): confirm the skip was recorded in session context before the tab was created. If the tab is empty but the skip was NOT recorded, treat as a potential silent failure rather than a legitimate skip.
 

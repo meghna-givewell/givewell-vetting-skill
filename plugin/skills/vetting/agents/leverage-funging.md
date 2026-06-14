@@ -7,7 +7,7 @@ You are a Wave 2 analysis agent performing a dedicated leverage and funging chec
 - Staging sheet: write findings to your dedicated staging tab (name provided in session context)
 - User email for MCP calls
 
-Read the spreadsheet (parallel batch: FORMATTED_VALUE, FORMULA, notes) across all vetted sheets. Focus on cells, rows, and sections related to leverage, funging, counterfactual impact, government co-financing, and related adjustments. Read `read_spreadsheet_comments` once for the workbook.
+**Pre-read cache**: If a pre-read cache is provided in session context, use it as your primary data source for FORMATTED_VALUE, FORMULA, and Notes data — do not re-read full sheet ranges. Proceed with batch reads only if no cache was provided (sheet >150 rows): use 50-row increments (`A1:ZZ50`, `A51:ZZ100`, etc.) until two consecutive batches return no non-empty rows — the MCP tool silently truncates at 50 rows per call. Focus on cells, rows, and sections related to leverage, funging, counterfactual impact, government co-financing, and related adjustments. Read `read_spreadsheet_comments` once for the workbook.
 
 **Do not read the existing Findings sheet** — your staging sheet name is provided in session context, and deduplication is handled by the Wave 2.5 reconciliation agent. Reading prior findings would anchor your analysis.
 
@@ -129,7 +129,10 @@ For each leverage/funging parameter and formula found:
 - Is there a cell note or adjacent label explaining what the parameter represents and its source?
 - If the model deviates from GiveWell's standard leverage/funging methodology (as described in program context or grant documents), is the deviation documented?
 
-Flag undocumented leverage parameters as Low severity (column D) with `Researcher judgment needed ✓` if the value is outside typical ranges for this intervention type, or as Low severity (column D), Error Type: Legibility (column E), column D blank (Publication Readiness routing) if the value is plausible and the only issue is missing documentation.
+Flag undocumented leverage parameters as Low severity, Error Type: Assumption (column E) with `Researcher judgment needed ✓` if the value is outside typical ranges for this intervention type, or as Error Type: Legibility (column E), column D blank (Publication Readiness routing) if the value is plausible and the only issue is missing documentation.
+
+**Coverage declaration**: After completing this check, write:
+`COVERAGE | leverage-funging | Check 6 — Documentation | [rows/cells checked] | issues found: [N] | status: complete`
 
 ---
 
@@ -144,6 +147,9 @@ For each upward adjustment in the "Adjustments to VoI" section (or equivalent):
 3. If both exist and no cell note explains why both are needed: flag as **Medium severity (column D), Error Type: Adjustment (column E)** with Researcher judgment needed ✓: "Ad hoc +[X]% adjustment '[label]' may double-count with the dedicated '[section name]' section that already models funding changes from other funders. If this adjustment captures a genuinely distinct mechanism (e.g., WHO policy uptake beyond what the modeled funders represent), add a cell note documenting the distinction."
 
 This check does not apply when the ad hoc adjustment is clearly labeled as covering a *different* funder category than the dedicated section (e.g., dedicated section covers bilateral donors; adjustment covers government policy uptake).
+
+**Coverage declaration**: After completing this check, write:
+`COVERAGE | leverage-funging | Check 7 — VOI ad hoc double-count | [rows/cells checked] | issues found: [N] | status: complete`
 
 ---
 

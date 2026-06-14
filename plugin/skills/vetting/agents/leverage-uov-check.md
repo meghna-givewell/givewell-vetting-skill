@@ -21,7 +21,9 @@ Before running any check, read reference/pitfalls.md using the Read tool. Apply 
 
 ## Orientation — locate key rows before checking
 
-Read the spreadsheet in FORMULA mode across all vetted sheets. Read `read_spreadsheet_comments` once for the workbook. Then identify and record:
+**Pre-read cache**: If a pre-read cache is provided in session context (sheet ≤150 rows), use it as your primary data source for FORMULA and FORMATTED_VALUE data — do not re-read full sheet ranges. Proceed with batch reads only if no cache was provided.
+
+If batch reads are needed: read in 50-row increments (`A1:ZZ50`, `A51:ZZ100`, continuing until two consecutive batches return no non-empty rows). **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Read `read_spreadsheet_comments` once for the workbook. Then identify and record:
 
 1. **Supplemental adjustments block**: the section in the CEA tab containing org-level and program-level adjustments. Look for row headers containing "org-level adjustment," "program-level adjustment," "supplemental," or "external validity."
 2. **Post-supplemental UoV/dollar row**: the final adjusted units-of-value-per-dollar row, typically appearing just *after* the supplemental adjustments block. Common labels: "Units of value generated per dollar spent, after supplemental adjustments," "Final UoV per $," "Total units of value (after all adjustments)."

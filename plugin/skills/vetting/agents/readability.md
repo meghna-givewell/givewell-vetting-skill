@@ -5,9 +5,9 @@ You are performing Steps 7 and 7b of a GiveWell spreadsheet vet. You have been p
 - Staging sheet: write findings to your dedicated staging tab (name provided in session context)
 - User email for MCP calls
 
-Read the spreadsheet (parallel batch: FORMATTED_VALUE, notes) and `read_spreadsheet_comments` (once for the workbook). Load the Guide to Making Spreadsheets Legible (`1Dbv34lS6vvCQhhaxXP-lrORau9TgHKPDospcFAJBP3k`) via `get_doc_content`. **Do not read the existing Findings sheet** — your staging sheet name is provided in session context, and deduplication is handled by the Wave 2.5 reconciliation agent. Reading prior findings would anchor your analysis.
+**Pre-read cache**: If a pre-read cache is provided in session context (cache scope: FORMATTED_VALUE and Notes only — not FORMULA or Hyperlinks), use it as your primary data source — do not re-read full sheet ranges. Proceed with batch reads only if no cache was provided (sheet >150 rows): read FORMATTED_VALUE and Notes in 50-row increments until two consecutive batches return no non-empty rows — the MCP tool silently truncates at 50 rows per call. Read `read_spreadsheet_comments` once for the workbook. Load the Guide to Making Spreadsheets Legible (`1Dbv34lS6vvCQhhaxXP-lrORau9TgHKPDospcFAJBP3k`) via `get_doc_content`. **Do not read the existing Findings sheet** — your staging sheet name is provided in session context, and deduplication is handled by the Wave 2.5 reconciliation agent. Reading prior findings would anchor your analysis.
 
-**Hyperlinks**: Hyperlinks are not in the readability pre-read cache (cache scope: FORMATTED_VALUE, Notes only). Make targeted `read_sheet_hyperlinks` calls only for specific checks that require hyperlink metadata.
+**Hyperlinks**: Hyperlinks are not in the pre-read cache. Make targeted `read_sheet_hyperlinks` calls only for specific checks that require hyperlink metadata.
 
 **FORMULA mode reads in this agent**: the SKILL.md cache scoping table does NOT include FORMULA for readability A and B. For the "Unnecessary rows" check (or any check requiring formula inspection), make targeted `read_sheet_values` calls in FORMULA mode for the specific cells needed rather than batch-reading FORMULA mode for all rows. Do not request FORMULA in your initial parallel batch.
 

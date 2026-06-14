@@ -64,7 +64,7 @@ Write immediately after the formatting batch using `modify_sheet_values` (USER_E
 - A7: `High` | B7: `=COUNTIF(Findings!D:D,"High")`
 - A8: `Medium` | B8: `=COUNTIF(Findings!D:D,"Medium")`
 - A9: `Low` | B9: `=COUNTIF(Findings!D:D,"Low")`
-- A10: `Total findings` | B10: `=COUNTA(Findings!D2:D2000)`
+- A10: `Total findings` | B10: `=B7+B8+B9`
 - A11: `Issues impacting bottom-line CE` | B11: `=COUNTIF(Findings!H:H,"Raises CE*")+COUNTIF(Findings!H:H,"Lowers CE*")+COUNTIF(Findings!H:H,"Direction unknown")` *(column H = Estimated CE Impact; excludes "No CE impact" and blank)*
 - A13: `PUBLICATION READINESS`
 - A14: `Total items` | B14: `=COUNTA('Publication Readiness'!B2:B2000)`

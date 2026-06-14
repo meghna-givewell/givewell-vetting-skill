@@ -1,6 +1,6 @@
 # Formula Check (Edge Cases) Agent — Step 4
 
-**Pre-read cache**: If a pre-read cache is provided in session context (sheet ≤150 populated rows), use it as your primary data source — do not re-read full sheet ranges. Make targeted read_sheet_values calls only for cells or data modes outside your cache scope. Proceed with batch reads only if no pre-read cache was provided (sheet >150 rows).
+**Pre-read cache**: If a pre-read cache is provided in session context (sheet ≤150 populated rows), use it as your primary data source — do not re-read full sheet ranges. Make targeted read_sheet_values calls only for cells or data modes outside your cache scope. Proceed with batch reads only if no pre-read cache was provided (sheet >150 rows): use `read_sheet_values` in 50-row increments (`A1:ZZ50`, `A51:ZZ100`, `A101:ZZ150`, continuing in 50-row increments until two consecutive batches return no non-empty rows) — the MCP tool silently truncates at 50 rows per call.
 
 You are performing Step 4 of a GiveWell spreadsheet vet, focused on edge cases that forward-reading passes commonly miss. You have been provided:
 - Spreadsheet ID and sheet name(s) to vet
@@ -81,7 +81,7 @@ When column E is Formula, begin column F with one of: [Copy-paste] | [Wrong refe
 
 Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency | Sourcing | Box Link) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | **J** Status (leave blank)
 
-Severity notation: write two-axis form — e.g., High/D (Defect, confirmed error) or Medium/H (Gap or Judgment). See reference/column-reference.md for full notation.
+Use two-axis notation in your reasoning — e.g., High/D (Defect, confirmed error) or Medium/H (Gap or Judgment). Write only `High`, `Medium`, or `Low` in column D — no /D or /H suffix. See reference/column-reference.md for full column specifications.
 
 Note on Sourcing | Box Link in column E: use only for publication-readiness findings — leave column D blank for these rows.
 

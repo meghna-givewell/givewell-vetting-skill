@@ -30,7 +30,7 @@ For each vetted sheet, scan every row from row 1 to the last populated row. For 
 **A. Formula rows missing "Calculation." note**
 If the Notes cell is blank AND the corresponding data cell contains a formula (`=...`), record this row. GiveWell's convention is to write "Calculation." in the Notes column for every formula row without exception — even when the row label makes the calculation obvious. Do not skip rows because their labels seem self-explanatory. Every formula row. Every one.
 
-**B. Hardcoded rows missing source annotation** — SKIP. Source completeness for standalone hardcoded cells is already tracked in the Hardcoded Values sheet (column F "Source to Verify" writes "No source cited" for every unsourced input). Do not duplicate those findings here.
+**B. Hardcoded rows missing source annotation** — NOT APPLICABLE. Source completeness for standalone hardcoded cells is delegated to the hardcoded-values agent (Step 9), which tracks every unsourced input in the Hardcoded Values sheet column F. Do not check for or duplicate those findings here. The Step 3 declaration table entry for Category B must read "NOT APPLICABLE — delegated to hardcoded-values agent."
 
 **C. Template boilerplate notes**
 Flag Notes cells copied verbatim from the VOI/optionality template without customization — e.g., notes referencing "Section 2.1.x of write-up," generic "cross-cutting team responsibility" language, or placeholder phrases like "to be confirmed" or "update before publication." The note should describe this program's specific rationale, not generic template guidance.
@@ -97,7 +97,7 @@ D. Raw URL notes / unlabeled hyperlinks: [list row references, or "none"]
 E. First-person language: [list row references, or "none"]
 F. Row labels flagged (redundant / misleading / wrong scope / vague): [list row references with label text, or "none"]
 G. Stale year references in notes: [list row references with cited year, or "none"]
-H. Internal-only / pre-publication cleanup rows (incl. superseded, duplicate, error-only, addressed-to-person notes, action items): [list row references, or "none"]
+H. Internal-only / pre-publication cleanup rows (addressed-to-person notes, action items, "internal" labels, "delete before publishing" language): [list row references, or "none"] *(note: rows labeled old/previous/v1, duplicate calculation rows, and error-value-only rows are readability agent scope — do not include those here)*
 H2. Unresolved comment threads: [list cell refs and comment text, or "none"]
 I. Cell note contradicts cell value: [list row references with implied vs. actual value, or "none"]
 J. Formula methodology asymmetry without documentation: [list row references with description of the asymmetry, or "none"]

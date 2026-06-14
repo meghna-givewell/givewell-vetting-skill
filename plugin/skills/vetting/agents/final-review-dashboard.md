@@ -16,7 +16,7 @@ You are performing Step 10d of a GiveWell spreadsheet vet. This is the last of f
 
 ## Step 1 — Read findings for summary
 
-Read all non-divider rows from the Findings sheet (batched: `A2:J51`, `A52:J101`, `A102:J151`, continuing in 50-row increments until two consecutive batches return no non-empty rows). **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Collect: all High findings (for Key Findings summary), all findings with `✓` in column I (Researcher judgment needed), and the count of High/Medium/Low findings. When counting, skip divider rows — a row is a divider if column D is empty AND column B contains ───. Do not include divider rows in the High/Medium/Low finding counts or total count.
+Read all non-divider rows from the Findings sheet (batched: `A2:J51`, `A52:J101`, `A102:J151`, continuing in 50-row increments until two consecutive batches return no non-empty rows). **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Collect: all High findings (for Key Findings summary), all findings with `✓` in column I (Researcher judgment needed), and the count of High/Medium/Low findings. When counting, skip divider rows (column D is empty AND column B contains ───) and skip rows where column D = `AGENT_COMPLETE` — these are pipeline completion markers written by the final-review agents (compaction, gap-fill, validation), not findings. Do not include divider rows or AGENT_COMPLETE rows in any finding count or in the total count.
 
 Also read the Hardcoded Values sheet column G (Verified? column) in the same batched manner to collect Wave 1.5 verification status counts: number of matched, contradicted, and could-not-verify values. If the column is entirely blank, note that Wave 1.5 source-citation-verify was skipped.
 
@@ -59,20 +59,20 @@ The per-sheet table starts at row 25 per the reserved layout in output-setup.md.
 
 ---
 
-## Cleanup — Delete staging tabs and Findings_backup
+## Cleanup — Delete staging tabs and Staging_backup
 
 Perform this cleanup **before** writing the Key Findings summary to chat (Step 3), so the output spreadsheet is fully clean when the researcher opens it.
 
 **Delete all stg-* staging tabs:**
 
 1. Call ToolSearch with query `select:mcp__hardened-workspace__delete_sheet` to load the delete_sheet tool schema. If that exact name is not found, search ToolSearch with query `delete sheet tab spreadsheet` to find the correct tool name.
-2. If found: retrieve the full list of stg-* tab names from Dashboard A99 onward (written during output setup) or from session context. For each stg-* tab name, call delete_sheet with the output spreadsheet ID and that tab name. Announce a single summary: `Deleted [N] staging tabs (stg-*).`
+2. If found: retrieve the full list of stg-* tab names from Dashboard A99 onward (written during output setup) or from session context. For each stg-* tab name, call delete_sheet with the output spreadsheet ID and that tab name. Announce a single summary: `Deleted [N] staging tabs (stg-*). [N failed — researcher to delete manually: list]` (include failed deletions; do not silently omit them).
 3. If delete_sheet is not found or not available: announce: `⚠️ Could not delete staging tabs — researcher should delete all tabs whose names begin with stg- manually before sharing the output spreadsheet.`
 
-**Delete Findings_backup tab:**
+**Delete Staging_backup tab:**
 
-1. Using the same delete_sheet tool (already loaded above): call it with the output spreadsheet ID and tab name `Findings_backup`. Announce: `✓ Findings_backup tab deleted — output spreadsheet is clean.`
-2. If not found: announce: `⚠️ Could not delete Findings_backup tab — researcher should delete it manually before sharing the output spreadsheet (Dashboard → right-click Findings_backup → Delete).`
+1. Using the same delete_sheet tool (already loaded above): call it with the output spreadsheet ID and tab name `Staging_backup`. Announce: `✓ Staging_backup tab deleted — output spreadsheet is clean.`
+2. If not found: announce: `⚠️ Could not delete Staging_backup tab — researcher should delete it manually before sharing the output spreadsheet (Dashboard → right-click Staging_backup → Delete).`
 
 This step is required to prevent researchers from seeing raw pre-compaction data alongside the clean, sorted output.
 
@@ -117,6 +117,6 @@ Rules:
 Write the AGENT_COMPLETE marker to the Dashboard tab:
 - Cell B200 = `final-review-dashboard`
 - Cell D200 = `AGENT_COMPLETE`
-- Cell F200 = `Dashboard content written. Key Findings written to chat. Findings_backup deleted (or researcher notified). Step 10d complete.`
+- Cell F200 = `Dashboard content written. Key Findings written to chat. Staging_backup deleted (or researcher notified). Step 10d complete.`
 
 This cell range (row 200) is safely below all other Dashboard content.

@@ -35,7 +35,7 @@ Both are defensible denominators. Using total engagement cost amortizes benefits
 
 First, verify the Simple CEA tab exists in the workbook (check session context tab list). If no Simple CEA tab is present: file a Low/Assumption finding: "Simple CEA tab absent — cannot verify cost denominator consistency." Then write your AGENT_COMPLETE marker and stop. Do not attempt to read a non-existent tab.
 
-After confirming TA signals, read the TA Modeling Guidance document (use `get_doc_content` on ID from session context or reference table doc #9) to determine whether GW TA convention recommends a specific cost denominator. Use this as the standard against which to evaluate the workbook's choice.
+After confirming TA signals, read the TA Modeling Guidance document (use `get_doc_content` on ID from session context or reference table doc #9) to determine whether GW TA convention recommends a specific cost denominator. Use this as the standard against which to evaluate the workbook's choice. **Fallback if `get_doc_content` fails** (error, empty content, or doc ID unavailable): proceed without the guidance document — note the unavailability in your AGENT_COMPLETE marker, and if you file a denominator inconsistency finding (step 3) or documentation finding (step 4), add `Researcher judgment needed ✓` and omit any GW-convention recommendation from the Recommended Fix (write instead: "Add a cell note documenting which cost base is intentionally used and why, referencing the TA Modeling Guidance convention.").
 
 Use the pre-read cache (FORMULA and FORMATTED_VALUE for all rows) as your primary data source. Make targeted `read_sheet_values` calls only for the specific cost row cells identified in the cost-row location step.
 

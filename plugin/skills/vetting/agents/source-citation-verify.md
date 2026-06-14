@@ -22,13 +22,13 @@ However: the *verdict* in column G is a model judgment that may be wrong. The ci
 
 ---
 
-## Step 2 — Read Hardcoded Values sheet
+## Step 1 — Read Hardcoded Values sheet
 
-**Do this before the Bash tool check and before writing the script.**
+**Do this before the Bash availability check and before writing the script.**
 
 First read row 1 (`A1:H1`) to confirm the header matches: `Sheet | Cell | Category | Current Value | Description | Source to Verify | Verified? | Auto-check evidence`. If the header does not match, stop and write to chat: `Hardcoded Values sheet has unexpected headers — cannot safely write verdicts. Expected: [headers]. Found: [actual headers].`
 
-Then read `A2:G500` from the Hardcoded Values sheet (extend range if needed; stop when two consecutive rows are empty). For each non-empty row record:
+Then batch-read the Hardcoded Values sheet in 50-row increments (`A2:G51`, `A52:G101`, `A102:G151`, etc.) until two consecutive batches return no non-empty rows — the MCP tool silently truncates at 50 rows per call. Do not read `A2:G500` in a single call. For each non-empty row record:
 - `row_num`: spreadsheet row number
 - `category`: column C
 - `value`: column D
@@ -45,11 +45,11 @@ Then read `A2:G500` from the Hardcoded Values sheet (extend range if needed; sto
 
 Eligible rows: category is `Study-Derived` or `Org-Reported` AND column F contains a URL starting with `http` or `https` AND column G is blank.
 
-**If eligible rows = 0:** write the Step 5 coverage declaration with all-zero counts and a note explaining why (e.g., `All rows are GiveWell Parameter, Structural, or have non-URL citations — no rows eligible for automated citation verification`), then write the Step 6 AGENT_COMPLETE marker, and stop. Do not proceed to the Bash tool check or Step 1.
+**If eligible rows = 0:** write the Step 6 coverage declaration with all-zero counts and a note explaining why (e.g., `All rows are GiveWell Parameter, Structural, or have non-URL citations — no rows eligible for automated citation verification`), then write the Step 7 AGENT_COMPLETE marker, and stop. Do not proceed to Steps 2–3.
 
 ---
 
-## Bash tool check — do this after Step 2, before Step 1
+## Step 2 — Bash availability check (do this after Step 1, before Step 3)
 
 After reading the sheet and confirming eligible rows exist, confirm the Bash tool is available by attempting a trivial command (e.g., `echo "bash_available"`). If Bash is unavailable:
 
@@ -57,13 +57,13 @@ After reading the sheet and confirming eligible rows exist, confirm the Bash too
 2. For each of the 5 parameters: call `WebFetch` on the Source to Verify URL, then compare the stated value against the fetched content.
 3. Write verdicts (`Matched ✓`, `Contradicted ✗`, or `Could not verify`) and evidence to columns G and H of those 5 rows.
 4. Write a single row to the Hardcoded Values sheet immediately after the last filled row: column B = `source-citation-verify`, column D = `AGENT_COMPLETE`, column F = `Bash unavailable — fell back to manual spot-check of top-5 eligible parameters; full citation verification not completed. [N] spot-checked. [K] Matched ✓, [M] Contradicted ✗, [P] Could not verify.`, all other columns blank.
-5. Stop — do not attempt Steps 1–6 below (the AGENT_COMPLETE marker was already written in step 4 above).
+5. Stop — do not proceed to Steps 3–7 below (the AGENT_COMPLETE marker was already written in fallback bullet 4 above).
 
 The orchestrator (SKILL.md) checks the AGENT_COMPLETE text for `Bash unavailable` and will surface a warning to the researcher.
 
 ---
 
-## Step 1 — Write the verification script
+## Step 3 — Write the verification script
 
 Write the following Python script to `/tmp/citation_verify.py` using the Write tool:
 
@@ -248,11 +248,11 @@ if __name__ == "__main__":
 
 ---
 
-## Step 3 — Fetch source text and verify
+## Step 4 — Fetch source text and verify
 
 Group eligible rows by `source_url`. For each unique source URL:
 
-### 3a — Fetch as plain text
+### 4a — Fetch as plain text
 
 **GBD / IHME sources** — detect before fetching. A row is a GBD/IHME source if column F contains a URL with `vizhub.healthdata.org`, `ghdx.healthdata.org`, `healthdata.org`, or `ihmeuw.org`.
 
@@ -268,7 +268,7 @@ For these rows write `Could not verify — GBD/IHME interactive source; verify t
 
 If the fetch fails (HTTP error, auth required, domain blocked): write `Could not verify — source not accessible` for all rows from this source.
 
-### 3b — Run Citations API
+### 4b — Run Citations API
 
 For each source with successfully fetched text:
 
@@ -294,19 +294,19 @@ python3 /tmp/citation_verify.py /tmp/citation_source.txt < /tmp/citation_params.
 
 ---
 
-## Step 4 — Write results to sheet
+## Step 5 — Write results to sheet
 
-For each eligible row processed in Steps 3a/3b: write the resulting `[verdict, evidence]` to columns G and H. **Do not write to any row whose column G was already non-empty in Step 2** — those rows were already verified and must not be overwritten.
+For each eligible row processed in Steps 4a/4b: write the resulting `[verdict, evidence]` to columns G and H. **Do not write to any row whose column G was already non-empty in Step 1** — those rows were already verified and must not be overwritten.
 
-Do NOT write `["", ""]` for rows whose verdict was already written directly by the skip-rule handling in Step 2 or Step 3a (e.g., rows with non-URL citations, Google Sheets URLs, or GBD/IHME sources). Those rows already have column G populated. Only write `["", ""]` for rows skipped because column C is `GiveWell Parameter` or `Structural`, or column F is blank — i.e. rows where no verdict was written at all.
+Do NOT write `["", ""]` for rows whose verdict was already written directly by the skip-rule handling in Step 1 or Step 4a (e.g., rows with non-URL citations, Google Sheets URLs, or GBD/IHME sources). Those rows already have column G populated. Only write `["", ""]` for rows skipped because column C is `GiveWell Parameter` or `Structural`, or column F is blank — i.e. rows where no verdict was written at all.
 
 Because already-verified rows may be interspersed with new rows, write results **row by row** using individual `modify_sheet_values` calls (one call per eligible row) rather than a single contiguous `G2:H{last_row}` array. A single array write would overwrite already-verified cells in the gaps with blank values.
 
-If a single-row write fails (MCP error), retry once. If retry also fails, record the row number in your reasoning and continue. After all writes, read back column G for all eligible rows in a single `read_sheet_values` call and compare against intended verdicts — any discrepancy indicates a silent write failure. Include failed row numbers in AGENT_COMPLETE column F.
+If a single-row write fails (MCP error), retry once. If retry also fails, record the row number in your reasoning and continue. After all writes, read back column G for all eligible rows in 50-row batches (same batching pattern as Step 1) and compare against intended verdicts — any discrepancy indicates a silent write failure. Include failed row numbers in AGENT_COMPLETE column F.
 
 ---
 
-## Step 5 — Coverage declaration
+## Step 6 — Coverage declaration
 
 Write to chat:
 
@@ -327,8 +327,8 @@ If any `Contradicted ✗` rows exist:
 
 ---
 
-## Step 6 — Write completion marker
+## Step 7 — Write completion marker
 
 This agent writes directly to the Hardcoded Values sheet, not a staging tab. The orchestrator should not apply the standard staging-tab AGENT_COMPLETE parser to this agent's output.
 
-After writing all results to columns G and H (and writing the coverage declaration in Step 5), write ONE final row to the Hardcoded Values sheet immediately after the last data row: column B = `source-citation-verify`, column D = `AGENT_COMPLETE`, column F = `COVERAGE_ROWS: [row range checked, e.g., 2-85] | Output sheet: Hardcoded Values. [N] rows eligible. [K] Matched ✓, [M] Contradicted ✗, [P] Could not verify. [Q] skipped — breakdown: [n1] no URL or blank F, [n2] GiveWell Parameter, [n3] Structural, [n4] non-URL citation, [n5] Google Sheets URL, [n6] GBD/IHME interactive, [n7] already verified (column G non-blank).`, all other columns blank. Use a single `modify_sheet_values` call. This is the absolute last action.
+After writing all results to columns G and H (and writing the coverage declaration in Step 6), write ONE final row to the Hardcoded Values sheet immediately after the last data row: column B = `source-citation-verify`, column D = `AGENT_COMPLETE`, column F = `COVERAGE_ROWS: [row range checked, e.g., 2-85] | Output sheet: Hardcoded Values. [N] rows eligible. [K] Matched ✓, [M] Contradicted ✗, [P] Could not verify. [Q] skipped — breakdown: [n1] no URL or blank F, [n2] GiveWell Parameter, [n3] Structural, [n4] non-URL citation, [n5] Google Sheets URL, [n6] GBD/IHME interactive, [n7] already verified (column G non-blank).`, all other columns blank. Use a single `modify_sheet_values` call. This is the absolute last action.
