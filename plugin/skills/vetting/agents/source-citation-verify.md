@@ -6,6 +6,10 @@ You have been provided:
 - Hardcoded Values sheet ID
 - User email for MCP calls
 
+**Before doing anything else, read `reference/pitfalls.md` using the Read tool. Apply every entry relevant to source citation, severity calibration (SC-003, SC-009), and value verification.**
+
+---
+
 **What this system guarantees — and what it does not**
 
 Column H always contains one of:
@@ -18,15 +22,42 @@ However: the *verdict* in column G is a model judgment that may be wrong. The ci
 
 ---
 
-## Bash tool check — do this before Step 1
+## Step 2 — Read Hardcoded Values sheet
 
-Before writing the verification script, confirm the Bash tool is available by attempting a trivial command (e.g., `echo "bash_available"`). If Bash is unavailable:
+**Do this before the Bash tool check and before writing the script.**
 
-1. Fall back to manual `WebFetch` verification for the top 5 `Study-Derived` parameters only (select by CE impact proximity — parameters in rows whose Description mentions mortality rate, coverage, or unit cost take precedence).
+First read row 1 (`A1:H1`) to confirm the header matches: `Sheet | Cell | Category | Current Value | Description | Source to Verify | Verified? | Auto-check evidence`. If the header does not match, stop and write to chat: `Hardcoded Values sheet has unexpected headers — cannot safely write verdicts. Expected: [headers]. Found: [actual headers].`
+
+Then read `A2:G500` from the Hardcoded Values sheet (extend range if needed; stop when two consecutive rows are empty). For each non-empty row record:
+- `row_num`: spreadsheet row number
+- `category`: column C
+- `value`: column D
+- `description`: column E
+- `source_url`: column F
+
+**Skip rows where:**
+- Column F is blank or `"No source cited"`
+- Column C is `GiveWell Parameter` (key-params-check handles these against internal references)
+- Column C is `Structural` (model constants — no external source)
+- Column F is a Google Sheets URL (matches `docs.google.com/spreadsheets/...` — not accepted as a document block; write column G = `Could not verify` and column H = `source is a spreadsheet` for these rows)
+- Column F contains plain text without a URL — e.g., `"Smith et al 2023"`, `"GBD estimate"`, `"internal communication"`, `"GiveWell analysis"`, or any value that does not begin with `http` or `https`. These are text citations, not fetchable sources; write column G = `Could not verify` and column H = `non-URL citation; verify manually` for these rows and skip the fetch step.
+- Column G contains exactly one of: `Matched ✓`, `Contradicted ✗`, `Could not verify` — row was verified in a prior run; do not overwrite. Any other non-blank value in column G should be overwritten with the verified verdict — do not treat arbitrary non-blank values as completed verifications.
+
+Eligible rows: category is `Study-Derived` or `Org-Reported` AND column F contains a URL starting with `http` or `https` AND column G is blank.
+
+**If eligible rows = 0:** write the Step 5 coverage declaration with all-zero counts and a note explaining why (e.g., `All rows are GiveWell Parameter, Structural, or have non-URL citations — no rows eligible for automated citation verification`), then write the Step 6 AGENT_COMPLETE marker, and stop. Do not proceed to the Bash tool check or Step 1.
+
+---
+
+## Bash tool check — do this after Step 2, before Step 1
+
+After reading the sheet and confirming eligible rows exist, confirm the Bash tool is available by attempting a trivial command (e.g., `echo "bash_available"`). If Bash is unavailable:
+
+1. Fall back to manual `WebFetch` verification for the top 5 eligible parameters (Study-Derived or Org-Reported with a URL in column F — select by CE impact proximity, prioritising rows whose Description mentions mortality rate, coverage, or unit cost take precedence).
 2. For each of the 5 parameters: call `WebFetch` on the Source to Verify URL, then compare the stated value against the fetched content.
 3. Write verdicts (`Matched ✓`, `Contradicted ✗`, or `Could not verify`) and evidence to columns G and H of those 5 rows.
-4. Write a single row to the Hardcoded Values sheet immediately after the last filled row: column B = `source-citation-verify`, column D = `AGENT_COMPLETE`, column F = `Bash unavailable — fell back to manual spot-check of top-5 Study-Derived parameters; full citation verification not completed. [N] spot-checked. [K] Matched ✓, [M] Contradicted ✗, [P] Could not verify.`, all other columns blank.
-5. Stop — do not attempt Steps 1–5 below.
+4. Write a single row to the Hardcoded Values sheet immediately after the last filled row: column B = `source-citation-verify`, column D = `AGENT_COMPLETE`, column F = `Bash unavailable — fell back to manual spot-check of top-5 eligible parameters; full citation verification not completed. [N] spot-checked. [K] Matched ✓, [M] Contradicted ✗, [P] Could not verify.`, all other columns blank.
+5. Stop — do not attempt Steps 1–6 below (the AGENT_COMPLETE marker was already written in step 4 above).
 
 The orchestrator (SKILL.md) checks the AGENT_COMPLETE text for `Bash unavailable` and will surface a warning to the researcher.
 
@@ -49,9 +80,6 @@ Usage: python3 citation_verify.py /tmp/citation_source.txt < /tmp/citation_param
 Output (stdout): JSON [{"row_num": int, "verdict": str, "evidence": str}]
   verdict:  "Matched ✓" | "Contradicted ✗" | "Could not verify"
   evidence: verbatim sentence from a citation object, or reason verification failed.
-            "Matched ✓" and "Contradicted ✗" are ONLY written when a citation object
-            (text mechanically extracted from the source document) confirmed the match.
-            The verdict is a model judgment; always read the evidence sentence independently.
 """
 import sys, json, os, re
 
@@ -102,13 +130,17 @@ def run():
                 for p in params]
 
     try:
-        source_text = open(sys.argv[1], encoding="utf-8", errors="replace").read()[:80000]
+        full_text = open(sys.argv[1], encoding="utf-8", errors="replace").read()
+        truncated = len(full_text) > 80000
+        source_text = full_text[:80000]
     except OSError as e:
         return [{"row_num": p["row_num"], "verdict": "Could not verify",
                  "evidence": f"Could not read source file: {e}"} for p in params]
 
     if not params:
         return []
+
+    truncation_note = " [Source text truncated at 80,000 chars — value may appear beyond truncation point; verify manually]" if truncated else ""
 
     client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
@@ -197,7 +229,7 @@ def run():
                 evidence = "Match reported by model but no citation object returned — manual check required"
         else:
             verdict = "Could not verify"
-            evidence = "Value not found in source document"
+            evidence = "Value not found in source document" + truncation_note
 
         results.append({"row_num": param["row_num"], "verdict": verdict, "evidence": evidence})
 
@@ -216,27 +248,6 @@ if __name__ == "__main__":
 
 ---
 
-## Step 2 — Read Hardcoded Values sheet
-
-Read `A2:G500` from the Hardcoded Values sheet (extend range if needed; stop when two consecutive rows are empty). For each non-empty row record:
-- `row_num`: spreadsheet row number
-- `category`: column C
-- `value`: column D
-- `description`: column E
-- `source_url`: column F
-
-**Skip rows where:**
-- Column F is blank or `"No source cited"`
-- Column C is `GiveWell Parameter` (key-params-check handles these against internal references)
-- Column C is `Structural` (model constants — no external source)
-- Column F is a Google Sheets URL (not accepted as a document block — write `Could not verify — source is a spreadsheet` for these rows)
-- Column F contains plain text without a URL — e.g., `"Smith et al 2023"`, `"GBD estimate"`, `"internal communication"`, `"GiveWell analysis"`, or any value that does not begin with `http` or `https`. These are text citations, not fetchable sources; write `Could not verify — non-URL citation; verify manually` for these rows and skip the fetch step.
-- Column G contains exactly one of: `Matched ✓`, `Contradicted ✗`, `Could not verify` — row was verified in a prior run; do not overwrite. Any other non-blank value in column G should be overwritten with the verified verdict — do not treat arbitrary non-blank values as completed verifications.
-
-Eligible rows: category is `Study-Derived` or `Org-Reported` AND column F contains a URL starting with `http` or `https` AND column G is blank.
-
----
-
 ## Step 3 — Fetch source text and verify
 
 Group eligible rows by `source_url`. For each unique source URL:
@@ -247,11 +258,13 @@ Group eligible rows by `source_url`. For each unique source URL:
 
 For these rows write `Could not verify — GBD/IHME interactive source; verify the vizhub query or GHDX download manually` and skip the fetch. Do not attempt WebFetch on vizhub or GHDx URLs — they return JavaScript shell pages with no data content.
 
+**Box.com URLs** — detect before fetching. A URL is a Box.com URL if column F contains `box.com` or `givewell.box.com`. For these rows write `Could not verify — Box.com link requires authenticated access and cannot be verified automatically. Replace with a public link before publication.` Do not attempt WebFetch on Box URLs.
+
 **Google Doc** (`docs.google.com/document/...`): call `get_doc_content`. Use the full returned text.
 
-**Any other HTTP/HTTPS URL**: call `WebFetch`. Use the returned text content. If the response appears to be HTML (contains `<!DOCTYPE` or `<html`) rather than the underlying document text, write `Could not verify — URL returned a web page, not source text` for all rows from this source and skip. If the response appears binary or garbled, write `Could not verify — source not text-extractable` and skip.
+**PDF sources** — A URL is likely a PDF source if it ends in `.pdf`, or if WebFetch returns a `Content-Type` header of `application/pdf`, or if the returned content begins with `%PDF`. Attempt `WebFetch`. If readable text is returned, proceed. If binary or not text-extractable, write `Could not verify — PDF binary` and skip. If a DOI URL (e.g., `https://doi.org/10.xxxx`) returns an HTML landing page rather than document text, write `Could not verify — DOI resolved to HTML landing page, not source text; verify by fetching the PDF link from the journal landing page.`
 
-**PDF URL** (ends in `.pdf`): attempt `WebFetch`. If readable text is returned, proceed. If binary, write `Could not verify — PDF binary` and skip.
+**Any other HTTP/HTTPS URL**: call `WebFetch`. Use the returned text content. If the response appears to be HTML (contains `<!DOCTYPE` or `<html`) rather than the underlying document text, write `Could not verify — URL returned a web page, not source text` for all rows from this source and skip. If the response appears binary or garbled, write `Could not verify — source not text-extractable` and skip.
 
 If the fetch fails (HTTP error, auth required, domain blocked): write `Could not verify — source not accessible` for all rows from this source.
 
@@ -275,13 +288,17 @@ Parameters are short strings and safe to embed in JSON directly.
 python3 /tmp/citation_verify.py /tmp/citation_source.txt < /tmp/citation_params.json
 ```
 
+   Before running the script for each new source, confirm the `/tmp/citation_params.json` write in step 3b-2 completed without error. If the Write tool call for `/tmp/citation_params.json` returned an error, write `Could not verify — script parameter write failed` for all rows from this source and skip the Bash run.
+
 4. Parse the JSON array. Each item has `row_num`, `verdict`, and `evidence`. If the command fails or returns non-JSON, write `Could not verify — script error` for all rows from this source.
 
 ---
 
 ## Step 4 — Write results to sheet
 
-For each row that had a blank column G in Step 2 (either processed or skipped as ineligible): prepare the write as `[verdict, evidence]` or `["", ""]` respectively. **Do not write to any row whose column G was already non-empty in Step 2** — those rows were already verified and must not be overwritten.
+For each eligible row processed in Steps 3a/3b: write the resulting `[verdict, evidence]` to columns G and H. **Do not write to any row whose column G was already non-empty in Step 2** — those rows were already verified and must not be overwritten.
+
+Do NOT write `["", ""]` for rows whose verdict was already written directly by the skip-rule handling in Step 2 or Step 3a (e.g., rows with non-URL citations, Google Sheets URLs, or GBD/IHME sources). Those rows already have column G populated. Only write `["", ""]` for rows skipped because column C is `GiveWell Parameter` or `Structural`, or column F is blank — i.e. rows where no verdict was written at all.
 
 Because already-verified rows may be interspersed with new rows, write results **row by row** using individual `modify_sheet_values` calls (one call per eligible row) rather than a single contiguous `G2:H{last_row}` array. A single array write would overwrite already-verified cells in the gaps with blank values.
 
@@ -312,4 +329,6 @@ If any `Contradicted ✗` rows exist:
 
 ## Step 6 — Write completion marker
 
-After writing all results to columns G and H (and writing the coverage declaration in Step 5), write ONE final row to the Hardcoded Values sheet immediately after the last data row: column B = `source-citation-verify`, column D = `AGENT_COMPLETE`, column F = `COVERAGE_ROWS: [row range checked, e.g., 2-85] | [N] rows eligible. [K] Matched ✓, [M] Contradicted ✗, [P] Could not verify. [Q] skipped (no URL, GiveWell parameter, or non-URL citation).`, all other columns blank. Use a single `modify_sheet_values` call. This is the absolute last action.
+This agent writes directly to the Hardcoded Values sheet, not a staging tab. The orchestrator should not apply the standard staging-tab AGENT_COMPLETE parser to this agent's output.
+
+After writing all results to columns G and H (and writing the coverage declaration in Step 5), write ONE final row to the Hardcoded Values sheet immediately after the last data row: column B = `source-citation-verify`, column D = `AGENT_COMPLETE`, column F = `COVERAGE_ROWS: [row range checked, e.g., 2-85] | Output sheet: Hardcoded Values. [N] rows eligible. [K] Matched ✓, [M] Contradicted ✗, [P] Could not verify. [Q] skipped — breakdown: [n1] no URL or blank F, [n2] GiveWell Parameter, [n3] Structural, [n4] non-URL citation, [n5] Google Sheets URL, [n6] GBD/IHME interactive, [n7] already verified (column G non-blank).`, all other columns blank. Use a single `modify_sheet_values` call. This is the absolute last action.
