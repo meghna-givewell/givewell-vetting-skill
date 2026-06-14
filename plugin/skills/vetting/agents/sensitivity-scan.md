@@ -47,6 +47,8 @@ Write all flags to the **Confidentiality Flags sheet** — not the Findings shee
 
 The Confidentiality Flags sheet header is written by the orchestrator during output setup — do not write the header row again. Begin writing flag rows at row 2.
 
+**Pre-write header check**: Before writing any flag rows, read row 1 of the Confidentiality Flags sheet. If column A of row 1 does not equal `Cell/Row`, stop and write to chat: "Confidentiality Flags sheet header missing or mismatched — column A row 1 reads '[value]' but expected 'Cell/Row'. Cannot safely write to row 2. Verify that output setup completed correctly (expected headers: Cell/Row | Content Found | Sensitivity Type | Recommended Action)." Do not write any findings until the header is confirmed.
+
 Columns:
 - **A (Cell/Row)**: Cell reference only — e.g., `Main CEA!C14`. No row labels or descriptions. If found in a cell note rather than a cell value, write the cell reference followed by ` (note)` — e.g., `Main CEA!C14 (note)`.
 - **B (Content Found)**: The sensitive content found — quote it directly, or describe it if quoting would itself be a risk

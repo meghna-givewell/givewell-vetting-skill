@@ -178,8 +178,6 @@ Heads-up epi-TA-A check log — Epidemiological Parameter Checks (TA burden tab)
   selection into programs [___]
   program interaction / overlap [___]
   multi-program substitution [___]
-  AVERAGE range endpoints cover TA exit year + 5 years [___]
-  time series column headers read explicitly [___]
 ```
 
 **heads-up-epi-TA-B log** (TA burden tab, Section B primary + adversarial Section A pass):

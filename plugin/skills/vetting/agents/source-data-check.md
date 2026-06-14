@@ -68,7 +68,7 @@ Scan adjacent vaccine columns in the same row. The clearest transposition signal
 
 Example: a tab has columns BCG | OPV0 | Penta1. If BCG = 34.2 and OPV0 = 87.6 in a country where BCG coverage is typically high and OPV0 is typically similar, this is a reversal. Cross-reference: does the BCG value (34.2) look more like an OPV0 estimate for this country, and vice versa?
 
-Do not flag differences that are plausibly real country-specific variation. Flag only when the swap hypothesis is the parsimonious explanation.
+Do not flag differences that are plausibly real country-specific variation. Flag as a potential swap only when **both** of the following hold: (a) the Check A co-vaccine ordering violation for the same row was already flagged, OR the two column values differ from each other by more than 40 percentage points; AND (b) value-A is numerically consistent with what the literature reports for column-B's vaccine in this country (within 15 percentage points of WHO/WUENIC global or regional averages for the relevant country/year), and vice versa. If only one condition holds, note the observation in reasoning and do not file.
 
 **WebFetch for transposition confirmation**: When Check A or B identifies a plausible transposition and the source tab provides a URL or citation for the data, use WebFetch to retrieve the original source and confirm the correct column order. Per pitfalls.md FN-003: when a data value carries >=5% weight in a weighted average visible in the source tab, attempt WebFetch on the cited source URL before classifying the finding severity — confirming the source table column order upgrades a Medium to High when misidentification is confirmed.
 
@@ -95,7 +95,11 @@ Skip this check if the tab contains sub-national rows only (no summary row) or i
 
 ### Check E — Cross-tab data vintage consistency
 
-After completing Checks A–D, record the most recent year present in each source tab's data for the in-scope geographies. Use the year column of the rows already located in Step 2 — no additional reads needed if the year column was captured. If the year column was not captured, read the year column for the in-scope row(s) in a targeted call.
+After completing Checks A–D, record the most recent year present in each source tab's data for the in-scope geographies. First determine the tab's format:
+- **Long format** (one row per geography per year, with a Year column): use the year column of the rows already located in Step 2 — no additional reads needed if the year column was captured. If the year column was not captured, read the year column for the in-scope row(s) in a targeted call.
+- **Wide format** (one row per geography with years as column headers): read row 1 of the tab using `read_sheet_values` (FORMATTED_VALUE), scan for 4-digit year values (1990–2099) in column headers, and take the maximum as the most recent year. Record this year for each in-scope geography row.
+
+If the format is ambiguous (no obvious Year column, no year values in row 1), note "format indeterminate — year extraction skipped" in the coverage declaration for this tab and do not flag a vintage mismatch for it.
 
 For each source tab, record: tab name → most recent data year for in-scope geography.
 
