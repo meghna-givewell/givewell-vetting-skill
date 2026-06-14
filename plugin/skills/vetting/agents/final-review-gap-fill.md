@@ -173,7 +173,7 @@ Column reference: **A** Finding # | **B** Sheet | **C** Cell/Row | **D** Severit
 
 **I** Researcher judgment needed (✓ only for intent/decision questions) | **J** Status (leave blank)
 
-**Routing note**: All gap-fill findings route to the Findings sheet. If a category coverage gap points to a publication-readiness issue only (e.g., a missing citation with no CE impact), file as Low/Legibility in the Findings sheet rather than Publication Readiness — gap-fill does not write to Publication Readiness directly.
+**Routing note**: All gap-fill findings route to the Findings sheet. Gap-fill does not file Low/Legibility findings — if a coverage gap produces only a Low-severity Legibility issue (cosmetic documentation gap), skip it. Gap-fill covers material gaps that earlier agents missed; Low/Legibility documentation issues should have been caught and routed to Publication Readiness by Wave 1/2 agents.
 
 **Do not write pass notes, verification notes, or "no issues found" summaries to the Findings sheet.** Coverage declarations belong in your chat output, not in the sheet.
 

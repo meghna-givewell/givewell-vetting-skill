@@ -71,6 +71,8 @@ For display-only cells not in the CE chain, flag any of the above conditions as 
 
 ## Writing Findings
 
+**One finding per check type — no per-cell rows**: For every named check in this step, file at most one finding per check type regardless of how many cells trigger it. Consolidate all affected cells into a single finding and list them all in column C (e.g., "B34, C34, B67, C67"). Do not create one finding per cell. This applies to every check: zero denominators, blank cell references, negative value risks, silenced errors (group Low/H instances; High/D instances separately if each has a distinct root-cause fix), SUMPRODUCT array constants, INDIRECT/OFFSET uses, hidden rows/columns, VLOOKUP approximate-match instances, INDEX/MATCH approximate-match instances, YEAR()-on-integer instances, IFERROR/IFNA CE-chain instances, and FILTER/ARRAYFORMULA/LAMBDA pattern instances. Exception: within a single check type, file separate findings only when each instance requires a materially different recommended fix — for example, two INDEX/MATCH wrong-key issues where one's correct key is "Kenya" and the other's is "SMC region 3" with no shared fix wording.
+
 Before writing any finding, confirm: (1) exact cell reference(s), (2) what specific input or condition triggers the edge case, (3) the precise fix required.
 
 **Researcher judgment needed threshold**: mark ✓ only when (a) resolving the finding requires the researcher's specific intent AND (b) the assumption is materially surprising — outside the typical range for this intervention. Do not mark ✓ for documentation gaps where the fix is simply "add a note." If >25–30% of findings carry ✓, the threshold is too low.

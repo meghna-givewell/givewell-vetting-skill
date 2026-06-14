@@ -189,6 +189,8 @@ If any column's formula references a row labeled for a different geography, coho
 
 **Severity guard for value-error claims**: Before filing a finding that classifies a specific hardcoded value as *wrong* (High/D or Medium/H), you must have done at least one of: (a) read the cell's linked source document and confirmed the value contradicts it, (b) verified against `reference/key-parameters.md`, or (c) confirmed via arithmetic that the value is internally inconsistent. This requirement applies equally to High/D and Medium/H — do not file either based solely on reasoning that a value "looks low" or "seems high." If the source is inaccessible but a WebSearch returns external evidence suggesting the value is materially stale or inconsistent, state that specific evidence in the finding. If uncertain after checking, downgrade to Low/H with Researcher judgment needed ✓.
 
+**One finding per named pattern**: For repeated formula hygiene issues of the same type — circular references, zero-denominator risks, unfunded-geography zero-placeholder issues, INDIRECT/OFFSET uses, and similar structural patterns — consolidate all instances into one finding and list all affected cells in column C. Do not file one finding per cell. Exception: file separately only when each instance requires a materially different recommended fix.
+
 Before writing any finding, confirm: (1) the exact cell reference(s) affected, (2) the specific value or formula that is wrong, (3) the precise fix required.
 
 Append findings using `modify_sheet_values` to your staging sheet. Start at row 2 and append sequentially. Your staging sheet name is provided in session context. See `reference/column-reference.md` for full column specifications.

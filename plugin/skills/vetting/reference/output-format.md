@@ -6,6 +6,7 @@
 - **Publication Readiness** — issues that don't affect the model: missing sources, permission flags, broken links, citation format, terminology, style, labeling, personal names in notes, internal-only references.
 - **Sourcing for standalone hardcoded cells → Hardcoded Values sheet** (not Publication Readiness) — the Hardcoded Values sheet already tracks source completeness in column F. Exception: hardcoded literals embedded *inside* formulas still go to Publication Readiness as `Sourcing`. If the value is outside the plausible range or inconsistent with other sources, file it as `Parameter` in Findings. **A value that is both potentially wrong and undocumented is always `Parameter` in Findings — do not also file `Sourcing` in Publication Readiness for the same cell.**
 - **Values labeled "guess" or "best guess" are not findings** — this is acceptable uncertainty documentation. Do not file `Parameter` or `Assumption` entries for these.
+- **Low severity + Legibility → Publication Readiness**: Any finding that is Low severity with Error Type = Legibility (and no Researcher judgment needed ✓) routes to Publication Readiness. Write these with column D blank in your staging sheet so the compaction agent routes them correctly. Rationale: Low/Legibility issues don't affect model correctness; they are pre-publication cleanup items. Low/Legibility findings that ARE marked Researcher judgment needed ✓ stay in Findings (Low in column D) — the researcher must actively respond.
 - When in doubt between Findings and Publication Readiness, use Findings.
 
 ---
@@ -114,6 +115,8 @@ Sort by sheet (column B), then row number. Where the same issue applies to multi
 - The recommended fix differs meaningfully between cells (e.g., one cell should reference row 14, another should reference row 22)
 - Cells are on different sheets and the Explanation would need to describe two distinct contexts to be intelligible
 - Severity differs between cells (e.g., one cell has a documented note rationale that triggers a downgrade; another does not — they cannot share a finding at a single severity)
+
+**Low-severity cap — one per check section**: For Low-severity findings specifically, the grouping mandate is absolute. Cap at one Low finding per named check section per agent. If a check produces multiple Low instances of the same Error Type, they MUST be batched into a single finding listing all cells in column C. Two Low findings may coexist in one agent's output only when they have genuinely distinct Error Types or cover clearly separate issues from different check sections. Do not create individual per-cell Low findings when a pattern finding covers the same ground.
 
 **Newly-added geography column — missing source batch finding**: When a column represents a newly-added geography and multiple parameters in that column lack cell notes or source citations, file a single grouped Medium finding listing all affected cells rather than one finding per cell. Example wording: "CIV column (J) has N parameters with no source note — newly-added geographies commonly have documentation gaps across the board. Cells: [J16, J34, J92, J135, J146, ...]. Recommend adding a source note or cell note for each before publication." This prevents alert fatigue from 8+ identical Low/H findings that all have the same fix.
 

@@ -43,4 +43,5 @@ For Hardcoded Values (A–H) and Confidentiality Flags (A–D) column layouts, s
 - **Sourcing for standalone hardcoded cells → Hardcoded Values sheet**, not Publication Readiness. The Hardcoded Values sheet (column F "Source to Verify") already tracks this. Exception: hardcoded literals *embedded inside formulas* (e.g., `=2.47%*C43`) are not captured there — those still go to Publication Readiness as `Sourcing`.
 - If the value is outside the plausible range or inconsistent with other sources, use `Parameter` in Findings.
 - **Values labeled "guess" or "best guess" are not findings** — this is transparent uncertainty documentation, not an error. Do not file `Parameter` or `Assumption` entries for these.
+- **Low + Legibility (no Researcher judgment ✓) → Publication Readiness**: leave column D blank. Low/Legibility findings marked Researcher judgment needed ✓ stay in Findings (column D = Low).
 - When in doubt between Findings and Publication Readiness, use Findings.
