@@ -439,6 +439,7 @@ Wave 1 staging tabs:
 | `stg-voi-A` | formula-check-voi A |
 | `stg-voi-B` | formula-check-voi B |
 | `stg-params` | formula-check-parameters |
+| `stg-xcomp` | cross-tab-compare |
 
 Wave 2 staging tabs (always create these; skipped agents' tabs remain empty):
 
@@ -564,6 +565,7 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 | formula-check-structure A, B | ✓ | ✓ | ✓ | ✓ | All rows |
 | formula-check-voi A, B | ✓ | ✓ | ✓ | — | All rows |
 | formula-check-parameters | ✓ | ✓ | ✓ | — | All rows |
+| cross-tab-compare | ✓ | ✓ | ✓ | ✓ | All rows |
 | consistency-check A, B | ✓ | ✓ | ✓ | ✓ | All rows |
 | key-params-check A, B | ✓ | — | ✓ | — | All rows |
 | source-data-check A, B | ✓ | ✓ | ✓ | ✓ | Source tabs only |
@@ -601,6 +603,7 @@ This restriction applies to MCP tools and external search/fetch tools only. Buil
 | consistency-check | rv, rn, rl, rc, wv, dc |
 | key-params-check | rv, rn, rc, wv |
 | formula-check-parameters | rv, rn, rc, wv, ws |
+| cross-tab-compare | rv, rn, rl, rc, wv |
 | source-data-check | rv, rn, rl, rc, wv, ws, wf |
 | hardcoded-values | rv, rn, rl, rc, wv |
 | sensitivity-scan | rv, rn, rc, wv |
@@ -683,7 +686,7 @@ Agents run in four phases (Wave 1, Wave 2, Wave 2.5, Wave 3) with Wave 1.5 as a 
    Add all band reconcile pairs after the standard Wave 2.5 pairs in the reconcile spawn batch. Announce: `Wave 2.5 reconciliation: [N] standard pairs + [M] band-split pairs ([band_count−1] extra bands × [affected agent count] agents).`
 
 **After completing steps 1–4 above**, compute the actual Wave 1 agent count:
-- Start with base count 21
+- Start with base count 22
 - Subtract 2 if source-data-check is skipped
 - Subtract 2 if formula-check-arithmetic is in 2-instance mode (C and D skipped)
 - Subtract 1 if key-params-check is in 1-instance mode (B skipped)
@@ -716,6 +719,7 @@ Assign staging sheets before spawning:
 | 3v | `agents/formula-check-voi.md` | A | All rows | `stg-voi-A` |
 | 3v | `agents/formula-check-voi.md` | B | All rows | `stg-voi-B` |
 | 3f | `agents/formula-check-parameters.md` | — | All rows | `stg-params` |
+| 3c | `agents/cross-tab-compare.md` | — | All rows | `stg-xcomp` |
 | 8 | `agents/sensitivity-scan.md` | — | All sheets | Confidentiality Flags sheet only |
 | 9 | `agents/hardcoded-values.md` | — | All sheets | Hardcoded Values sheet only |
 
@@ -740,6 +744,10 @@ Append to formula-check-voi A and B session contexts (A/B share the same prompt 
 Append to formula-check-parameters session context:
 > **Staging sheet**: `stg-params`. Write all findings to this staging tab starting at row 2.
 > **Sheet row scope**: All rows across all vetted sheets.
+
+Append to cross-tab-compare session context:
+> **Staging sheet**: `stg-xcomp`. Write all findings to this staging tab starting at row 2.
+> **Sheet row scope**: All rows. Self-detect Simple CEA and Main CEA tabs before running checks — if fewer than two matching tabs are found, write your completion marker and stop.
 
 Append to source-data-check A and B session contexts (identical content except staging sheet name):
 > **Staging sheet**: `{stg-srcdt-A / stg-srcdt-B}`. Write all findings to this staging tab starting at row 2.
@@ -788,7 +796,7 @@ Wait for all spawned Wave 1 agents to complete before proceeding.
 | sensitivity-scan | **No** — every populated spreadsheet has at least one cell worth scanning for sensitive data. Check the Confidentiality Flags sheet: if it has only the header row (no data rows and no AGENT_COMPLETE), this is a failure signal. Read `'Confidentiality Flags'!A1:D5` to confirm. |
 | hardcoded-values | **No** — every spreadsheet has at least one hardcoded input cell. Check the Hardcoded Values sheet: if it has only the header row (no data rows and no AGENT_COMPLETE), this is a failure signal. Read `'Hardcoded Values'!A1:H5` to confirm. |
 
-**Researcher-confirm checkpoint**: After all Wave 1 agents complete and before spawning Wave 2, read all Wave 1 staging tabs (stg-arith-A through stg-params) and collect all rows with `✓` in the **Researcher judgment needed** column (column I). If **no such rows exist**, skip this checkpoint entirely and proceed immediately to Wave 2. If flagged rows exist, present them to the user as a numbered list: cell reference, finding type, and the specific question. Explain that subsequent agents will proceed on current assumptions unless they respond. Then immediately proceed to Wave 2 — do not wait for a response. If the researcher responds before Wave 2 agents complete, update the declared deviations list in session context at that point and note the change in chat. If they respond after Wave 2 is already running, note their answers in the declared deviations list and flag in the Wave 2.5 session context: "Researcher responded to checkpoint after Wave 2 launched — review any finding touching [confirmed cells] for whether the researcher's intent changes the severity or routing." This checkpoint exists so intent questions (e.g., "is this $0 intentional?") can be answered before plausibility and readability agents analyze the same cells. **For any checkpoint item that is High severity or tagged D**: add a sentence flagging that downstream agents will analyze this cell using the current (potentially wrong) value — if the researcher's answer changes the value, the plausibility findings for that section may need to be revisited.
+**Researcher-confirm checkpoint**: After all Wave 1 agents complete and before spawning Wave 2, read all Wave 1 staging tabs (stg-arith-A through stg-params, stg-xcomp) and collect all rows with `✓` in the **Researcher judgment needed** column (column I). If **no such rows exist**, skip this checkpoint entirely and proceed immediately to Wave 2. If flagged rows exist, present them to the user as a numbered list: cell reference, finding type, and the specific question. Explain that subsequent agents will proceed on current assumptions unless they respond. Then immediately proceed to Wave 2 — do not wait for a response. If the researcher responds before Wave 2 agents complete, update the declared deviations list in session context at that point and note the change in chat. If they respond after Wave 2 is already running, note their answers in the declared deviations list and flag in the Wave 2.5 session context: "Researcher responded to checkpoint after Wave 2 launched — review any finding touching [confirmed cells] for whether the researcher's intent changes the severity or routing." This checkpoint exists so intent questions (e.g., "is this $0 intentional?") can be answered before plausibility and readability agents analyze the same cells. **For any checkpoint item that is High severity or tagged D**: add a sentence flagging that downstream agents will analyze this cell using the current (potentially wrong) value — if the researcher's answer changes the value, the plausibility findings for that section may need to be revisited.
 
 **Declared-deviation update before spawning Wave 2**: If the researcher responds to the checkpoint and any answer (a) confirms that a parameter was set intentionally, (b) clarifies that a $0 or zero value is intentional, or (c) changes whether a finding should be treated as a declared deviation — update the **declared-intentional deviations** list in session context before spawning Wave 2 agents. Pass the updated list to all Wave 2 agents in the standard session context block. Do not pass the original (stale) list if the researcher has since clarified intent. If the researcher does not respond before proceeding, pass the original list unchanged and note in the Wave 2 session context: `Researcher checkpoint: no response received; Wave 2 proceeds on pre-checkpoint assumptions.`
 
@@ -950,7 +958,7 @@ If key-params-check ran in 1-instance mode (populated_rows ≤ 80), also append:
 | **heads-up-epi (TA counterfactual burden)** *(TA BOTEC only)* | `stg-epi-ta-A` | `stg-epi-ta-B` | `stg-rec-epi-ta` |
 | ce-chain-trace-ta *(self-detecting TA check)* | `stg-ceta-A` | `stg-ceta-B` | `stg-rec-ceta` |
 
-Note: notes-scan (Step 7c) has no reconciliation pair — it runs as A/B, each writing to its own staging tab (`stg-nscn-A`, `stg-nscn-B`); the Wave 3 compaction agent deduplicates their overlapping findings in its standard Step 3 dedup pass. No reconcile agent is needed. formula-check-parameters (Step 3f) also has no reconciliation pair — it runs as a single instance writing to `stg-params`. The final-review compaction step reads both alongside all other staging tabs. The heads-up-epi TA counterfactual burden pair has no reconciliation agent for non-TA models — skip that row entirely when program context is not a TA BOTEC.
+Note: notes-scan (Step 7c) has no reconciliation pair — it runs as A/B, each writing to its own staging tab (`stg-nscn-A`, `stg-nscn-B`); the Wave 3 compaction agent deduplicates their overlapping findings in its standard Step 3 dedup pass. No reconcile agent is needed. formula-check-parameters (Step 3f) also has no reconciliation pair — it runs as a single instance writing to `stg-params`. cross-tab-compare (Step 3c) also has no reconciliation pair — it runs as a single self-detecting instance writing to `stg-xcomp`; if Simple CEA or Main CEA tabs are absent it writes only its completion marker. The final-review compaction step reads all three alongside all other staging tabs. The heads-up-epi TA counterfactual burden pair has no reconciliation agent for non-TA models — skip that row entirely when program context is not a TA BOTEC.
 
 **Silent failure check after Wave 2.5 — do this before Wave 3**: After all reconciliation agents complete, check each reconcile staging sheet (stg-rec-*) and check whether each reconcile agent wrote its coverage declaration to chat. (Pairs confirmed empty in the pre-flight check are exempt — their skipped status was already logged.) A reconcile agent is a silent failure risk if its reconcile staging sheet contains only the header row (no AGENT_COMPLETE, no findings) OR if no coverage declaration for this pair appears in the current session context. Report any pair where either condition holds:
 
@@ -1019,6 +1027,7 @@ Issue each warning independently — a clean `stg-nscn-A` does not suppress a `s
 | formula-check-voi A | `stg-voi-A` | Yes (self-detecting) |
 | formula-check-voi B | `stg-voi-B` | Yes (self-detecting) |
 | formula-check-parameters | `stg-params` | Yes |
+| cross-tab-compare | `stg-xcomp` | Yes (self-detecting — check AGENT_COMPLETE text) |
 | hardcoded-values | `'Hardcoded Values'!A:H` | No — check for AGENT_COMPLETE row in any column |
 | sensitivity-scan | `'Confidentiality Flags'!A:D` | No — check for AGENT_COMPLETE row in any column |
 | source-data-check A | `stg-srcdt-A` | Yes (skip if no source data tabs) |
