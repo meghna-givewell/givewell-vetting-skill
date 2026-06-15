@@ -119,11 +119,11 @@ Reconciliation agents mark rows they decide not to include by writing `WONT_FIX`
 
 To verify a sample of Won't Fix decisions:
 
-1. Read the staging tabs for each agent pair (both stg-agent-A and stg-agent-B). Look for any row where column J contains `WONT_FIX`. For agents that ran in 1-instance mode (only A tab is populated), read only the A tab — the B tab will be empty and does not contain WONT_FIX rows.
+1. **Get the staging tab list** from session context — the orchestrator writes all stg-* tab names during output setup. If the list is not in session context (context was compacted), read Dashboard cells `A99:A148` of the output spreadsheet to recover it (batch to `A149:A198` if needed). Then read each staging tab (both stg-agent-A and stg-agent-B for paired agents) in 50-row batches — **the MCP tool returns at most 50 rows per call; use `{tab}!A1:J50`, `A51:J100`, etc. until two consecutive batches return no non-empty rows** — looking for any row where column J contains `WONT_FIX`. For agents that ran in 1-instance mode (only A tab is populated), read only the A tab — the B tab will be empty and does not contain WONT_FIX rows.
 
 2. For each Won't Fix row found, read the cell it covers in the source spreadsheet and ask: is there a plausible reason this finding was cleared? Common valid reasons: the other instance found no issue in the same cell; the deviation was declared-intentional in session context; the finding was a duplicate of a finding from a different agent.
 
-3. This check is intentionally light. Focus on Won't Fix decisions involving: (a) any finding whose column D (Severity) is High — regardless of error type; (b) cells identified as known parameters (moral weight, benchmark, cross-cutting parameter); and (c) formula rows where the formula and row label diverge in a way that would be obvious on visual inspection. Medium and Low Won't Fix decisions on non-parameter rows do not require review unless they pass the volume threshold below.
+3. This check is intentionally light. Focus on Won't Fix decisions involving: (a) any finding whose column D (Severity) is High — regardless of error type; (b) cells identified as known parameters (moral weight, benchmark, cross-cutting parameter); and (c) formula rows where the formula and row label diverge in a way that would be obvious on visual inspection. Medium and Low Won't Fix decisions on non-parameter rows do not require review.
 
 4. If you find a Won't Fix decision that appears incorrect, file as **Medium** with Researcher judgment needed ✓: "A `WONT_FIX` decision in [stg-tab] at row [N] appears to have cleared [cell ref] which may warrant review: [brief description of the anomaly]. Verify this cell was correctly cleared."
 
@@ -148,12 +148,13 @@ To check: scan the Findings sheet for at least one finding in the relevant error
 | Geography/country consistency | `stg-srcdt-A` (single instance; will be absent if source-data-check was skipped — see Do not file conditions below) | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for geography consistency. Confirm source-data-check ran and completed Check F (if source tabs were present)." |
 | Grant amount consistency | `stg-params` (single instance) | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for grant amount consistency. Confirm formula-check-parameters ran and completed Check 5." |
 | Formula fragility (DIV/0, negative value guards, IFERROR) | `stg-edge-A` and `stg-edge-B` (or `stg-arith-A` / `stg-arith-B` if formula-check-edge-cases was not run separately) | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for formula fragility / edge case guards. Confirm formula-check-edge-cases ran." |
+| Notes scan (cell comments, acknowledged issues, unresolved comment threads) | `stg-nscn-A` and `stg-nscn-B` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for notes-scan. Confirm notes-scan-A and notes-scan-B ran and completed (notes-scan has no reconcile agent — verify both stg-nscn-* tabs contain an AGENT_COMPLETE row)." |
 
 **Do not file** a gap finding when: (a) the relevant agent's AGENT_COMPLETE row is present and its completion message confirms the check ran; (b) program context contains a declared-intentional deviation that would make the check not applicable; (c) the workbook has no source data tabs (geography consistency check does not apply); or (d) session context contains `source-data-check: SKIPPED` — this records the conditional skip from the orchestrator and is sufficient evidence the geography consistency check was intentionally omitted.
 
 **key-params-check coverage log**: Read the AGENT_COMPLETE row(s) from stg-kp-A and stg-kp-B. In each row's column F, look for a coverage count like 'N of M applicable parameters checked.' If N < M and the unchecked parameters are not explained, file a gap-fill finding: Low/H, Researcher judgment needed ✓: 'key-params-check coverage log shows [N] of [M] parameters checked — confirm remaining [M-N] parameters were intentionally excluded (e.g., not applicable to this model type) or re-run the agent.'
 
-Coverage declaration: "Category coverage check complete. Categories confirmed covered: [N/5]. Gaps filed: [list of categories or 'none']. key-params-check coverage log: [N of M — complete / incomplete / staging tab not found]."
+Coverage declaration: "Category coverage check complete. Categories confirmed covered: [N/6]. Gaps filed: [list of categories or 'none']. key-params-check coverage log: [N of M — complete / incomplete / staging tab not found]."
 
 ---
 
