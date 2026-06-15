@@ -106,7 +106,7 @@ Coverage declaration: "Confidence intervals check complete. Sheet present: [yes/
 ## Check 3 — Stale placeholder and draft language
 
 Using targeted `read_sheet_values` calls on column A and column B of each vetted sheet (do not read full sheets), scan for:
-- Cells containing `TBD`, `TODO`, `DRAFT`, `Placeholder`, `Update this`, or similar
+- Cells containing any of these terms (exact match, case-insensitive): `TBD`, `TODO`, `DRAFT`, `Placeholder`, `Update this`, `to be confirmed`, `fill in`, `[fill in]`, `provisional`, `preliminary`, `working estimate`, `confirm before`, `update before`, `ASK`, `FIXME`, `TEMP`
 - Column headers with generic names like `Column X`, `Country A`, `Year N`
 - Cell notes containing internal-only markers (use `read_sheet_notes` on each vetted sheet to scan for notes beginning with `Note to self`, `INTERNAL`, or `ASK [name]`)
 - Workbook title (from the `spreadsheet_info` result obtained in Step 1) containing `draft`, `v1`, `wip`, or `copy of`

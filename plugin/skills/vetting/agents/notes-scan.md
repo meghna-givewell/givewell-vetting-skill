@@ -15,9 +15,17 @@ You are performing Step 7c of a GiveWell spreadsheet vet. You have been provided
 
 ---
 
+## Instance scope
+
+**Instance A** (primary scan): Run all 10 categories (A through J) in full. This is the complete notes coverage pass.
+
+**Instance B** (adversarial pass): Run categories A, C, E, F, H, H2, I, and J only — the categories requiring judgment (intent detection, quality assessment, coherence). Skip categories D and G (raw URL scan and stale year scan) — these are deterministic pattern matches that Instance A covers exhaustively with no judgment benefit from a second pass. Your goal is to surface judgment-category misses from Instance A's pass — findings that a different reading might catch. When you find the same finding Instance A found, record it in your reasoning as "confirmed — already in stg-A" but do **not** write it to your staging sheet (it would create a duplicate that compaction must deduplicate). Write to your staging sheet only findings not already in stg-A, or findings where Instance A's severity appears wrong.
+
+---
+
 ## Step 1 — Read the spreadsheet
 
-Read notes with `read_sheet_notes` (full sheet range in one call). Also call `read_spreadsheet_comments` once for the full workbook (this is the call that H2 depends on — do not defer it). Immediately after the `read_spreadsheet_comments` call completes, record in your reasoning: "Unresolved threads found: [N] at [cell refs list]." This checkpoint preserves the H2 (unresolved comment) check data if context compaction occurs before Step 3. For specific cell values needed during checks, make targeted `read_sheet_values` calls in FORMATTED_VALUE mode only — do not re-read the full sheet in FORMATTED_VALUE and FORMULA modes (the SKILL.md cache scoping table shows notes-scan receives only Notes in its cache; FORMULA data is not pre-cached for this agent). Identify the Notes column (typically column F) for each sheet — confirm the column letter before beginning the scan. If the Notes column is not column F, note which column it is.
+Read notes with `read_sheet_notes` (full sheet range in one call). Also call `read_spreadsheet_comments` once for the full workbook (this is the call that H2 depends on — do not defer it). Immediately after the `read_spreadsheet_comments` call completes, record in your reasoning: "Unresolved threads found: [N] at [cell refs list]." Then immediately write a temporary persistence row to your staging sheet: column B = `notes-scan`, column C = `H2-CHECKPOINT`, column F = `Unresolved comment threads: [cell refs and first 50 chars of each thread]`. This write persists the H2 data through any context compaction that occurs before Step 3. Overwrite this row with the actual H2 finding in Step 4 (or delete it if no H2 finding is warranted). Do not write this row at the end of the agent — write it immediately after the `read_spreadsheet_comments` call. For specific cell values needed during checks, make targeted `read_sheet_values` calls in FORMATTED_VALUE mode only — do not re-read the full sheet in FORMATTED_VALUE and FORMULA modes (the SKILL.md cache scoping table shows notes-scan receives only Notes in its cache; FORMULA data is not pre-cached for this agent). Identify the Notes column (typically column F) for each sheet — confirm the column letter before beginning the scan. If the Notes column is not column F, note which column it is.
 
 ---
 

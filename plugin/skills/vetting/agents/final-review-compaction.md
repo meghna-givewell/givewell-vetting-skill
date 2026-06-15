@@ -48,9 +48,24 @@ Coverage declaration: "Read complete. Staging tabs read: [N]. Total non-empty ro
 
 ---
 
+## Step 1.5 — Create backup before writing
+
+Before making any modification to the Findings sheet, Publication Readiness sheet, or normalizing in-memory data, create a backup of all staging tab data you just read. This preserves a recoverable pre-normalization state if a later step fails mid-execution.
+
+1. Call `ToolSearch` with query `select:mcp__hardened-workspace__create_sheet` to ensure the tool schema is loaded.
+2. Call `mcp__hardened-workspace__create_sheet` to add a tab named `Staging_backup` to the output spreadsheet. If the tool returns an error indicating the tab already exists (e.g., from a prior partial run), skip creation — the existing backup remains available.
+3. Use a single `modify_sheet_values` call to write a header row and all [W] finding rows (excluding AGENT_COMPLETE markers, WONT_FIX rows, and header rows) from your Step 1 read into `Staging_backup`, starting at row 1. Header row: `Finding # | Sheet | Cell/Row | Severity | Error Type/Issue | Explanation | Recommended Fix | Estimated CE Impact | Researcher judgment needed | Status`. Note in row 1 (or as a comment): "This backup contains all pre-routing, pre-normalization staging tab rows. Rows with blank Severity (column D) are Publication Readiness findings that were not yet routed. Do not import this backup directly into the Findings sheet — re-run the compaction routing step first."
+4. Announce: `✓ Backup complete: [W] finding rows written to Staging_backup tab.`
+
+If `create_sheet` cannot be called after one ToolSearch retry, announce: `⚠️ Backup skipped — could not create Staging_backup tab. Proceeding with compaction; if interrupted, original data may be lost.` and continue to Step 1.6.
+
+Coverage declaration: "Step 1.5 complete. Staging_backup tab [created / already existed — skipped creation]. [W] finding rows written. Source sheets unchanged."
+
+---
+
 ## Step 1.6 — Normalize category labels
 
-Immediately after reading all staging tabs and before any routing, deduplication, or backup, scan every row in memory and normalize the Error Type/Issue field to the exact standard label. Agents frequently append descriptive text after the label (e.g., "Sourcing — internal document may need publish access" or "Legibility — duplicate header"). Strip everything after the first recognized label word.
+Immediately after creating the backup and before any routing or deduplication, scan every row in memory and normalize the Error Type/Issue field to the exact standard label. Agents frequently append descriptive text after the label (e.g., "Sourcing — internal document may need publish access" or "Legibility — duplicate header"). Strip everything after the first recognized label word.
 
 **Findings sheet column E** — replace any value that *starts with or contains* one of these labels with the label alone:
 - `Formula` | `Parameter` | `Adjustment` | `Assumption` | `Legibility` | `Inconsistency`
@@ -63,21 +78,6 @@ If a value does not match any recognized label, keep it as-is and flag it in you
 **Findings sheet column I (Researcher judgment needed) normalization**: Scan every Findings row for any of the following variants in column I and replace each with `✓`: `YES`, `Yes`, `yes`, `Y`, `True`, `true`, `X`, `x`. Leave blank values blank — do not change them. For any other non-blank, non-`✓` value: flag it in the coverage declaration AND clear it (write blank to that cell using `modify_sheet_values`) before proceeding — unrecognized column I values corrupt the ✓-count triage in Step 3.3 and the dashboard COUNTIF formula.
 
 Coverage declaration: "Label normalization complete. Findings: [N] labels normalized. Publication Readiness: [M] labels normalized. Column I: [N] variants normalized to ✓. Unrecognized labels: [list or 'none']. Unrecognized column I values: [list or 'none']."
-
----
-
-## Step 1.5 — Create backup before writing
-
-Before making any modification to the Findings sheet or Publication Readiness sheet, create a backup of all staging tab data you just read. This preserves a recoverable state if the rewrite step fails mid-execution.
-
-1. Call `ToolSearch` with query `select:mcp__hardened-workspace__create_sheet` to ensure the tool schema is loaded.
-2. Call `mcp__hardened-workspace__create_sheet` to add a tab named `Staging_backup` to the output spreadsheet. If the tool returns an error indicating the tab already exists (e.g., from a prior partial run), skip creation — the existing backup remains available.
-3. Use a single `modify_sheet_values` call to write a header row and all [W] finding rows (excluding AGENT_COMPLETE markers, WONT_FIX rows, and header rows) from your Step 1 read into `Staging_backup`, starting at row 1. Header row: `Finding # | Sheet | Cell/Row | Severity | Error Type/Issue | Explanation | Recommended Fix | Estimated CE Impact | Researcher judgment needed | Status`. Note in row 1 (or as a comment): "This backup contains all pre-routing staging tab rows. Rows with blank Severity (column D) are Publication Readiness findings that were not yet routed. Do not import this backup directly into the Findings sheet — re-run the compaction routing step first."
-4. Announce: `✓ Backup complete: [W] finding rows written to Staging_backup tab.`
-
-If `create_sheet` cannot be called after one ToolSearch retry, announce: `⚠️ Backup skipped — could not create Staging_backup tab. Proceeding with compaction; if interrupted, original data may be lost.` and continue to Step 2.
-
-Coverage declaration: "Step 1.5 complete. Staging_backup tab [created / already existed — skipped creation]. [W] finding rows written. Source sheets unchanged."
 
 ---
 

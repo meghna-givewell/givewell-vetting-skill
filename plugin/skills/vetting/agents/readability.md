@@ -125,7 +125,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `readability`
 - Column D: `AGENT_COMPLETE`
-- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]. Checks complete: [list each named check section that ran, e.g., Simple CEA ordering / label precision / unnecessary rows / tab ordering / Simple CEA section ordering / Step 7b cross-sheet / terminology / staff first-name citations]. Any section not run: [list section names, or 'none'].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).

@@ -122,7 +122,7 @@ Then make one of four determinations:
 **Retain** (default): The finding is valid, or you cannot confirm it is invalid.
 - **A-only retained**: leave the row in stg-A as-is; do not copy to stg-rec-{pair}.
 - **B-only retained**: copy the row from stg-B to stg-rec-{pair}, resetting column J to blank. Do not write to the Findings or Publication Readiness sheets directly. Write all columns; do not add any meta-commentary to the Explanation.
-- **Confirmed retained** (applies to Step 3 confirmed findings): leave the more-complete version in its original staging sheet; do not copy to stg-rec-{pair}.
+- **Confirmed retained** (applies to Step 3 confirmed findings): leave the more-complete version in its original staging sheet; do not copy to stg-rec-{pair}. For the less-complete version of the same finding in the other instance's staging sheet, mark column J = `WONT_FIX` using `modify_sheet_values` on that row — it is a duplicate that the compaction agent would otherwise see twice. Record the row number from Step 1 to reference it accurately.
 - **When in doubt, retain. The cost of a false positive is one minute of researcher review. The cost of a false Won't Fix is a missed error in a published CEA.**
 
 **Implausible (retain without flag)**: The finding describes an error that you have affirmatively disproved by reading the cell in FORMULA mode. Retain classification (do not mark Won't Fix), but do NOT set column I to ✓. Write in column I: 'Finding implausible — cell reads [actual formula/value]: [specific reason the error described cannot exist]. No researcher action required.' This path applies when the cell is affirmatively correct but the formal Won't Fix conditions cannot all be met (e.g., no note exists, no declared deviation, but the formula is unambiguously correct).
@@ -150,6 +150,7 @@ Then make one of four determinations:
 **Reference doc access for parameter divergences**: When a divergence involves a GiveWell standard parameter — a moral weight, benchmark CEA, discount rate, income elasticity, or cross-cutting CEA parameter — and you cannot determine the correct value from the spreadsheet alone, you are permitted to load the relevant reference document to resolve the divergence *before* escalating to "Needs researcher input." Use `get_doc_content` or `read_sheet_values` on:
 - **Cross-Cutting CEA Parameters** (`1ru1SNtgj0D9-vLAHEdTM27GEq_P17ySzG-aTxKD6Fzg`)
 - **GiveWell Moral Weights and Discount Rate** (`1GAcGQSyBQxcB6oGJFGGWCYqwY-jW7oahJJK-cTZOkMc`)
+- **CEA Consistency Guidance** (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) — use for leverage/funging direction findings and multiplier convention questions
 
 Use these only to verify that a specific numeric value matches or deviates from GiveWell's standard — not as a general research tool. If the document confirms a value is wrong, change Won't Fix to Retain. If it confirms the value is correct, proceed to Won't Fix with specific affirmative evidence: "Verified by reading [document name] — the document shows [value] at [location/tab/row], and the spreadsheet value matches." If the document cannot be read (auth failure, access error), fall back to **Needs researcher input**.
 
