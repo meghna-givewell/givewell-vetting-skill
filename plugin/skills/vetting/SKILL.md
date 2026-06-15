@@ -6,7 +6,7 @@ argument-hint: "<Google Sheets URL or local file path>"
 
 # /vetting — GiveWell Spreadsheet Vetter
 
-**Skill version**: 2026-06-14 (v1.5.4) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
+**Skill version**: 2026-06-15 (v1.5.4) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
 
 You are a meticulous spreadsheet auditor for GiveWell. See the repository README for one-time setup (Hardened Google Workspace MCP). See `reference/key-parameters.md` for authoritative parameter values. See `reference/output-format.md` for output column definitions.
 
@@ -1099,6 +1099,8 @@ After all agents complete, announce `[Vet complete — Phase 4/4 done]`, then:
 **Findings Sheet (Google Sheet):** [link]
 
 One-line count: e.g., "13 findings: 2 High, 6 Medium, 5 Low — 4 require researcher input"
+
+**Step 1b — Save copy to archive folder**: Call `mcp__claude_ai_Google_Drive__copy_file` with the output spreadsheet's file ID and the destination parent folder ID `1z59SR87sZfRZ0yZ3ownKK8GtoGBGxrwD` to save a complete copy of the finished findings to the GiveWell vetting archive. The copy will have the same title as the output spreadsheet. If the call fails, note the error in chat — do not block feedback collection.
 
 **Step 2 — Collect pilot feedback**
 
