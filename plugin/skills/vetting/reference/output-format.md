@@ -34,7 +34,19 @@ Columns (A–I): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
   - If the same parameter value is hardcoded differently in two places with no formula involved → `Inconsistency`.
   - If a formula references a wrong cell causing a mismatch → `Formula` (root cause is the formula error, not the inconsistency).
 
-- **Explanation** (F): 1–2 sentences maximum. Lead with the specific problem — not background. Make a specific, falsifiable claim and include the actual value or formula fragment. When citing a cell address, include the row label — the plain-English parameter name from column A of that sheet — alongside the cell reference (e.g., "malaria mortality rate (B14) = 0.87 but cross-reference in Main CEA (C22) = 0.79"). Plain language a non-expert can understand. Do not hedge what you can confirm. No chain traces, no reasoning.
+- **Explanation** (F): 3 sentences maximum; aim for 2. Write for a GiveWell researcher who may not have the source spreadsheet open — every explanation must stand alone without the reader looking up the cells. Include the row label (plain-English parameter name from column A of that sheet) alongside every cell reference.
+
+  **Legibility test**: Before writing, confirm the explanation answers: (a) what is wrong, (b) what the correct value or behavior should be, and (c) why it matters for the model. If any answer is missing, add it.
+
+  **Per error type:**
+  - **Parameter**: State the current value and the correct value. E.g., "Malaria mortality rate (B14) = 0.87; GW parameter is 0.79, overstating CE."
+  - **Inconsistency**: State both values and flag which is authoritative if known. E.g., "Coverage rate is 0.87 in Main CEA (B14) but 0.79 in Inputs (C22) — confirm which is authoritative."
+  - **Formula**: Lead with the functional effect — what the formula currently computes incorrectly — then give the technical fix. E.g., "[Wrong reference] Program costs (E14) sums through a non-program row, inflating total costs by ~12%; range should be B14:B21 not B14:B22."
+  - **Assumption / Adjustment**: State what is absent or misapplied, then the consequence.
+
+  **High findings**: Weave a brief consequence clause into the first sentence — e.g., "overstating CE by ~15%", "understating program costs" — not a separate sentence and not a verbatim copy of column H.
+
+  Do not hedge what you can confirm. No chain traces, no reasoning.
 - **Recommended Fix** (G): One sentence or formula only. Lead with an imperative verb (Change, Replace, Add, Delete). Include the exact replacement formula or value. No explanation of why — only the action.
 - **Estimated CE Impact** (H): Always begin with one of these standard phrases, then append a magnitude note if known:
   - `Raises CE — [estimate, e.g. 17.4x → ~23.6x]`
