@@ -120,7 +120,21 @@ Sort by sheet (column B), then row number. Where the same issue applies to multi
 - Cells are on different sheets and the Explanation would need to describe two distinct contexts to be intelligible
 - Severity differs between cells (e.g., one cell has a documented note rationale that triggers a downgrade; another does not — they cannot share a finding at a single severity)
 
-**Low-severity cap — one per check section**: For Low-severity findings specifically, the grouping mandate is absolute. Cap at one Low finding per named check section per agent. If a check produces multiple Low instances of the same Error Type, they MUST be batched into a single finding listing all cells in column C. Two Low findings may coexist in one agent's output only when they have genuinely distinct Error Types or cover clearly separate issues from different check sections. Do not create individual per-cell Low findings when a pattern finding covers the same ground.
+**Low-severity grouping — standard categories**: For all Low-severity findings, group by the following standard categories before writing to your staging sheet. File **one row per category per sheet**, listing all affected cells in column C with their row labels. Do not file individual per-cell Low findings.
+
+| Category | Covers |
+|---|---|
+| **Documentation gaps** | Missing or incomplete source notes, cell notes, or rationale on non-key parameters; undocumented modeling choices; informal citations needing formalization |
+| **Formula robustness** | Defensive programming gaps safe at current values: missing IFERROR guards, unguarded divisions, formulas that break only under impossible inputs |
+| **Stale annotations** | Labels, cell notes, or tab names referencing outdated programs, geographies, or calculations where the underlying value is correct |
+| **Optimistic assumptions** | Parameters or modeling choices at the favorable end of a defensible range without documented rationale |
+| **Minor rounding** | Values ≤2% from cited source with <5% CE impact |
+| **Structural completeness** | Recommended-but-not-required elements absent: optional tabs, incomplete section structure, discount rate omission in multi-year models |
+| **Minor inconsistencies** | Cross-tab value or label mismatches that don't affect CE |
+
+**Category finding format**: Lead the Explanation with the category name, count, and cell list. E.g., "Documentation gaps: 3 rows lack source notes — coverage rate (B14), coverage rate CIV (C14), vaccine efficacy (B22). Add a cell note citing the data source for each."
+
+**Exception**: Structurally unique issues that can only appear once in any model (a single missing required section, a single discount rate omission) may be filed as a standalone row within their category if no other instances exist to group with. Include "1 instance" in the Explanation.
 
 **Newly-added geography column — missing source batch finding**: When a column represents a newly-added geography and multiple parameters in that column lack cell notes or source citations, file a single grouped Medium finding listing all affected cells rather than one finding per cell. Example wording: "CIV column (J) has N parameters with no source note — newly-added geographies commonly have documentation gaps across the board. Cells: [J16, J34, J92, J135, J146, ...]. Recommend adding a source note or cell note for each before publication." This prevents alert fatigue from 8+ identical Low/H findings that all have the same fix.
 
