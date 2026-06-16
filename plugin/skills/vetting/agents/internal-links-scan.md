@@ -81,9 +81,9 @@ Total flagged entries: [N]
 
 ## Step 4 — Write findings to staging sheet
 
-Write all findings to your staging sheet starting at row 2. Use the standard 10-column layout (columns A–J), leaving column D (Severity) and column H (Estimated CE Impact) blank — all findings from this agent are Publication Readiness items.
+Write all findings to your staging sheet starting at row 2. Use the standard 9-column layout (columns A–I), leaving column D (Severity) and column H (Estimated CE Impact) blank — all findings from this agent are Publication Readiness items.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity (leave blank) | **E** Error Type/Issue (`Box Link` or `Sourcing`) | **F** Explanation (1–2 sentences; state what was found and why it needs review) | **G** Recommended Fix (one sentence: "Verify this [document / Box file] is publicly accessible before publishing. If it cannot be made public, replace with an external citation or remove the link.") | **H** Estimated CE Impact (leave blank) | **I** Researcher judgment needed (leave blank) | **J** Status (leave blank)
+Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity (leave blank) | **E** Error Type/Issue (`Box Link` or `Sourcing`) | **F** Explanation (1–2 sentences; state what was found and why it needs review) | **G** Recommended Fix (one sentence: "Verify this [document / Box file] is publicly accessible before publishing. If it cannot be made public, replace with an external citation or remove the link.") | **H** Estimated CE Impact (leave blank) | **I** Status (leave blank)
 
 **Explanation wording**:
 - For Box links: `Box link at [ref] ([cell note context if available]) requires publish-permission verification before publication.`

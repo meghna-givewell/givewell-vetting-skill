@@ -11,7 +11,7 @@
       "name": "givewell-vetting",
       "source": "./plugin",
       "description": "Run a full GiveWell-style spreadsheet vet on a workbook. Checks formulas, sources, readability, hardcoded values, and severity-classified findings. Outputs a Vetting Summary Google Doc and a Findings Google Sheet.",
-      "version": "1.2.4",
+      "version": "1.2.5",
       "license": "MIT",
       "homepage": "https://github.com/meghna-givewell/givewell-vetting-skill"
     }

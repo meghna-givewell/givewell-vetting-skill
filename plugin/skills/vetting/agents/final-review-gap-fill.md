@@ -32,7 +32,7 @@ Read reference/pitfalls.md using the Read tool. Apply every entry relevant to ca
 
 ## Step 1 — Read all confirmed findings
 
-Read the Findings sheet in full using batched `read_sheet_values` calls: `A2:J51`, then `A52:J101`, `A102:J151`, continuing in 50-row increments until two consecutive batches return no non-empty rows. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Skip divider rows (column D empty, column B contains `───`). Also skip rows where column D = `AGENT_COMPLETE` — the compaction agent writes one such row to the Findings sheet as its completion marker; it is not a finding. Collect all finding rows with Finding IDs assigned.
+Read the Findings sheet in full using batched `read_sheet_values` calls: `A2:I51`, then `A52:I101`, `A102:I151`, continuing in 50-row increments until two consecutive batches return no non-empty rows. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Skip divider rows (column D empty, column B contains `───`). Also skip rows where column D = `AGENT_COMPLETE` — the compaction agent writes one such row to the Findings sheet as its completion marker; it is not a finding. Collect all finding rows with Finding IDs assigned.
 
 Build a working list of:
 - **All High findings** with `Formula` in column E — these are the cascade candidates.
@@ -83,7 +83,7 @@ The goal: identify stretches of the source spreadsheet that no finding touches �
 4. For each gap section, determine whether it is:
    - **Structurally clean**: a divider row, blank section, header block, or rows that are all constant labels with no formulas — these are legitimately empty and need no finding.
    - **Formula rows genuinely correct**: read each formula and confirm the row label and formula are semantically consistent (concept check, not full audit). Write a one-line clean declaration per section.
-   - **A candidate miss**: a formula row where the row label and formula diverge, a hardcoded value with no note, or a formula referencing a cell not in the expected sheet — file as **Low** with Researcher judgment needed ✓: "Rows [X]–[Y] of [sheet] were not flagged by prior agents. Spot-check found [specific cell] with [specific anomaly]. Verify this section was fully audited."
+   - **A candidate miss**: a formula row where the row label and formula diverge, a hardcoded value with no note, or a formula referencing a cell not in the expected sheet — file as **Low**: "Rows [X]–[Y] of [sheet] were not flagged by prior agents. Spot-check found [specific cell] with [specific anomaly]. Verify this section was fully audited."
 
 **Limit scope**: Only check gaps of 15+ consecutive rows on the primary vetted sheet (Main CEA or equivalent). Do not gap-scan supporting data tabs, headers, or output-only tabs. If the spreadsheet has no 15+ row gaps, write "No coverage gaps of 15+ rows on the primary sheet" and skip to Check 3.
 
@@ -107,7 +107,7 @@ When band-split is active, agents scanned the spreadsheet in row-range bands (ba
 
 4. For each High finding with a confirmed band-1 root cause: **do not file a new finding** — instead, append to its Explanation in column F (using `modify_sheet_values`): " Root cause traces to [band-1 cell], which is the subject of finding [F-NNN]. Resolve [F-NNN] first — this finding may resolve automatically." This is an annotation, not a new row.
 
-5. For each High finding whose formula references a band-1 cell that is **not** in any confirmed finding: file as **Low** with Researcher judgment needed ✓: "High finding at [cell] (band 2) references [band-1 cell] in its formula chain, but that band-1 cell was not flagged by the band-1 agents. Verify [band-1 cell] is correct; if it is wrong, the fix required here may change."
+5. For each High finding whose formula references a band-1 cell that is **not** in any confirmed finding: file as **Low**: "High finding at [cell] (band 2) references [band-1 cell] in its formula chain, but that band-1 cell was not flagged by the band-1 agents. Verify [band-1 cell] is correct; if it is wrong, the fix required here may change."
 
 Coverage declaration: "Cross-band root cause trace complete. Band1_end: [N]. High findings in band 2+: [N]. Band-1 root causes identified: [N]. Annotations added: [N]. New Low cross-band flags filed: [N]."
 
@@ -115,17 +115,17 @@ Coverage declaration: "Cross-band root cause trace complete. Band1_end: [N]. Hig
 
 ## Check 3 — Won't Fix verification
 
-Reconciliation agents mark rows they decide not to include by writing `WONT_FIX` to column J of the original stg-A or stg-B tab. These rows are **not deleted** — they remain in the staging tab and are filtered out during compaction. There are no Finding ID gaps from Won't Fix decisions (IDs are assigned sequentially during compaction from non-WONT_FIX rows only).
+Reconciliation agents mark rows they decide not to include by writing `WONT_FIX` to column I of the original stg-A or stg-B tab. These rows are **not deleted** — they remain in the staging tab and are filtered out during compaction. There are no Finding ID gaps from Won't Fix decisions (IDs are assigned sequentially during compaction from non-WONT_FIX rows only).
 
 To verify a sample of Won't Fix decisions:
 
-1. **Get the staging tab list** from session context — the orchestrator writes all stg-* tab names during output setup. If the list is not in session context (context was compacted), read Dashboard cells `A99:A148` of the output spreadsheet to recover it (batch to `A149:A198` if needed). Then read each staging tab (both stg-agent-A and stg-agent-B for paired agents) in 50-row batches — **the MCP tool returns at most 50 rows per call; use `{tab}!A1:J50`, `A51:J100`, etc. until two consecutive batches return no non-empty rows** — looking for any row where column J contains `WONT_FIX`. For agents that ran in 1-instance mode (only A tab is populated), read only the A tab — the B tab will be empty and does not contain WONT_FIX rows.
+1. **Get the staging tab list** from session context — the orchestrator writes all stg-* tab names during output setup. If the list is not in session context (context was compacted), read Dashboard cells `A99:A148` of the output spreadsheet to recover it (batch to `A149:A198` if needed). Then read each staging tab (both stg-agent-A and stg-agent-B for paired agents) in 50-row batches — **the MCP tool returns at most 50 rows per call; use `{tab}!A1:I50`, `A51:I100`, etc. until two consecutive batches return no non-empty rows** — looking for any row where column I contains `WONT_FIX`. For agents that ran in 1-instance mode (only A tab is populated), read only the A tab — the B tab will be empty and does not contain WONT_FIX rows.
 
 2. For each Won't Fix row found, read the cell it covers in the source spreadsheet and ask: is there a plausible reason this finding was cleared? Common valid reasons: the other instance found no issue in the same cell; the deviation was declared-intentional in session context; the finding was a duplicate of a finding from a different agent.
 
 3. This check is intentionally light. Focus on Won't Fix decisions involving: (a) any finding whose column D (Severity) is High — regardless of error type; (b) cells identified as known parameters (moral weight, benchmark, cross-cutting parameter); and (c) formula rows where the formula and row label diverge in a way that would be obvious on visual inspection. Medium and Low Won't Fix decisions on non-parameter rows do not require review.
 
-4. If you find a Won't Fix decision that appears incorrect, file as **Medium** with Researcher judgment needed ✓: "A `WONT_FIX` decision in [stg-tab] at row [N] appears to have cleared [cell ref] which may warrant review: [brief description of the anomaly]. Verify this cell was correctly cleared."
+4. If you find a Won't Fix decision that appears incorrect, file as **Medium**: "A `WONT_FIX` decision in [stg-tab] at row [N] appears to have cleared [cell ref] which may warrant review: [brief description of the anomaly]. Verify this cell was correctly cleared."
 
 If no `WONT_FIX` rows are found in any staging tab, skip this check entirely.
 
@@ -143,16 +143,16 @@ To check: scan the Findings sheet for at least one finding in the relevant error
 
 | Category | Staging tab(s) to check | File this if absent |
 |---|---|---|
-| Study data accuracy (cohort, metric type, comparison arm) | `stg-data-A` and `stg-data-B` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration found for study data accuracy (cohort/metric/arm checks). Confirm formula-check-data ran and completed Check 5." |
-| Structural completeness (leverage/funging, Simple CEA, scenario tab) | `stg-struct-A` and `stg-struct-B` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for structural completeness checklist. Confirm formula-check-structure ran and completed the mandatory checklist." |
-| Geography/country consistency | `stg-srcdt-A` (single instance; will be absent if source-data-check was skipped — see Do not file conditions below) | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for geography consistency. Confirm source-data-check ran and completed Check F (if source tabs were present)." |
-| Grant amount consistency | `stg-params` (single instance) | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for grant amount consistency. Confirm formula-check-parameters ran and completed Check 5." |
-| Formula fragility (DIV/0, negative value guards, IFERROR) | `stg-edge-A` and `stg-edge-B` (or `stg-arith-A` / `stg-arith-B` if formula-check-edge-cases was not run separately) | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for formula fragility / edge case guards. Confirm formula-check-edge-cases ran." |
-| Notes scan (cell comments, acknowledged issues, unresolved comment threads) | `stg-nscn-A` and `stg-nscn-B` | Low/H, Researcher judgment needed ✓: "No finding or clean declaration for notes-scan. Confirm notes-scan-A and notes-scan-B ran and completed (notes-scan has no reconcile agent — verify both stg-nscn-* tabs contain an AGENT_COMPLETE row)." |
+| Study data accuracy (cohort, metric type, comparison arm) | `stg-data-A` and `stg-data-B` | Low/H: "No finding or clean declaration found for study data accuracy (cohort/metric/arm checks). Confirm formula-check-data ran and completed Check 5." |
+| Structural completeness (leverage/funging, Simple CEA, scenario tab) | `stg-struct-A` and `stg-struct-B` | Low/H: "No finding or clean declaration for structural completeness checklist. Confirm formula-check-structure ran and completed the mandatory checklist." |
+| Geography/country consistency | `stg-srcdt-A` (single instance; will be absent if source-data-check was skipped — see Do not file conditions below) | Low/H: "No finding or clean declaration for geography consistency. Confirm source-data-check ran and completed Check F (if source tabs were present)." |
+| Grant amount consistency | `stg-params` (single instance) | Low/H: "No finding or clean declaration for grant amount consistency. Confirm formula-check-parameters ran and completed Check 5." |
+| Formula fragility (DIV/0, negative value guards, IFERROR) | `stg-edge-A` and `stg-edge-B` (or `stg-arith-A` / `stg-arith-B` if formula-check-edge-cases was not run separately) | Low/H: "No finding or clean declaration for formula fragility / edge case guards. Confirm formula-check-edge-cases ran." |
+| Notes scan (cell comments, acknowledged issues, unresolved comment threads) | `stg-nscn-A` and `stg-nscn-B` | Low/H: "No finding or clean declaration for notes-scan. Confirm notes-scan-A and notes-scan-B ran and completed (notes-scan has no reconcile agent — verify both stg-nscn-* tabs contain an AGENT_COMPLETE row)." |
 
 **Do not file** a gap finding when: (a) the relevant agent's AGENT_COMPLETE row is present and its completion message confirms the check ran; (b) program context contains a declared-intentional deviation that would make the check not applicable; (c) the workbook has no source data tabs (geography consistency check does not apply); or (d) session context contains `source-data-check: SKIPPED` — this records the conditional skip from the orchestrator and is sufficient evidence the geography consistency check was intentionally omitted.
 
-**key-params-check coverage log**: Read the AGENT_COMPLETE row(s) from stg-kp-A and stg-kp-B. In each row's column F, look for a coverage count like 'N of M applicable parameters checked.' If N < M and the unchecked parameters are not explained, file a gap-fill finding: Low/H, Researcher judgment needed ✓: 'key-params-check coverage log shows [N] of [M] parameters checked — confirm remaining [M-N] parameters were intentionally excluded (e.g., not applicable to this model type) or re-run the agent.'
+**key-params-check coverage log**: Read the AGENT_COMPLETE row(s) from stg-kp-A and stg-kp-B. In each row's column F, look for a coverage count like 'N of M applicable parameters checked.' If N < M and the unchecked parameters are not explained, file a gap-fill finding: Low/H: 'key-params-check coverage log shows [N] of [M] parameters checked — confirm remaining [M-N] parameters were intentionally excluded (e.g., not applicable to this model type) or re-run the agent.'
 
 Coverage declaration: "Category coverage check complete. Categories confirmed covered: [N/6]. Gaps filed: [list of categories or 'none']. key-params-check coverage log: [N of M — complete / incomplete / staging tab not found]."
 
@@ -172,7 +172,7 @@ Column reference: **A** Finding # | **B** Sheet | **C** Cell/Row | **D** Severit
 - No CE impact
 - Direction unknown
 
-**I** Researcher judgment needed (✓ only for intent/decision questions) | **J** Status (leave blank)
+**I** Status (leave blank)
 
 **Routing note**: All gap-fill findings route to the Findings sheet. Gap-fill does not file Low/Legibility findings — if a coverage gap produces only a Low-severity Legibility issue (cosmetic documentation gap), skip it. Gap-fill covers material gaps that earlier agents missed; Low/Legibility documentation issues should have been caught and routed to Publication Readiness by Wave 1/2 agents.
 

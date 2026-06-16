@@ -9,7 +9,7 @@ To add an entry: copy the template below, increment the ID, fill in the date, de
 ## False Positive Risks — do not flag these
 
 ### FP-001 (2026-04) — Absolute-reference columns with an explanatory note
-When a formula row uses a locked column reference (`$B$xxx`) uniformly across all geography columns, do not file a copy-paste finding until you have read the cell note. If the note explains the uniform reference is intentional (e.g., "we use Kenya as the reference baseline because the study was conducted there"), classify as intentional and do not file. When no note exists and the uniform reference is suspicious, file as Low/H with Researcher judgment needed ✓, not High.
+When a formula row uses a locked column reference (`$B$xxx`) uniformly across all geography columns, do not file a copy-paste finding until you have read the cell note. If the note explains the uniform reference is intentional (e.g., "we use Kenya as the reference baseline because the study was conducted there"), classify as intentional and do not file. When no note exists and the uniform reference is suspicious, file as Low/H, not High.
 
 **Applies to**: formula-check-arithmetic
 
@@ -46,7 +46,7 @@ When a tab uses an older GBD vintage (e.g., GBD 2019 when GBD 2021 is available)
 ---
 
 ### FN-002 (2026-04) — Stale year in cell note: verify the value, not just the note
-When a cell note cites a data vintage more than 2 years before the model's grant period start year AND the row is a key epidemiological or cost parameter (mortality rate, incidence, coverage, unit cost, or any parameter in `reference/key-parameters.md`), treat this as a trigger to verify the underlying value itself — not just the documentation. Run a WebSearch for the current value. If drift is <5%, file as **Medium/H** (Defect + Immaterial — the Defect floor applies; confirmed drift, even small, is not Low) and include the current value in the Explanation. If drift is ≥5%, file as **High/D** (Defect + Material) and include the current value (e.g., "Cell B14 note cites GBD 2019 — current GBD 2021 value is 0.42 vs. model's 0.38 (11% difference)"). If no updated value is found after searching, file as **Medium/H** with Researcher judgment needed ✓.
+When a cell note cites a data vintage more than 2 years before the model's grant period start year AND the row is a key epidemiological or cost parameter (mortality rate, incidence, coverage, unit cost, or any parameter in `reference/key-parameters.md`), treat this as a trigger to verify the underlying value itself — not just the documentation. Run a WebSearch for the current value. If drift is <5%, file as **Medium/H** (Defect + Immaterial — the Defect floor applies; confirmed drift, even small, is not Low) and include the current value in the Explanation. If drift is ≥5%, file as **High/D** (Defect + Material) and include the current value (e.g., "Cell B14 note cites GBD 2019 — current GBD 2021 value is 0.42 vs. model's 0.38 (11% difference)"). If no updated value is found after searching, file as **Medium/H**.
 
 **Applies to**: formula-check-arithmetic
 
@@ -111,10 +111,10 @@ Example: =1-B12/B11 goes negative only if treatment mortality exceeds counterfac
 
 ---
 
-### SC-007 (2026-06) — Value matching a study subgroup or arm may be intentional → High with Researcher judgment needed ✓
-When a source value matches a specific subgroup or intervention arm rather than the overall population, the model may have intentionally used that subgroup as its counterfactual. Both an error interpretation and an intentional-choice interpretation may be plausible. File High with Researcher judgment needed ✓, describe both interpretations in the Explanation, and do not downgrade to Low on the grounds the value might be intentional.
+### SC-007 (2026-06) — Value matching a study subgroup or arm may be intentional → High
+When a source value matches a specific subgroup or intervention arm rather than the overall population, the model may have intentionally used that subgroup as its counterfactual. Both an error interpretation and an intentional-choice interpretation may be plausible. File High, describe both interpretations in the Explanation, and do not downgrade to Low on the grounds the value might be intentional.
 
-Example: Thomas et al 2024 C17 = 51% = mortality among non-KMC-initiated babies (172/336 non-initiated). The overall LBW mortality in the same study was 18% (213/1,152). Either (a) sourcing error — model should use overall population baseline; or (b) intentional — researcher chose the non-KMC arm rate as the counterfactual for what happens without intervention. Selection effects (sicker babies may have been excluded from KMC) make (b) methodologically suspect, but it is a defensible modeling choice. File High with Researcher judgment needed ✓, explaining both readings.
+Example: Thomas et al 2024 C17 = 51% = mortality among non-KMC-initiated babies (172/336 non-initiated). The overall LBW mortality in the same study was 18% (213/1,152). Either (a) sourcing error — model should use overall population baseline; or (b) intentional — researcher chose the non-KMC arm rate as the counterfactual for what happens without intervention. Selection effects (sicker babies may have been excluded from KMC) make (b) methodologically suspect, but it is a defensible modeling choice. File High, explaining both readings.
 
 **Applies to**: formula-check-data, source-data-check, formula-check-arithmetic
 
