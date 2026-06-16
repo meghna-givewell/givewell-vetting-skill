@@ -34,7 +34,7 @@ Columns (A–I): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
   - If the same parameter value is hardcoded differently in two places with no formula involved → `Inconsistency`.
   - If a formula references a wrong cell causing a mismatch → `Formula` (root cause is the formula error, not the inconsistency).
 
-- **Explanation** (F): 1–2 sentences maximum. Lead with the specific problem — not background. Make a specific, falsifiable claim and include the actual value or formula fragment (e.g., "B14 = 0.87 but C22 = 0.79"). Plain language a non-expert can understand. Do not hedge what you can confirm. No chain traces, no reasoning.
+- **Explanation** (F): 1–2 sentences maximum. Lead with the specific problem — not background. Make a specific, falsifiable claim and include the actual value or formula fragment. When citing a cell address, include the row label — the plain-English parameter name from column A of that sheet — alongside the cell reference (e.g., "malaria mortality rate (B14) = 0.87 but cross-reference in Main CEA (C22) = 0.79"). Plain language a non-expert can understand. Do not hedge what you can confirm. No chain traces, no reasoning.
 - **Recommended Fix** (G): One sentence or formula only. Lead with an imperative verb (Change, Replace, Add, Delete). Include the exact replacement formula or value. No explanation of why — only the action.
 - **Estimated CE Impact** (H): Always begin with one of these standard phrases, then append a magnitude note if known:
   - `Raises CE — [estimate, e.g. 17.4x → ~23.6x]`
