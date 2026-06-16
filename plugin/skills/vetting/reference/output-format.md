@@ -6,14 +6,14 @@
 - **Publication Readiness** — issues that don't affect the model: missing sources, permission flags, broken links, citation format, terminology, style, labeling, personal names in notes, internal-only references.
 - **Sourcing for standalone hardcoded cells → Hardcoded Values sheet** (not Publication Readiness) — the Hardcoded Values sheet already tracks source completeness in column F. Exception: hardcoded literals embedded *inside* formulas still go to Publication Readiness as `Sourcing`. If the value is outside the plausible range or inconsistent with other sources, file it as `Parameter` in Findings. **A value that is both potentially wrong and undocumented is always `Parameter` in Findings — do not also file `Sourcing` in Publication Readiness for the same cell.**
 - **Values labeled "guess" or "best guess" are not findings** — this is acceptable uncertainty documentation. Do not file `Parameter` or `Assumption` entries for these.
-- **Low severity + Legibility → Publication Readiness**: Any finding that is Low severity with Error Type = Legibility (and no Researcher judgment needed ✓) routes to Publication Readiness. Write these with column D blank in your staging sheet so the compaction agent routes them correctly. Rationale: Low/Legibility issues don't affect model correctness; they are pre-publication cleanup items. Low/Legibility findings that ARE marked Researcher judgment needed ✓ stay in Findings (Low in column D) — the researcher must actively respond.
+- **Low severity + Legibility → Publication Readiness**: Any finding that is Low severity with Error Type = Legibility routes to Publication Readiness. Write these with column D blank in your staging sheet so the compaction agent routes them correctly. Rationale: Low/Legibility issues don't affect model correctness; they are pre-publication cleanup items.
 - When in doubt between Findings and Publication Readiness, use Findings.
 
 ---
 
 ## Findings Sheet — Sheet 1 (model integrity)
 
-Columns (A–J): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | Explanation | Recommended Fix | Estimated CE Impact | Researcher judgment needed | Status
+Columns (A–I): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | Explanation | Recommended Fix | Estimated CE Impact | Status
 
 - **Finding #** (A): Sequential ID assigned by the final-review compaction step (e.g., `F-001`, `F-002` on the Findings sheet; `PR-001`, `PR-002` on Publication Readiness). Left blank by all analysis agents — do not write to this column.
 - **Sheet** (B): The sheet name the finding applies to (e.g., `Main CEA`, `Leverage/Funging`, `Inputs`). Use `Multiple` if a finding spans more than one sheet.
@@ -48,26 +48,18 @@ Columns (A–J): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
   **When to use `Direction unknown` — decision tree** (apply in order, stop at first match):
   1. Does the researcher's answer determine both *what the fix is* AND *which direction it moves CE*? → `Direction unknown`
   2. Could a reasonable researcher apply fixes that raise CE in one scenario and lower it in another (e.g., a placeholder where real-world evidence might revise up or down)? → `Direction unknown`
-  3. Is the finding marked `Researcher judgment needed ✓` and could the researcher's answer change the direction of CE impact? → `Direction unknown`
-  4. Is the direction clear but the magnitude unknown? → `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown`
-  5. Are both direction and magnitude clear? → `Raises CE — [estimate]` or `Lowers CE — [estimate]`
+  3. Is the direction clear but the magnitude unknown? → `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown`
+  4. Are both direction and magnitude clear? → `Raises CE — [estimate]` or `Lowers CE — [estimate]`
 
   **Do not use `Direction unknown`** when the direction is evident from the evidence but you simply cannot compute the magnitude — use `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown` instead.
 
   **Column H completeness by Error Type**:
-  - `Formula`, `Parameter`, `Adjustment` findings at Medium or High severity: column H must **never be blank**. Use `Direction unknown` if the direction depends on researcher input; use `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown` if the direction is clear.
+  - `Formula`, `Parameter`, `Adjustment` findings at Medium or High severity: column H must **never be blank**. Use `Direction unknown` if the direction is unclear; use `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown` if the direction is clear.
   - `Assumption` findings at Medium severity: blank is acceptable only when the assumption has no clear directional CE effect. When the assumption does affect CE, use `Direction unknown` or a directional phrase.
   - `Inconsistency`, `Legibility` findings at Medium severity: blank is acceptable.
 
   **`No CE impact` must be written explicitly — never leave blank when the determination is zero**: When you have assessed a finding's CE impact and determined it is zero, write `No CE impact` in column H — do not leave column H blank. Blank means "CE impact not yet assessed"; `No CE impact` means "assessed and confirmed as zero." A blank column H on a Formula, Parameter, or Adjustment finding will be treated as an unassessed impact during validation and routing. This applies at all severity levels — write `No CE impact` explicitly even for Low findings when CE impact is confirmed zero.
-- **Researcher judgment needed** (I): Mark `✓` only when the researcher must make a **decision** and BOTH of the following hold: (1) the researcher's answer changes what you recommend — either the severity OR the fix itself, not just how you word the explanation; AND (2) the researcher's answer cannot be determined from spreadsheet content, external sources, or GiveWell guidance without entering the researcher's specific analytical intent. If the spreadsheet can answer the question (e.g., a cell note already states the intent, or the value can be verified against a GW reference document), do not mark `✓`. **Do NOT mark `✓` for**:
-  - Verification tasks: "check this against the source," "confirm the GBD vintage," "verify this value" — these are Medium findings; the researcher performs the action, but no judgment call is required
-  - Documentation tasks: "add a cell note," "update the label," "add a source citation" — the action is unambiguous regardless of researcher intent
-  - Deterministic fixes: any finding where the correct action is a specific formula change or specific value substitution — the fix is clear regardless of intent
-  - Plausibility concerns: "this value seems off" without a specific correction — downgrade to Low or reframe as a question in column F
-
-  Leave blank if the correct action is unambiguous, even if the researcher still has to perform it.
-- **Status** (J): Left blank by Claude. The researcher fills this in: `Open` / `Fixed` / `Won't Fix` / `Needs Discussion`. Do not write to this column.
+- **Status** (I): Left blank by Claude. The researcher fills this in: `Open` / `Fixed` / `Won't Fix` / `Needs Discussion`. Do not write to this column.
 
 ### Severity Rules
 

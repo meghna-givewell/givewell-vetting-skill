@@ -78,7 +78,7 @@ Key-params coverage log:
 
 If a parameter is not applicable to this program type **per the program-type applicability table below**, write `n/a — [one-word reason]` (e.g., `n/a — not-malaria`). Write `n/a` only because the program type excludes this parameter — not because the parameter is absent from the spreadsheet. A parameter that should appear (based on program type) but does not is "not found," not "n/a."
 
-**"Not found" behavior — do not silently skip**: If a parameter is applicable to this program type but was not located in the column A/B label scan, write `not found` as the cell ref in the coverage log AND also file a `Low/Parameter` with `Researcher judgment needed ✓`. Writing 'not found' in the log records that the search was executed; the finding flags the researcher to locate or confirm the parameter. Do not stop at the log entry — both actions are required:
+**"Not found" behavior — do not silently skip**: If a parameter is applicable to this program type but was not located in the column A/B label scan, write `not found` as the cell ref in the coverage log AND also file a `Low/Parameter`. Writing 'not found' in the log records that the search was executed; the finding flags the researcher to locate or confirm the parameter. Do not stop at the log entry — both actions are required:
 
 > *"[Parameter name] was not located in column A or B row labels. Verify the spreadsheet contains this parameter and that its value matches the GiveWell standard of [expected value]. Common alternative labels: [list from the synonyms above]."*
 
@@ -92,7 +92,7 @@ Parameters and their program-type applicability:
 - **Income-effects-heavy programs**: Discount rate — long-term health benefits (0.5%/year)
 - **TA grants only**: Discount rate — TA death-averting (1.4%/year)
 
-**Applicability is determined solely by the program-type name from Step 0.5 session context** — not by what parameters appear or do not appear in the spreadsheet. Do not expand the applicable set because the spreadsheet happens to include a row for a parameter outside the program type; do not contract it because the spreadsheet omits a row. A malaria model that omits an income effects row still requires the income effects check — file `Low/Parameter` with Researcher judgment needed ✓ if not found. A malaria model that includes a secondary maternal outcomes section does not require the maternal death moral weight check — its program type is malaria, not MNH.
+**Applicability is determined solely by the program-type name from Step 0.5 session context** — not by what parameters appear or do not appear in the spreadsheet. Do not expand the applicable set because the spreadsheet happens to include a row for a parameter outside the program type; do not contract it because the spreadsheet omits a row. A malaria model that omits an income effects row still requires the income effects check — file `Low/Parameter` if not found. A malaria model that includes a secondary maternal outcomes section does not require the maternal death moral weight check — its program type is malaria, not MNH.
 
 ---
 
@@ -100,13 +100,13 @@ Parameters and their program-type applicability:
 
 **Read cell note before filing any parameter mismatch**: For every cell where the stored value does not match the expected standard, call `read_sheet_notes` on that specific cell before writing the finding. Then apply the following logic:
 
-- **Note contains a rationale** — an explanation of why the non-standard value was intentionally chosen (e.g., "using 0.003355 for comparability with prior vet from 2024," "applying vaccine-preventable-disease weight because this program is closer to NI than malaria," "discount rate set to 3% per funder requirement," "10-year horizon extended to 15 because this is infrastructure") — change the Nature from Defect to Judgment and re-classify using the Nature × Materiality table: Judgment + Material → Medium; Judgment + Immaterial → Low. Mark Researcher judgment needed ✓ in all cases where a note provides the rationale. Include the note text verbatim in the Explanation field so the researcher can confirm the rationale is still current.
+- **Note contains a rationale** — an explanation of why the non-standard value was intentionally chosen (e.g., "using 0.003355 for comparability with prior vet from 2024," "applying vaccine-preventable-disease weight because this program is closer to NI than malaria," "discount rate set to 3% per funder requirement," "10-year horizon extended to 15 because this is infrastructure") — change the Nature from Defect to Judgment and re-classify using the Nature × Materiality table: Judgment + Material → Medium; Judgment + Immaterial → Low. Include the note text verbatim in the Explanation field so the researcher can confirm the rationale is still current.
 - **Note contains only a source citation** with no explanation of why the non-standard value was chosen (e.g., "per WHO 2022" with no explanation of why it differs from the GW standard) — file at the standard severity. A source citation without a rationale does not constitute a documented deliberate choice.
 - **Note is absent** — file at the standard severity.
 
 The finding should always be filed when a value differs from the standard, regardless of note content — a documented rationale still needs researcher confirmation that the reasoning still holds. The note check governs severity only.
 
-Before filing, check whether the mismatch is covered by a declared-intentional deviation in session context. If it is, file at Low/H with Researcher judgment needed ✓ and note in the Explanation: "Covered by declared-intentional deviation: [deviation description]." Do not skip the finding — it must appear in the Findings sheet so the researcher can confirm the deviation still holds.
+Before filing, check whether the mismatch is covered by a declared-intentional deviation in session context. If it is, file at Low/H and note in the Explanation: "Covered by declared-intentional deviation: [deviation description]." Do not skip the finding — it must appear in the Findings sheet so the researcher can confirm the deviation still holds.
 
 **Never downgrade on timing grounds**: Do not treat a stale benchmark or moral weight as a false positive because the pre-vet spreadsheet was built before the parameter update. key-parameters.md is authoritative for current correct values — the researcher's obligation is to use current values at publication time. Do not write "this may have been correct when the spreadsheet was built."
 
@@ -114,8 +114,8 @@ Before filing, check whether the mismatch is covered by a declared-intentional d
 
 **Severity**:
 - **High/D/Parameter**: Benchmark, neonatal moral weight, under-5 moral weight, over-5 moral weight, long-term income ratio deviations. These are bright-line Defect findings — the GW standard value is unambiguous. File at the severity shown in the Flag severity column of `reference/key-parameters.md` regardless of whether the stored value is inside the Min–Max range. The Min–Max range is reference context only — it does NOT define a tolerance zone.
-- **Medium/Parameter with Researcher judgment needed ✓**: income effects, years to benefits, VAS moral weight, maternal death moral weight — more context-dependence; flag for researcher confirmation.
-- **Discount rate special rule**: if stored value differs from 4%, file as **Medium/H** with Researcher judgment needed ✓ — this matches the Acceptable Ranges table in `reference/key-parameters.md`. Do not apply a Low tier for values in the 3–5% range; the reference file defines no tolerance zone.
+- **Medium/Parameter**: income effects, years to benefits, VAS moral weight, maternal death moral weight — more context-dependence; flag for researcher confirmation.
+- **Discount rate special rule**: if stored value differs from 4%, file as **Medium/H** — this matches the Acceptable Ranges table in `reference/key-parameters.md`. Do not apply a Low tier for values in the 3–5% range; the reference file defines no tolerance zone.
 
 **Explanation discipline — do not read source documents**: Do not navigate to or read any URL found in a cell note to characterize what the source document says. Your determination of whether a value is wrong is based solely on comparing the stored value to key-parameters.md — not on interpreting the source document's contents. If you need to describe the source, use only the text already present in the cell note (e.g., "cell note cites 'Moral weights [2020, Tool]_New Incentives CEA'"). Do not write "conflating," "misidentifying," or other language that characterizes what a source document contains. The explanation is always: "[cell] = [stored value] but key-parameters.md specifies [expected value]."
 
@@ -133,7 +133,7 @@ Before writing any finding, confirm: (1) exact cell reference, (2) specific stor
 
 Append findings using `modify_sheet_values` to your staging sheet. Start at row 2 and append sequentially. Your staging sheet name is provided in session context.
 
-Column reference: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write exactly: `Parameter`) | **F** Explanation (lead with "[cell] = [value] but key-parameters.md specifies [expected]") | **G** Recommended Fix (imperative verb; give exact replacement value) | **H** Estimated CE Impact (use exactly one of: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown) | **I** Researcher judgment needed (✓ only for intent/decision questions) | **J** Status (leave blank)
+Column reference: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write exactly: `Parameter`) | **F** Explanation (lead with "[cell] = [value] but key-parameters.md specifies [expected]") | **G** Recommended Fix (imperative verb; give exact replacement value) | **H** Estimated CE Impact (use exactly one of: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown) | **I** Status (leave blank)
 
 See `reference/output-format.md` for full column definitions.
 

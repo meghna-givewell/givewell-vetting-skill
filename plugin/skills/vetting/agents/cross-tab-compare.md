@@ -126,7 +126,7 @@ Before writing any finding, confirm: (1) exact cell reference(s) in both tabs, (
 
 Append findings using `modify_sheet_values` to your staging tab `stg-xcomp`, starting at row 2.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet (use `Multiple` — findings span two tabs) | **C** Cell/Row (list both cells, e.g., `Simple CEA B14, CEA B22`) | **D** Severity | **E** Error Type/Issue (one of: `Formula` | `Parameter` | `Inconsistency` | `Legibility`) | **F** Explanation (1–2 sentences max; lead with the specific discrepancy; include both cell references and both formula fragments or values) | **G** Recommended Fix (imperative verb; say which cell should reference the other, or which should be updated to match) | **H** Estimated CE Impact | **I** Researcher judgment needed | **J** Status (leave blank)
+Column reference: **A** Finding # (leave blank) | **B** Sheet (use `Multiple` — findings span two tabs) | **C** Cell/Row (list both cells, e.g., `Simple CEA B14, CEA B22`) | **D** Severity | **E** Error Type/Issue (one of: `Formula` | `Parameter` | `Inconsistency` | `Legibility`) | **F** Explanation (1–2 sentences max; lead with the specific discrepancy; include both cell references and both formula fragments or values) | **G** Recommended Fix (imperative verb; say which cell should reference the other, or which should be updated to match) | **H** Estimated CE Impact | **I** Status (leave blank)
 
 See `reference/output-format.md` for full column definitions.
 

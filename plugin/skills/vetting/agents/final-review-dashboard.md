@@ -16,7 +16,7 @@ You are performing Step 10d of a GiveWell spreadsheet vet. This is the last of f
 
 ## Step 1 — Read findings for summary
 
-Read all non-divider rows from the Findings sheet (batched: `A2:J51`, `A52:J101`, `A102:J151`, continuing in 50-row increments until two consecutive batches return no non-empty rows). **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Collect: all High findings (for Key Findings summary), all findings with `✓` in column I (Researcher judgment needed), and the count of High/Medium/Low findings. When counting, skip divider rows (column D is empty AND column B contains ───) and skip rows where column D = `AGENT_COMPLETE` — these are pipeline completion markers written by the final-review agents (compaction, gap-fill, validation), not findings. Do not include divider rows or AGENT_COMPLETE rows in any finding count or in the total count.
+Read all non-divider rows from the Findings sheet (batched: `A2:I51`, `A52:I101`, `A102:I151`, continuing in 50-row increments until two consecutive batches return no non-empty rows). **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Collect: all High findings (for Key Findings summary), and the count of High/Medium/Low findings. When counting, skip divider rows (column D is empty AND column B contains ───) and skip rows where column D = `AGENT_COMPLETE` — these are pipeline completion markers written by the final-review agents (compaction, gap-fill, validation), not findings. Do not include divider rows or AGENT_COMPLETE rows in any finding count or in the total count.
 
 Also read the Hardcoded Values sheet column G (Verified? column) in the same batched manner to collect Wave 1.5 verification status counts: number of matched, contradicted, and could-not-verify values. If the column is entirely blank, note that Wave 1.5 source-citation-verify was skipped.
 
@@ -87,16 +87,12 @@ Present the following in chat:
 
 **Vet scope**: Fully vetted: [tab names] | Lite-pass: [tab names or "none"] | Not checked: [remaining tab names or "none"] | TA BOTEC: [checked / not detected / skipped]
 
-[N] model findings: [H] High, [M] Medium, [L] Low — [X] require researcher input
+[N] model findings: [H] High, [M] Medium, [L] Low
 [N] publication-readiness items (separate sheet)
 [N] hardcoded values pre-verified: [M] matched, [K] contradicted, [P] could not verify. [Or: Wave 1.5 source-citation-verify: skipped — Verified? column is blank throughout.]
 
 **High findings**
 • [Sheet / Cell ref] — [one-sentence description and directional CE impact]
-• ...
-
-**Items requiring researcher input**
-• [Sheet / Cell ref] — [the specific question the researcher must answer]
 • ...
 ```
 
@@ -104,10 +100,9 @@ Rules:
 - Use the tab list already retrieved in Step 2b — do not call `get_spreadsheet_info` again. Fully vetted = tabs in session context vetted list; Lite-pass = tabs in session context lite-pass list; Not checked = all remaining tabs in the workbook. Do not write "all tabs" — list the actual tab names (comma-separated) or write "none" only if the list is genuinely empty after comparing against the real workbook tab count.
 - For the TA BOTEC field: derive from session context whether ce-chain-trace-ta reported findings, announced a clean exit, or was not run. If session context does not specify, omit this field rather than guessing.
 - For the hardcoded values line: use the Verified? column counts collected in Step 1. If Wave 1.5 was skipped (all blank), use the skipped variant.
-- If no High findings, omit the High findings section entirely (do not write the heading or "No High findings"). If no researcher input items, omit that section entirely. Only include sections that have content.
-- If there are more than 10 High findings: group them by sheet name and write one bullet per sheet summarizing the count and dominant issue type (e.g., `Main CEA (4 findings): formula errors affecting CE chain`). List individual bullets only for findings with a known CE direction and quantified magnitude — these are the most actionable. For Direction unknown findings, group under a subheading `N High findings require researcher input (see Items requiring researcher input below).` For Direction unknown bullets, write: `[Sheet / Cell ref] — direction depends on researcher input (see Finding ID F-NNN).`
+- If no High findings, omit the High findings section entirely (do not write the heading or "No High findings"). Only include sections that have content.
+- If there are more than 10 High findings: group them by sheet name and write one bullet per sheet summarizing the count and dominant issue type (e.g., `Main CEA (4 findings): formula errors affecting CE chain`). List individual bullets only for findings with a known CE direction and quantified magnitude — these are the most actionable.
 - If there are 10 or fewer High findings, list each individually grouped by sheet.
-- List only items with `✓` in column I (Researcher judgment needed) from the Findings sheet under "Items requiring researcher input" — do not include pub-readiness items here. If none, omit this section.
 - Keep each bullet to one sentence — the full detail is in the Findings sheet.
 
 ---

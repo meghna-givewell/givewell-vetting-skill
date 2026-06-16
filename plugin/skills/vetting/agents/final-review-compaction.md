@@ -27,12 +27,12 @@ This declaration serves as a checkpoint. If the rewrite step fails mid-execution
 **Row filtering — apply while reading, before any further processing**: Four types of non-finding rows must be excluded from all subsequent steps (routing, deduplication, sorting, ID assignment). Filter them out as you read:
 1. **Header rows**: row 1 of each staging tab (the column label row written during output setup).
 2. **Completion marker rows**: column D = `AGENT_COMPLETE`
-3. **Won't Fix rows**: column J (Status) = `WONT_FIX` — these rows were marked by a reconcile agent as invalid findings; exclude them entirely.
+3. **Won't Fix rows**: column I (Status) = `WONT_FIX` — these rows were marked by a reconcile agent as invalid findings; exclude them entirely.
 4. **Meta-findings about the vetting process**: Any row whose Explanation (column F) or Error Type (column E) explicitly names vetting infrastructure entities as the grammatical subject — e.g., "Instance A," "Instance B," "readability agent," "formula-check agent," "vetting pipeline," "this vet," "vetting process." Discard these entirely. Do not discard rows merely because the word "agent" appears in a program-delivery context (e.g., "dispensing agent cost," "CHW agent delivery rate," "agent-adjusted mortality") — the discard trigger requires the subject to be a vetting infrastructure entity, not an incidental use of the word in a program description.
 
 Completion marker rows are written by Wave 1, Wave 2, and reconcile agents as their final action to signal a clean run. They are metadata, not findings. Do not route, deduplicate, sort, or assign IDs to them — discard them entirely after noting their presence in your coverage declaration.
 
-Read each staging tab listed in your session context. The session context provides the full list of staging tab names (all stg-* tabs created during output setup). **The MCP tool returns at most 50 rows per call — larger ranges silently truncate. Always batch in 50-row increments.** For each tab, call `read_sheet_values` in batched increments: first `{tab_name}!A1:J50`, then `{tab_name}!A51:J100`, then `{tab_name}!A101:J150`, and so on in 50-row steps, stopping after two consecutive empty batches (all cells blank or no rows returned). Concatenate all batches before processing. Read all tabs before taking any further action.
+Read each staging tab listed in your session context. The session context provides the full list of staging tab names (all stg-* tabs created during output setup). **The MCP tool returns at most 50 rows per call — larger ranges silently truncate. Always batch in 50-row increments.** For each tab, call `read_sheet_values` in batched increments: first `{tab_name}!A1:I50`, then `{tab_name}!A51:I100`, then `{tab_name}!A101:I150`, and so on in 50-row steps, stopping after two consecutive empty batches (all cells blank or no rows returned). Concatenate all batches before processing. Read all tabs before taking any further action.
 
 If `read_sheet_values` returns an error for a tab (e.g., tab not found, access error), do NOT silently skip. Log: "WARNING: staging tab [tab_name] could not be read — [error message]. Findings from this agent are excluded from compaction. Investigate before treating the vet as complete." Include the missing tab in the coverage declaration with status ERROR rather than a finding count.
 
@@ -54,7 +54,7 @@ Before making any modification to the Findings sheet, Publication Readiness shee
 
 1. Call `ToolSearch` with query `select:mcp__hardened-workspace__create_sheet` to ensure the tool schema is loaded.
 2. Call `mcp__hardened-workspace__create_sheet` to add a tab named `Staging_backup` to the output spreadsheet. If the tool returns an error indicating the tab already exists (e.g., from a prior partial run), skip creation — the existing backup remains available.
-3. Use a single `modify_sheet_values` call to write a header row and all [W] finding rows (excluding AGENT_COMPLETE markers, WONT_FIX rows, and header rows) from your Step 1 read into `Staging_backup`, starting at row 1. Header row: `Finding # | Sheet | Cell/Row | Severity | Error Type/Issue | Explanation | Recommended Fix | Estimated CE Impact | Researcher judgment needed | Status`. Note in row 1 (or as a comment): "This backup contains all pre-routing, pre-normalization staging tab rows. Rows with blank Severity (column D) are Publication Readiness findings that were not yet routed. Do not import this backup directly into the Findings sheet — re-run the compaction routing step first."
+3. Use a single `modify_sheet_values` call to write a header row and all [W] finding rows (excluding AGENT_COMPLETE markers, WONT_FIX rows, and header rows) from your Step 1 read into `Staging_backup`, starting at row 1. Header row: `Finding # | Sheet | Cell/Row | Severity | Error Type/Issue | Explanation | Recommended Fix | Estimated CE Impact | Status`. Note in row 1 (or as a comment): "This backup contains all pre-routing, pre-normalization staging tab rows. Rows with blank Severity (column D) are Publication Readiness findings that were not yet routed. Do not import this backup directly into the Findings sheet — re-run the compaction routing step first."
 4. Announce: `✓ Backup complete: [W] finding rows written to Staging_backup tab.`
 
 If `create_sheet` cannot be called after one ToolSearch retry, announce: `⚠️ Backup skipped — could not create Staging_backup tab. Proceeding with compaction; if interrupted, original data may be lost.` and continue to Step 1.6.
@@ -75,9 +75,7 @@ Immediately after creating the backup and before any routing or deduplication, s
 
 If a value does not match any recognized label, keep it as-is and flag it in your coverage declaration so it can be reviewed.
 
-**Findings sheet column I (Researcher judgment needed) normalization**: Scan every Findings row for any of the following variants in column I and replace each with `✓`: `YES`, `Yes`, `yes`, `Y`, `True`, `true`, `X`, `x`. Leave blank values blank — do not change them. For any other non-blank, non-`✓` value: flag it in the coverage declaration AND clear it (write blank to that cell using `modify_sheet_values`) before proceeding — unrecognized column I values corrupt the ✓-count triage in Step 3.3 and the dashboard COUNTIF formula.
-
-Coverage declaration: "Label normalization complete. Findings: [N] labels normalized. Publication Readiness: [M] labels normalized. Column I: [N] variants normalized to ✓. Unrecognized labels: [list or 'none']. Unrecognized column I values: [list or 'none']."
+Coverage declaration: "Label normalization complete. Findings: [N] labels normalized. Publication Readiness: [M] labels normalized. Unrecognized labels: [list or 'none']."
 
 ---
 
@@ -95,7 +93,7 @@ Check each row using the priority above, then apply these additional rules (appl
 - Publication Readiness sheet rows that affect model outputs or interpretation → move to Findings.
 - **Adjustment and double-count findings always stay in Findings** — never route an `Adjustment` finding to Publication Readiness on the basis of "No CE impact" or a blank CE impact column. A blank CE impact column for an Adjustment finding means the impact is unknown, not zero — leave it in Findings with "Direction unknown" in column H.
 
-**Column remapping when moving Findings → Publication Readiness**: The Findings sheet has 10 columns (A–J); the Publication Readiness sheet has exactly 6 (A–F). When moving a row, remap as follows — do not copy extra Findings columns into PR:
+**Column remapping when moving Findings → Publication Readiness**: The Findings sheet has 9 columns (A–I); the Publication Readiness sheet has exactly 6 (A–F). When moving a row, remap as follows — do not copy extra Findings columns into PR:
 - PR A (Finding #): leave blank
 - PR B (Sheet): = Findings B
 - PR C (Cell/Row): = Findings C
@@ -103,12 +101,12 @@ Check each row using the priority above, then apply these additional rules (appl
 - PR E (Explanation): = Findings F
 - PR F (Recommended Fix): = Findings G
 
-Do not write column G or beyond in Publication Readiness under any circumstances. There is no Status or Researcher judgment needed column in Publication Readiness.
+Do not write column G or beyond in Publication Readiness under any circumstances. There is no Status column in Publication Readiness.
 
 **Routing audit — after all moves are complete**: Before writing the coverage declaration, perform three explicit spot-checks:
 
-1. Scan all remaining Findings rows for any whose Error Type (column E) is `Sourcing` or `Box Link` (these types are never valid in Findings) — move any found to Publication Readiness, remapping to 6-column PR format per the column remapping table above. For `Legibility` rows where Severity (column D) is blank or `Low` AND column I (Researcher judgment needed) is empty: move to Publication Readiness. Retain any Legibility row in Findings when Severity is Medium or High, OR when column I = ✓ (researcher judgment needed, even at Low severity).
-2. Scan all Publication Readiness rows for any whose Explanation (column E) describes a formula error, parameter mismatch, or value that affects CE — these belong in Findings. Move any found, remapping Publication Readiness columns (A–F) back to Findings columns using the inverse of the routing table above: PR B → Findings B, PR C → Findings C, PR D → Findings E, PR E → Findings F, PR F → Findings G. For Severity (Findings column D): assign `Medium` as the default — PR rows carry no Severity, and Medium is the conservative baseline when CE impact is unclear; the validation agent will refine column H in Check 4. Leave Findings columns A, H, J blank. Set column I (Researcher judgment needed) to `✓` and append to column F: "Severity assigned as Medium default — row was recovered from Publication Readiness; verify severity is correct using the severity matrix in output-format.md." Do not leave this row without the ✓ flag — the validation agent does not re-evaluate Severity for PR-recovered rows. **Additionally, reclassify Error Type (Findings column E)**: if the remapped Error Type is `Sourcing` or `Box Link`, replace it — these are not valid Findings Error Types. Use `Assumption` as the default unless the Explanation clearly describes a formula error (use `Formula`) or a parameter mismatch (use `Parameter`). `Legibility` is valid in both sheets and should be retained as-is.
+1. Scan all remaining Findings rows for any whose Error Type (column E) is `Sourcing` or `Box Link` (these types are never valid in Findings) — move any found to Publication Readiness, remapping to 6-column PR format per the column remapping table above. For `Legibility` rows where Severity (column D) is blank or `Low`: move to Publication Readiness. Retain any Legibility row in Findings when Severity is Medium or High.
+2. Scan all Publication Readiness rows for any whose Explanation (column E) describes a formula error, parameter mismatch, or value that affects CE — these belong in Findings. Move any found, remapping Publication Readiness columns (A–F) back to Findings columns using the inverse of the routing table above: PR B → Findings B, PR C → Findings C, PR D → Findings E, PR E → Findings F, PR F → Findings G. For Severity (Findings column D): assign `Medium` as the default — PR rows carry no Severity, and Medium is the conservative baseline when CE impact is unclear; the validation agent will refine column H in Check 4. Leave Findings columns A, H, I blank. Append to column F: "Severity assigned as Medium default — row was recovered from Publication Readiness; verify severity is correct using the severity matrix in output-format.md." **Additionally, reclassify Error Type (Findings column E)**: if the remapped Error Type is `Sourcing` or `Box Link`, replace it — these are not valid Findings Error Types. Use `Assumption` as the default unless the Explanation clearly describes a formula error (use `Formula`) or a parameter mismatch (use `Parameter`). `Legibility` is valid in both sheets and should be retained as-is.
 3. **Adjustment audit**: Confirm zero `Adjustment` rows remain in Publication Readiness. If any are found, move them to Findings unconditionally — adjustment scope errors are model-integrity issues regardless of whether their CE impact appears zero. Also check for rows in Publication Readiness whose Explanation (column E) contains "adjustment" or "double-count" regardless of the Error Type label — a prior agent may have filed an Adjustment as `Inconsistency` which then got routed to PR. Move any such rows to Findings and reclassify Error Type as `Adjustment`.
 
 Coverage declaration: "Routing complete. [N] rows moved to Publication Readiness. [M] rows moved to Findings. Routing audit: [K] additional moves after spot-check. Adjustment rows in PR after audit: 0. No other misrouted rows."
@@ -133,26 +131,9 @@ After this pass, write: "Semantic consolidation complete. [N] root-cause/symptom
 
 **High-severity protection during consolidation**: When consolidating findings at different severities (root-cause/symptom grouping or same-parameter multi-cell grouping), always retain the higher severity. Any downgrade from High → Medium during consolidation must be documented with a specific evidentiary reason in column F (e.g., "CE impact computed as 1.3%, below 2% threshold; downgraded to Medium"). Do not downgrade based on scope judgment ("this is a documentation issue") without verifying the CE chain impact is truly <2%. If the CE impact cannot be computed, retain High.
 
-**Synthesis false-positive guard**: After deduplication and consolidation, scan for any finding whose Explanation (column F) contains explicitly cross-agent language — phrases like "both instances flagged," "A noted X while B noted Y," "combining these observations suggests," "Instance A," or "Instance B." For each such finding: downgrade to Medium severity with Researcher judgment needed ✓ and add to the Explanation: "Synthesized from two partial agent observations — researcher to confirm before treating as confirmed error." Do not attempt to verify by reading the source spreadsheet — this agent's scope restriction prohibits reading source spreadsheet values. The final-review-validation agent (Step 10c) performs source-value verification on all High findings; flag synthesized findings as Medium so the validation agent can re-examine them with full source-read access. Rationale: the compaction agent in a prior vet elevated a Low observation to High by combining two partial signals, producing a false positive that the human vet did not catch — and which caused the researcher to distrust the adjacent real findings.
+**Synthesis false-positive guard**: After deduplication and consolidation, scan for any finding whose Explanation (column F) contains explicitly cross-agent language — phrases like "both instances flagged," "A noted X while B noted Y," "combining these observations suggests," "Instance A," or "Instance B." For each such finding: downgrade to Medium severity and add to the Explanation: "Synthesized from two partial agent observations — researcher to confirm before treating as confirmed error." Do not attempt to verify by reading the source spreadsheet — this agent's scope restriction prohibits reading source spreadsheet values. The final-review-validation agent (Step 10c) performs source-value verification on all High findings; flag synthesized findings as Medium so the validation agent can re-examine them with full source-read access. Rationale: the compaction agent in a prior vet elevated a Low observation to High by combining two partial signals, producing a false positive that the human vet did not catch — and which caused the researcher to distrust the adjacent real findings.
 
 Coverage declaration: "Deduplication complete. [N] exact duplicates merged. [See semantic consolidation above.] Synthesis guard: [M] unverified High findings downgraded. No other duplicates found."
-
----
-
-## Step 3.3 — Researcher-to-confirm audit
-
-Count all rows with ✓ in column I among Findings sheet rows only (not Publication Readiness rows; not divider rows; not AGENT_COMPLETE rows). Calculate total findings rows as all non-divider, non-AGENT_COMPLETE Findings sheet rows. If the ✓ count is **strictly greater than 20%** of total findings rows (✓ count / total findings > 0.20; at exactly 20%, skip this step), apply the following triage pass before proceeding to Step 4.
-
-For each ✓ row, ask: **can this question be answered by (a) the Explanation text and recommended fix being fully self-contained and unambiguous, (b) checking a cited URL using WebFetch (if WebFetch is in permitted tools), or (c) the finding description referencing a value that is explicitly stated in key-parameters.md?** If yes to any of these, the ✓ mark should not have been filed — the agent had enough information to either confirm or dismiss the finding without researcher input. Do not attempt to read the source spreadsheet to answer this question — this agent's scope restriction prohibits reading source spreadsheet values. When uncertain, retain ✓.
-
-Action for each ✓ row reviewed:
-- If the question is answerable from criteria (a), (b), or (c) above → remove the ✓ mark. If the finding is still valid, it remains as a confirmed finding.
-- If the question genuinely requires the researcher to explain their analytical intent or confirm an assumption not determinable from the available information → retain ✓.
-- If uncertain, retain ✓ but add a note in the Explanation: "Researcher to confirm — [specific question]."
-
-Write: "Step 3.3 complete. ✓ findings before audit: [N]. ✓ marks removed (determinable from spreadsheet): [M]. Rows removed entirely: [K]. ✓ marks retained (genuine intent questions): [N-M-K]."
-
-Skip this step (write "Step 3.3: skipped — ✓ count [N] is ≤20% of total findings [T]") when ✓ count / total findings ≤ 20%.
 
 ---
 
@@ -160,11 +141,10 @@ Skip this step (write "Step 3.3: skipped — ✓ count [N] is ≤20% of total fi
 
 Rewrite both sheets sequentially from row 2. The Findings sheet and Publication Readiness sheet are initially empty (all findings were in staging tabs until this step) — write directly from row 2 with no gaps to close.
 
-Sort all Findings rows in memory using four sort keys:
+Sort all Findings rows in memory using three sort keys:
 1. **Primary**: Severity (High → Medium → Low)
 2. **Secondary**: Estimated CE Impact (column H) — within each severity tier, apply this order: numeric magnitude findings first (rows where column H contains a specific estimate, e.g., "Raises CE — 2.5x" or "Lowers CE — 1.3x"), then magnitude-unknown findings ("Raises CE — magnitude unknown", "Lowers CE — magnitude unknown"), then "Direction unknown", then "No CE impact", then blank. Within the numeric magnitude tier, sort "Raises CE" entries before "Lowers CE" entries (findings that overstate CE are higher priority for correction). Within the magnitude-unknown tier, similarly sort "Raises CE — magnitude unknown" before "Lowers CE — magnitude unknown."
 3. **Tertiary**: Error Type/Issue (column E, alphabetical)
-4. **Quaternary**: Researcher judgment needed (column I) — within the same severity, CE impact tier, and error type, place findings WITHOUT ✓ before findings WITH ✓. Confirmed findings should appear before researcher-to-confirm items so reviewers encounter actionable findings first without having to skip over speculative ones.
 
 Then rewrite the Findings sheet from row 2 with section dividers. **If no findings exist at a given severity level, skip that divider entirely — do not write an empty `─── High (0 findings) ───` row.** Only write a divider when at least one finding of that severity is present.
 

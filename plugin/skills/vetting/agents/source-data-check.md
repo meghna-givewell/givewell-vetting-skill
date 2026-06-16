@@ -11,7 +11,7 @@ Your job is narrow and concrete: check the raw data extract tabs for transpositi
 
 **Stakes**: Transcription errors in raw data tabs propagate silently into every downstream calculation. A BCG/OPV0 column swap or a coverage value transposed from one country to another will never surface in a formula audit because the formula is correct — only the input is wrong. This check exists specifically to catch errors that formula audits cannot.
 
-**Role calibration**: This is a factual correctness check, not a methodology review. Flag ordering violations and transpositions you can actually demonstrate — not values that merely look low or high in isolation. When a value is plausible but unverified, prefer Medium/H with Researcher judgment needed ✓ over High/D.
+**Role calibration**: This is a factual correctness check, not a methodology review. Flag ordering violations and transpositions you can actually demonstrate — not values that merely look low or high in isolation. When a value is plausible but unverified, prefer Medium/H over High/D.
 
 **Before running any checks**, read `reference/pitfalls.md` using the Read tool. Apply every relevant entry — specifically FN-003 (WebFetch for weighted-average sources), SC-003 (CE chain confirmation before High), SC-004 (wrong subgroup requires WebFetch), SC-005 (methodology mismatch), SC-007 (intentional subgroup), and SC-009 (missing-source severity threshold).
 
@@ -58,7 +58,7 @@ From the column headers, identify which columns correspond to which vaccines. Th
 - **PCV and Rota vs. Penta**: PCV and Rota are co-administered at the Penta visits. Values should track within ~20pp of Penta3. A PCV or Rota value that exceeds Penta3 by >15pp is a flag (a vaccine delivered alongside Penta cannot have higher coverage than Penta without a specific note explaining why).
 - **Measles (MCV1/MCV2)**: MCV1 ≥ MCV2 is expected in almost all contexts.
 
-Flag any violation as: (a) **High/D** if the values appear to be directly swapped (BCG shows ~OPV0's expected value and OPV0 shows ~BCG's expected value); (b) **Medium/H** if the ordering is violated but the swap is not obvious (could be a genuine data anomaly). Always include `Researcher judgment needed ✓` for Medium/H plausibility flags.
+Flag any violation as: (a) **High/D** if the values appear to be directly swapped (BCG shows ~OPV0's expected value and OPV0 shows ~BCG's expected value); (b) **Medium/H** if the ordering is violated but the swap is not obvious (could be a genuine data anomaly). For Medium/H plausibility flags, ask in the Explanation whether the anomaly reflects a data transcription error or genuine program data.
 
 ### Check B — Adjacent column transposition
 
@@ -89,7 +89,7 @@ If a source tab contains both sub-national rows (states, provinces, districts) a
 2. Read all sub-national rows and the summary row (FORMATTED_VALUE mode).
 3. Compute the expected aggregate from the sub-national values and compare to the summary row.
 
-Flag as **High/D** if the discrepancy exceeds 2%: "National total [cell] = [X] but sum of sub-national rows [list] = [Y] — transposition or missing sub-region suspected." Flag as **Medium/H** with Researcher judgment needed ✓ if 1–2%: the discrepancy may reflect a legitimate scope difference (e.g., summary excludes a disputed territory) that should be documented.
+Flag as **High/D** if the discrepancy exceeds 2%: "National total [cell] = [X] but sum of sub-national rows [list] = [Y] — transposition or missing sub-region suspected." Flag as **Medium/H** if 1–2%: the discrepancy may reflect a legitimate scope difference (e.g., summary excludes a disputed territory) that should be documented.
 
 Skip this check if the tab contains sub-national rows only (no summary row) or if the summary row is labeled as a subset (e.g., "Northern states only").
 
@@ -105,7 +105,7 @@ For each source tab, record: tab name → most recent data year for in-scope geo
 
 Compare across all source tabs. If any tab's most recent year lags the most recently updated tab by **2 or more years**, and no cell note on the lagging tab's header or in-scope rows explains why the older vintage is retained:
 
-- Flag as **Low/H** with Researcher judgment needed ✓: "[Tab name] has data through [year] while [other tab(s)] have data through [year]. If a more recent vintage is available, consider updating; otherwise add a note explaining why the older vintage is used."
+- Flag as **Low/H**: "[Tab name] has data through [year] while [other tab(s)] have data through [year]. If a more recent vintage is available, consider updating; otherwise add a note explaining why the older vintage is used."
 
 Prioritize this check for tabs carrying **cause-specific mortality or disease burden data** (IGME CoD, GBD cause-specific tabs) — these are most likely to lag behind all-cause mortality updates when a new GBD or IGME release is incorporated piecemeal. A common pattern: all-cause mortality tabs are refreshed to the current GBD/IGME release year while cause-specific tabs remain at the prior release year, creating a silent methodology inconsistency in the burden adjustment factors.
 
@@ -156,7 +156,7 @@ Before writing any finding, confirm: (1) exact cell reference(s), (2) specific i
 
 Append findings using `modify_sheet_values` to your staging sheet. Start at row 2 and append sequentially. Your staging sheet name is provided in session context.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | **J** Status (leave blank)
+Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Status (leave blank)
 
 ---
 

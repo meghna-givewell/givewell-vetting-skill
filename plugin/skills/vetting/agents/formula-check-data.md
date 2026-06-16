@@ -33,7 +33,7 @@ When a formula contains embedded numeric literals that appear to represent RCT o
 
 1. If the cited URL is publicly accessible (not a Box link, not behind a paywall), use WebFetch to retrieve the paper and locate the specific table or figure the numbers come from — confirm each embedded figure matches.
 2. If the URL appears to be behind a paywall, first run a WebSearch for the paper title, DOI, or authors to find an open-access version (PubMed Central, preprint server, author's institutional page). If found, use WebFetch on the open-access URL.
-3. If the paper remains inaccessible after this search, file a Medium finding with Researcher judgment needed ✓: "Embedded trial statistics could not be verified — paper is behind a paywall. A researcher must pull the full text and confirm each embedded figure against the source table/figure before publication."
+3. If the paper remains inaccessible after this search, file a Medium finding: "Embedded trial statistics could not be verified — paper is behind a paywall. A researcher must pull the full text and confirm each embedded figure against the source table/figure before publication."
 
 Common errors that require paper access to catch:
 - Using person-time denominators instead of at-risk counts
@@ -53,7 +53,7 @@ When a hardcoded cell note contains a GBD vizhub URL (`vizhub.healthdata.org/gbd
 - File as **Medium/D** if the retrieved value differs from the cell's stored value by >2%.
 - File as **High/D** if the discrepancy exceeds 5%.
 - Common failure mode: researcher updates the GBD extract year or changes query parameters but forgets to update the hardcoded cell; or a state/region-specific value was pulled from a national-level URL used as a proxy.
-- When the vizhub URL is inaccessible or returns no data, file as Medium/H with Researcher judgment needed ✓ — do not skip the check.
+- When the vizhub URL is inaccessible or returns no data, file as Medium/H — do not skip the check.
 
 Coverage declaration: COVERAGE | formula-check-data | GBD vizhub link verification | [N cells/rows checked] | issues found: [N] | status: complete
 
@@ -71,7 +71,7 @@ Procedure:
 3. Compare the inferred metric against the description in the cell note or the title/URL of the cited source. A neonatal-deaths formula citing an all-cause mortality URL is a metric mismatch.
 4. If the URL is inaccessible (403, paywall, or redirect), note what metric the formula requires based on formula structure and flag if the note description references a broader category.
 
-File as **Medium/H** with Researcher judgment needed ✓: "[cell] formula structure implies [inferred metric] (e.g., neonatal deaths) but the cited source at [URL/note text] appears to describe [broader metric]. Confirm the source provides the correct metric and update the note." Flag as **High/D** if the metric mismatch would materially affect the value (e.g., all-cause vs. neonatal mortality differ by 5–10× in typical SSA contexts).
+File as **Medium/H**: "[cell] formula structure implies [inferred metric] (e.g., neonatal deaths) but the cited source at [URL/note text] appears to describe [broader metric]. Confirm the source provides the correct metric and update the note." Flag as **High/D** if the metric mismatch would materially affect the value (e.g., all-cause vs. neonatal mortality differ by 5–10× in typical SSA contexts).
 
 Coverage declaration: COVERAGE | formula-check-data | GBD formula cell metric alignment | [N cells/rows checked] | issues found: [N] | status: complete
 
@@ -86,7 +86,7 @@ When a hardcoded cell note cites a specific GiveWell CEA or internal model as th
 - A value labeled "from [model]" that doesn't match the source calculation is **High/D**.
 - Naming the source is not the same as verifying the value was correctly transcribed.
 - This check is especially important for DALY estimates, BOTEC adjustment factors, and structural parameters commonly copied between models.
-- If the referenced GiveWell model is a Google Doc rather than a Sheets workbook, this verification cannot be completed in this agent (get_doc_content is not permitted). File as Medium/H with Researcher judgment needed ✓: "Referenced model is a Google Doc — cross-model value verification must be done manually."
+- If the referenced GiveWell model is a Google Doc rather than a Sheets workbook, this verification cannot be completed in this agent (get_doc_content is not permitted). File as Medium/H: "Referenced model is a Google Doc — cross-model value verification must be done manually."
 
 Coverage declaration: COVERAGE | formula-check-data | cross-model value verification | [N cells/rows checked] | issues found: [N] | status: complete
 
@@ -102,7 +102,7 @@ When scanning all hardcoded cells across all sheets, flag any row whose label co
 - "crowding in," "crowding out," "leverage rate" — when the value represents a program-specific leverage estimate
 - "attribution factor," "proportion attributable" — when the value was determined in a separate analysis
 
-For each such row with no cross-model source note, file as **Low/H** (`Inconsistency`) with Researcher judgment needed ✓: "No cross-model source cited for [row label] = [value]. If this value is drawn from another GW model or analysis (e.g., [program] funging analysis, PrEP CEA income weights), add a cross-reference note citing the source model and confirm the value is current. If model-specific, document the basis in the Notes column." Write "Direction unknown" in column H.
+For each such row with no cross-model source note, file as **Low/H** (`Inconsistency`): "No cross-model source cited for [row label] = [value]. If this value is drawn from another GW model or analysis (e.g., [program] funging analysis, PrEP CEA income weights), add a cross-reference note citing the source model and confirm the value is current. If model-specific, document the basis in the Notes column." Write "Direction unknown" in column H.
 
 **Scope boundary**: Do not flag standard values already checked by key-params-check.md (GD benchmark, neonatal moral weight, death-aversion values, discount rates, standard income effects). Only flag program-specific variants where the derivation would require loading a separate GW model to verify.
 
@@ -146,7 +146,7 @@ For every hardcoded value sourced from a study (identified by an external URL or
 
 **Severity calibration**:
 - Confirmed mismatch with material CE impact (>5%) → **High/D**
-- Plausible mismatch but uncertain without researcher context → **Medium/H** with Researcher judgment needed ✓
+- Plausible mismatch but uncertain without researcher context → **Medium/H**
 - Minor difference unlikely to affect CE materially → **Low/H**
 
 Before filing a High/D: retrieve and read the cited source to confirm the mismatch. Do not file High/D based solely on the cell note description.
@@ -161,11 +161,9 @@ Before writing any finding, confirm: (1) exact cell reference(s), (2) specific d
 
 **CE impact before severity assignment**: Before assigning severity ≥ Medium for any finding, attempt to compute the CE impact by tracing the flagged cell's value through the formula chain to the CE output. If the chain is traceable, compute the delta and write the estimated impact in column H before finalizing severity. A finding whose CE impact computes to <5% is Immaterial. Apply the Nature × Materiality table: Defect + Immaterial = Medium; Gap + Immaterial = Medium; Judgment + Immaterial or Zero = Low. Do not use a 2% floor for Low. If the chain is not directly traceable, write "Direction unknown" and proceed with qualitative severity judgment.
 
-**Researcher judgment needed threshold**: mark ✓ only when (a) resolving the finding requires the researcher's specific intent AND (b) the assumption is materially surprising — outside the typical range for this intervention. Do not mark ✓ for documentation gaps where the fix is simply "add a note." If >25–30% of findings carry ✓, the threshold is too low.
-
 **Your staging sheet name is provided in session context** — write all findings to that staging tab starting at row 2. Append findings using `modify_sheet_values`. See `reference/column-reference.md` for full column specifications.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency | Sourcing | Box Link) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Researcher judgment needed (✓ only for intent/decision questions — not for "please verify" tasks) | **J** Status (leave blank)
+Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency | Sourcing | Box Link) | **F** Explanation (1–2 sentences max; lead with the specific problem; make a specific falsifiable claim and include the actual value or formula, e.g., "B14 = 0.87 but C22 = 0.79"; plain language; do not hedge what you can confirm; no chain traces) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Status (leave blank)
 
 Use two-axis notation in your reasoning — e.g., High/D (Defect, confirmed error) or Medium/H (Gap or Judgment). Write only `High`, `Medium`, or `Low` in column D — no /D or /H suffix. See reference/column-reference.md for full column specifications.
 
@@ -173,7 +171,7 @@ Note on Sourcing | Box Link in column E: use only for publication-readiness find
 
 When column E is Formula, begin column F with one of: [Copy-paste] | [Wrong reference] | [Year range] | [Sign error] | [Wrong operator] | [Off-by-one]. This bracketed sub-type is required by output-format.md.
 
-**Publication Readiness findings go to your staging sheet**: Do not write directly to the Publication Readiness sheet. For publication-readiness findings (Error Type: Sourcing, Box Link, or Legibility), write them to your staging sheet in the same 10-column format as model-integrity findings, with column D (Severity) left blank. The compaction agent routes them to Publication Readiness based on Error Type.
+**Publication Readiness findings go to your staging sheet**: Do not write directly to the Publication Readiness sheet. For publication-readiness findings (Error Type: Sourcing, Box Link, or Legibility), write them to your staging sheet in the same 9-column format as model-integrity findings, with column D (Severity) left blank. The compaction agent routes them to Publication Readiness based on Error Type.
 
 ---
 
@@ -189,4 +187,4 @@ Write the row with:
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).
 
-**Severity guard**: Before filing any Defect-Nature finding (High/D or Medium/D) that classifies a hardcoded value as wrong, you must have retrieved the source and confirmed the discrepancy. If the source is inaccessible, downgrade to /H (Judgment) with Researcher judgment needed ✓.
+**Severity guard**: Before filing any Defect-Nature finding (High/D or Medium/D) that classifies a hardcoded value as wrong, you must have retrieved the source and confirmed the discrepancy. If the source is inaccessible, downgrade to /H (Judgment).
