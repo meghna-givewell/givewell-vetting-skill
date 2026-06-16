@@ -1107,9 +1107,9 @@ After all agents complete, announce `[Vet complete — Phase 4/4 done]`, then:
 
 One-line count: e.g., "13 findings: 2 High, 6 Medium, 5 Low — 4 require researcher input"
 
-**Step 1b — Save copy to archive folder**: Call `mcp__claude_ai_Google_Drive__copy_file` with the output spreadsheet's file ID and the destination parent folder ID `1z59SR87sZfRZ0yZ3ownKK8GtoGBGxrwD` to save a complete copy of the finished findings to the GiveWell vetting archive. The copy will have the same title as the output spreadsheet. If the call fails, note the error in chat — do not block feedback collection.
-
 **Step 2 — Collect pilot feedback**
+
+Immediately after presenting the results link and count, ask the researcher the following six questions. Do not run the archive save (Step 2b) or any other step before presenting these questions — the researcher should see them right after the findings link.
 
 Ask the researcher the following six questions. Present them as a labelled block so they are easy to copy and answer:
 
@@ -1126,17 +1126,21 @@ Vetting skill feedback — 6 quick questions (answers go into a shared log to im
 (You can skip any question — just reply with the numbers you want to answer.)
 ```
 
-**Local mode**: If running in local mode (MCP unavailable), follow the feedback instructions in the "No-MCP / Local output mode" section (Step 8 — Feedback collection in local mode). Do not attempt to write to the Google Sheet or send a Slack DM. Skip steps a–d below entirely.
+**Local mode**: If running in local mode (MCP unavailable), follow the feedback instructions in the "No-MCP / Local output mode" section (Step 8 — Feedback collection in local mode). Do not attempt to write to the Google Sheet or send a Slack DM. Skip steps 2b–2e below entirely.
 
-**Standard mode**: After the researcher responds, record their answers in the shared pilot feedback log:
+**Standard mode**: After the researcher responds, complete the following steps in order:
 
-**a. Use the canonical feedback sheet**
+**Step 2b — Save copy to archive folder**: Call `mcp__claude_ai_Google_Drive__copy_file` with the output spreadsheet's file ID and the destination parent folder ID `1z59SR87sZfRZ0yZ3ownKK8GtoGBGxrwD` to save a complete copy of the finished findings to the GiveWell vetting archive. The copy will have the same title as the output spreadsheet. If the call fails, note the error in chat and continue.
+
+Then record the researcher's feedback answers in the shared pilot feedback log:
+
+**Step 2c. Use the canonical feedback sheet**
 
 The feedback sheet is always: `https://docs.google.com/spreadsheets/d/1Ees1qo3N5SSTzo6MDDrCpvJEVrgANCTqRET6ak3glWM/`
 
 Use spreadsheet ID `1Ees1qo3N5SSTzo6MDDrCpvJEVrgANCTqRET6ak3glWM` for all writes. Do not search for or create a new sheet.
 
-**b. Append the feedback row**
+**Step 2d. Append the feedback row**
 
 Find the first empty row in column A (read `A:A` and count non-empty cells; first empty = that count + 1 — the header row is included in the non-empty count, so count already accounts for row 1). Write one row at that position:
 - A: today's date (ISO format: YYYY-MM-DD)
@@ -1149,7 +1153,7 @@ Find the first empty row in column A (read `A:A` and count non-empty cells; firs
 - H: confidentiality flags missed answer
 - I: Box links missed answer
 
-**c. Notify the skill maintainer via Slack DM**
+**Step 2e. Notify the skill maintainer via Slack DM**
 
 After writing the feedback row, send a direct Slack message to Meghna Ray (`meghna.ray@givewell.org`) to notify her of the new submission:
 
@@ -1171,7 +1175,7 @@ Feedback sheet: [link]
 
 If `mcp__claude_ai_Slack__slack_search_users` returns no result for that email, skip the Slack notification silently — do not surface an error to the researcher.
 
-**d. Share the link**
+**Step 2f. Share the link**
 
 Tell the researcher: "Feedback recorded — thank you. [feedback sheet link]"
 
