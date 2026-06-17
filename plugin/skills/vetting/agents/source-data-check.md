@@ -115,7 +115,7 @@ Skip this check for tabs that explicitly carry a fixed historical vintage by des
 
 After completing Checks A–E, verify that every source data tab in the workbook contains data from the correct geography for the program being modeled.
 
-1. From the program context (Step 0.5), identify the program's target geography (country, state, or region). If not provided, infer from the workbook title or the first populated row of the main CEA sheet.
+1. From the program context provided in session context, identify the program's target geography (country, state, or region). If not provided, infer from the workbook title or the first populated row of the main CEA sheet.
 
 2. For each source tab identified in Step 1, scan column A through column C of the first 100 rows using `read_sheet_values` (FORMATTED_VALUE). Look for country names, ISO codes, GBD location names, DHS survey country codes, or administrative region labels.
 

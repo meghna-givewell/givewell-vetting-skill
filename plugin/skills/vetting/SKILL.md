@@ -155,7 +155,7 @@ Go to [sheets.new](https://sheets.new) and create a blank spreadsheet. Create ex
 
 1. `Dashboard` — leave row 1 blank
 2. `CE Baseline` — enter these values across row 1, one per cell: `Geography/Scenario`, `Cost-Effectiveness`
-3. `Findings` — enter these values across row 1: `Finding #`, `Sheet`, `Cell/Row`, `Severity`, `Error Type/Issue`, `Explanation`, `Recommended Fix`, `Estimated CE Impact`, `Status`
+3. `Findings` — enter these values across row 1: `Finding #`, `Sheet`, `Cell/Row`, `Severity`, `Error Type/Issue`, `Explanation`, `Recommended Fix`, `Estimated CE Impact`
 4. `Publication Readiness` — enter these values across row 1: `Finding #`, `Sheet`, `Cell/Row`, `Error Type/Issue`, `Explanation`, `Recommended Fix`
 5. `Hardcoded Values` — enter these values across row 1: `Sheet`, `Cell`, `Category`, `Current Value`, `Description`, `Source to Verify`, `Verified?`, `Auto-check evidence`
 6. `Confidentiality Flags` — enter these values across row 1: `Cell/Row`, `Content Found`, `Sensitivity Type`, `Recommended Action`
@@ -521,7 +521,7 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 >
 > **Recommended Fix wording**: Lead every Recommended Fix (column G) with an imperative verb. When the fix is a formula change, include the complete replacement formula string — e.g., "Change to `=SUM(D4:D19)` (current formula excludes row 19)" rather than "Update the range to include the final year." The researcher should be able to copy-paste the fix directly from column G.
 >
-> **Staging sheet — write all findings here**: Your session context specifies your staging sheet name. Write ALL findings to that staging tab using `modify_sheet_values`, prefixing the range with the tab name (e.g., for staging sheet `stg-arith-A`: write to `stg-arith-A!A2:I2`). Write your first finding to row 2, then row 3, and so on — appending sequentially. There is no row budget or overflow limit. Do not write to the Findings sheet or Publication Readiness sheet directly. For publication-readiness findings (Error Type: Sourcing, Box Link, or Legibility): write them to your staging sheet in the same 9-column format, with column D (Severity) left blank — the compaction agent routes them to Publication Readiness based on Error Type. The compaction agent (Wave 3) reads all staging sheets and merges findings into the final Findings and Publication Readiness sheets.
+> **Staging sheet — write all findings here**: Your session context specifies your staging sheet name. Write ALL findings to that staging tab using `modify_sheet_values`, prefixing the range with the tab name (e.g., for staging sheet `stg-arith-A`: write to `stg-arith-A!A2:I2`). Write your first finding to row 2, then row 3, and so on — appending sequentially. There is no row budget or overflow limit. Do not write to the Findings sheet or Publication Readiness sheet directly. For Sourcing and Box Link findings: write to your staging sheet with column D (Severity) left blank — these always route to Publication Readiness. For Legibility findings: leave column D blank ONLY when Severity is Low (routes to Publication Readiness); write Medium or High in column D when the Legibility issue is material — these route to Findings. The compaction agent (Wave 3) reads all staging sheets and merges findings into the final Findings and Publication Readiness sheets.
 >
 > **CE impact gate — mandatory before filing Medium or High**: Classify each finding by Nature and Materiality before assigning severity.
 >
@@ -777,7 +777,7 @@ Wait for all spawned Wave 1 agents to complete before proceeding.
 - [ ] Confidentiality Flags sheet contains an AGENT_COMPLETE marker row.
 - [ ] Researcher checkpoint completed (presented or skipped if no flagged rows).
 
-**Silent failure check — do this before the researcher checkpoint**: For each Wave 1 agent, read its staging sheet and check whether any non-header, non-AGENT_COMPLETE rows exist. An agent that has no AGENT_COMPLETE row and no finding rows in its staging sheet may have failed silently (auth timeout, context limit, API error) rather than genuinely found no issues. Read each staging tab with `read_sheet_values` on `{staging_tab_name}!A1:I500` to check for the AGENT_COMPLETE marker. Report any empty staging sheet in chat:
+**Silent failure check — do this before the researcher checkpoint**: For each Wave 1 agent, read its staging sheet and check whether any non-header, non-AGENT_COMPLETE rows exist. An agent that has no AGENT_COMPLETE row and no finding rows in its staging sheet may have failed silently (auth timeout, context limit, API error) rather than genuinely found no issues. Read each staging tab in batched 50-row increments: `{staging_tab_name}!A1:I50`, then `A51:I100`, `A101:I150`, continuing until two consecutive batches return no non-empty rows or the AGENT_COMPLETE marker is found. **The MCP tool returns at most 50 rows per call — a single A1:I500 call silently truncates at row 50.** Check for AGENT_COMPLETE in each batch before proceeding to the next. Report any empty staging sheet in chat:
 
 > ⚠️ Silent failure warning: [agent name] staging sheet `[staging_tab_name]` is empty (no AGENT_COMPLETE marker and no findings). This may indicate agent failure. Consider re-running this agent before proceeding to Wave 2.
 
@@ -800,8 +800,8 @@ Wait for all spawned Wave 1 agents to complete before proceeding.
 | ce-chain-trace | **No** — every CEA has a CE chain that must be traced. 0 findings means the trace was not completed. |
 | formula-check-voi | Yes — self-detecting; 0 findings is valid when no VOI content is found. Check AGENT_COMPLETE text. |
 | ce-chain-trace-ta | Yes — self-detecting; 0 findings is valid when no TA signals are found. Check AGENT_COMPLETE text. |
-| sensitivity-scan | **No** — every populated spreadsheet has at least one cell worth scanning for sensitive data. Check the Confidentiality Flags sheet: if it has only the header row (no data rows and no AGENT_COMPLETE), this is a failure signal. Read `'Confidentiality Flags'!A1:D5` to confirm. |
-| hardcoded-values | **No** — every spreadsheet has at least one hardcoded input cell. Check the Hardcoded Values sheet: if it has only the header row (no data rows and no AGENT_COMPLETE), this is a failure signal. Read `'Hardcoded Values'!A1:H5` to confirm. |
+| sensitivity-scan | **No** — every populated spreadsheet has at least one cell worth scanning for sensitive data. Check the Confidentiality Flags sheet: if it has only the header row (no data rows and no AGENT_COMPLETE), this is a failure signal. Read `'Confidentiality Flags'!A1:D50`, `A51:D100`, until two consecutive empty batches — the AGENT_COMPLETE marker may appear after data rows. |
+| hardcoded-values | **No** — every spreadsheet has at least one hardcoded input cell. Check the Hardcoded Values sheet: if it has only the header row (no data rows and no AGENT_COMPLETE), this is a failure signal. Read `'Hardcoded Values'!A1:H50`, `A51:H100`, until two consecutive empty batches — the AGENT_COMPLETE marker may appear after data rows. |
 
 **Declared-deviation update before spawning Wave 2**: Pass the declared-intentional deviations list from session context to all Wave 2 agents in the standard session context block.
 
@@ -900,7 +900,7 @@ For A instances, pass the standard session context only. The only difference bet
 - [ ] All spawned Wave 2 agents have completed (staging tabs contain AGENT_COMPLETE markers or were pre-approved as legitimate skips).
 - [ ] Wave 2 silent failure check complete — any empty staging tabs flagged.
 
-**Silent failure check — Wave 2 agents (run before spawning Wave 2.5)**: For each Wave 2 staging tab in the table above, read the first 5 rows using `read_sheet_values` on `{tab}!A1:I5` and check for an AGENT_COMPLETE row. An agent whose staging tab contains only the header row and no AGENT_COMPLETE marker may have failed silently. Apply the same per-agent zero-findings thresholds from the Wave 1 thresholds table above:
+**Silent failure check — Wave 2 agents (run before spawning Wave 2.5)**: For each Wave 2 staging tab in the table above, read in batched 50-row increments: `{tab}!A1:I50`, then `A51:I100`, continuing until two consecutive batches return no non-empty rows or the AGENT_COMPLETE marker is found (**the MCP tool silently truncates at 50 rows — A1:I5 misses any agent with 4+ findings**) and check for an AGENT_COMPLETE row. An agent whose staging tab contains only the header row and no AGENT_COMPLETE marker may have failed silently. Apply the same per-agent zero-findings thresholds from the Wave 1 thresholds table above:
 
 - For agents where 0-findings is **not** plausible (heads-up-evidence, heads-up-epi, ce-chain-trace), an empty staging tab with no AGENT_COMPLETE is a failure signal regardless.
 - For agents where 0-findings is plausible (readability when formula-only scope, leverage-uov-check when no leverage tab exists, sources when formula-only scope): verify the AGENT_COMPLETE text explicitly declares the check clean or the skip was pre-approved.

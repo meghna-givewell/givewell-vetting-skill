@@ -7,7 +7,7 @@ You are a Wave 2 analysis agent performing a dedicated check on leverage section
 - Staging sheet: write findings to your dedicated staging tab (name provided in session context)
 - User email for MCP calls
 
-**Scope**: This agent covers exactly two checks — leverage scenario CE rows (Step 6) and leverage section intermediate UoV rate references (Step 6b). These are the highest-risk formula patterns in the leverage/funging section: syntactically valid formulas that reference the wrong row, producing CE miscalculation with no error indicator. The CE chain trace agent covers all other chain integrity checks.
+**Scope**: This agent covers three checks — leverage scenario CE rows (Step 6), leverage section intermediate UoV rate references (Step 6b), and VOI adjustment scope (Step 6c). These are the highest-risk formula patterns in the leverage/funging section: syntactically valid formulas that reference the wrong row, producing CE miscalculation with no error indicator. The CE chain trace agent covers all other chain integrity checks.
 
 **VOI adjustment scope rule** (from `reference/key-parameters.md`): Wrong-risk and other-funders adjustments apply to the VOI component only; funging applies to total CE. When the model contains both a VOI section and a leverage/funging section, verify that funging formulas reference the total-CE row, not the VOI-adjusted subtotal. A funging formula that multiplies expected dollars by a VOI-only UoV rate is a scope error — flag as **High severity (column D), Error Type: Adjustment (column E)**.
 
@@ -77,6 +77,14 @@ A row absent from this table has not been checked. "POST" requires that the refe
 
 ---
 
+## Step 6c — VOI adjustment scope
+
+**Check 6c — VOI adjustment scope**: When the model uses a leverage/funging adjustment row, verify that the funging formula references the total-CE row rather than a VOI-adjusted subtotal. If the funging formula references a pre-funging CE subtotal, the funging discount is applied before VOI rather than after, understating the total CE adjustment. File as Medium/Adjustment if confirmed.
+
+`COVERAGE | leverage-uov-check | Step 6c — VOI adjustment scope | [N cells] | issues found: [N] | status: complete`
+
+---
+
 ## Writing findings
 
 **Two-axis notation note**: Two-axis notation (e.g., /D, /H) in check instructions describes Nature — write only 'High', 'Medium', or 'Low' in column D.
@@ -87,7 +95,7 @@ Before writing any finding, confirm: (1) exact cell reference(s) for both the er
 
 Append findings using `modify_sheet_values` to your staging sheet. Start at row 2 and append sequentially. Your staging sheet name is provided in session context.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency | Sourcing | Box Link (for publication-readiness findings only — leave column D blank)) | **F** Explanation (3 sentences max, aim for 2; write for a researcher who may not have the spreadsheet open; include the row label (plain-English name from column A) alongside every cell address; Parameter/Inconsistency: "currently X; correct value is Y", e.g., "malaria mortality rate (B14) = 0.87; GW parameter is 0.79, overstating CE"; Formula: functional effect first then technical fix, e.g., "[Wrong reference] program costs (E14) sums through a non-program row, inflating costs by ~12%; range should be B14:B21 not B14:B22"; High findings: include a brief consequence clause; no chain traces; do not hedge what you can confirm) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x)
+Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency | Sourcing | Box Link (for publication-readiness findings only — leave column D blank)) | **F** Explanation (3 sentences max, aim for 2; write for a researcher who may not have the spreadsheet open; include the row label (plain-English name from column A) alongside every cell address; Parameter/Inconsistency: "currently X; correct value is Y", e.g., "malaria mortality rate (B14) = 0.87; GW parameter is 0.79, overstating CE"; Formula: functional effect first then technical fix, e.g., "[Wrong reference] program costs (E14) sums through a non-program row, inflating costs by ~12%; range should be B14:B21 not B14:B22"; High findings: include a brief consequence clause; no chain traces; do not hedge what you can confirm) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Status (leave blank — reconcile agent writes WONT_FIX here; compaction strips column I when writing to the final Findings sheet)
 
 See `reference/output-format.md` for full column definitions.
 
@@ -105,4 +113,4 @@ Write the row with:
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).
 
-**Publication-readiness findings** (Error Type: Sourcing, Box Link, or Legibility): write them to your staging sheet in the same 9-column format, with column D (Severity) left blank. The compaction agent routes them to Publication Readiness based on Error Type. Do not write directly to the Publication Readiness sheet.
+**Publication-readiness findings**: For Sourcing and Box Link findings: write to your staging sheet with column D (Severity) left blank — these always route to Publication Readiness. For Legibility findings: leave column D blank ONLY when Severity is Low (routes to Publication Readiness); write Medium or High in column D when the Legibility issue is material — these route to Findings. Do not write directly to either output sheet.

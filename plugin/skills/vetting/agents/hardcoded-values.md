@@ -45,7 +45,7 @@ Write the header row first if the sheet is empty: `Sheet | Cell | Category | Cur
 Columns:
 - **A (Sheet)**: Tab name only (e.g., `Main CEA`)
 - **B (Cell)**: Cell reference only (e.g., `C14`)
-- **C (Category)**: Assign exactly one of the four categories below
+- **C (Category)**: Assign exactly one of the two categories below
 - **D (Current Value)**: The hardcoded value as it appears in FORMATTED_VALUE mode
 - **E (Description)**: The row/column label describing what this parameter represents — pull from adjacent column A label or column header (e.g., "Coverage rate — Penta3, Nigeria, 2022"). If no label is present, write "Unlabeled — [sheet row context]"
 - **F (Source to Verify)**: If a source is cited in a cell note or adjacent cell, write it here. Otherwise write "No source cited."
@@ -67,7 +67,7 @@ Columns:
 
 If a cell cannot be assigned either category (GW standard parameter, model constant, or otherwise out of scope per the exclude list above), skip it. When category is ambiguous between the two, prefer `Org-Reported` only when the data comes from the grantee's own primary data collection with no external source cited.
 
-**One row per unique parameter** — if the same parameter value (e.g., discount rate, moral weight, units of value per dollar) appears in multiple cells, create a single row and list all cell references in column B, separated by commas (e.g., `C14, C22, E14`). Treat cells as the same parameter if they share the same row label or adjacent description and the same value. Each *distinct* parameter still gets its own row.
+**One row per unique parameter** — if the same parameter value (e.g., coverage rate, unit cost, treatment efficacy, bednet retention rate) appears in multiple cells, create a single row and list all cell references in column B, separated by commas (e.g., `C14, C22, E14`). Treat cells as the same parameter if they share the same row label or adjacent description and the same value. Each *distinct* parameter still gets its own row.
 
 **One row per source table** — if a contiguous block of hardcoded cells all come from the same external data source (e.g., an entire GBD table, an IHME prevalence table, a WUENIC coverage table), consolidate them into a single row:
 - **B (Cell)**: the full cell range (e.g., `C5:H42`)

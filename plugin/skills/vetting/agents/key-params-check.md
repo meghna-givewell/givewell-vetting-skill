@@ -133,7 +133,7 @@ Before writing any finding, confirm: (1) exact cell reference, (2) specific stor
 
 Append findings using `modify_sheet_values` to your staging sheet. Start at row 2 and append sequentially. Your staging sheet name is provided in session context.
 
-Column reference: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write exactly: `Parameter`) | **F** Explanation (lead with "[cell] = [value] but key-parameters.md specifies [expected]") | **G** Recommended Fix (imperative verb; give exact replacement value) | **H** Estimated CE Impact (use exactly one of: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown)
+Column reference: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write exactly: `Parameter`) | **F** Explanation (lead with "[cell] = [value] but key-parameters.md specifies [expected]") | **G** Recommended Fix (imperative verb; give exact replacement value) | **H** Estimated CE Impact (use exactly one of: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown) | **I** Status (leave blank — reconcile agent writes WONT_FIX here; compaction strips column I when writing to the final Findings sheet)
 
 See `reference/output-format.md` for full column definitions.
 

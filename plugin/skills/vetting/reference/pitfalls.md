@@ -39,7 +39,7 @@ Leverage/funging adjustments can be applied multiplicatively (scaling benefits o
 ## False Negative Risks — make sure to catch these
 
 ### FN-001 (2026-04) — GBD data vintage: always flag, even without a CE magnitude
-When a tab uses an older GBD vintage (e.g., GBD 2019 when GBD 2021 is available), always flag it — even if you cannot compute the CE impact from updated data. Write `Lowers CE — magnitude unknown` (or `Direction unknown` if ambiguous) in the CE Impact column. Do not skip or downgrade the finding because CE impact cannot be quantified. Severity Medium is acceptable and counts as a full catch.
+When a tab uses an older GBD vintage (e.g., GBD 2019 when GBD 2021 is available), always flag it — even if you cannot compute the CE impact from updated data. Write `Direction unknown` in the CE Impact column — GBD burden trends vary by geography and cause and cannot be assumed directional. Do not skip or downgrade the finding because CE impact cannot be quantified. Severity Medium is acceptable and counts as a full catch.
 
 **Applies to**: formula-check-data, formula-check-arithmetic
 

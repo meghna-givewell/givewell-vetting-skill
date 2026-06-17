@@ -16,11 +16,11 @@ You are performing Step 10d of a GiveWell spreadsheet vet. This is the last of f
 
 ## Step 1 — Read findings for summary
 
-Read all non-divider rows from the Findings sheet (batched: `A2:I51`, `A52:I101`, `A102:I151`, continuing in 50-row increments until two consecutive batches return no non-empty rows). **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Collect: all High findings (for Key Findings summary), and the count of High/Medium/Low findings. When counting, skip divider rows (column D is empty AND column B contains ───) and skip rows where column D = `AGENT_COMPLETE` — these are pipeline completion markers written by the final-review agents (compaction, gap-fill, validation), not findings. Do not include divider rows or AGENT_COMPLETE rows in any finding count or in the total count.
+Read all non-divider rows from the Findings sheet (batched: `A2:H51`, `A52:H101`, `A102:H151`, continuing in 50-row increments until two consecutive batches return no non-empty rows). **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Collect: all High findings (for Key Findings summary), and the count of High/Medium/Low findings. When counting, skip divider rows (column D is empty AND column B contains ───) and skip rows where column D = `AGENT_COMPLETE` — these are pipeline completion markers written by the final-review agents (compaction, gap-fill, validation), not findings. Do not include divider rows or AGENT_COMPLETE rows in any finding count or in the total count.
 
 Also read the Hardcoded Values sheet column G (Verified? column) in the same batched manner to collect Wave 1.5 verification status counts: number of matched, contradicted, and could-not-verify values. If the column is entirely blank, note that Wave 1.5 source-citation-verify was skipped.
 
-Read all rows from Publication Readiness (batched: `A2:H51`, `A52:H101`, continuing in 50-row increments until two consecutive batches return no non-empty rows). Collect the total count.
+Read all rows from Publication Readiness (batched: `A2:F51`, `A52:F101`, continuing in 50-row increments until two consecutive batches return no non-empty rows). Collect the total count.
 
 ---
 

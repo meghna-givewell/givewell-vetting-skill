@@ -277,6 +277,13 @@ def extract_sheet(zf, path, shared_strings):
             elif t == 'str' and formula:
                 # Calculated string — value is in v
                 display = raw_val or ''
+            elif t == 'inlineStr':
+                is_el = c.find('ss:is', NS)
+                if is_el is not None:
+                    t_els = is_el.findall('ss:t', NS)
+                    display = ''.join(el.text or '' for el in t_els)
+                else:
+                    display = raw_val or ''
             else:
                 display = raw_val or ''
 

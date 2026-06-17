@@ -72,36 +72,38 @@ Deviations from the Exact Value column trigger a finding at the severity shown i
 
 | Parameter | Exact Value | Min | Max | Flag severity |
 |---|---|---|---|---|
-| Benchmark (UoV per $) | 0.00333 | 0.003 | 0.0034 | Yes — High |
-| Avert under-5 death (malaria/vaccines) | 116 | 110 | 122 | Yes — High |
-| Avert over-5 death (malaria) | 73 | 69 | 77 | Yes — High |
-| Avert death 6–59m VAS | 119 | 113 | 125 | Yes — High |
-| Avert maternal death | 125 | 119 | 131 | Yes — High |
-| Discount rate (general) | 4% | 3% | 5% | Yes — Medium |
-| Discount rate (TA death-averting) | 1.4% | 1% | 2% | Yes — Medium |
-| Discount rate (long-term health) | 0.5% | 0.3% | 0.8% | Yes — Medium |
-| Income effects malaria | 0.58088% | 0.55% | 0.65% | Yes — Medium |
-| Long-term income ratio | 0.3064 | 0.25 | 0.35 | Yes — High |
-| Years to benefits | 10 | 8 | 15 | Yes — Medium |
-| Moral weight — Stillbirth | 33 | — | — | Yes — High |
-| Moral weight — Early Neonatal | 84 | — | — | Yes — High |
-| Moral weight — Late Neonatal | 84 | — | — | Yes — High |
-| Moral weight — Post Neonatal | 101 | — | — | Yes — High |
-| Moral weight — 1 to 4 | 127 | — | — | Yes — High |
-| Moral weight — 5 to 9 | 134 | — | — | Yes — High |
-| Moral weight — 10 to 14 | 133 | — | — | Yes — High |
-| Moral weight — 15 to 19 | 126 | — | — | Yes — High |
-| Moral weight — 20 to 24 | 118 | — | — | Yes — High |
-| Moral weight — 25 to 29 | 113 | — | — | Yes — High |
-| Moral weight — 30 to 34 | 106 | — | — | Yes — High |
-| Moral weight — 35 to 39 | 100 | — | — | Yes — High |
-| Moral weight — 40 to 44 | 86 | — | — | Yes — High |
-| Moral weight — 45 to 49 | 76 | — | — | Yes — High |
-| Moral weight — 50 to 54 | 65 | — | — | Yes — High |
-| Moral weight — 55 to 59 | 55 | — | — | Yes — High |
-| Moral weight — 60 to 64 | 40 | — | — | Yes — High |
-| Moral weight — 65 to 69 | 31 | — | — | Yes — High |
-| Moral weight — 70 to 74 | 21 | — | — | Yes — High |
-| Moral weight — 75 to 79 | 16 | — | — | Yes — High |
-| Moral weight — 80 to 84 | 12 | — | — | Yes — High |
-| Moral weight — 85 plus | 12 | — | — | Yes — High |
+| Benchmark (UoV per $) | 0.00333 | 0.003 | 0.0034 | Yes — High/D |
+| Avert under-5 death (malaria/vaccines) | 116 | 110 | 122 | Yes — High/D |
+| Avert over-5 death (malaria) | 73 | 69 | 77 | Yes — High/D |
+| Avert death 6–59m VAS | 119 | 113 | 125 | Yes — High/D |
+| Avert maternal death | 125 | 119 | 131 | Yes — High/D |
+| Discount rate (general) | 4% | 3% | 5% | Yes — Medium/H |
+| Discount rate (TA death-averting) | 1.4% | 1% | 2% | Yes — Medium/H |
+| Discount rate (long-term health) | 0.5% | 0.3% | 0.8% | Yes — Medium/H |
+| Income effects malaria | 0.58088% | 0.55% | 0.65% | Yes — Medium/H |
+| Long-term income ratio | 0.3064 | 0.25 | 0.35 | Yes — High/D |
+| Years to benefits | 10 | 8 | 15 | Yes — Medium/H |
+| Moral weight — Stillbirth | 33 | — | — | Yes — High/D |
+| Moral weight — Early Neonatal | 84 | — | — | Yes — High/D |
+| Moral weight — Late Neonatal | 84 | — | — | Yes — High/D |
+| Moral weight — Post Neonatal | 101 | — | — | Yes — High/D |
+| Moral weight — 1 to 4 | 127 | — | — | Yes — High/D |
+| Moral weight — 5 to 9 | 134 | — | — | Yes — High/D |
+| Moral weight — 10 to 14 | 133 | — | — | Yes — High/D |
+| Moral weight — 15 to 19 | 126 | — | — | Yes — High/D |
+| Moral weight — 20 to 24 | 118 | — | — | Yes — High/D |
+| Moral weight — 25 to 29 | 113 | — | — | Yes — High/D |
+| Moral weight — 30 to 34 | 106 | — | — | Yes — High/D |
+| Moral weight — 35 to 39 | 100 | — | — | Yes — High/D |
+| Moral weight — 40 to 44 | 86 | — | — | Yes — High/D |
+| Moral weight — 45 to 49 | 76 | — | — | Yes — High/D |
+| Moral weight — 50 to 54 | 65 | — | — | Yes — High/D |
+| Moral weight — 55 to 59 | 55 | — | — | Yes — High/D |
+| Moral weight — 60 to 64 | 40 | — | — | Yes — High/D |
+| Moral weight — 65 to 69 | 31 | — | — | Yes — High/D |
+| Moral weight — 70 to 74 | 21 | — | — | Yes — High/D |
+| Moral weight — 75 to 79 | 16 | — | — | Yes — High/D |
+| Moral weight — 80 to 84 | 12 | — | — | Yes — High/D |
+| Moral weight — 85 plus | 12 | — | — | Yes — High/D |
+
+**Discount rate filing exception**: If a model has a multi-year benefit stream and applies NO discount rate at all (absent, not present at 0%), file as **Low/H** — do not file Medium. GiveWell intentionally omits discounting in some newer-intervention CEA types. Escalate to Medium only if the researcher confirms discount rates should apply and they are absent. The Medium flag severity in the table above applies only when a discount rate IS present but deviates from the expected value.
