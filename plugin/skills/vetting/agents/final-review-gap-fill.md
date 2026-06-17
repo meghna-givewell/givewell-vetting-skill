@@ -85,11 +85,25 @@ The goal: identify stretches of the source spreadsheet that no finding touches �
    - **Formula rows genuinely correct**: read each formula and confirm the row label and formula are semantically consistent (concept check, not full audit). Write a one-line clean declaration per section.
    - **A candidate miss**: a formula row where the row label and formula diverge, a hardcoded value with no note, or a formula referencing a cell not in the expected sheet — file as **Low**: "Rows [X]–[Y] of [sheet] were not flagged by prior agents. Spot-check found [specific cell] with [specific anomaly]. Verify this section was fully audited."
 
+5. **Range-boundary sub-check (FORMULA-1)**: For every gap-flagged section where step 4 finds any `SUM`, `SUMPRODUCT`, or `AVERAGE` formula, perform the following range-boundary check:
+
+   a. Extract the row range from the formula (e.g., `SUM(B5:B18)` → rows 5–18; `SUMPRODUCT(C12:C30, D12:D30)` → rows 12–30).
+   b. Count the number of rows in the formula range.
+   c. Identify the visible section structure: count the number of data rows between the nearest section headers (rows whose column A contains a bold label, an all-caps label, or a label ending in `:` that does not itself contain a formula) immediately above and below the formula cell. Section header rows are not data rows and must not be counted.
+   d. Compare: if the formula range covers **fewer rows** than the count of data rows in the visible section (i.e., the range starts too low, ends too early, or skips interior rows), file as **Medium/Formula** with the appropriate sub-type:
+      - Use `[Off-by-one]` when the range is exactly one row short (starts one row too late or ends one row too early).
+      - Use `[Range mismatch]` when the range is two or more rows short, or when the range boundaries do not align with section delimiters.
+      - Explanation template: "[Sub-type] `[formula]` at [cell ref] (row label: '[label]') sums rows [formula_start]–[formula_end] ([N] rows), but the '[section name]' section contains [M] data rows ([actual_start]–[actual_end]). The formula appears to exclude [M−N] row(s). Verify whether the excluded rows are intentionally omitted (e.g., a subtotal row, an override row) or whether this is an incomplete range."
+      - CE impact: estimate directional impact if the excluded rows are non-zero (read excluded row values in UNFORMATTED_VALUE mode); otherwise write `Direction unknown`.
+   e. If the formula range covers **more rows** than the visible section (extends beyond a section header), flag as **Medium/Formula [Range mismatch]** with description noting the over-extension.
+   f. If the formula range exactly matches the visible data rows, write a one-line clean note in your reasoning and do not file.
+   g. Do not apply this sub-check to formulas whose range is a single row or a single cell — those are not aggregation ranges.
+
 **Limit scope**: Only check gaps of 10+ consecutive rows (8+ on dense primary sheets) on the primary vetted sheet (Main CEA or equivalent). Do not gap-scan supporting data tabs, headers, or output-only tabs. If the spreadsheet has no qualifying gaps, write "No coverage gaps of 10+ rows (8+ on dense primary sheet) on the primary sheet" and skip to Check 3.
 
 **Exception**: if source-data-check was conditionally skipped (session context shows `source-data-check: SKIPPED`), do not flag source data tab rows as coverage gaps — their absence is intentional. If source-data-check was NOT skipped but its COVERAGE_ROWS declaration omits large sections of source tabs, that is a legitimate coverage concern — note it in reasoning but do not file a gap finding for source tabs unless you have evidence of a specific anomaly there.
 
-Coverage declaration: "Coverage gap scan complete. Gaps of 10+ rows (8+ on dense primary sheet) found: [N, with row ranges]. Structurally clean: [N]. Formula rows confirmed clean: [N]. New findings filed: [N]."
+Coverage declaration: "Coverage gap scan complete. Gaps of 10+ rows (8+ on dense primary sheet) found: [N, with row ranges]. Structurally clean: [N]. Formula rows confirmed clean: [N]. Range-boundary sub-checks performed on SUM/SUMPRODUCT/AVERAGE formulas in gap sections: [N formulas checked]. Off-by-one or range-mismatch findings filed: [N]. New findings filed (total): [N]."
 
 ---
 

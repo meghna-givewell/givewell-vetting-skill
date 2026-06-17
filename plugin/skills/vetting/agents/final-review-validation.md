@@ -16,6 +16,15 @@ You are performing Step 10c of a GiveWell spreadsheet vet. This step runs after 
 
 **Coverage mandate — no shortcuts**: All five checks below apply to all finding rows without exception. After each check, write a coverage declaration before moving on: "Checked all [N] finding rows for [check type]. Found issues at: [list or 'none']. No other issues of this type." Do not proceed until you can write it.
 
+**CROSS-2 — Synthesized Medium/Formula re-verification**: Before running any numbered check, identify all findings where Error Type (column E) = `Formula` or `Parameter` AND Severity (column D) = `Medium` AND the Explanation (column F) contains language indicating the finding was synthesized or merged during Wave 2.5 reconciliation or compaction (look for phrases such as "merged from," "synthesized from," "combined finding," "both instances," "reconciled from," or a compound cell list in column C that spans two distinct cells flagged by separate agents). For each such finding, independently re-verify it against the source spreadsheet:
+
+1. Read the cell(s) in column C using `read_sheet_values` (UNFORMATTED_VALUE and FORMULA mode) on the source spreadsheet.
+2. Compare the raw stored formula or value against the finding's Explanation. Confirm that the described error (wrong reference, wrong operator, wrong parameter value, etc.) is present in the live cell.
+3. If the error is confirmed: leave the finding unchanged. Note in your reasoning: "Synthesized Medium/Formula at [F-ID] — re-verified against live cell [ref]: confirmed."
+4. If the error cannot be confirmed (the cell formula does not match the description, the cell is blank, or the described error is absent from the live data): append to the finding's Explanation (column F) using `modify_sheet_values`: " Synthesized Medium/Formula — independent verification inconclusive; recommend manual review." Do not change the severity or remove the finding.
+
+Coverage declaration: "Synthesized Medium/Formula re-verification complete. Candidates identified: [N]. Confirmed: [N]. Inconclusive (note appended): [N]."
+
 **Global rule**: Do not mark any finding as resolved or false positive unless you have directly re-read the referenced cell via `read_sheet_values` (UNFORMATTED_VALUE) and confirmed the raw stored value. Formatted display values are not sufficient.
 
 ---
@@ -76,9 +85,11 @@ For each **High or Medium** finding in the Findings sheet whose Recommended Fix 
 2. Identify cells that reference the changed cell by reading the row range around the fixed cell — read ±10 rows in FORMULA mode and scan for any formula containing the fixed cell reference (e.g., if fixing B14, search for formulas containing B14, $B$14, or B:B). Additionally, for every fix regardless of which sheet it is on, check cross-sheet consumers: read the CI sheet (if present) and the Simple CEA sheet (if present) for any formula referencing the fixed cell, to confirm those sheets consume the corrected value. Do not read whole sheets — use targeted reads on the rows most likely to contain CE output references in those sheets.
 3. Verify the proposed fix would produce a correct result in each downstream consumer.
 4. **Blank-range check**: For any proposed fix whose Recommended Fix formula involves multiplication or division across a cell range (e.g., `=A1*B1`, `=SUM(C4:C18)/D4`, `=PRODUCT(...)`), use `read_sheet_values` (UNFORMATTED_VALUE) on all cells in the range. If any cell in the range is blank, append to the finding's Explanation: "Note: [cell ref] in the proposed fix range is currently blank — populate it before applying this fix or the result will silently be zero." Do not mark the finding resolved.
-5. **Flag as a new High finding** any proposed fix that would introduce a new formula error — name the breaking cell and why.
+5. **Horizontal copy-paste check (FORMULA-2)**: For each fix being validated, read the same row across all populated columns — from column A through the last non-empty column in that row. Use `read_sheet_values` (FORMULA mode) on the full row range (e.g., if the fixed cell is `Main CEA!D14`, read `Main CEA!A14:Z14` or to the last populated column). Scan every adjacent cell in the row for the same incorrect relative reference that the fix is supposed to correct. A horizontal copy-paste pattern exists when two or more cells in the same row share the identical structural error (e.g., all referencing one row too high, or all using the same wrong absolute column). If such a pattern is found: either (a) append the additional cells to the existing finding's Explanation and Recommended Fix if they share the exact same fix, or (b) file a linked follow-on finding as **Medium/Formula** with sub-type `[Copy-paste]`: "[Copy-paste] Row [N] of [sheet] contains a horizontal copy-paste of the same incorrect relative reference corrected in finding [F-ID]. Cells [list] share the structural error `[formula pattern]` — apply the same fix to each." Do not file if the adjacent cells use different formulas with unrelated structures, or if the cell has already been flagged by a prior finding.
 
-Coverage declaration: "Fix-validation complete. Checked [N] High/Medium findings with formula fixes. New issues flagged: [list or 'none']. No other fix-validation issues."
+6. **Flag as a new High finding** any proposed fix that would introduce a new formula error — name the breaking cell and why.
+
+Coverage declaration: "Fix-validation complete. Checked [N] High/Medium findings with formula fixes. Horizontal copy-paste checks performed: [N rows]. Horizontal pattern findings filed or appended: [N]. New breaking-fix findings: [list or 'none']. No other fix-validation issues."
 
 ---
 

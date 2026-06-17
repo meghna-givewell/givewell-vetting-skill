@@ -125,6 +125,20 @@ For each tab that has a GiveDirectly benchmark row:
 
 Note: if both tabs are stale, file two rows — one per tab — not a single combined finding, because each cell needs its own recommended fix.
 
+### Check 5c — Value divergence despite equivalent structure
+
+This sub-check runs as a follow-up pass on row pairs that passed Check 2 (value difference ≤1%). A near-identical output does not confirm that both formulas draw from the same upstream source — two formulas with equivalent structure can produce similar values by coincidence while referencing entirely different source cells. Left undetected, this creates silent drift risk: if one source cell is updated, only one formula will follow.
+
+For each row pair where Check 2 found ≤1% value difference AND the formula structure was classified as parallel (not a direct reference):
+
+1. **Read one upstream hop for each formula**: for the Simple CEA cell and the Main CEA cell, follow the reference one step upstream — identify the specific source cells each formula pulls from (e.g., the parameter tab cell, the Supplementary_calcs cell, or the intermediate row cell).
+2. **Compare the upstream source cells**: if the Simple CEA formula references `Supp!C14` and the Main CEA formula references `Supp!C22`, those are different source cells — even if both happen to hold similar values today.
+3. **If the upstream source cells differ** despite the formulas having equivalent structure, flag as **Low/Inconsistency**: "Parallel formulas for [row label] ([Simple CEA cell] and [Main CEA cell]) produce near-identical outputs ([value A] vs. [value B], ≤1% difference) but draw from divergent source cells ([source A] vs. [source B]). Verify this is intentional; if not, align to a single source to prevent future drift."
+
+Do not file if: (a) the difference in source cells is already explained by a cell note, (b) the upstream cells are semantically equivalent references to the same logical quantity on different tabs (e.g., the same parameter stored in two places by design), or (c) the row pair was flagged as a structural divergence in Check 1 (already captured).
+
+`COVERAGE | cross-tab-compare | Check 5c — Value divergence despite equivalent structure | [N pairs checked] | issues found: [N] | status: complete`
+
 ### Check 6 — Independent recalculations
 
 Scan Simple CEA's FORMULA-mode output for formulas that independently recalculate quantities that are available as named results in Main CEA. Indicators: formulas referencing Supplementary_calcs, source tabs, or external data directly instead of pulling Main CEA's computed output.

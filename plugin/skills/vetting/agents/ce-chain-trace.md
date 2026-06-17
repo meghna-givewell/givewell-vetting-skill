@@ -90,7 +90,9 @@ Record the full dependency chain as you trace it, noting each cell reference and
 
 **Trace termination rule**: Tracing stops when you reach a cell that (a) contains a hardcoded value with no further cell references, or (b) has already been verified earlier in this trace session. Do not follow references into section-divider tabs (names beginning `-->`) or pure formatting rows (no numeric content).
 
-**VOI tab note**: When tracing through VOI tab formulas, note any column-range anomalies in your reasoning but defer filing to the VOI_Priors consistency check in Step 5 — do not file during Step 2 or Step 3 to avoid duplicate findings.
+**VOI tab note**: When tracing through VOI tab formulas, note column-range anomalies in your reasoning as follows:
+- If the anomaly is in a formula that references the **VOI_Priors tab** (or an equivalent Bayesian priors tab), defer filing to the VOI_Priors consistency check in Step 5 — do not file during Step 2 or Step 3 to avoid duplicate findings. ("VOI_Priors anomaly" means: a column-range that is wider or narrower than structurally analogous rows in the VOI tab, where the referenced source is the VOI_Priors tab specifically.)
+- If the anomaly is in a formula that references **any other tab** (e.g., a direct reference to a cost tab, parameters tab, or source data tab), file the finding immediately here in Steps 2–3 using the standard finding format — do not defer.
 
 COVERAGE | ce-chain-trace | full chain mapping | [N] cells | issues found: [N] | status: complete
 
@@ -119,6 +121,15 @@ Check that units are consistent at each step:
 - Check that future benefits use 1/(1+r)^n discounting consistently, not sometimes n years and sometimes n-1.
 - Check that consumption changes are measured as ln(1 + % change) where logarithmic utility is assumed, not as a raw percentage.
 
+**Discount exponent year-offset check**: For each row in the CE chain that applies a discount factor of the form `1/(1+r)^n` (or equivalent, e.g., `(1+r)^-n`, `POWER(1+r, -n)`, `1/POWER(1+r, n)`):
+1. Read the year label for that row — typically found in column A or B of the same row, or in a column header if the model is column-oriented by year.
+2. Identify the base year used in the model (commonly labeled "Year 0," "Base year," or the first year of the program; read from a parameter cell or tab header if not immediately adjacent).
+3. Derive the expected year offset: `expected_n = modeled_year − base_year`.
+4. Read the exponent `n` from the formula (in FORMULA mode) for that discount row.
+5. If `n ≠ expected_n`, flag as **High/Formula [Year range]**: "Discount row '[row label]' (cell [ref]) uses exponent n=[actual n] but the row represents year [modeled year] (base year: [base year]), so the correct exponent is [expected n]. This [overstates/understates] the discount factor applied to [outcome]."
+
+If the base year cannot be determined from the spreadsheet without external information, note this in your reasoning and skip the check for that row — do not guess the base year.
+
 Flag as **High** if a units error would directly affect the CE output. Flag as **Medium** if the error is in a secondary outcome that contributes to the total.
 
 ### 3c — No hardcoded values in the calculation chain
@@ -146,7 +157,11 @@ Check procedure:
 1. Read the full FORMULA-mode output for all vetted sheets (already in pre-read cache if provided).
 2. Scan every formula string in the pre-read cache for occurrences of the adjustment cell's address (both absolute and relative forms, e.g., `$E$46`, `E46`, `E$46`, `$E46`).
 3. If any downstream formula contains the address, the adjustment is applied — move on.
-4. Only file "adjustment not applied" after confirming step 3 found nothing: the cell address does not appear in any formula in the pre-read cache.
+4. If step 2 finds no literal address match, check whether any **named range** resolves to the adjustment cell before concluding the adjustment is absent:
+   a. Scan all formula strings in the pre-read cache for named identifiers — tokens that are not cell addresses, sheet references, or built-in function names (e.g., identifiers like `IV_Adjustment`, `EVAdjust`, `LeverageFactor`).
+   b. For each named identifier found, check whether it resolves to the adjustment cell's address (via `read_sheet_values` in FORMULA mode on a cell that uses the named range, or by reading the spreadsheet's named range definitions if accessible).
+   c. If a named range resolves to the adjustment cell and that named range appears in a downstream formula, the adjustment IS applied — move on.
+5. Only file "adjustment not applied" after confirming both step 2 (literal address scan) and step 4 (named range scan) found nothing: the cell is not referenced by address or by any named range in any downstream formula in the pre-read cache.
 
 Flag as **High** if a named adjustment (IV, EV, leverage, funging) is absent from the CE chain. Flag as **Medium** if a supplemental or secondary adjustment is absent.
 
@@ -183,6 +198,12 @@ For each section, produce a mandatory verification table before filing or declin
 | ACM/burden | [ref] | [source ref] | [label] | [header] | YES/NO |
 
 If a section does not exist in the model, write "not present" for that section's rows. A row absent from the table has not been checked. File any "NO" as **High/Formula**: "[cell] references [source ref] (label: '[referenced label]') but this formula computes [intended concept] for [intended geography/cohort]. Change the reference to [correct cell]."
+
+**Step 3f completeness declaration**: After completing the verification table above, write the following coverage note before proceeding to Step 3g:
+
+`Step 3f coverage: [N] formula cells in indirect-effects section found, [N] included in semantic table, [list any skipped and reason]. [N] formula cells in EV-by-cohort section found, [N] included, [list any skipped and reason]. [N] formula cells in ACM/burden section found, [N] included, [list any skipped and reason]. If all cells in all sections are covered, state: "All covered."`
+
+A cell is "skipped" only if it was found during section scanning but deliberately excluded from the table (e.g., a header row, a non-formula cell, or a cell verified as a pure passthrough with no cross-sheet reference). Do not omit a cell from the table without listing it in the skipped column of this declaration. Silent partial coverage — checking some cells in a section but not declaring the rest as skipped — is not permitted.
 
 COVERAGE | ce-chain-trace | semantic reference verification | [N] references checked | issues found: [N] | status: complete
 

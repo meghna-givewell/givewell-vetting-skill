@@ -29,6 +29,8 @@ Create six tabs with these header rows (row 1) before spawning agents:
 
 Immediately after writing headers, before the formatting batch, write a single blank value to `Findings!A2000` and `'Publication Readiness'!A2000` using `modify_sheet_values`. This forces both sheets to allocate 2000 rows and prevents `modify_sheet_values` silent failures when agents write findings beyond the Google Sheets default 1000-row grid.
 
+**Note**: Staging tab pre-expansion is handled separately — see the staging-tab setup instructions in SKILL.md (the Wave 0 / pre-spawn checklist). An implementation that follows only output-setup.md will skip the staging-tab pre-expansion step, which risks silent 1000-row truncation when Wave 1 agents write findings.
+
 ## Formatting Batch
 
 Fire all formatting in a single parallel batch immediately after writing headers:

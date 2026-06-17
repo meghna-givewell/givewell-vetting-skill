@@ -94,6 +94,30 @@ For every funging or leverage adjustment row in the model:
 
 ---
 
+## Step 6d — Scenario-row UoV column reference (copy-paste check)
+
+**Pattern**: In a scenario analysis section where multiple scenario CE formulas appear in parallel columns (e.g., columns C, D, E each compute a scenario CE), each scenario's CE formula must reference the UoV cell in *its own column* — not a fixed column. A copy-paste error produces a formula like `=$C$47` (absolute column) in a row that should reference `D47` and `E47` in their respective columns. Because the formula resolves without error and the UoV values across scenarios are often similar in magnitude, this class of error is invisible to syntax audits.
+
+For every row in the scenario analysis section that computes a scenario-specific CE value in parallel columns:
+
+1. **Identify the scenario columns**: locate the set of columns that each contain a CE-output formula for a distinct scenario (e.g., lower-bound, best-guess, upper-bound). Record the column letters.
+2. **Read each scenario CE formula (FORMULA mode)**: for each scenario column, extract the exact formula string.
+3. **Identify the UoV cell each formula references**: isolate the reference to the UoV-per-dollar (or units-of-value) cell within each formula.
+4. **Check for column fixation**: if any scenario column's formula references a UoV cell whose column letter is fixed (absolute `$C`) or matches a *different* scenario column's UoV column rather than its own, that is a copy-paste error. The column letter of the referenced UoV cell must match the column letter of the scenario CE formula cell.
+5. If a mismatch is found, flag as **High severity (column D), Error Type: Formula (column E)** with Error Type note `[Copy-paste]` appended after the standard Error Type: "Scenario CE formula in [cell] references UoV cell [wrong ref] (column [X]) rather than its own column's UoV cell [correct ref] (column [Y]). All CE values in this scenario column are computed using a different scenario's UoV rate, silently misstating this scenario's CE estimate."
+
+**Required output before declaring Step 6d complete** — fill in this table for every scenario CE column found:
+
+| Scenario column | CE formula | UoV cell referenced | UoV column matches CE column? |
+|---|---|---|---|
+| [col letter] | [exact formula] | [ref] | YES / NO |
+
+A column absent from this table has not been checked.
+
+`COVERAGE | leverage-uov-check | Step 6d — Scenario-row UoV column reference (copy-paste) | [N scenario columns] | issues found: [N] | status: complete`
+
+---
+
 ## Writing findings
 
 **Two-axis notation note**: Two-axis notation (e.g., /D, /H) in check instructions describes Nature — write only 'High', 'Medium', or 'Low' in column D.

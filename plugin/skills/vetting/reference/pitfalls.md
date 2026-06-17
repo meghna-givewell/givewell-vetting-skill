@@ -108,7 +108,7 @@ The severity rule already states: "When impact is unknown but the affected param
 
 Example: Mengstie et al 2025 C20 = 33.1% per 100 person-years used as a cumulative probability. C20 → weighted average C21 → baseline mortality CEA!B11 → mortality reduction B13 → final CE B36: direct chain confirmed. File High, not Low.
 
-**Applies to**: all formula-check agents and source-data-check, source-citation-verify, sources
+**Applies to**: all formula-check agents and source-data-check, source-citation-verify, sources, heads-up-epi, heads-up-evidence, heads-up-intervention
 
 ---
 

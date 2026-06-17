@@ -2,6 +2,8 @@
 
 **Pre-read cache**: If a pre-read cache is provided in session context (sheet ≤150 populated rows), use it as your primary data source — do not re-read full sheet ranges. Make targeted read_sheet_values calls only for cells or data modes outside your cache scope. Proceed with batch reads only if no pre-read cache was provided (sheet >150 rows).
 
+**Primary scope — hardcoded cells**: This agent's primary scope is hardcoded cells: non-formula cells containing literal numeric values, with or without source citations. When checking formula cells (e.g., Check 1 embedded literals, Check 2b formula metric alignment), scope is limited to confirming the formula's output or embedded constant matches its cited source. Formula structure errors (wrong cell range, wrong sign, off-by-one row reference, wrong operator) are deferred to the **formula-check-arithmetic** agent and must not be filed here.
+
 You are performing Step 3d of a GiveWell spreadsheet vet, focused on external data verification: confirming that hardcoded values match their cited sources (GBD vizhub links, trial papers, referenced GiveWell models, and upstream aggregation logic). You have been provided:
 - Spreadsheet ID and sheet name(s) to vet
 - Findings sheet ID
@@ -50,8 +52,11 @@ Coverage declaration: COVERAGE | formula-check-data | trial data extraction | [N
 
 When a hardcoded cell note contains a GBD vizhub URL (`vizhub.healthdata.org/gbd-results` or `vizhub.healthdata.org/gbd-compare`), use WebFetch to retrieve the linked data and verify the stored cell value matches the extraction shown at that URL. This is a value-correctness check — **not a publication readiness check** — and must not be skipped.
 
-- File as **Medium/D** if the retrieved value differs from the cell's stored value by >2%.
-- File as **High/D** if the discrepancy exceeds 5%.
+**Severity assignment — use the Nature × Materiality matrix (output-format.md)**:
+
+When a discrepancy is confirmed, trace the GBD cell through the formula chain to the CE output row before assigning severity. Compute the CE impact delta and apply the Nature × Materiality matrix: a Defect-nature discrepancy (value confirmed wrong) with material CE impact (≥5%) is High; with immaterial CE impact (<5%) is Medium. Write the estimated CE impact in column H before finalizing severity.
+
+- Fall back to raw percentage difference thresholds **only when the formula chain is untraceable** (e.g., the GBD cell feeds into a non-formula lookup, the chain crosses an opaque helper tab, or the agent cannot resolve the path to a CE output). In that fallback case: file as **Medium/D** if the retrieved value differs by >2%, **High/D** if the discrepancy exceeds 5%. Note in column F: "CE chain untraceable — severity assigned by raw % difference fallback."
 - Common failure mode: researcher updates the GBD extract year or changes query parameters but forgets to update the hardcoded cell; or a state/region-specific value was pulled from a national-level URL used as a proxy.
 - When the vizhub URL is inaccessible or returns no data, file as Medium/H — do not skip the check.
 
@@ -119,7 +124,7 @@ When a summary or analysis tab (ceiling analysis, plausibility check, combined-p
 
 Common error: weighting by mortality ratios rather than prevalence shares when computing a GAM (combined MAM+SAM) ICF, which overstates the GAM ICF by giving disproportionate weight to the higher-ICF/higher-mortality SAM group. Flag as **Medium/D** if the aggregation methodology differs from what the row label implies, or if the weighting factor cannot be clearly justified by the label.
 
-This check applies especially to combined-protocol (MAM+SAM) or multi-geography aggregation formulas in ceiling analysis, plausibility, or summary tabs.
+This check runs on ANY summary or analysis tab that re-aggregates upstream parameters, regardless of model complexity. A single-geography model with nested intermediate calculations can also have re-computation errors — do not limit this check to combined-protocol or multi-geography models.
 
 Coverage declaration: COVERAGE | formula-check-data | downstream re-computation | [N cells/rows checked] | issues found: [N] | status: complete
 

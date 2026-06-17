@@ -97,6 +97,12 @@ Every finding has a **Nature** and a **Materiality**. Determine both, then read 
 | **Gap** | High | High | Medium | Low |
 | **Judgment** | High | Medium | Low | — |
 
+**Judgment severity — explicit rows** (read from the matrix above; spelled out here to prevent under-severity):
+- **Judgment + Decision-changing → High**: A Judgment finding that would flip whether the program clears the funding bar is High, not automatically Low. Example: a model uses an unusual assumption about X that materially affects CE — if that assumption could change the funding decision, it is High.
+- **Judgment + Material → Medium**: A Judgment finding that moves bottom-line CE by ≥5% without flipping the decision is Medium.
+- **Judgment + Immaterial → Low**: A Judgment finding with <5% CE effect is Low.
+- **Judgment + Zero**: Not applicable (a Judgment finding has no meaning if the parameter is entirely outside the CE chain — reclassify as Gap or omit).
+
 **Bright-line rules** — apply these before reading the matrix; they override it:
 1. **Defect floor**: A confirmed objective error is never below Medium, even with zero CE impact. An orphaned formula error, a confirmed value mismatch in a non-CE tab — both remain Medium. Errors may become material if inputs change; they also undermine confidence in adjacent calculations.
 2. **Unknown materiality rounds up**: If CE impact cannot be estimated, treat materiality as one tier higher. A Defect or Gap with unknown materiality → High. A Judgment with unknown materiality → Medium. Write `Raises/Lowers CE — magnitude unknown` or `Direction unknown` in column H accordingly.
