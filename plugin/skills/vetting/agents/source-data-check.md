@@ -9,11 +9,15 @@ Your job is narrow and concrete: check the raw data extract tabs for transpositi
 
 **Scope distinction — source-data-check vs. formula-check-data**: source-data-check handles the raw source data tabs themselves — plausibility, ordering violations, and whether the tab carries a stale vintage. formula-check-data handles whether a specific hardcoded value in the CEA matches the value at the row its formula or note claims to reference. Both checks are required; do not skip either on the assumption the other covers it.
 
+**Scope-overlap prohibition**: These two agents must not file findings for the same cell. If a potential issue involves both a formula output question and a source-selection question for the same cell, defer the formula-output question to formula-check-data and file only the source-selection question here. Record the deferred cell in your reasoning as "Deferred to formula-check-data: [cell ref] — formula output question." Do not leave both agents filing on the same cell.
+
 **Stakes**: Transcription errors in raw data tabs propagate silently into every downstream calculation. A BCG/OPV0 column swap or a coverage value transposed from one country to another will never surface in a formula audit because the formula is correct — only the input is wrong. This check exists specifically to catch errors that formula audits cannot.
 
 **Role calibration**: This is a factual correctness check, not a methodology review. Flag ordering violations and transpositions you can actually demonstrate — not values that merely look low or high in isolation. When a value is plausible but unverified, prefer Medium/H over High/D.
 
 **Before running any checks**, read `reference/pitfalls.md` using the Read tool. Apply every relevant entry — specifically FN-003 (WebFetch for weighted-average sources), SC-003 (CE chain confirmation before High), SC-004 (wrong subgroup requires WebFetch), SC-005 (methodology mismatch), SC-007 (intentional subgroup), and SC-009 (missing-source severity threshold).
+
+**FN-003 carve-out**: FN-003 in pitfalls.md restricts WebFetch for citation verification by `sources.md`. That restriction does not apply to this agent. `source-data-check` may and should fetch source documents to compare data values — that is a data-value comparison, not a citation verification, and serves a different purpose. When Check A or B identifies a plausible transposition and the source tab cites a URL, use WebFetch to confirm the correct column order.
 
 ---
 
@@ -35,9 +39,13 @@ For each source tab:
 
 2. Scan the geographic identifier column in batches of 50 rows to locate rows matching in-scope geographies. Read column A only for the scan using non-overlapping ranges: `A1:A50`, `A51:A100`, `A101:A150`, etc. (not `A1:A50`, `A50:A100`, which would double-count row 50) — do not read full rows until you have located the target geography. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Stop scanning after 5,000 rows if the geography is not found; note it and move to the next tab. If more than 100 batch calls are needed (i.e., the tab appears to exceed 5,000 rows), stop scanning and note "Tab too large to scan exhaustively — stopped at row [N]" in the coverage declaration.
 
+   **Large-sheet boundary (>5000 rows)**: For any sheet that has more than 5,000 rows, read only the first 5,000 rows and flag in AGENT_COMPLETE: "Large sheet (>5000 rows): [tab name] — checked rows 1–5000 only; rows [N]+ not checked." Do not attempt to read beyond row 5,000 in a single agent invocation.
+
 3. Once the target geography row(s) are located, read the full row including all data columns using a targeted `read_sheet_values` call.
 
 4. If a tab has subnational rows (e.g., Nigeria states, DRC provinces), read all rows for in-scope states — not just the national totals.
+
+5. **Sub-national source skip**: When a sub-national data source tab is skipped because the model uses national-level aggregates (i.e., the sub-national tab is not referenced by any CEA formula), write a coverage note in AGENT_COMPLETE: "Sub-national source [tab/ref] not verified — model uses national aggregation; verify aggregation method is appropriate."
 
 Do not attempt to read full tabs. Very large tabs (IHME, WUENIC, IGME) have tens of thousands of rows and cannot be read in full.
 
@@ -55,7 +63,9 @@ From the column headers, identify which columns correspond to which vaccines. Th
 
 - **BCG and OPV0** (both birth-dose): values should be within ~15 percentage points of each other. BCG at 30% alongside OPV0 at 85% (or vice versa) is a strong transposition signal — these vaccines are delivered at the same visit in most programs.
 - **Penta dose series**: Penta1 ≥ Penta2 ≥ Penta3 (dropout is universal — a value where Penta3 > Penta2 by more than 3pp is anomalous).
+- **IPV vs. Penta3**: IPV is co-administered at the Penta3 visit. IPV coverage should track within ~15pp of Penta3; a large gap is a flag. Check IPV before checking Td (IPV precedes Td in the standard co-vaccine sequence in GiveWell CEA models).
 - **PCV and Rota vs. Penta**: PCV and Rota are co-administered at the Penta visits. Values should track within ~20pp of Penta3. A PCV or Rota value that exceeds Penta3 by >15pp is a flag (a vaccine delivered alongside Penta cannot have higher coverage than Penta without a specific note explaining why).
+- **Td vs. IPV**: After verifying IPV, check Td. Td is typically administered later in the schedule; Td coverage may legitimately differ from Penta3.
 - **Measles (MCV1/MCV2)**: MCV1 ≥ MCV2 is expected in almost all contexts.
 
 Flag any violation as: (a) **High/D** if the values appear to be directly swapped (BCG shows ~OPV0's expected value and OPV0 shows ~BCG's expected value); (b) **Medium/H** if the ordering is violated but the swap is not obvious (could be a genuine data anomaly). For Medium/H plausibility flags, ask in the Explanation whether the anomaly reflects a data transcription error or genuine program data.
@@ -75,6 +85,8 @@ Do not flag differences that are plausibly real country-specific variation. Flag
 ### Check C — Year-over-year anomaly
 
 If the source tab includes multiple years for the same geography (common in IHME, WUENIC, GBD), compare the most recent in-scope row against the value 2–3 years prior for the same vaccine/indicator.
+
+> **FP calibration (GBD year mismatch)**: Before filing a finding for a GBD year mismatch, verify that the referenced year is actually wrong — not merely different from the current GBD release year. A tab may intentionally use an older GBD vintage as a fixed baseline. Check for a tab header note or changelog entry before filing.
 
 - **Vaccine coverage tabs** (values expressed as percentages 0–100): flag year-over-year changes >30 percentage points as anomalous. Changes of 10–30pp are noteworthy but may be real (e.g., a coverage campaign); flag as Low/H if there is no cell note explaining the jump.
 - **Non-coverage tabs** (mortality rates, incidence rates, burden estimates — values expressed as rates per 1,000 or proportions): flag year-over-year changes >50% relative change (i.e., the new value is less than half or more than double the prior value) as anomalous.
@@ -110,6 +122,21 @@ Compare across all source tabs. If any tab's most recent year lags the most rece
 Prioritize this check for tabs carrying **cause-specific mortality or disease burden data** (IGME CoD, GBD cause-specific tabs) — these are most likely to lag behind all-cause mortality updates when a new GBD or IGME release is incorporated piecemeal. A common pattern: all-cause mortality tabs are refreshed to the current GBD/IGME release year while cause-specific tabs remain at the prior release year, creating a silent methodology inconsistency in the burden adjustment factors.
 
 Skip this check for tabs that explicitly carry a fixed historical vintage by design (e.g., a tab labeled "GBD 2019 fixed baseline").
+
+**Within-tab vintage spread**: When multiple data points in the same tab come from different years (e.g., some cells reference 2019 data and others reference 2022 data within the same analysis tab), flag when the vintage spread within a single tab exceeds **3 years** and no note explains the mixed vintages. File as **Low/H**: "[Tab name] mixes data vintages — some values from [earliest year], others from [latest year] ([X]-year spread). Confirm the mixed vintages are intentional or standardize to a single release year."
+
+### Mixed-tab staleness thresholds
+
+When a workbook contains both primary data tabs (tabs whose values directly feed CEA parameters — mortality rates, coverage inputs, disease burden) and secondary or reference tabs (lookup tables, regional comparison data, historical baselines), apply differentiated staleness thresholds:
+
+- **Primary data tabs**: flag if the most recent data year lags the current year by **>1 year** and no note explains the vintage choice.
+- **Secondary / reference tabs**: flag if the most recent data year lags the current year by **>3 years** and no note explains the vintage choice.
+
+When in doubt about whether a tab is primary or secondary, treat it as primary. Note the classification in your coverage declaration.
+
+### Check E-coverage — Coverage source mismatch
+
+> **Coverage metric calibration**: Before filing a finding for a coverage source mismatch, verify that the coverage metric definition in the model actually matches what the source reports. Different sources may report coverage by different denominators (surviving infants vs. live births) or at different administrative levels. Confirm the metric definition aligns before filing.
 
 ### Check F — Geography/country consistency across source tabs
 
@@ -156,7 +183,7 @@ Before writing any finding, confirm: (1) exact cell reference(s), (2) specific i
 
 Append findings using `modify_sheet_values` to your staging sheet. Start at row 2 and append sequentially. Your staging sheet name is provided in session context.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (3 sentences max, aim for 2; write for a researcher who may not have the spreadsheet open; include the row label (plain-English name from column A) alongside every cell address; Parameter/Inconsistency: "currently X; correct value is Y", e.g., "malaria mortality rate (B14) = 0.87; GW parameter is 0.79, overstating CE"; Formula: functional effect first then technical fix, e.g., "[Wrong reference] program costs (E14) sums through a non-program row, inflating costs by ~12%; range should be B14:B21 not B14:B22"; High findings: include a brief consequence clause; no chain traces; do not hedge what you can confirm) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x)
+Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency; **for this agent specifically**: use "Parameter" when the data value itself is wrong, "Assumption" when the source methodology is questionable, and "Inconsistency" when two sources within the model give different values for the same parameter) | **F** Explanation (3 sentences max, aim for 2; write for a researcher who may not have the spreadsheet open; include the row label (plain-English name from column A) alongside every cell address; Parameter/Inconsistency: "currently X; correct value is Y", e.g., "malaria mortality rate (B14) = 0.87; GW parameter is 0.79, overstating CE"; Formula: functional effect first then technical fix, e.g., "[Wrong reference] program costs (E14) sums through a non-program row, inflating costs by ~12%; range should be B14:B21 not B14:B22"; High findings: include a brief consequence clause; no chain traces; do not hedge what you can confirm) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x)
 
 ---
 
@@ -167,8 +194,10 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `source-data-check`
 - Column D: `AGENT_COMPLETE`
-- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]. Excluded tabs: [list or "none"]. Reason: [lookup/reference/output for each, or "n/a"].`
 - All other columns: blank
+
+**Tab exclusion fallback**: When any tab is excluded from source-data checks (e.g., a lookup table, reference tab, or output-only tab), always name it in the Excluded tabs field above with the reason. Do not silently omit tabs from coverage — every excluded tab must appear in AGENT_COMPLETE.
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).
 

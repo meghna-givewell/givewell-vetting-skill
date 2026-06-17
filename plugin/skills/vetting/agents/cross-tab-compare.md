@@ -9,6 +9,8 @@ You are performing Step 3c of a GiveWell spreadsheet vet. You have been provided
 
 **Self-detection — run this first**: Check the in-scope sheets list for both a Simple CEA tab (names containing `Simple CEA`, `Simple`, or `SimpleCEA`) AND a Main CEA or CEA tab (names containing `Main CEA`, `CEA`, or `BOTEC` — but not `Simple`). If no Simple CEA tab is found using those patterns, also try alternate names: `Cost Model`, `CE Analysis`, `CE Model`. If no Main CEA tab is found using those patterns, also try those same alternates for the main/full model tab. If after trying all alternates fewer than two matching tabs exist, write your completion marker with the reason in column F (e.g., `SKIP: No Simple CEA tab found matching standard or alternate patterns. Tabs scanned: [list tab names].`) and stop. Do not scan any sheets. Do not silently skip — the reason must be visible in the AGENT_COMPLETE row.
 
+Also check for a **CI tab** (names containing `CI`, `Confidence`, or `Confidence Interval`) and a **Key Parameters tab** (names containing `Key Parameters`, `Key Params`, or `Parameters`). If either exists, include it in scope per the extended checks below. Note their presence in your reasoning before proceeding.
+
 **Stakes**: The Simple CEA is often the first tab a reviewer reads and the final CE figures it presents must match the logic in the Main CEA. Silent divergences — different formula structures computing the same quantity, column headers that misdescribe what they contain, independent recalculations that drift from the source — mislead reviewers without triggering any formula error. This check exists because general formula audits read each tab independently and do not catch cross-tab structural inconsistencies.
 
 **Role calibration**: Your job is not to re-audit each tab independently — Wave 1 formula agents have already done that. Your job is specifically to find discrepancies *between* the two tabs for the same logical quantity. When a formula is internally consistent within one tab but structurally diverges from the corresponding formula in the other tab, that is a finding. When both tabs compute the same quantity correctly but independently (no link), that is not an error — but it is worth noting as Low if it creates audit surface.
@@ -24,8 +26,12 @@ Fire a parallel batch:
 - `read_sheet_values` (FORMULA) on Simple CEA tab — all populated rows
 - `read_sheet_values` (FORMATTED_VALUE) on Main CEA/CEA tab — all populated rows, column A
 - `read_sheet_values` (FORMULA) on Main CEA/CEA tab — all populated rows
+- `read_sheet_notes` on Simple CEA tab — full sheet range
+- `read_sheet_notes` on Main CEA/CEA tab — full sheet range
 
 Use 50-row batches (`A1:ZZ50`, `A51:ZZ100`, etc.) until two consecutive batches return no non-empty rows — **the MCP tool returns at most 50 rows per call; larger ranges silently truncate.** Do **not** read the existing Findings sheet — your staging tab name is `stg-xcomp`.
+
+**Cell notes — intentional divergence**: Before filing any cross-tab discrepancy finding, check the `read_sheet_notes` results for both the Simple CEA cell and the Main CEA cell. If a researcher note on either cell explicitly documents why the two tabs differ (e.g., "Simple CEA uses a rounded figure for readability," "intentional: simplified structure for summary tab"), do not file the finding. Record the suppressed finding and its rationale in your reasoning as "suppressed — cell note documents intentional divergence at [cell ref]: [note text]." A note that merely cites a source (without addressing the divergence) does not suppress the finding.
 
 ---
 
@@ -77,7 +83,7 @@ For each row pair that produced the same or equivalent formula structure in Chec
 
 File as **Medium/Inconsistency** when: (a) the label matches, (b) the formula structure appears equivalent, and (c) displayed values differ by more than 1% with no documented reason.
 
-File as **Low/Inconsistency** when values differ by ≤1% (likely rounding) and no other issue is present.
+File as **Low/Inconsistency** when values differ by ≤1% (likely rounding) and no other issue is present. **Routing for ≤1% Inconsistency findings**: even at Low severity, cross-tab value mismatches route to Findings (write `Low` in column D), not to Publication Readiness. Do not leave column D blank for these — a Low/Inconsistency finding that routes to PR would be invisible to the researcher reviewing the model's CE logic.
 
 ### Check 3 — Scenario column correspondence
 
@@ -145,6 +151,24 @@ Scan Simple CEA's FORMULA-mode output for formulas that independently recalculat
 
 This is not always an error — Simple CEA sometimes intentionally simplifies. File as **Low/Inconsistency** only when: (a) the independent recalculation diverges from Main CEA's result, or (b) the recalculation is structurally complex enough that drift becomes a real maintenance risk.
 
+### Check 7 — CI tab cross-check (run only when CI tab detected)
+
+If a CI tab exists, read it in FORMATTED_VALUE mode (50-row batches). Locate the CE range output rows (typically labeled "lower bound," "upper bound," "25th percentile," "75th percentile," or similar). Compare these values against the corresponding CI bounds in the Main CEA output.
+
+File as **Medium/Inconsistency** when: (a) the CI tab's lower or upper bound differs from the Main CEA's corresponding bound by more than 1%, and (b) no cell note documents why.
+File as **Low/Inconsistency** when: (a) the CI tab exists but does not reference Main CEA directly — both compute CI bounds independently — even if the values currently match (silent drift risk).
+
+`COVERAGE | cross-tab-compare | Check 7 — CI tab cross-check | [N rows checked] | issues found: [N] | status: complete (or: n/a — no CI tab)`
+
+### Check 8 — Key Parameters tab cross-check (run only when Key Parameters tab detected)
+
+If a Key Parameters tab exists, read it in FORMATTED_VALUE mode (50-row batches). For each parameter row in the Key Parameters tab, verify the value matches what the Main CEA tab uses for the same parameter. Use the label-mapping approach from Step 2 to match rows.
+
+File as **Medium/Parameter** when: a Key Parameters tab value differs from the Main CEA's corresponding input cell by more than 1% with no cell note explaining the deviation.
+File as **Low/Inconsistency** when: a Key Parameters cell is hardcoded while the Main CEA references a different source cell for the same parameter (or vice versa), even if values match today.
+
+`COVERAGE | cross-tab-compare | Check 8 — Key Parameters tab cross-check | [N parameters checked] | issues found: [N] | status: complete (or: n/a — no Key Parameters tab)`
+
 ---
 
 ## Writing Findings
@@ -155,7 +179,7 @@ Append findings using `modify_sheet_values` to your staging tab `stg-xcomp`, sta
 
 **Before writing Low findings**: group by the 7 standard categories (Documentation gaps | Formula robustness | Stale annotations | Optimistic assumptions | Minor rounding | Structural completeness | Minor inconsistencies) — one row per category per sheet. Most cross-tab Low findings fall under **Minor inconsistencies**. Do not file one row per cell. Lead the Explanation with the category name and count.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet (use `Multiple` — findings span two tabs) | **C** Cell/Row (list both cells, e.g., `Simple CEA B14, CEA B22`) | **D** Severity | **E** Error Type/Issue (one of: `Formula` | `Parameter` | `Adjustment` | `Assumption` | `Inconsistency` | `Legibility`) | **F** Explanation (3 sentences max, aim for 2; write for a researcher who may not have the spreadsheet open; include row labels alongside all cell references; state the discrepancy and which value is correct, or ask the researcher to confirm; High findings: include a brief consequence clause; no chain traces) | **G** Recommended Fix (imperative verb; say which cell should reference the other, or which should be updated to match) | **H** Estimated CE Impact (use exactly one of these six phrases with an em-dash ( — ) with one space on each side — do not use en-dash, hyphen, or pipe: `Raises CE — [estimate]` \| `Lowers CE — [estimate]` \| `Raises CE — magnitude unknown` \| `Lowers CE — magnitude unknown` \| `No CE impact` \| `Direction unknown`; punctuation variants cause sort failures in the compaction agent) | **I** Status (leave blank — reconcile agent writes WONT_FIX here; compaction strips column I when writing to the final Findings sheet)
+Column reference: **A** Finding # (leave blank) | **B** Sheet (use `Multiple` — findings span two tabs) | **C** Cell/Row (list both cells, e.g., `Simple CEA B14, CEA B22`) | **D** Severity | **E** Error Type/Issue (one of: `Formula` | `Parameter` | `Adjustment` | `Assumption` | `Inconsistency` | `Legibility`) | **F** Explanation (3 sentences max, aim for 2; write for a researcher who may not have the spreadsheet open; include row labels alongside all cell references; state the discrepancy and which value is correct, or ask the researcher to confirm; High findings: include a brief consequence clause; no chain traces) | **G** Recommended Fix (imperative verb; say which cell should reference the other, or which should be updated to match) | **H** Estimated CE Impact (use exactly one of these six phrases with an em-dash " — " — that is a space, then U+2014 em-dash, then a space — do not use en-dash (–), hyphen (-), or pipe (|): `Raises CE — [estimate]` \| `Lowers CE — [estimate]` \| `Raises CE — magnitude unknown` \| `Lowers CE — magnitude unknown` \| `No CE impact` \| `Direction unknown`; punctuation variants cause sort failures in the compaction agent; always verify the dash character before writing) | **I** Status (leave blank — reconcile agent writes WONT_FIX here; compaction strips column I when writing to the final Findings sheet)
 
 See `reference/output-format.md` for full column definitions.
 

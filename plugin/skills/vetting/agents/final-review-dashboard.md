@@ -55,6 +55,8 @@ Rows 25 onward: one row per unique sheet name found in column B of the Findings 
 - Repeat for each sheet name, incrementing row numbers.
 - Include `Multiple` as a row if any findings use that sheet name.
 
+**Tab-name comma handling**: When reading the list of unique sheet names from column B of the Findings sheet to populate the per-sheet table rows, treat each cell value in column B as a single tab name — even if the value contains a comma. Do not split on commas when extracting tab names from column B. (Commas in tab names are uncommon but possible.) When writing tab names as static text in Dashboard column A, write the full tab name including any commas. The COUNTIFS formula uses the full tab name as its criteria string and will match correctly as long as the Findings sheet column B also contains the full name.
+
 After the last sheet row, write a totals row: `Total` in column A, `=SUM(B25:B{last})` in B, same pattern for C–D, `=SUM(E25:E{last})` in E. **{last} must be the row number of the last per-sheet data row — that is, the row immediately above the Totals row itself. The Totals row must not be included in the SUM range, or the formula will self-reference and produce a circular dependency error.**
 
 After the Total row, skip one blank row, then write `Sheets not vetted:` in column A. On each subsequent row, write one unvetted tab name in column A.
@@ -62,6 +64,8 @@ After the Total row, skip one blank row, then write `Sheets not vetted:` in colu
 To compute the unvetted list accurately: call `get_spreadsheet_info` on the source spreadsheet to retrieve the complete list of all tabs. Compare that list against the vetted and lite-passed tabs from the session context scope declaration. Any tab not in either list is unvetted — write each on its own row in column A. If every tab in the workbook is covered by vetted or lite-passed, write `None`. Do not rely solely on the session context scope declaration — always verify against the actual workbook tab list.
 
 After writing all Dashboard content with `modify_sheet_values`, make a single `format_sheet_range` call to bold the `Sheets not vetted:` cell. If `format_sheet_range` is not available, skip the bold — the label is readable without it.
+
+**Validation-completion guard (DASH-7)**: Before writing any dashboard content, verify that the `final-review-validation` AGENT_COMPLETE marker is present in the Findings sheet. (The guard at the top of this file already checks for all three prior stage markers — if that guard passed, this condition is satisfied. If for any reason the guard was bypassed or the marker check is uncertain, re-read the Findings sheet in batched increments and confirm a row exists where column B = `final-review-validation` AND column D = `AGENT_COMPLETE`.) If this marker is absent when writing the dashboard, add the following warning in Dashboard cell B23 (immediately above the per-sheet table): "⚠️ Validation not completed — some findings may not have been verified. Re-run final-review-validation (Step 10c) before sharing this output." Do not omit this warning if the marker is genuinely absent.
 
 If session context indicates a formula/heads-up only scope mode: add a `Partially vetted (heads-up only):` row below the Sheets not vetted list, listing any tabs where only heads-up agents ran. Do not list these tabs under Sheets not vetted — they were checked, just not at full depth.
 
@@ -126,4 +130,4 @@ Write the AGENT_COMPLETE marker to the Dashboard tab:
 - Cell D200 = `AGENT_COMPLETE`
 - Cell F200 = `Dashboard content written. Key Findings written to chat. Staging_backup deleted (or researcher notified). Step 10d complete.`
 
-This cell range (row 200) is safely below all other Dashboard content.
+**Dynamic row placement**: Row 200 is the default placement and is safely below all expected dashboard content. However, if the per-sheet table plus unvetted tabs list extends close to row 200 (within 10 rows), compute the AGENT_COMPLETE row dynamically as the last data row in the Dashboard tab + 10. Use `read_sheet_values` on Dashboard column A in a large range (e.g., `A1:A250`) to find the last non-empty row, then write the AGENT_COMPLETE marker to that row + 10. This prevents the marker from being overwritten if the dashboard content grows. Note: the COUNTIFS formulas in Step 2b use explicit row ranges (e.g., `B25:B{last}`) scoped to the per-sheet data rows — they are not affected by where the AGENT_COMPLETE marker is placed, so moving the marker does not introduce circular references.

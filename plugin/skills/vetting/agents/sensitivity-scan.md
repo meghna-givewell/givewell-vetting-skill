@@ -11,7 +11,15 @@ You are performing Step 8 of a GiveWell spreadsheet vet. You have been provided:
 
 **Write target**: This agent writes all findings directly to the Confidentiality Flags sheet (ID provided in session context). This agent has no staging tab. The standard 'write to your staging tab' instruction in the SKILL.md session context block does not apply to this agent. Do not write to any staging tab or Findings sheet.
 
-Read the spreadsheet in FORMATTED_VALUE mode across all vetted sheets, including all cell notes via `read_sheet_notes`. Read `read_spreadsheet_comments` once for the workbook.
+Read the spreadsheet in FORMATTED_VALUE mode across all vetted sheets, including all cell notes via `read_sheet_notes`. Read `read_spreadsheet_comments` once for the workbook. Also read sheet hyperlinks via `read_sheet_hyperlinks` for each vetted sheet to support the hyperlink/email PII check.
+
+**Hyperlink cache gap detection**: If the pre-read cache does not include hyperlink data, note this and add a coverage note in the AGENT_COMPLETE row (column D): append "Hyperlink data not in pre-read cache — hyperlink PII scan may be incomplete." to the standard completion summary.
+
+**Multi-note deduplication**: When multiple cell notes in the same cell or in adjacent cells contain substantially similar content, treat them as one entry for counting and reporting purposes. Write the cell reference once and note "1 note (merged)" rather than listing the same content twice.
+
+**Comment-thread PII scan**: When reading cell notes and comments, also check comment threads (reply chains). If any reply in a thread contains a name that does not appear in the cell's own data, flag it as potential PII in the comment context. Use the cell reference with `(comment thread)` appended — e.g., `Main CEA!C14 (comment thread)`.
+
+**Hidden-sheet detection**: For any sheet with visibility set to "hidden" or "veryHidden", check whether it contains identifiable data. If it does, do not list individual items as regular flag rows (the sheet may be intentionally restricted); instead, record a count and note it in the AGENT_COMPLETE summary as described below.
 
 **Stakes**: Sensitive data in a published spreadsheet — donor names, staff salaries, personal contact information — can cause legal and reputational harm to GiveWell and to individuals named. Flag any cell that could identify a specific individual or reveal non-public financial information.
 
@@ -25,13 +33,17 @@ Read the spreadsheet in FORMATTED_VALUE mode across all vetted sheets, including
 
 Flag any cell containing:
 
-- **Named individuals**: first + last name together, or a name that clearly identifies a specific person (staff, researchers, beneficiaries, government contacts). A first name alone is not sufficient unless context makes the person identifiable.
+- **Named individuals**: first + last name together, or a name that clearly identifies a specific person (staff, researchers, beneficiaries, government contacts). A first name alone is not sufficient unless context makes the person identifiable. Examples: "John" alone is not identifiable; "John, SMC program manager, Nigeria" is identifiable because the combination of name, role, and location narrows to a specific individual. Apply this same logic to any partial name combined with organization, role, or location.
 - **Salary or compensation data**: specific figures tied to an individual role or person.
 - **Donor information**: donor names, gift amounts, fund designations, or donor-specific funding strategies.
 - **Unpublished internal strategy**: pre-decisional funding recommendations, internal assessments of grantee performance not intended for publication, or draft strategy documents embedded as notes.
-- **Personal contact information**: email addresses, phone numbers, physical addresses for individuals.
+- **Personal contact information**: email addresses, phone numbers, physical addresses for individuals. Phone numbers in the format of a country code (+1, +44, etc.) followed by digits are PII. Exception: phone numbers used as cluster or administrative identifiers in health data systems (e.g., DHS cluster IDs) are not PII — do not flag these.
+- **Hyperlink/email PII**: scan all hyperlinks in the sheet. Flag as High PII any hyperlink that is a `mailto:` link (e.g., `mailto:john.smith@example.org`) or any URL that contains an email address as a query parameter (e.g., `?email=john@example.org`). Record the cell reference and the email address found.
+- **Government/beneficiary name + data**: flag as Medium PII when a government official's name or a beneficiary's name appears in the same row as numeric data (coverage rates, cost figures, health outcomes). The combination of name and data is more sensitive than either alone.
 
 Also flag: org-level main office contact details (main phone number, mailing address) appearing in cells not normally expected to contain contact data. Also flag preliminary charity rankings, priority scores, or tier designations not yet published on givewell.org (Sensitivity Type: Unpublished Strategy).
+
+**Ranking-publication threshold**: When a list could be construed as ranking NGOs, governments, or programs by effectiveness, flag it only if: (a) the list has ≥3 entries with numeric values AND (b) the numeric values differ by >10% between any two entries. Do not flag simple two-row comparisons.
 
 Do **not** flag:
 - Generic organization names or acronyms
@@ -47,7 +59,7 @@ Write all flags to the **Confidentiality Flags sheet** — not the Findings shee
 
 The Confidentiality Flags sheet header is written by the orchestrator during output setup — do not write the header row again. Begin writing flag rows at row 2.
 
-**Pre-write header check**: Before writing any flag rows, read row 1 of the Confidentiality Flags sheet. If column A of row 1 does not equal `Cell/Row`, stop and write to chat: "Confidentiality Flags sheet header missing or mismatched — column A row 1 reads '[value]' but expected 'Cell/Row'. Cannot safely write to row 2. Verify that output setup completed correctly (expected headers: Cell/Row | Content Found | Sensitivity Type | Recommended Action)." Do not write any findings until the header is confirmed.
+**Pre-write header check**: Before writing any flag rows, read row 1 of the Confidentiality Flags sheet. Verify all four expected headers are present: column A must equal `Cell/Row`, column B must equal `Content Found`, column C must equal `Sensitivity Type`, and column D must equal `Recommended Action`. If any of these four columns is missing or mismatched, stop and write to chat: "Confidentiality Flags sheet header missing or mismatched — columns read '[A value]' | '[B value]' | '[C value]' | '[D value]' but expected 'Cell/Row' | 'Content Found' | 'Sensitivity Type' | 'Recommended Action'. Cannot safely write to row 2. Verify that output setup completed correctly." Do not write any findings until all four headers are confirmed.
 
 Columns:
 - **A (Cell/Row)**: Cell reference only — e.g., `Main CEA!C14`. No row labels or descriptions. If found in a cell note rather than a cell value, write the cell reference followed by ` (note)` — e.g., `Main CEA!C14 (note)`.
@@ -70,8 +82,8 @@ After all flags are written (or if no flags were found), write ONE final row to 
 - Column A: `AGENT_COMPLETE` (not column D as in staging-sheet agents — this agent writes to the Confidentiality Flags sheet, which uses a different column layout)
 - Column B: `sensitivity-scan`
 - Column C: (blank)
-- Column D: `Sensitivity scan complete. Scanned [N] sheets. Found [K] confidentiality flags in rows 2–[K+1].`
+- Column D: `Sensitivity scan complete. Scanned [N] sheets. Found [K] confidentiality flags in rows 2–[K+1].` If hyperlink data was absent from the pre-read cache, append: " Hyperlink data not in pre-read cache — hyperlink PII scan may be incomplete." If any hidden sheets containing identifiable data were found, append one note per hidden sheet: " Hidden sheet '[name]' contains [N] potential PII items — verify access controls."
 
-(Note: column D in the Confidentiality Flags sheet is labeled "Recommended Action" for finding rows; the AGENT_COMPLETE marker row reuses this column for the completion summary. This row should be removed or noted as non-finding before sharing the sheet with stakeholders.)
+(Note: column D in the Confidentiality Flags sheet is labeled "Recommended Action" for finding rows; the AGENT_COMPLETE marker row reuses this column for the completion summary. The AGENT_COMPLETE row is not a finding and must not appear in any output or summary of Confidentiality Flags delivered to stakeholders — skip or remove it when preparing the sheet for sharing.)
 
 Use a single `modify_sheet_values` call. **Do not write to any staging sheet** — sensitivity-scan has no staging tab. The pre-Wave-3 self-verification check reads the Confidentiality Flags sheet directly for this marker. The compaction agent does not read the Confidentiality Flags sheet — it is excluded from the staging tab list.

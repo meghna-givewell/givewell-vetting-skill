@@ -25,6 +25,8 @@ Before running any check, read reference/pitfalls.md using the Read tool. Apply 
 
 Before running checks, identify which rows and sections of the spreadsheet contain leverage, funging, or counterfactual-related calculations. Look for row labels containing: `leverage`, `fung`, `counterfactual`, `government`, `co-financ`, `crowding`, `additionality`, `displacement`, `deadweight`, `policy`, `multiplier`. Also check the Leverage/Funging tab if one exists.
 
+**TA grant type — additional keywords (GAP-5)**: If the grant is identified as a technical assistance (TA) grant in program context, also scan for rows containing: `technical assistance`, `TA`, `capacity building`, `systems strengthening`. When leverage formulas reference these rows, apply TA-specific verification: confirm the leverage ratio reflects the TA multiplier mechanism (i.e., TA funding enabling larger direct-delivery programs) rather than treating TA costs as direct delivery costs.
+
 **Write this section detection report before running any check** (required — do not proceed without it):
 
 ```
@@ -101,6 +103,8 @@ When government co-financing is present:
 - If GiveWell funding "unlocks" or "leverages" government funding, the treatment of the government's contribution must be consistent throughout the model. Read cell notes and adjacent labels for the stated approach; flag if the formula diverges from what the note describes.
 - Check that the leverage ratio denominator (the GiveWell funding base) matches what is actually counted in the cost column — not a different definition of "GiveWell spending."
 
+**Multi-year leverage denominators (GAP-3)**: When the leverage ratio denominator spans multiple years (e.g., a 3-year average of GiveWell funding), verify the denominator formula correctly references each year's values. If the denominator hardcodes a year count (e.g., `/3`) that does not match the number of cells actually referenced in the formula's numerator range, flag as **Medium severity (column D), Error Type: Formula**: "Leverage denominator at [cell] divides by the hardcoded year count [N] but the numerator references [M] years of data. If the grant period changed, the hardcoded divisor must be updated to match."
+
 **Required Error Type**: Formula (if the formula is wrong) or Assumption (if the assumption is undocumented)
 
 **Coverage declaration**: After completing this check, write:
@@ -172,6 +176,22 @@ Do not file if the researcher has a cell note explaining that the apparent doubl
 
 ---
 
+## Check 5d — Embedded leverage literals
+
+For every leverage and funging formula cell identified in the section detection step, scan the formula string for literal numeric constants that appear in a position consistent with a leverage ratio or funging rate. Specifically, flag when:
+
+- A formula multiplies or divides a cost or benefit cell by a numeric literal between 0 and 1 exclusive (e.g., `=costs*0.15`, `=benefit/0.8`) and no named cell or parameter reference is present in the same position.
+- The literal value is plausibly a leverage ratio or funging rate based on the row label or surrounding context.
+
+If such a literal is found, file **Medium severity (column D), Error Type: Parameter**: "Leverage formula at [cell] embeds the leverage ratio as a hardcoded literal [value] (e.g., `[formula snippet]`). The leverage ratio should reference a named parameter cell with a source note so that changes propagate and reviewers can verify the value. Add a dedicated parameter cell for this ratio and replace the literal with a cell reference."
+
+Do not flag literals that are clearly structural constants (e.g., `/100` for a percentage conversion, `*12` for a monthly-to-annual conversion) rather than substantive modeling parameters.
+
+**Coverage declaration**: After completing this check, write:
+`COVERAGE | leverage-funging | Check 5d — Embedded leverage literals | [rows/cells checked] | issues found: [N] | status: complete`
+
+---
+
 ## Check 6 — Documentation
 
 For each leverage/funging parameter and formula found:
@@ -187,6 +207,10 @@ Flag undocumented leverage parameters as Low severity, Error Type: Assumption (c
 ---
 
 ## Check 7 — VOI ad hoc adjustment vs. modeled optionality double-count
+
+**Scope note — VOI overlap with leverage-uov-check (DEDUP-2)**: This agent covers ad hoc double-counting at the conceptual level (e.g., whether a VOI adjustment is being counted twice in the narrative framing). The leverage-uov-check agent covers formula-level correctness of the VOI rate application (e.g., whether funging formulas reference the wrong subtotal row). When both agents flag the same cell, this agent's finding takes precedence for conceptual scope issues; leverage-uov-check's finding takes precedence for formula-level issues. Retain both findings only when the underlying issues are genuinely distinct.
+
+**Scope note — CE reference row overlap with ce-chain-trace (DEDUP-3)**: This agent traces how the leverage adjustment affects the CE output row. The ce-chain-trace agent traces the CE chain itself from top to bottom. If both agents flag the same CE output cell, prefer ce-chain-trace's finding (it has deeper chain analysis); this agent's finding should note "see CE chain trace finding" in the Explanation column.
 
 When a VOI model contains both (a) a dedicated "Optionality/information value to [funder type]" section that explicitly models probability × funding change × CE for a category of funder, and (b) an "Adjustments to VoI" section with a labeled upward adjustment for the same funder category, these may double-count the same benefit.
 
@@ -206,6 +230,8 @@ This check does not apply when the ad hoc adjustment is clearly labeled as cover
 ## Writing findings
 
 **Two-axis notation note**: Two-axis notation (e.g., /D, /H) in check instructions describes Nature — write only 'High', 'Medium', or 'Low' in column D.
+
+**Sourcing entry grouping (SKILL-12)**: If multiple leverage findings apply to the same source cell (e.g., a single parameter cell that is both undocumented and referenced incorrectly), group them under one Sourcing entry rather than creating duplicate rows for the same cell. Combine the distinct issues into a single Explanation sentence and a single Recommended Fix.
 
 Before writing any finding, confirm: (1) exact cell reference(s), (2) specific issue (which sign is wrong, which components are double-counted, etc.), (3) precise fix required.
 

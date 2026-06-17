@@ -19,8 +19,8 @@ Create six tabs with these header rows (row 1) before spawning agents:
 **Hardcoded Values** — columns A–H: `Sheet | Cell | Category | Current Value | Description | Source to Verify | Verified? | Auto-check evidence`
 - Column A (`Sheet`): tab name only (e.g., `Main CEA`)
 - Column B (`Cell`): cell reference only (e.g., `C14`)
-- Column C (`Category`): one of `Study-Derived`, `Org-Reported`
-- Column G (`Verified?`): pre-filled by source-citation-verify agent (Wave 1.5) with `Matched ✓` / `Contradicted ✗` / `Could not verify`; researcher confirms or overrides
+- Column C (`Category`): one of `Study-Derived`, `Org-Reported`, `GW-Standard`, `Structural`. **SETUP-5 — Category definitions**: `Study-Derived` = value drawn directly from an external research study or dataset (e.g., mortality rate from GBD, efficacy estimate from an RCT). `Org-Reported` = value reported by the implementing organization (e.g., cost per treatment, coverage rate from partner M&E). `GW-Standard` = value set by GiveWell's cross-cutting parameter process (e.g., benchmark, moral weight, discount rate — listed in `key-parameters.md`). `Structural` = value that is a modeling assumption or structural constant with no single external source (e.g., years of benefit, proportion shared within household). Use the most specific category that applies; when in doubt between Study-Derived and Org-Reported, use Org-Reported.
+- Column G (`Verified?`): pre-filled by source-citation-verify agent (Wave 1.5) with `Matched ✓` / `Contradicted ✗` / `Could not verify`; researcher confirms or overrides. **SETUP-2 — Conditional formatting**: Apply `add_conditional_formatting` to column G (G2:G1000) with: `Matched ✓` → green background `#B7E1CD`; `Contradicted ✗` → red background `#F4C7C3`; `Could not verify` → yellow background `#FFF2CC`. Add this to the formatting batch in the same pass as the other Hardcoded Values formatting.
 - Column H (`Auto-check evidence`): verbatim sentence from source via Citations API, or reason verification was not possible; filled by source-citation-verify agent
 
 **Confidentiality Flags** — columns A–D: `Cell/Row | Content Found | Sensitivity Type | Recommended Action`
@@ -40,7 +40,8 @@ Fire all formatting in a single parallel batch immediately after writing headers
 - `format_sheet_range`: header row 1 on Findings (A1:H1) — dark blue `#1F4E79`, white text, bold; freeze row 1 and columns A–C
 - `format_sheet_range`: header row 1 on Publication Readiness (A1:F1) — dark blue `#1F4E79`, white text, bold; freeze row 1 and columns A–C
 - `format_sheet_range`: header row 1 on Hardcoded Values (A1:H1) — dark blue `#1F4E79`, white text, bold
-- `add_conditional_formatting`: Category C2:C1000 on Hardcoded Values — `Study-Derived` → `#E2EFDA`, `Org-Reported` → `#FFF2CC`
+- `add_conditional_formatting`: Category C2:C1000 on Hardcoded Values — `Study-Derived` → `#E2EFDA`, `Org-Reported` → `#FFF2CC`, `GW-Standard` → `#DAE8FC`, `Structural` → `#F8CECC`
+- `add_conditional_formatting`: **SETUP-2** — Verified? G2:G1000 on Hardcoded Values — `Matched ✓` → green `#B7E1CD`; `Contradicted ✗` → red `#F4C7C3`; `Could not verify` → yellow `#FFF2CC`
 - `add_conditional_formatting`: Dashboard B24:D60 — `High` → `#FFB3B3`, `Medium` → `#FFE5B3`, `Low` → `#B3D9B3`
 - `format_sheet_range`: header row 1 on CE Baseline (A1:B1) — dark blue `#1F4E79`, white text, bold
 - `format_sheet_range`: header row 1 on Confidentiality Flags (A1:D1) — dark blue `#1F4E79`, white text, bold
@@ -57,16 +58,16 @@ Write immediately after the formatting batch using `modify_sheet_values` (USER_E
 
 - A1: `VETTING DASHBOARD`
 - A3: `Source spreadsheet:` | B3: `=HYPERLINK("<source_spreadsheet_url>","<Workbook Name>")`
-- A4: `Grant page:` | B4: `=HYPERLINK("<grant_page_url>","<Grant Doc Title>")` — write only if a grant page was provided in Step 0.5; omit A4/B4 entirely otherwise
-- A5: `Vet date:` | B5: today's date
+- A4: `Grant page:` | B4: `=HYPERLINK("<grant_page_url>","<Grant Doc Title>")` — write only if a grant page was provided in Step 0.5; omit A4/B4 entirely otherwise. **SETUP-3**: The Dashboard header structure is: row 1 = title (`VETTING DASHBOARD`), row 2 = blank, row 3 = Source spreadsheet, row 4 = Grant page (conditional), row 5 = Vet date. Data rows start at row 6 onward. This is correct — there is no off-by-one here. Row 4 as a conditional content row is intentional. If the grant page is omitted, rows 5 onward shift up by one (i.e., Vet date moves to A4/B4); agents should write the vet date to the next available row rather than hardcoding B5.
+- A5: `Vet date:` | B5: today's date. **SETUP-7**: Write the vet date in ISO format (YYYY-MM-DD, e.g., `2026-06-17`). This prevents ambiguous date interpretation when the spreadsheet is viewed in different locales. Do not write a localized date string (e.g., "June 17, 2026" or "17/06/2026").
 - A6: `MODEL FINDINGS`
 - A7: `High` | B7: `=COUNTIF(Findings!D:D,"High")`
 - A8: `Medium` | B8: `=COUNTIF(Findings!D:D,"Medium")`
 - A9: `Low` | B9: `=COUNTIF(Findings!D:D,"Low")`
 - A10: `Total findings` | B10: `=B7+B8+B9`
-- A11: `Issues impacting bottom-line CE` | B11: `=COUNTIF(Findings!H:H,"Raises CE*")+COUNTIF(Findings!H:H,"Lowers CE*")+COUNTIF(Findings!H:H,"Direction unknown")` *(column H = Estimated CE Impact; excludes "No CE impact" and blank)*
+- A11: `Issues impacting bottom-line CE` | B11: **SETUP-4**: Use the explicit-phrase formula rather than a wildcard-only formula to avoid counting malformatted entries: `=COUNTIF(Findings!H:H,"Raises CE*")+COUNTIF(Findings!H:H,"Lowers CE*")+COUNTIF(Findings!H:H,"Direction unknown")` *(column H = Estimated CE Impact; excludes "No CE impact" and blank)*. Note: the `Raises CE*` and `Lowers CE*` wildcards intentionally capture both `Raises CE — [estimate]` and `Raises CE — magnitude unknown` variants. For a fully precise count that also excludes any unrecognized entries, use: `=COUNTIF(Findings!H:H,"Raises CE*")+COUNTIF(Findings!H:H,"Lowers CE*")+COUNTIF(Findings!H:H,"No CE impact")+COUNTIF(Findings!H:H,"Direction unknown")` (this form counts ALL assessed entries; subtract the `No CE impact` count to get CE-impacting items). The shorter form in B11 is intentional for the Dashboard — it excludes "No CE impact" to show only issues with a CE directional effect.
 - A13: `PUBLICATION READINESS`
-- A14: `Total items` | B14: `=COUNTA('Publication Readiness'!B2:B2000)`
+- A14: `Total items` | B14: **SETUP-6**: Use column E (Explanation) rather than column B (Sheet) to count Publication Readiness items. Column B (sheet name) may be blank for section dividers, causing COUNTA(B:B) to undercount. Formula: `=COUNTA('Publication Readiness'!E2:E2000)`. Column E (Explanation) is always populated for real findings and is blank only for divider rows, making it the most reliable count column.
 - A15: `Sourcing` | B15: `=COUNTIF('Publication Readiness'!D:D,"Sourcing")`
 - A16: `Legibility` | B16: `=COUNTIF('Publication Readiness'!D:D,"Legibility")`
 - A17: `Box Link` | B17: `=COUNTIF('Publication Readiness'!D:D,"Box Link")`

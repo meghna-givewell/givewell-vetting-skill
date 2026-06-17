@@ -26,6 +26,8 @@ You are performing Step 10b of a GiveWell spreadsheet vet. This step runs after 
 
 ## Before starting any check
 
+**SEQ-2 — Compaction completion guard**: Before reading any findings or running any check, verify that the compaction agent's AGENT_COMPLETE marker is present in the Findings sheet. Read the Findings sheet in batched 50-row increments (A2:H51, A52:H101, …) until two consecutive batches are empty. Scan every row for one where column B = `final-review-compaction` AND column D = `AGENT_COMPLETE`. If no such row is found after reading all rows, **stop immediately** and report: "final-review-compaction has not completed — gap-fill cannot proceed. Re-run the compaction agent (Step 10a) before running gap-fill." Do not proceed with any check, cascade analysis, or new finding until this marker is confirmed present.
+
 Read reference/pitfalls.md using the Read tool. Apply every entry relevant to cascade analysis, coverage gaps, and Won't Fix verification.
 
 ---
@@ -109,7 +111,7 @@ Coverage declaration: "Coverage gap scan complete. Gaps of 10+ rows (8+ on dense
 
 ## Check 2.5 — Cross-band root cause trace (band-split runs only)
 
-**Only run this check if band-split was used for this vet.** To determine this: (1) check session context for a `band1_end` value; (2) if not present in session context, read Dashboard cell `A154` of the output spreadsheet — if it contains a numeric value, that is `band1_end` (written by the orchestrator during Wave 1 output setup when band-split is active). If A154 is blank and session context shows no band1_end, additionally check Dashboard A99 onward for a staging sheet log entry containing "band-split" or "band1_end" — the orchestrator may have logged it there. If no band-split evidence is found in any of these locations, skip entirely and write: "Check 2.5: skipped — band-split not active (confirmed: no band1_end in session context or Dashboard A154)."
+**Only run this check if band-split was used for this vet.** To determine this: (1) check session context for a `band1_end` value; (2) if not present in session context, read Dashboard cell `A154` of the output spreadsheet — if it contains a numeric value, that is `band1_end` (written by the orchestrator during Wave 1 output setup when band-split is active). If A154 is blank and session context shows no band1_end, additionally check Dashboard A99 onward for a staging sheet log entry containing "band-split" or "band1_end" — the orchestrator may have logged it there. If no band-split evidence is found in any of these locations, apply the following fallback before skipping: **check whether at least 2 staging tabs exist for the same agent** (e.g., both `stg-formula-band1-A` and `stg-formula-band2-A`, or any pair of staging tabs whose names contain a band number suffix). If such a pair exists, treat band-split as active and use the boundary implied by those tab names. Only if neither the metadata nor this tab-name fallback provides evidence of banding, skip entirely and write: "Check 2.5: skipped — band-split not active (confirmed: no band1_end in session context, Dashboard A154, or staging tab names)."
 
 When band-split is active, agents scanned the spreadsheet in row-range bands (band 1: rows 1–`band1_end`, band 2: rows `band1_end+1` and above). Each band pair's reconcile agent was explicitly prohibited from cross-reconciling with other bands. This creates a gap: a High finding in band 2 whose root cause is a cell in band 1 may not be linked to the upstream error.
 
@@ -138,6 +140,8 @@ To verify a sample of Won't Fix decisions:
 2. For each Won't Fix row found, read the cell it covers in the source spreadsheet and ask: is there a plausible reason this finding was cleared? Common valid reasons: the other instance found no issue in the same cell; the deviation was declared-intentional in session context; the finding was a duplicate of a finding from a different agent.
 
 3. This check is intentionally light. Focus on Won't Fix decisions involving: (a) any finding whose column D (Severity) is High — regardless of error type; (b) cells identified as known parameters (moral weight, benchmark, cross-cutting parameter); and (c) formula rows where the formula and row label diverge in a way that would be obvious on visual inspection. Medium and Low Won't Fix decisions on non-parameter rows do not require review.
+
+   **Won't Fix sample cap**: When presenting Won't Fix findings to the researcher for review, show a maximum of **5 findings**. If more than 5 WONT_FIX rows pass the focus criteria above, select the 5 most material (prioritize High severity, then cells identified as key parameters, then by staging tab order) and note: "[N] Won't Fix entries found; showing 5 most material for review. Remaining [N−5] are Medium/Low non-parameter rows not shown." Do not display all WONT_FIX entries — a long list deters review of the entries that matter most.
 
 4. If you find a Won't Fix decision that appears incorrect, file as **Medium**: "A `WONT_FIX` decision in [stg-tab] at row [N] appears to have cleared [cell ref] which may warrant review: [brief description of the anomaly]. Verify this cell was correctly cleared."
 
@@ -191,6 +195,8 @@ Column reference: **A** Finding # | **B** Sheet | **C** Cell/Row | **D** Severit
 - Direction unknown
 
 **Routing note**: All gap-fill findings route to the Findings sheet. Gap-fill does not file Low/Legibility findings — if a coverage gap produces only a Low-severity Legibility issue (cosmetic documentation gap), skip it. Gap-fill covers material gaps that earlier agents missed; Low/Legibility documentation issues should have been caught and routed to Publication Readiness by Wave 1/2 agents.
+
+**Divider-count re-read**: After all new gap-fill findings are written to the Findings sheet, re-read the first two columns (A:B) of the Findings sheet in full (batched 50-row increments as above). Count the number of divider rows — rows where column B contains `───` and column A is blank (or contains no F-* ID). Verify the count matches the expected 1–3 dividers (one per severity tier that has at least one finding: High, Medium, Low). If the count exceeds 3, flag in your reasoning: "Unexpected divider count [N] — verify no spurious divider rows were inserted during gap-fill." If the count is 0, flag: "No divider rows found — verify compaction wrote section dividers correctly." Include the divider count in the final coverage declaration.
 
 **Do not write pass notes, verification notes, or "no issues found" summaries to the Findings sheet.** Coverage declarations belong in your chat output, not in the sheet.
 

@@ -150,7 +150,9 @@ def extract_hyperlinks(zf, path, hl_rels):
 
 def hyperlinks_to_text(hyperlinks, sheet_name):
     lines = [f"--- Hyperlinks: {sheet_name} ---"]
-    for ref in sorted(hyperlinks.keys()):
+    # HYPER-3: sort by (row, col) position rather than alphabetically by ref string.
+    # Alphabetical sort produces A10 < A2 which is wrong.
+    for ref in sorted(hyperlinks.keys(), key=lambda r: parse_cell_ref(r)):
         lines.append(f"  {ref} → {hyperlinks[ref]}")
     return '\n'.join(lines) + '\n'
 
@@ -182,6 +184,13 @@ def find_formula_errors(all_cells):
 
 def find_terminology(all_cells):
     """Return (sheet, ref, value, term) for x-cash and GiveDirectly instances."""
+    # TERM-1: map term_key → display_tag; replaces hardcoded if/elif chains below.
+    _TERM_DISPLAY_TAGS = {
+        'x cash': '',                          # always a finding; no extra tag needed
+        'GiveDirectly': ' [verify: may be source citation]',
+    }
+    # SCAN-5: cells may have None value if the cell is empty or formula-only;
+    # coerce to '' before pattern matching.
     results = []
     for sheet_name, cells in all_cells.items():
         for (row, col), cell in sorted(cells.items()):
@@ -192,7 +201,7 @@ def find_terminology(all_cells):
                 results.append((sheet_name, cell['ref'], val, 'x cash'))
             if _GD_PAT.search(text):
                 results.append((sheet_name, cell['ref'], val, 'GiveDirectly'))
-    return results
+    return results, _TERM_DISPLAY_TAGS
 
 
 def find_placeholders(all_cells):
@@ -207,7 +216,7 @@ def find_placeholders(all_cells):
     return results
 
 
-def pre_findings_to_text(errors, terminology, placeholders):
+def pre_findings_to_text(errors, terminology, term_display_tags, placeholders):
     """Render pre-findings scan results as a text section."""
     lines = ['=== Pre-findings scan ===', '']
 
@@ -224,7 +233,8 @@ def pre_findings_to_text(errors, terminology, placeholders):
     lines.append('    GiveDirectly → candidates; verify not a source citation before filing')
     if terminology:
         for sheet, ref, val, term in terminology:
-            tag = '' if term == 'x cash' else ' [verify: may be source citation]'
+            # TERM-1: look up display tag from dict rather than hardcoded if/elif
+            tag = term_display_tags.get(term, '')
             lines.append(f'  {sheet}!{ref} [{term}]: {_truncate(val)!r}{tag}')
     else:
         lines.append('  (none found)')
@@ -275,6 +285,26 @@ def adjust_formula_refs(formula, delta_row, delta_col):
     return re.sub(r'(?<![A-Za-z])(\$?)([A-Z]{1,3})(\$?)(\d{1,7})', _adjust, formula)
 
 
+def load_named_ranges(zf):
+    """NAME-1: Parse <definedNames> from workbook.xml.
+    Returns list of (name, refers_to) tuples so agents can resolve named-range references."""
+    try:
+        with zf.open('xl/workbook.xml') as f:
+            tree = ET.parse(f)
+    except KeyError:
+        return []
+    root = tree.getroot()
+    defined_names_el = root.find('ss:definedNames', NS)
+    if defined_names_el is None:
+        return []
+    results = []
+    for dn in defined_names_el.findall('ss:definedName', NS):
+        name = dn.get('name', '')
+        refers_to = dn.text or ''
+        results.append((name, refers_to))
+    return results
+
+
 def extract_sheet(zf, path, shared_strings):
     """Extract cells from a sheet. Returns dict: (row, col) -> {value, formula, type}."""
     try:
@@ -290,7 +320,11 @@ def extract_sheet(zf, path, shared_strings):
     cells = {}
     # CELL-3: store (formula_text, master_row, master_col) so dependents can adjust refs
     shared_formulas = {}  # si index -> (master_formula, master_row, master_col)
-    for row_el in root.iter('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}row'):
+    # PERF-1: find sheetData element directly then iterate rows/cells via iter() for
+    # more robust parsing rather than searching the whole tree.
+    sheet_data = root.find('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}sheetData')
+    row_iter = sheet_data.iter('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}row') if sheet_data is not None else []
+    for row_el in row_iter:
         for c in row_el.findall('ss:c', NS):
             ref = c.get('r', '')
             if not ref:
@@ -338,6 +372,10 @@ def extract_sheet(zf, path, shared_strings):
             elif t == 'str' and formula:
                 # Calculated string — value is in v
                 display = raw_val or ''
+            elif t == 'str':
+                # FORM-3: t=str with no formula — calculated string whose formula was not
+                # stored; use cached value.
+                display = raw_val or ''
             elif t == 'inlineStr':
                 is_el = c.find('ss:is', NS)
                 if is_el is not None:
@@ -357,6 +395,38 @@ def extract_sheet(zf, path, shared_strings):
                 'type': t,
                 'ref': ref,
             }
+
+    # MERGE-1: parse <mergeCells> and propagate the top-left cell's value to all
+    # other cells in each merge range that are currently empty, appending "(merged)".
+    merge_cells_el = root.find(
+        '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}mergeCells'
+    )
+    if merge_cells_el is not None:
+        for mc in merge_cells_el:
+            mc_ref = mc.get('ref', '')
+            if not mc_ref or ':' not in mc_ref:
+                continue
+            top_left_ref, bottom_right_ref = mc_ref.split(':', 1)
+            tl_row, tl_col = parse_cell_ref(top_left_ref)
+            br_row, br_col = parse_cell_ref(bottom_right_ref)
+            tl_cell = cells.get((tl_row, tl_col))
+            if tl_cell is None:
+                continue
+            for mr in range(tl_row, br_row + 1):
+                for mc_col in range(tl_col, br_col + 1):
+                    if (mr, mc_col) == (tl_row, tl_col):
+                        continue  # skip the top-left cell itself
+                    if (mr, mc_col) not in cells:
+                        # Build a synthetic ref string for this position
+                        synthetic_ref = col_letter(mc_col) + str(mr)
+                        merged_val = (tl_cell.get('value') or '') + ' (merged)'
+                        cells[(mr, mc_col)] = {
+                            'value': merged_val,
+                            'formula': None,
+                            'type': tl_cell.get('type', ''),
+                            'ref': synthetic_ref,
+                        }
+
     return cells
 
 def cells_to_text(cells, sheet_name):
@@ -364,9 +434,12 @@ def cells_to_text(cells, sheet_name):
     if not cells:
         return f"[Sheet '{sheet_name}' is empty]\n"
     rows = sorted(set(r for r, c in cells))
+    # OUT-1: Column range spans min to max populated column — may appear wide for sparse
+    # sheets with isolated notes/references.
     cols = sorted(set(c for r, c in cells))
     lines = [f"=== Sheet: {sheet_name} ==="]
-    lines.append(f"Rows: {min(rows)}–{max(rows)}, Cols: {col_letter(min(cols))}–{col_letter(max(cols))}")
+    # OUT-4: include cell count in sheet header line
+    lines.append(f"Rows: {min(rows)}–{max(rows)}, Cols: {col_letter(min(cols))}–{col_letter(max(cols))}, Cells: {len(cells)}")
     lines.append("")
     for row in rows:
         row_cells = []
@@ -395,7 +468,9 @@ def main():
         sys.exit(1)
 
     try:
-        zf = zipfile.ZipFile(path)
+        # ZIP-1: open ZipFile inside a with block so the file handle is always closed,
+        # even if an exception fires before any explicit close.
+        zf_handle = zipfile.ZipFile(path)
     except zipfile.BadZipFile:
         sys.exit(f"Error: '{path}' is not a valid ZIP/XLSX file.")
 
@@ -404,15 +479,24 @@ def main():
     out_path = os.path.join('output', f'extracted_{base}.txt')
 
     all_cells = {}
-    with zf:
+    with zf_handle as zf:
         shared_strings = load_shared_strings(zf)
         sheet_names = load_sheet_names(zf)
         rels = load_sheet_rels(zf)
+        # NAME-1: load named ranges so agents can resolve named-range references in formulas
+        named_ranges = load_named_ranges(zf)
 
         with open(out_path, 'w', encoding='utf-8') as out:
             out.write(f"Workbook: {os.path.basename(path)}\n")
             out.write(f"Sheets: {', '.join(n for n, _, _s in sheet_names)}\n")
             out.write("=" * 80 + "\n\n")
+
+            # NAME-1: write Named ranges section before sheet content
+            if named_ranges:
+                out.write("=== Named ranges ===\n")
+                for nr_name, nr_ref in named_ranges:
+                    out.write(f"  {nr_name} = {nr_ref}\n")
+                out.write("\n" + "=" * 80 + "\n\n")
 
             all_hyperlinks = {}
             # TABS-1: load_sheet_names now returns 3-tuples; annotate hidden/veryHidden sheets
@@ -426,6 +510,10 @@ def main():
                 else:
                     display_name = name
                 if not target:
+                    warning_msg = f"Warning: rId '{rid}' for sheet '{display_name}' not found in workbook rels — sheet skipped."
+                    # TABS-2: print to stdout so the warning appears in terminal output,
+                    # not only in the output file.
+                    print(warning_msg)
                     out.write(f"[Could not find sheet target for '{display_name}']\n")
                     all_cells[name] = {}
                     all_hyperlinks[name] = {}
@@ -441,10 +529,10 @@ def main():
                 out.write("\n" + "=" * 80 + "\n\n")
 
     errors = find_formula_errors(all_cells)
-    terminology = find_terminology(all_cells)
+    terminology, term_display_tags = find_terminology(all_cells)
     placeholders = find_placeholders(all_cells)
     with open(out_path, 'a', encoding='utf-8') as out:
-        out.write(pre_findings_to_text(errors, terminology, placeholders))
+        out.write(pre_findings_to_text(errors, terminology, term_display_tags, placeholders))
 
     print(f"Extracted to: {out_path}")
     # Print summary from already-built cells dict

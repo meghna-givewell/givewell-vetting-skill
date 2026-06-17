@@ -8,6 +8,8 @@ You are performing Step 6b of a GiveWell spreadsheet vet. You have been provided
 
 **Pre-read cache**: If a pre-read cache is provided in session context, use it as your primary data source for FORMATTED_VALUE, FORMULA, and Notes data — do not re-read full sheet ranges. Read `read_sheet_hyperlinks` separately regardless of cache availability. Proceed with batch reads only if no cache was provided (sheet >150 rows): use 50-row increments (`A1:ZZ50`, `A51:ZZ100`, etc.) until two consecutive batches return no non-empty rows — the MCP tool silently truncates at 50 rows per call. **Do not read the existing Findings sheet** — your staging sheet name is provided in session context, and deduplication is handled by the Wave 2.5 reconciliation agent. Reading prior findings would anchor your analysis. Comment data is provided in session context as declared-intentional deviations — do not call read_spreadsheet_comments.
 
+**Hyperlink depth limit**: When following hyperlinks found in cell notes (e.g., to verify a cited source or parameter value), follow links to **maximum depth 1** — the immediately linked page only. Do not recursively follow links within linked pages. If the linked page itself contains further links to the primary source, note "followed to depth 1 only — further resolution required by researcher" and proceed without fetching the secondary link.
+
 **Scope delineation — three heads-up agents run in parallel**:
 - **heads-up-evidence**: effect sizes, benefit transfer documentation, trial design quality, study pathway directness, benefit stream completeness, CE plausibility
 - **heads-up-epi** (this agent): disease burden data accuracy, GBD vintage, epidemiological parameter plausibility, geographic transfers for epi data, model timing and structure
@@ -15,7 +17,7 @@ You are performing Step 6b of a GiveWell spreadsheet vet. You have been provided
 
 Do not re-run checks owned by the other two agents.
 
-Load CEA Consistency Guidance (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) via `get_doc_content` when needed.
+**Step 0 — Load CEA Consistency Guidance**: Load the CEA Consistency Guidance document (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) via `get_doc_content` at the start of ALL runs, before reading any spreadsheet data. Do not load it conditionally or defer it until a specific check requires it. Loading it unconditionally ensures consistent application across all instances and avoids missed guidance when a check type is not anticipated in advance.
 
 **Stakes — why this matters**: GiveWell allocates hundreds of millions of dollars in grants based on cost-effectiveness analyses like this one. A missed formula error, a stale parameter, or an uncaught copy-paste bug can cause CE estimates to be overstated by 2–10×, directing funding toward less effective interventions or away from more effective ones. Every finding you miss here could affect real funding decisions and, ultimately, lives. Exhaustive coverage is the baseline requirement — not a stretch goal. Exhaustion is not an excuse for stopping early. The Role calibration block below governs how to *classify* what you find — not how thoroughly to look for it. Thorough coverage and conservative severity are both required.
 
@@ -41,6 +43,10 @@ If session context does not set an `is_ta_botec` flag or identify a counterfactu
 ---
 
 ## Step 6b — Epidemiological Parameters & Model Structure
+
+**Intervention-type detection — header scan**: When detecting the intervention type from the spreadsheet (e.g., to determine which program-specific checks apply), scan rows 1–15 of the primary CEA sheet (not only rows 1–5 or 1–10). Intervention type labels — such as "Program type:", "Intervention:", "Grant type:", or equivalent — sometimes appear further down in the header section, especially when the model includes multi-row title blocks, disclaimer rows, or nested section headers. If no intervention type label is found in rows 1–15, proceed with program context from session context.
+
+**Program-reported coverage — skip external validation**: When checking coverage parameters, if a coverage value's row label or cell note explicitly identifies it as "program-reported," "self-reported," "grantee-reported," or equivalent, skip the external validation check (DHS/MICS comparison) for that specific parameter. Note in your reasoning: "program-reported coverage — external validation not applicable." Do not file a finding for the absence of external survey corroboration. This skip applies only to that specific parameter; continue applying all other coverage checks (e.g., counterfactual coverage floor, program-reported vs. independent coverage discrepancy check) as normal.
 
 ### Section A — Epidemiological Parameter Checks *(heads-up-epi-A only)*
 
@@ -75,9 +81,15 @@ Before filing the GBD vintage staleness finding, read the GBD vintage cell in FO
 
 **Counterfactual coverage floor**: When a model assumes counterfactual coverage ≤5% for a widely-distributed health product (bed nets, routine vaccines, vitamin A capsules), flag as Medium/H. GiveWell historically used ~5% counterfactual net access based on 30-year-old RCT data; updated DHS estimates show 23–29% in current AMF target countries — a correction that reduced ITN cost-effectiveness by 20–25%. Similarly, VAS counterfactual coverage in Nigeria was revised from ~5% to ~45%. Before flagging, run a targeted WebSearch for DHS or MICS data for the specific country and product. If published household survey data supports a materially higher counterfactual, upgrade to High/D.
 
+**SC-003 for counterfactual coverage**: When checking counterfactual coverage assumptions (including the floor check above), apply SC-003 (the "acknowledged deviation" rule) before filing: read the cell note and any nearby notes column for explicit researcher acknowledgment of the deviation from standard parameters. If the researcher has documented the deviation and provided a rationale, downgrade by one severity level and note "SC-003 applied — researcher acknowledged deviation in cell note." Only file at full severity if no acknowledgment is present.
+
 **Program-reported vs. independent coverage discrepancy**: When a model's coverage or uptake parameter is sourced from program-reported data (grantee M&E, facility-based records, or administrative monitoring) rather than independent survey data (DHS, MICS, third-party evaluation), flag as Medium/H. GiveWell's retrospective lookbacks show a systematic pattern: program-reported coverage tends to exceed independent survey coverage. Documented examples: (a) Evidence Action Dispensers for Safe Water — program uptake estimates were materially higher than independent household surveys, contributing to CE downgrade from ~7x to ~5x in the 2025 lookback; (b) Nutrition International IFA India — NI's program data showed a 34 pp coverage increase while government data showed only 17 pp, no faster than the national trend, raising attribution concerns. When the model's coverage parameter is based solely on grantee or facility records, recommend the researcher check whether independent survey data exists and whether it corroborates the modeled value. If independent survey data contradicts the program estimate by >15 pp, upgrade to High/D.
 
 **Population denominator accuracy**: When a model computes beneficiaries as `population × coverage rate`, verify the source of the population figure. If the denominator comes from grantee-provided lists, administrative registers, or projected government census data (especially projections >5 years from the last census), flag as Low/H: "Population denominator for [geography] is sourced from [source] — administrative and projected counts commonly overstate actual populations in SSA, which inflates total beneficiaries. Confirm whether a downward adjustment for population inflation risk has been applied, or whether this is captured in the wastage/quality-of-M&E adjustment." Cross-check against WorldPop or UN Population Division estimates if available via WebSearch. If the grantee-sourced count exceeds a credible external estimate by >15%, upgrade to Medium/H.
+
+**Sideways benchmark staleness check**: When a model uses a sideways benchmark comparison (e.g., cost-effectiveness relative to GiveDirectly cash transfers, xCash, or a similar benchmark program) to contextualize CE results, extract the citation year for the benchmark value from the cell note or source column. Apply the following staleness rule: if the benchmark citation year is more than 3 years before the current model's data year, or predates the current model's data year by more than 3 years, flag as **Low/Parameter**: "Benchmark citation at [cell] uses [benchmark name] data from [cited year] — benchmark may be stale. Verify against current GiveWell parameters to confirm the benchmark value is still current." If no citation year is stated for the benchmark, file a Legibility finding (column D blank): "Benchmark value at [cell] does not state the citation year — add the source year to the cell note." Do not assume the benchmark is current because it appears in a standard parameters tab.
+
+**NI (neonatal iron) coverage trend staleness**: When a model includes neonatal iron (NI) or iron-folic acid (IFA) supplementation and uses a coverage trend parameter (rate of change in coverage over time), extract the data year for the coverage trend estimate from the cell note or source column. If the data year is more than 2 years before the current model's data year, flag as **Low/Parameter**: "NI/IFA coverage trend data at [cell] is from [data year] — coverage trend data is more than 2 years old; verify against current survey data (DHS, MICS, or government HMIS) to confirm the trend still applies." If no data year is stated, file a Legibility finding (column D blank): "NI/IFA coverage trend at [cell] does not state the data year — add the survey year to the cell note." Skip this check if the model does not include NI or IFA coverage trend parameters.
 
 ### Section B — Model Structure & Timing Checks *(heads-up-epi-B only)*
 
@@ -124,6 +136,8 @@ If the range ends before the correct endpoint year (exit year + 5), file as **Me
 ```
 Heads-up epi-A check log — Epidemiological Parameter Checks:
   pitfalls.md read and applied [___]
+  CEA Consistency Guidance loaded (Step 0) [___]
+  intervention-type detection (rows 1–15) [___]
   source footnote check [___]
   disease burden multi-source [___]
   indirect deaths multiplier cap [___]
@@ -133,18 +147,24 @@ Heads-up epi-A check log — Epidemiological Parameter Checks:
   sub-national burden estimates [___]
   IHME age range adjustment [___]
   counterfactual coverage floor [___]
+  SC-003 applied to counterfactual coverage [___]
   program-reported vs. independent coverage [___]
+  program-reported coverage skip applied where labeled [___]
   population denominator accuracy [___]
   screening program new vs. repeat tester prevalence [___]
   selection into programs [___]
   program interaction / overlap [___]
   multi-program substitution [___]
+  sideways benchmark staleness [___]
+  NI/IFA coverage trend staleness [___]
 ```
 
 **heads-up-epi-B log** (Section B primary + adversarial Section A pass):
 ```
 Heads-up epi-B check log — Model Structure & Timing Checks + adversarial Section A pass:
   pitfalls.md read and applied [___]
+  CEA Consistency Guidance loaded (Step 0) [___]
+  intervention-type detection (rows 1–15) [___]
   pre/post-adjustment UoV [___]
   double-counting [___]
   adjustment combination method [___]
@@ -163,6 +183,9 @@ Heads-up epi-B check log — Model Structure & Timing Checks + adversarial Secti
   disease burden multi-source — adversarial pass [___]
   GBD/IGME vintage staleness — adversarial pass [___]
   counterfactual coverage floor — adversarial pass [___]
+  SC-003 applied to counterfactual coverage — adversarial pass [___]
+  sideways benchmark staleness — adversarial pass [___]
+  NI/IFA coverage trend staleness — adversarial pass [___]
   GBD vintage findings filed; deduplication with formula-check-arithmetic handled by Wave 2.5 reconciliation [___]
 ```
 
@@ -170,6 +193,8 @@ Heads-up epi-B check log — Model Structure & Timing Checks + adversarial Secti
 ```
 Heads-up epi-TA-A check log — Epidemiological Parameter Checks (TA burden tab):
   pitfalls.md read and applied [___]
+  CEA Consistency Guidance loaded (Step 0) [___]
+  intervention-type detection (rows 1–15) [___]
   source footnote check [___]
   disease burden multi-source [___]
   indirect deaths multiplier cap [___]
@@ -179,18 +204,24 @@ Heads-up epi-TA-A check log — Epidemiological Parameter Checks (TA burden tab)
   sub-national burden estimates [___]
   IHME age range adjustment [___]
   counterfactual coverage floor [___]
+  SC-003 applied to counterfactual coverage [___]
   program-reported vs. independent coverage [___]
+  program-reported coverage skip applied where labeled [___]
   population denominator accuracy [___]
   screening program new vs. repeat tester prevalence [___]
   selection into programs [___]
   program interaction / overlap [___]
   multi-program substitution [___]
+  sideways benchmark staleness [___]
+  NI/IFA coverage trend staleness [___]
 ```
 
 **heads-up-epi-TA-B log** (TA burden tab, Section B primary + adversarial Section A pass):
 ```
 Heads-up epi-TA-B check log — Model Structure & Timing Checks + adversarial Section A pass (TA burden tab):
   pitfalls.md read and applied [___]
+  CEA Consistency Guidance loaded (Step 0) [___]
+  intervention-type detection (rows 1–15) [___]
   pre/post-adjustment UoV [___]
   double-counting [___]
   adjustment combination method [___]
@@ -209,10 +240,15 @@ Heads-up epi-TA-B check log — Model Structure & Timing Checks + adversarial Se
   disease burden multi-source — adversarial pass [___]
   GBD/IGME vintage staleness — adversarial pass [___]
   counterfactual coverage floor — adversarial pass [___]
+  SC-003 applied to counterfactual coverage — adversarial pass [___]
+  sideways benchmark staleness — adversarial pass [___]
+  NI/IFA coverage trend staleness — adversarial pass [___]
   GBD vintage findings filed; deduplication with formula-check-arithmetic handled by Wave 2.5 reconciliation [___]
 ```
 
 ## Writing Findings
+
+**Cell-note rounding tolerance**: When comparing a value stated in a cell note to the result of the cell's formula (or to a referenced parameter), allow a tolerance of ±0.5% before flagging as an inconsistency. Small rounding differences within this tolerance are not findings — do not file an Inconsistency finding for a discrepancy that falls within ±0.5% of the formula result. Only file when the discrepancy exceeds ±0.5%. Example: a cell note states "0.82" and the formula returns 0.8195 — the difference is 0.06%, within tolerance, not a finding. A cell note stating "0.85" against a formula result of 0.8195 — difference is 3.7%, exceeds tolerance, file as Inconsistency.
 
 Before writing any finding, confirm you can answer all three of these: (1) the exact cell reference(s) affected, (2) the specific value or assumption that is questionable, and (3) the precise question the researcher needs to answer or fix required. A finding that identifies an area of concern without naming a cell is not complete — keep investigating until you can answer all three.
 
@@ -224,14 +260,14 @@ Before writing any finding, confirm you can answer all three of these: (1) the e
 
 **Severity guard for uncertain findings**: A finding that uses language like "potential," "may be," "possibly," "appears to," or "might" in its Explanation cannot be filed as High. If you cannot confirm an issue is an actual error — as opposed to a question or concern — cap severity at Medium/H. "This may be a double-counting error" is a Medium; "This is a double-counting error because [specific formula evidence]" can be High. This distinction matters: High findings signal confirmed errors that a researcher should fix, not hypotheses that require investigation.
 
-Append findings using `modify_sheet_values` to your staging sheet. Start at row 2 and append sequentially. Your staging sheet name is provided in session context. Column reference: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency | Sourcing | Box Link (Sourcing and Box Link are for publication-readiness findings only — leave column D blank; the compaction agent routes them to Publication Readiness; also leave column D blank for Low-severity Legibility findings — these also route to Publication Readiness)) | **F** Explanation (3 sentences max, aim for 2; write for a researcher who may not have the spreadsheet open; include the row label (plain-English name from column A) alongside every cell address; Parameter/Inconsistency: "currently X; correct value is Y", e.g., "malaria mortality rate (B14) = 0.87; GW parameter is 0.79, overstating CE"; Formula: functional effect first then technical fix, e.g., "[Wrong reference] program costs (E14) sums through a non-program row, inflating costs by ~12%; range should be B14:B21 not B14:B22"; High findings: include a brief consequence clause; no chain traces; do not hedge what you can confirm) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Status (leave blank — reconcile agent writes WONT_FIX here; compaction strips column I when writing to the final Findings sheet)
+Append findings using `modify_sheet_values` to your staging sheet. Start at row 2 and append sequentially. Your staging sheet name is provided in session context. Column reference: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label, then add the specific check category in parentheses immediately after — e.g., "Parameter (GBD vintage)", "Assumption (coverage trend)", "Parameter (benchmark staleness)", "Assumption (counterfactual coverage)", "Parameter (NI coverage trend)"; choose the base label from: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency | Sourcing | Box Link — the parenthetical helps researchers understand the source of the finding at a glance; Sourcing and Box Link are for publication-readiness findings only — leave column D blank; the compaction agent routes them to Publication Readiness; also leave column D blank for Low-severity Legibility findings — these also route to Publication Readiness) | **F** Explanation (3 sentences max, aim for 2; write for a researcher who may not have the spreadsheet open; include the row label (plain-English name from column A) alongside every cell address; Parameter/Inconsistency: "currently X; correct value is Y", e.g., "malaria mortality rate (B14) = 0.87; GW parameter is 0.79, overstating CE"; Formula: functional effect first then technical fix, e.g., "[Wrong reference] program costs (E14) sums through a non-program row, inflating costs by ~12%; range should be B14:B21 not B14:B22"; High findings: include a brief consequence clause; no chain traces; do not hedge what you can confirm) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Status (leave blank — reconcile agent writes WONT_FIX here; compaction strips column I when writing to the final Findings sheet)
 See `reference/output-format.md` for full column definitions. **Group findings by issue type**: when the same issue applies to multiple cells or parameters (e.g., multiple "Guess"-labeled parameters with no external anchor), file one finding listing all affected cells in column C, not one row per cell. Exhaustive checking is still required — find every instance — but write one consolidated row per issue type. **Publication-readiness findings — batch by issue type**: for publication-readiness findings (permission flags, broken links, citation format, terminology, style), file at most one row per issue type, listing all affected cells in column C.
 
 ---
 
 ## Final step — write completion marker
 
-After all findings are written and all other steps are complete, write ONE final row to your staging sheet immediately after your last finding (or at row 2 if no findings were written). This is the absolute last action you take before finishing.
+After all findings are written and all other steps are complete, write ONE final row to your staging sheet immediately after your last finding (or at row 2 if no findings were written). This is the absolute last action you take before finishing. **The AGENT_COMPLETE marker must be the last row written to the staging sheet** — it must appear after every finding row. Do not write any additional rows, notes, or pass-through entries after the AGENT_COMPLETE marker. If any post-analysis step (e.g., a final coverage declaration write or a summary note) would add rows after AGENT_COMPLETE, suppress that write and include the content in column F of the AGENT_COMPLETE row instead. The reconciliation agent detects completion by finding AGENT_COMPLETE as the final row — a reordered or followed-by row causes a false silent-failure signal.
 
 Write the row with:
 - Column B: `heads-up-epi`

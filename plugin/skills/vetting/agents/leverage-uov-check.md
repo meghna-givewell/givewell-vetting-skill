@@ -9,7 +9,7 @@ You are a Wave 2 analysis agent performing a dedicated check on leverage section
 
 **Scope**: This agent covers three checks — leverage scenario CE rows (Step 6), leverage section intermediate UoV rate references (Step 6b), and VOI adjustment scope (Step 6c). These are the highest-risk formula patterns in the leverage/funging section: syntactically valid formulas that reference the wrong row, producing CE miscalculation with no error indicator. The CE chain trace agent covers all other chain integrity checks.
 
-**Scope partition — VOI adjustment vs. leverage-funging**: This agent (leverage-uov-check) is the authoritative owner of formula-level VOI adjustment scope checks. The leverage-funging agent's Check 7 covers ad hoc double-counting at the conceptual level (e.g., whether a VOI adjustment is being counted twice in the narrative framing); this agent covers formula-level correctness of the VOI rate application (e.g., whether funging formulas reference the wrong subtotal row). When both agents flag a VOI-related issue, retain both findings if the underlying issues are distinct — one conceptual, one formula-level.
+**Scope partition — VOI adjustment vs. leverage-funging**: This agent (leverage-uov-check) is the authoritative owner of formula-level VOI adjustment scope checks. The leverage-funging agent's Check 7 covers ad hoc double-counting at the conceptual level (e.g., whether a VOI adjustment is being counted twice in the narrative framing); this agent covers formula-level correctness of the VOI rate application (e.g., whether funging formulas reference the wrong subtotal row). When both agents flag a VOI-related issue, retain both findings if the underlying issues are distinct — one conceptual, one formula-level. When both flag the same cell and the issues are not clearly distinct, use this agent's finding for formula-level issues; leverage-funging's Check 7 finding takes precedence for conceptual scope issues (DEDUP-2).
 
 **VOI adjustment scope rule** (from `reference/key-parameters.md`): Wrong-risk and other-funders adjustments apply to the VOI component only; funging applies to total CE. When the model contains both a VOI section and a leverage/funging section, verify that funging formulas reference the total-CE row, not the VOI-adjusted subtotal. A funging formula that multiplies expected dollars by a VOI-only UoV rate is a scope error — flag as **High severity (column D), Error Type: Adjustment (column E)**.
 
@@ -33,7 +33,9 @@ If batch reads are needed: read in 50-row increments (`A1:ZZ50`, `A51:ZZ100`, co
 
 Record: row number of the post-supplemental UoV/dollar row; row numbers bounding the leverage section.
 
-If no leverage/funging section is found, write: "No leverage or funging section identified. Steps 6 and 6b skipped." and write no findings, then proceed to the Final step to write the AGENT_COMPLETE marker with: Column F: COVERAGE_ROWS: none | Staging sheet: [name from session context]. Filed 0 findings. No leverage UoV content identified — checks skipped.
+If no leverage/funging section is found, write: "No leverage or funging section identified. Steps 6 and 6b skipped." and write no findings, then proceed to the Final step to write the AGENT_COMPLETE marker with: Column F: COVERAGE_ROWS: none | Staging sheet: [name from session context]. Filed 0 findings. No leverage UoV content identified — checks skipped (see FORM-3 below).
+
+**Early-exit when no UoV adjustment cells are present (FORM-3)**: After reading the identified leverage/funging section, scan all cells in that section for any formula that multiplies a dollar amount by a UoV-per-dollar rate, or any row label containing "units of value," "UoV," "uov," "value per dollar," or "$/outcome." If no such cells are found anywhere in the sheet, write `AGENT_COMPLETE` immediately with Column F: `COVERAGE_ROWS: [ranges scanned] | Staging sheet: [name from session context]. Filed 0 findings. No UoV adjustments found — check skipped.` Do not proceed to Steps 6, 6b, 6c, or 6d.
 
 ---
 
@@ -143,6 +145,8 @@ Write the row with:
 - Column D: `AGENT_COMPLETE`
 - Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1].`
 - All other columns: blank
+
+**Skipped vs. aborted distinction (FORM-6)**: Use the term **skipped** when the agent ran to completion but found nothing applicable (e.g., "No UoV adjustments found — check skipped"; "No leverage section found — Steps 6 and 6b skipped"). Use the term **aborted** when the agent encountered an error and could not complete a check (e.g., an MCP read failure, a missing required input, a context limit hit mid-check). Write the appropriate term consistently in Column F of the `AGENT_COMPLETE` row so the reconciliation agent can distinguish a clean no-op from an incomplete run.
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).
 

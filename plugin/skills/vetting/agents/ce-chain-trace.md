@@ -59,6 +59,8 @@ Exception: if the program context explains the CE multiple represents a differen
 
 If the value is outside the 0.5x–200x range, file this as a finding before continuing to trace the chain — it may indicate a units error or structural formula error that will become apparent during chain tracing.
 
+**Apply the plausibility guard to EVERY CE output**: when multiple CE outputs exist (per-country, per-scenario, per-program-type), apply the 0.5x–200x check to each one independently. Do not limit the plausibility guard to the first or primary CE output. Record the plausibility check result for each CE output separately before proceeding to Step 2.
+
 ---
 
 ## Step 2 — Map the chain: units of value per $10,000
@@ -89,6 +91,8 @@ Trace each cell reference in the final CE formula back through this structure. F
 Record the full dependency chain as you trace it, noting each cell reference and its role.
 
 **Trace termination rule**: Tracing stops when you reach a cell that (a) contains a hardcoded value with no further cell references, or (b) has already been verified earlier in this trace session. Do not follow references into section-divider tabs (names beginning `-->`) or pure formatting rows (no numeric content).
+
+**Section-divider tab reference check**: If a formula in the CE chain references a tab whose name starts with `-->`, that tab is a section divider, not a data tab. File as **Medium/Assumption**: "CE formula references a section-divider tab (`-->`) — verify this is a pass-through and not an error." Do not trace into the section-divider tab; record the finding and continue tracing as if the pass-through is correct.
 
 **VOI tab note**: When tracing through VOI tab formulas, note column-range anomalies in your reasoning as follows:
 - If the anomaly is in a formula that references the **VOI_Priors tab** (or an equivalent Bayesian priors tab), defer filing to the VOI_Priors consistency check in Step 5 — do not file during Step 2 or Step 3 to avoid duplicate findings. ("VOI_Priors anomaly" means: a column-range that is wider or narrower than structurally analogous rows in the VOI tab, where the referenced source is the VOI_Priors tab specifically.)
@@ -138,6 +142,14 @@ Every value in the chain that is not a universally known constant (days per week
 
 Flag as **Medium** if a formula contains an embedded number that should be a referenced parameter (e.g., `=B14 * 0.87` where 0.87 appears to be a coverage rate rather than a universal constant).
 
+**SUM range boundary check**: For every SUM formula in the CE chain, verify that the range endpoints match the actual data block bounds. Procedure:
+1. Read the row label at the first row of the SUM range (the opening endpoint).
+2. Read the row label at the last row of the SUM range (the closing endpoint).
+3. If either endpoint's row label is "Total", "Header", "Assumption", or blank — rather than a named parameter — the range boundary is likely off by one or more rows, potentially including a non-data row or excluding a data row.
+4. Flag as **Medium/Formula [Off-by-one]**: "SUM range endpoint at [cell ref] has label '[label]' — this appears to be a [total/header/blank] row rather than a named parameter, suggesting the range boundary is misaligned. Verify that the range [start]:[end] covers exactly the intended data block."
+
+This check applies to all SUM formulas (including SUMIF and SUMPRODUCT used as sums) in the CE chain. Do not apply to structural SUM formulas where a Total row is an intentional input (document in reasoning if skipped).
+
 ### 3d — Moral weights are applied, not skipped or doubled
 
 Verify the moral weight application step:
@@ -176,6 +188,34 @@ Flag as **High** if a named adjustment (IV, EV, leverage, funging) is absent fro
 COVERAGE | ce-chain-trace | named adjustment chain verification | [N] adjustments | issues found: [N] | status: complete
 
 If an adjustment type is not present in this model (e.g., no leverage row exists), write `n/a — not modeled` for that entry.
+
+---
+
+### 3e-i — SUMPRODUCT implicit-filter check
+
+For every SUMPRODUCT formula in the CE chain, verify that the boolean-condition array is correctly specified:
+
+1. Identify the identifier column referenced by the boolean condition (e.g., `(A2:A100="Nigeria")`).
+2. Confirm the identifier column is the correct column for the filter — e.g., the column that actually contains country names, program IDs, or the relevant classification label, not a neighboring column that is numerically similar.
+3. Confirm the condition array covers the full data range — check that the row range of the boolean array matches the row range of the value arrays in the same SUMPRODUCT.
+4. If the boolean array references the wrong column (e.g., filters on column B when the identifier is in column A), flag as **Medium/Formula [Wrong reference]**: "SUMPRODUCT in [cell ref] ([row label]) applies boolean filter on [wrong column ref] — this column contains [actual content of that column] rather than [expected filter identifier]. The filter likely excludes rows that should be included, understating the sum."
+5. If the boolean array has a narrower row range than the value arrays (e.g., boolean covers rows 2:50 but value arrays cover 2:100), flag as **Medium/Formula [Wrong reference]**: "SUMPRODUCT in [cell ref] has a boolean filter array ([boolean range]) shorter than the value array ([value range]); rows [start of gap]:[end of range] are never matched and are excluded from the sum."
+
+COVERAGE | ce-chain-trace | SUMPRODUCT implicit-filter check | [N] SUMPRODUCT formulas checked | issues found: [N] | status: complete
+
+---
+
+### 3e-ii — Sign-consistency check for adjustment rows
+
+For every adjustment row in the model, verify that the sign of the formula matches the direction stated in the row label:
+
+1. Read the row label (column A) for each adjustment row.
+2. Read the formula (FORMULA mode) for the adjustment cell.
+3. Determine the expected sign from the row label: labels containing words such as "reduction", "discount", "penalty", "loss", "downward adjustment", "negative adjustment", or equivalent imply subtraction (the adjustment should reduce the running value); labels containing "benefit", "uplift", "increase", "bonus", "upward adjustment", or equivalent imply addition.
+4. If the formula applies the opposite sign — e.g., a "reduction" row adds rather than subtracts, or a "benefit" row subtracts — flag as **Medium/Formula [Sign error]**: "Adjustment row '[row label]' ([cell ref]) formula applies [addition/subtraction] but the label indicates a [reduction/benefit]; verify whether the sign is intentional or an error."
+5. Do not flag sign direction when the row label is neutral or ambiguous (e.g., "IV adjustment", "adjustment factor") — only flag when the label explicitly implies a direction that the formula contradicts.
+
+COVERAGE | ce-chain-trace | sign-consistency check | [N] adjustment rows checked | issues found: [N] | status: complete
 
 ---
 
@@ -228,6 +268,37 @@ COVERAGE | ce-chain-trace | IFERROR masking check | [N] CE chain cells checked |
 
 ---
 
+### 3h — Cross-tab label verification for Simple CEA references
+
+For any formula in the CE chain that references a Simple CEA tab (or an equivalent summary/simplified output tab):
+
+1. Read the formula in FORMULA mode to identify the exact cell reference in the Simple CEA tab (e.g., `='Simple CEA'!B12`).
+2. Read the row label at that referenced cell in the Simple CEA tab (column A of the same row).
+3. Confirm the row label matches the expected parameter — i.e., the parameter this formula is trying to pull (as inferred from the CE chain context and the row label in the current sheet).
+4. If the row label at the referenced Simple CEA cell does not match the expected parameter, flag as **High/Formula [Wrong reference]**: "CE chain formula in [cell ref] references Simple CEA tab at [Simple CEA cell ref] (label: '[actual label]') but is expected to pull [expected parameter]. A row shift may have moved the correct value to a different row, creating a wrong-row reference that is numerically plausible but semantically incorrect."
+
+Do not assume a reference is correct because the value is numerically plausible — a wrong row reference in a Simple CEA can go undetected because adjacent rows often contain similarly scaled values.
+
+COVERAGE | ce-chain-trace | Simple CEA cross-tab label verification | [N] Simple CEA references checked | issues found: [N] | status: complete
+
+---
+
+### 3i — IMPORTRANGE handling
+
+For every IMPORTRANGE formula encountered in the CE chain:
+
+1. Note the source spreadsheet ID and sheet name from the IMPORTRANGE arguments (e.g., `IMPORTRANGE("spreadsheet_id", "Sheet1!A1:B10")`).
+2. Note the referenced range within the source spreadsheet.
+3. Verify that the range referenced by IMPORTRANGE matches what the CE chain expects at that point — i.e., that the range covers the correct rows and columns for the intended parameter.
+4. If the IMPORTRANGE source spreadsheet ID or sheet name cannot be verified (e.g., the external spreadsheet is inaccessible), flag as **Medium/Assumption**: "CE chain contains IMPORTRANGE referencing external spreadsheet [source ID], sheet '[sheet name]', range '[range]' — this source cannot be verified during the vet. Confirm the external spreadsheet is current and the referenced range is correct."
+5. If the IMPORTRANGE source is accessible and the referenced range is verifiable, confirm the range semantics match the CE chain expectation and note the result in your reasoning. Only file a finding if a mismatch is confirmed.
+
+Note: Always record the IMPORTRANGE source spreadsheet ID and sheet name in your Step 2 chain map, even if the source is accessible and the reference appears correct.
+
+COVERAGE | ce-chain-trace | IMPORTRANGE handling | [N] IMPORTRANGE formulas found | issues found: [N] | status: complete
+
+---
+
 ## Step 4 — Verify source inputs at the chain's roots
 
 **Scope note**: GBD vintage staleness (stale GBD data year in a source tab) is owned by formula-check-arithmetic. If you encounter a stale GBD vintage during chain tracing, note it in your reasoning as "deferred to formula-check-arithmetic" but do not file a finding. Similarly, discount rate Parameter findings are owned by key-params-check — do not file independently.
@@ -238,17 +309,31 @@ For the terminal inputs at the bottom of the chain (cost per treatment, efficacy
 
 Check for a cell note, adjacent label, or Sources tab entry that identifies where the value comes from. An input without any source documentation is flagged as Medium unless it is a GiveWell standard default (flagged as Low).
 
+**Required output for each terminal input checked** — write this line before moving on from any terminal input in the chain:
+
+`[input cell] ([row label]): source documented? [YES — note/tab/label text | NO]. Severity if no source: [Medium / Low — GW standard default].`
+
 ### 4b — Inputs match their claimed source
 
 Where a cell note cites a specific table, figure, or page of a document:
 - Compare the hardcoded value against the description. If the description says "efficacy = 0.63 per treated child" but the cell contains 0.36, flag as High.
 - Do not look up external documents unless the value is highly implausible — focus on internal consistency (does the value match what the note claims?).
 
+**Required output for each claimed-source check** — write this line before moving on from any input whose source was found in 4a:
+
+`[input cell] ([row label]): claimed source = '[source description]'. Cell value = [X]. Source description consistent with cell value? [YES / NO — explain discrepancy if NO].`
+
 ### 4c — Inputs flow from the correct tab
 
 If an input is described as coming from a source data tab (e.g., a WUENIC coverage data tab, a separate cost model spreadsheet), verify the formula actually references that tab and not a hardcoded or stale local copy.
 
 Flag as **High** if a formula that should reference a source data tab instead contains a hardcoded value, or references the wrong row.
+
+**Required output for each tab-reference check** — write this line before moving on from any input that should reference a source data tab:
+
+`[input cell] ([row label]): expected source tab = '[tab name]'. Formula references: [tab!cell or 'hardcoded']. Correct tab reference? [YES / NO].`
+
+**Novel program adjustment threshold**: When assessing whether a novel program's adjustment chain deviates materially from the GW standard benchmark (Step 5), define the flag threshold as: total net adjustment greater than 20 percentage points from the benchmark (positive or negative). This threshold is documented in GiveWell's CEA Consistency Guidance. If the total net adjustment is within 20 percentage points, no finding is needed regardless of which individual adjustments differ.
 
 ### 4d — Stale row reference check (cross-tab version drift)
 
@@ -281,6 +366,8 @@ Based on the program context and grant document (if provided):
 - Are there outcomes in the model not mentioned in the grant document that materially affect the CE estimate? Flag as **Medium** — may be intentional extensions, requires input.
 - Does the model's description of what it is computing (in cell notes, tab names, or row labels) match the actual formula structure? A label that says "coverage-adjusted deaths averted" should reference a coverage parameter in its formula.
 
+**Fallback when no grant document is available**: If no grant document ID is present in session context, do not skip this step. Instead, compare the CE chain against the Step 0.5 program context description: check whether every outcome type and adjustment named in the program context description has a corresponding row in the chain, and whether the chain contains any material component not mentioned in the program context. Apply the same High/Medium filing logic as above. Note in the AGENT_COMPLETE marker whether the grant-doc comparison was performed (with grant doc ID) or skipped in favor of the program-context fallback (write: `Grant-doc comparison: skipped — no grant doc in session context; compared against Step 0.5 program context instead`).
+
 **VOI_Priors cross-row column-range consistency** (run when the model contains a VOI tab): When the CE chain passes through a VOI section that references a VOI_Priors tab (or equivalent Bayesian priors tab), identify all rows in the VOI tab whose formulas reference that priors tab. For each pair of rows that compute analogous quantities — e.g., two rows both computing "probability that [outcome] changes CE for [funder type]" or two rows both computing expected CE for different scenarios — compare the column range each formula references from the priors tab. If row A references `VOI_Priors!$B$5` (single column) and row B references `VOI_Priors!$B$5:$C$5` (wider range) for a structurally analogous calculation, flag as **Medium/Formula**: "Row [A ref] and row [B ref] both compute [analogous concept] but reference different column ranges from VOI_Priors (`[formula A]` vs. `[formula B]`). If both rows model the same type of calculation, they should reference the same column range — verify which is correct and apply consistently." Do not flag where a cell note documents why one row has a wider or narrower reference than its analogue.
 
 **Novel program adjustment benchmarking**: Before comparing a model's adjustment chain to the GW standard malaria benchmark, assess whether the program type is structurally analogous to standard GW malaria prevention programs (ITNs, SMC, vaccines) or is a novel program type (case management, supply chain, training, technical assistance). For **novel programs** where the standard malaria benchmark was not designed to apply, do not file the adjustment deviation as an error. Instead file as Medium/Assumption: "Adjustment chain deviates from the GW standard malaria benchmark. Document each adjustment's rationale — note that standard benchmark comparisons may not apply given this program's different theory of change." If the model's total net adjustment is within 20 ppts of the benchmark, no finding is needed.
@@ -303,11 +390,11 @@ Before writing any finding, confirm: (1) exact cell reference(s) for both the er
 
 Append findings using `modify_sheet_values` to your staging sheet. Start at row 2 and append sequentially. Your staging sheet name is provided in session context.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (3 sentences max, aim for 2; write for a researcher who may not have the spreadsheet open; include the row label (plain-English name from column A) alongside every cell address; Parameter/Inconsistency: "currently X; correct value is Y", e.g., "malaria mortality rate (B14) = 0.87; GW parameter is 0.79, overstating CE"; Formula: functional effect first then technical fix, e.g., "[Wrong reference] program costs (E14) sums through a non-program row, inflating costs by ~12%; range should be B14:B21 not B14:B22"; High findings: include a brief consequence clause; no chain traces; do not hedge what you can confirm. **When E = Formula, begin the Explanation with a bracketed sub-type: [Copy-paste] | [Wrong reference] | [Year range] | [Sign error] | [Wrong operator] | [Off-by-one]. Example: [Wrong reference] B14 uses C22 (Nigeria rate) but should reference C23 (Kenya rate).**) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x. **Column H must never be blank for Medium or High Formula, Parameter, or Adjustment findings. If direction is clear but magnitude unknown, write Raises CE — magnitude unknown or Lowers CE — magnitude unknown. If direction depends on researcher input, write Direction unknown. Write No CE impact only when confirmed zero CE effect.**) | **I** Status (leave blank — reconcile agent writes WONT_FIX here; compaction strips column I when writing to the final Findings sheet)
+Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency; For Sourcing and Box Link findings: leave column D blank — these always route to Publication Readiness. For Legibility findings: leave column D blank ONLY when Severity is Low; write Medium or High in column D when the Legibility issue is material — these route to Findings.) | **F** Explanation (3 sentences max, aim for 2; write for a researcher who may not have the spreadsheet open; include the row label (plain-English name from column A) alongside every cell address; Parameter/Inconsistency: "currently X; correct value is Y", e.g., "malaria mortality rate (B14) = 0.87; GW parameter is 0.79, overstating CE"; Formula: functional effect first then technical fix, e.g., "[Wrong reference] program costs (E14) sums through a non-program row, inflating costs by ~12%; range should be B14:B21 not B14:B22"; High findings: include a brief consequence clause; no chain traces; do not hedge what you can confirm. **When E = Formula, begin the Explanation with a bracketed sub-type: [Copy-paste] | [Wrong reference] | [Year range] | [Sign error] | [Wrong operator] | [Off-by-one]. Example: [Wrong reference] B14 uses C22 (Nigeria rate) but should reference C23 (Kenya rate).**) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases, using an em-dash ( — ) with one space on each side — do not use hyphen or en-dash: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x. Example correct: "Raises CE — magnitude unknown"; example incorrect: "Raises CE - magnitude unknown". **Column H must never be blank for Medium or High Formula, Parameter, or Adjustment findings. If direction is clear but magnitude unknown, write Raises CE — magnitude unknown or Lowers CE — magnitude unknown. If direction depends on researcher input, write Direction unknown. Write No CE impact only when confirmed zero CE effect.**) | **I** Status (leave blank — reconcile agent writes WONT_FIX here; compaction strips column I when writing to the final Findings sheet)
 
 ---
 
-**Publication-readiness findings** (Error Type: Sourcing or Box Link, or Legibility findings that flag external-facing clarity issues such as unexplained jargon, missing tab descriptions, or confusing labels for a public reader): write them to your staging sheet in the same 9-column format, with column D (Severity) left blank. The compaction agent routes them to Publication Readiness based on Error Type. Do not write directly to the Publication Readiness sheet. Regular Legibility findings (internal clarity issues that impede a researcher's ability to review the spreadsheet, e.g., unlabeled inputs, ambiguous row headers) are standard findings — give them a Severity (Low/Medium/High) and leave column D populated.
+**Publication-readiness findings** (Error Type: Sourcing or Box Link): write them to your staging sheet in the same 9-column format, with column D (Severity) left blank. The compaction agent routes them to Publication Readiness based on Error Type. Do not write directly to the Publication Readiness sheet. Sourcing and Box Link findings must never have column D populated. **Legibility findings**: low-severity Legibility findings (internal clarity issues that do not rise to Medium) also leave column D blank and route to Publication Readiness. Medium and High Legibility findings (material clarity issues that impede a researcher's ability to review the spreadsheet, e.g., unlabeled inputs, ambiguous row headers) are standard findings — populate column D with the severity.
 
 See `reference/output-format.md` for full column definitions.
 
@@ -320,7 +407,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `ce-chain-trace`
 - Column D: `AGENT_COMPLETE`
-- Column F: `COVERAGE_ROWS: full chain trace (not row-sequential) | Staging sheet: [name from session context]. Traced CE chain: [N] cells across [sheet name(s)]. Filed [K] findings in rows 2–[K+1].`
+- Column F: `COVERAGE_ROWS: full chain trace (not row-sequential) | Staging sheet: [name from session context]. Traced CE chain: [N] cells across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Grant-doc comparison: [performed — doc ID: [ID] | skipped — no grant doc in session context; compared against Step 0.5 program context instead].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).

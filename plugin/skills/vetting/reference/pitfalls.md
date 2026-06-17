@@ -193,6 +193,56 @@ This section identifies which agent **owns** each check category. When a non-own
 
 ---
 
+---
+
+## Entry definitions (PIT-10)
+
+**PIT-10 (2026-06) — Prefix definitions for FP/FN/SC entries**
+
+- **FP** = False Positive — a pattern that looks like an error but is not one. An FP entry tells agents: "do not flag this; it is correct behavior." Apply FP entries before running checks.
+- **FN** = False Negative — a real error that is hard to catch without explicit attention. An FN entry tells agents: "make sure to check for this; it is easy to miss." Apply FN entries as additional mandatory checks.
+- **SC** = Severity Calibration — guidance on how to correctly rate the severity of a finding. An SC entry tells agents: "when you find this pattern, use this severity, not your default." Apply SC entries when classifying any matching finding.
+
+All new entries should use the appropriate prefix. When uncertain whether an entry is FP, FN, or SC, prefer FN (it is safer to over-check than under-check).
+
+**Applies to**: all agents, skill maintainer
+
+---
+
+### FN-006 (2026-06) — Cross-tab reference row-label mismatch (PIT-6)
+
+When a formula references another tab and the referenced row produces a numerically plausible value, verify that the row **label** in the referenced tab also matches the expected parameter — not just the row number. Cross-tab references can point to the correct row number but the wrong logical row if rows have been inserted or deleted since the formula was written. Example: `='Inputs'!B14` may have been written when B14 = "Malaria mortality rate" but now B14 = "ITN usage rate" after a row insertion — the value might still be in a plausible range, masking the mismatch. Verify row labels whenever tracing cross-tab references.
+
+**Applies to**: formula-check-arithmetic, ce-chain-trace, formula-check-data
+
+---
+
+### SC-010 (2026-06) — Non-owner-runs deferral rule (PIT-7)
+
+When an agent encounters a check that belongs to a different agent's scope (see Cross-Agent Scope Reference table above), do not silently skip it and do not file a full finding. Instead, file a **Low/Assumption** placeholder: "Possible issue — deferred to [owning agent]: [brief description of what was observed]. See Cross-Agent Scope Reference in pitfalls.md." This ensures the observation is on record if the owning agent does not run, while preventing duplicate findings when it does. The reconcile agent will promote placeholder findings to full findings if the owning agent did not cover them.
+
+**Applies to**: all agents
+
+---
+
+### SC-011 (2026-06) — Missing-rows detection ownership (PIT-8)
+
+When a row expected in the model is absent (deleted, merged, hidden, or off-screen), the **missing-row detection is owned by `formula-check-structure`**. Other agents that observe a missing row during formula traversal should note "expected row absent — deferred to formula-check-structure" in reasoning and must not file a separate finding. This prevents duplicate missing-row findings across formula-check-arithmetic, key-params-check, and ce-chain-trace. Exception: if `formula-check-structure` is not in scope for this vet (e.g., a formula-only lite pass), the first agent to observe the missing row should file it normally.
+
+**Applies to**: formula-check-arithmetic, key-params-check, ce-chain-trace, notes-scan
+
+---
+
+### SC-012 (2026-06) — SC-003 hop minimum clarification: 1 hop vs. 2 hops (PIT-9)
+
+SC-003 ("Parameter in the direct CE chain → High even when CE impact is not quantified") requires **≥1 documented hop** from the affected cell to the CE output to confirm chain membership. A single direct reference (the cell feeds a CE-chain cell with one formula hop) is sufficient to trigger the High escalation. The **≥2 hop** requirement is for **SC-008** (GBD vintage staleness High escalation): SC-008 requires FORMULA-mode trace confirming ≥2 hops to CE output before escalating GBD vintage findings from Medium to High. Do not confuse these thresholds:
+- SC-003 chain confirmation: **≥1 hop** → High/D for parameter findings
+- SC-008 GBD vintage escalation: **≥2 hops** (FORMULA-mode confirmed) → High; otherwise Medium
+
+**Applies to**: formula-check-arithmetic, formula-check-data, ce-chain-trace, key-params-check
+
+---
+
 ## Entry template
 
 ```
