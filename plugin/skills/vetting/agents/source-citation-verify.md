@@ -37,15 +37,13 @@ Then batch-read the Hardcoded Values sheet in 50-row increments (`A2:G51`, `A52:
 
 **Skip rows where:**
 - Column F is blank or `"No source cited"`
-- Column C is `GiveWell Parameter` (key-params-check handles these against internal references)
-- Column C is `Structural` (model constants — no external source)
 - Column F is a Google Sheets URL (matches `docs.google.com/spreadsheets/...` — not accepted as a document block; write column G = `Could not verify` and column H = `source is a spreadsheet` for these rows)
 - Column F contains plain text without a URL — e.g., `"Smith et al 2023"`, `"GBD estimate"`, `"internal communication"`, `"GiveWell analysis"`, or any value that does not begin with `http` or `https`. These are text citations, not fetchable sources; write column G = `Could not verify` and column H = `non-URL citation; verify manually` for these rows and skip the fetch step.
 - Column G contains exactly one of: `Matched ✓`, `Contradicted ✗`, `Could not verify` — row was verified in a prior run; do not overwrite. Any other non-blank value in column G should be overwritten with the verified verdict — do not treat arbitrary non-blank values as completed verifications.
 
 Eligible rows: category is `Study-Derived` or `Org-Reported` AND column F contains a URL starting with `http` or `https` AND column G is blank.
 
-**If eligible rows = 0:** write the Step 6 coverage declaration with all-zero counts and a note explaining why (e.g., `All rows are GiveWell Parameter, Structural, or have non-URL citations — no rows eligible for automated citation verification`), then write the Step 7 AGENT_COMPLETE marker, and stop. Do not proceed to Steps 2–3.
+**If eligible rows = 0:** write the Step 6 coverage declaration with all-zero counts and a note explaining why (e.g., `All rows have non-URL citations or no source cited — no rows eligible for automated citation verification`), then write the Step 7 AGENT_COMPLETE marker, and stop. Do not proceed to Steps 2–3.
 
 ---
 
@@ -298,7 +296,7 @@ python3 /tmp/citation_verify.py /tmp/citation_source.txt < /tmp/citation_params.
 
 For each eligible row processed in Steps 4a/4b: write the resulting `[verdict, evidence]` to columns G and H. **Do not write to any row whose column G was already non-empty in Step 1** — those rows were already verified and must not be overwritten.
 
-Do NOT write `["", ""]` for rows whose verdict was already written directly by the skip-rule handling in Step 1 or Step 4a (e.g., rows with non-URL citations, Google Sheets URLs, or GBD/IHME sources). Those rows already have column G populated. Only write `["", ""]` for rows skipped because column C is `GiveWell Parameter` or `Structural`, or column F is blank — i.e. rows where no verdict was written at all.
+Do NOT write `["", ""]` for rows whose verdict was already written directly by the skip-rule handling in Step 1 or Step 4a (e.g., rows with non-URL citations, Google Sheets URLs, or GBD/IHME sources). Those rows already have column G populated. Only write `["", ""]` for rows where column F is blank — i.e. rows where no verdict was written at all.
 
 Because already-verified rows may be interspersed with new rows, write results **row by row** using individual `modify_sheet_values` calls (one call per eligible row) rather than a single contiguous `G2:H{last_row}` array. A single array write would overwrite already-verified cells in the gaps with blank values.
 
@@ -331,4 +329,4 @@ If any `Contradicted ✗` rows exist:
 
 This agent writes directly to the Hardcoded Values sheet, not a staging tab. The orchestrator should not apply the standard staging-tab AGENT_COMPLETE parser to this agent's output.
 
-After writing all results to columns G and H (and writing the coverage declaration in Step 6), write ONE final row to the Hardcoded Values sheet immediately after the last data row: column B = `source-citation-verify`, column D = `AGENT_COMPLETE`, column F = `COVERAGE_ROWS: [row range checked, e.g., 2-85] | Output sheet: Hardcoded Values. [N] rows eligible. [K] Matched ✓, [M] Contradicted ✗, [P] Could not verify. [Q] skipped — breakdown: [n1] no URL or blank F, [n2] GiveWell Parameter, [n3] Structural, [n4] non-URL citation, [n5] Google Sheets URL, [n6] GBD/IHME interactive, [n7] already verified (column G non-blank).`, all other columns blank. Use a single `modify_sheet_values` call. This is the absolute last action.
+After writing all results to columns G and H (and writing the coverage declaration in Step 6), write ONE final row to the Hardcoded Values sheet immediately after the last data row: column B = `source-citation-verify`, column D = `AGENT_COMPLETE`, column F = `COVERAGE_ROWS: [row range checked, e.g., 2-85] | Output sheet: Hardcoded Values. [N] rows eligible. [K] Matched ✓, [M] Contradicted ✗, [P] Could not verify. [Q] skipped — breakdown: [n1] no URL or blank F, [n2] non-URL citation, [n3] Google Sheets URL, [n4] GBD/IHME interactive, [n5] already verified (column G non-blank).`, all other columns blank. Use a single `modify_sheet_values` call. This is the absolute last action.
