@@ -412,12 +412,17 @@ def extract_sheet(zf, path, shared_strings):
             tl_cell = cells.get((tl_row, tl_col))
             if tl_cell is None:
                 continue
+            tl_value = (tl_cell.get('value') or '').strip()
+            if not tl_value:
+                continue  # empty merged range — nothing to propagate
             for mr in range(tl_row, br_row + 1):
                 for mc_col in range(tl_col, br_col + 1):
                     if (mr, mc_col) == (tl_row, tl_col):
                         continue  # skip the top-left cell itself
-                    if (mr, mc_col) not in cells:
-                        # Build a synthetic ref string for this position
+                    existing = cells.get((mr, mc_col))
+                    # Propagate when cell is absent OR has no value (style-only empty cells
+                    # are written by Excel as <c r="..." s="N"/> — present but valueless)
+                    if existing is None or not (existing.get('value') or '').strip():
                         synthetic_ref = col_letter(mc_col) + str(mr)
                         merged_val = (tl_cell.get('value') or '') + ' (merged)'
                         cells[(mr, mc_col)] = {
