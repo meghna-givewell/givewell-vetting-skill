@@ -157,7 +157,7 @@ Before writing any new finding, confirm: (1) exact cell reference(s), (2) specif
 
 Assign the next sequential Finding ID continuing from the highest existing Finding ID in the Findings sheet (which includes IDs assigned by both compaction and gap-fill — read the last F-NNN row to determine the current maximum before assigning any new IDs).
 
-**Findings sheet** (A–I): A=Finding # | B=Sheet | C=Cell/Row | D=Severity | E=Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | F=Explanation | G=Recommended Fix | H=Estimated CE Impact (use exactly one of: Raises CE — [estimate], Lowers CE — [estimate], Raises CE — magnitude unknown, Lowers CE — magnitude unknown, No CE impact, Direction unknown) | I=Status (leave blank)
+**Findings sheet** (A–H): A=Finding # | B=Sheet | C=Cell/Row | D=Severity | E=Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | F=Explanation | G=Recommended Fix | H=Estimated CE Impact (use exactly one of: Raises CE — [estimate], Lowers CE — [estimate], Raises CE — magnitude unknown, Lowers CE — magnitude unknown, No CE impact, Direction unknown)
 
 **Publication Readiness** (A–F): A=Finding # | B=Sheet | C=Cell/Row | D=Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Sourcing | Box Link | Legibility) | E=Explanation | F=Recommended Fix
 

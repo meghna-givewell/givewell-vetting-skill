@@ -119,7 +119,7 @@ If any line is left blank or contains a placeholder, stop and complete the scan 
 
 Write all findings to your staging sheet starting at row 2. Your staging sheet name is provided in session context. Use the standard 9-column layout (columns A–I), leaving column D (Severity) blank — the compaction agent routes these findings to Publication Readiness based on Error Type.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity (leave blank) | **E** Error Type/Issue (use exactly one of: Sourcing, Box Link, Legibility) | **F** Explanation | **G** Recommended Fix | **H** Estimated CE Impact (leave blank) | **I** Status (leave blank)
+Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity (leave blank) | **E** Error Type/Issue (use exactly one of: Sourcing, Box Link, Legibility) | **F** Explanation | **G** Recommended Fix | **H** Estimated CE Impact (leave blank)
 
 **Batch by issue type**: For each issue type (e.g., "Missing 'Calculation.' note"), file one finding row listing all affected rows in column C — do not write one row per instance. Exception: if meaningfully different recommended fixes are required for different rows, file them separately.
 

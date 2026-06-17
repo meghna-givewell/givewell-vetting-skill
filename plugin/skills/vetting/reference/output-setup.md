@@ -10,9 +10,8 @@ Create six tabs with these header rows (row 1) before spawning agents:
 
 **CE Baseline** — columns: `Geography/Scenario | Cost-Effectiveness`. Write the baseline CE table from Step 0, one row per geography/scenario.
 
-**Findings** — columns A–I: `Finding # | Sheet | Cell/Row | Severity | Error Type/Issue | Explanation | Recommended Fix | Estimated CE Impact | Status`
+**Findings** — columns A–H: `Finding # | Sheet | Cell/Row | Severity | Error Type/Issue | Explanation | Recommended Fix | Estimated CE Impact`
 - Column A (`Finding #`): left blank by agents — assigned by final-review-compaction
-- Column I (`Status`): left blank — researcher fills in (Open / Fixed / Won't Fix / Needs Discussion)
 
 **Publication Readiness** — columns A–F: `Finding # | Sheet | Cell/Row | Error Type/Issue | Explanation | Recommended Fix`
 - Column A (`Finding #`): left blank by agents — assigned by final-review-compaction
@@ -20,7 +19,7 @@ Create six tabs with these header rows (row 1) before spawning agents:
 **Hardcoded Values** — columns A–H: `Sheet | Cell | Category | Current Value | Description | Source to Verify | Verified? | Auto-check evidence`
 - Column A (`Sheet`): tab name only (e.g., `Main CEA`)
 - Column B (`Cell`): cell reference only (e.g., `C14`)
-- Column C (`Category`): one of `GiveWell Parameter`, `Study-Derived`, `Org-Reported`, `Structural`
+- Column C (`Category`): one of `Study-Derived`, `Org-Reported`
 - Column G (`Verified?`): pre-filled by source-citation-verify agent (Wave 1.5) with `Matched ✓` / `Contradicted ✗` / `Could not verify`; researcher confirms or overrides
 - Column H (`Auto-check evidence`): verbatim sentence from source via Citations API, or reason verification was not possible; filled by source-citation-verify agent
 
@@ -35,20 +34,19 @@ Immediately after writing headers, before the formatting batch, write a single b
 Fire all formatting in a single parallel batch immediately after writing headers:
 
 - `add_conditional_formatting`: Severity D2:D2000 on Findings — High → `#FFB3B3`, Medium → `#FFE5B3`, Low → `#B3D9B3`
-- `add_conditional_formatting`: Status I2:I2000 on Findings — `Fixed` → `#B3D9B3`, `Won't Fix` → `#E0E0E0`
-- `add_conditional_formatting`: Section dividers A2:I2000 on Findings — CUSTOM_FORMULA `=ISNUMBER(SEARCH("───",$B2))`, background `#D9D9D9`
-- `format_sheet_range`: header row 1 on Findings (A1:I1) — dark blue `#1F4E79`, white text, bold; freeze row 1 and columns A–C
+- `add_conditional_formatting`: Section dividers A2:H2000 on Findings — CUSTOM_FORMULA `=ISNUMBER(SEARCH("───",$B2))`, background `#D9D9D9`
+- `format_sheet_range`: header row 1 on Findings (A1:H1) — dark blue `#1F4E79`, white text, bold; freeze row 1 and columns A–C
 - `format_sheet_range`: header row 1 on Publication Readiness (A1:F1) — dark blue `#1F4E79`, white text, bold; freeze row 1 and columns A–C
 - `format_sheet_range`: header row 1 on Hardcoded Values (A1:H1) — dark blue `#1F4E79`, white text, bold
-- `add_conditional_formatting`: Category C2:C1000 on Hardcoded Values — `GiveWell Parameter` → `#D9E1F2`, `Study-Derived` → `#E2EFDA`, `Org-Reported` → `#FFF2CC`, `Structural` → `#EDEDED`
+- `add_conditional_formatting`: Category C2:C1000 on Hardcoded Values — `Study-Derived` → `#E2EFDA`, `Org-Reported` → `#FFF2CC`
 - `add_conditional_formatting`: Dashboard B24:D60 — `High` → `#FFB3B3`, `Medium` → `#FFE5B3`, `Low` → `#B3D9B3`
 - `format_sheet_range`: header row 1 on CE Baseline (A1:B1) — dark blue `#1F4E79`, white text, bold
 - `format_sheet_range`: header row 1 on Confidentiality Flags (A1:D1) — dark blue `#1F4E79`, white text, bold
-- `format_sheet_range`: column widths on Findings — A=80, B=120, C=120, D=100, E=140, F=290, G=400, H=150, I=120
+- `format_sheet_range`: column widths on Findings — A=80, B=120, C=120, D=100, E=140, F=290, G=400, H=150
 - `format_sheet_range`: column widths on Publication Readiness — A=80, B=120, C=120, D=140, E=220, F=300
 - `format_sheet_range`: text wrap on columns F, G of Findings; text wrap on columns E, F of Publication Readiness
 - `format_sheet_range`: row height rows 2:2000 on Findings → 80px; same on Publication Readiness
-- Data validation (skip gracefully if unsupported): Severity D on Findings → dropdown `High,Medium,Low`; Error Type/Issue E on Findings → dropdown `Formula,Parameter,Adjustment,Assumption,Inconsistency,Legibility`; Status I on Findings → dropdown `Open,Fixed,Won't Fix,Needs Discussion`; Error Type/Issue D on Publication Readiness → dropdown `Sourcing,Box Link,Legibility`
+- Data validation (skip gracefully if unsupported): Severity D on Findings → dropdown `High,Medium,Low`; Error Type/Issue E on Findings → dropdown `Formula,Parameter,Adjustment,Assumption,Inconsistency,Legibility`; Error Type/Issue D on Publication Readiness → dropdown `Sourcing,Box Link,Legibility`
 - Tab colors (skip gracefully if unsupported): Dashboard → `#595959`, CE Baseline → `#7F7F7F`, Findings → `#C00000`, Publication Readiness → `#E6B800`, Hardcoded Values → `#2F75B6`, Confidentiality Flags → `#7030A0`
 
 ## Dashboard Content

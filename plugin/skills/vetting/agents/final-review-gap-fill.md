@@ -174,8 +174,6 @@ Column reference: **A** Finding # | **B** Sheet | **C** Cell/Row | **D** Severit
 - No CE impact
 - Direction unknown
 
-**I** Status (leave blank)
-
 **Routing note**: All gap-fill findings route to the Findings sheet. Gap-fill does not file Low/Legibility findings — if a coverage gap produces only a Low-severity Legibility issue (cosmetic documentation gap), skip it. Gap-fill covers material gaps that earlier agents missed; Low/Legibility documentation issues should have been caught and routed to Publication Readiness by Wave 1/2 agents.
 
 **Do not write pass notes, verification notes, or "no issues found" summaries to the Findings sheet.** Coverage declarations belong in your chat output, not in the sheet.

@@ -13,7 +13,7 @@
 
 ## Findings Sheet — Sheet 1 (model integrity)
 
-Columns (A–I): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | Explanation | Recommended Fix | Estimated CE Impact | Status
+Columns (A–H): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | Explanation | Recommended Fix | Estimated CE Impact
 
 - **Finding #** (A): Sequential ID assigned by the final-review compaction step (e.g., `F-001`, `F-002` on the Findings sheet; `PR-001`, `PR-002` on Publication Readiness). Left blank by all analysis agents — do not write to this column.
 - **Sheet** (B): The sheet name the finding applies to (e.g., `Main CEA`, `Leverage/Funging`, `Inputs`). Use `Multiple` if a finding spans more than one sheet.
@@ -71,7 +71,6 @@ Columns (A–I): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
   - `Inconsistency`, `Legibility` findings at Medium severity: blank is acceptable.
 
   **`No CE impact` must be written explicitly — never leave blank when the determination is zero**: When you have assessed a finding's CE impact and determined it is zero, write `No CE impact` in column H — do not leave column H blank. Blank means "CE impact not yet assessed"; `No CE impact` means "assessed and confirmed as zero." A blank column H on a Formula, Parameter, or Adjustment finding will be treated as an unassessed impact during validation and routing. This applies at all severity levels — write `No CE impact` explicitly even for Low findings when CE impact is confirmed zero.
-- **Status** (I): Left blank by Claude. The researcher fills this in: `Open` / `Fixed` / `Won't Fix` / `Needs Discussion`. Do not write to this column.
 
 ### Severity Rules
 
