@@ -93,7 +93,7 @@ Check each row using the priority above, then apply these additional rules (appl
 - Publication Readiness sheet rows that affect model outputs or interpretation → move to Findings.
 - **Adjustment and double-count findings always stay in Findings** — never route an `Adjustment` finding to Publication Readiness on the basis of "No CE impact" or a blank CE impact column. A blank CE impact column for an Adjustment finding means the impact is unknown, not zero — leave it in Findings with "Direction unknown" in column H.
 
-**Column remapping when moving Findings → Publication Readiness**: The Findings sheet has 9 columns (A–I); the Publication Readiness sheet has exactly 6 (A–F). When moving a row, remap as follows — do not copy extra Findings columns into PR:
+**Column remapping when moving Findings → Publication Readiness**: The Findings sheet has 8 columns (A–H); the Publication Readiness sheet has exactly 6 (A–F). When moving a row, remap as follows — do not copy extra Findings columns into PR:
 - PR A (Finding #): leave blank
 - PR B (Sheet): = Findings B
 - PR C (Cell/Row): = Findings C
@@ -140,6 +140,8 @@ Coverage declaration: "Deduplication complete. [N] exact duplicates merged. [See
 ## Step 4 — Rewrite and sort both sheets
 
 Rewrite both sheets sequentially from row 2. The Findings sheet and Publication Readiness sheet are initially empty (all findings were in staging tabs until this step) — write directly from row 2 with no gaps to close.
+
+**Strip column I when writing to the Findings sheet**: Staging tabs carry a 9th column (column I) used internally for WONT_FIX markers. When writing rows to the final Findings sheet, write only columns A–H. Do not write column I to the Findings sheet — the Findings sheet has no Status column.
 
 Sort all Findings rows in memory using three sort keys:
 1. **Primary**: Severity (High → Medium → Low)

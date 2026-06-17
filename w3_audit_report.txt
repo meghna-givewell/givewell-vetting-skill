@@ -1,0 +1,1540 @@
+## W3-001
+**File(s):** `plugin/skills/vetting/agents/final-review-compaction.md`
+**Location:** Line 7 vs Line 41
+**Category:** Contradiction
+**Severity:** High
+**Description:** The opening paragraph (line 7) instructs the agent to "Read both sheets — all rows — before doing anything else," and the Step 0 coverage mandate (line 21) repeats "Read all rows from both sheets in batches before taking any action." Both instructions use "both sheets" to mean the Findings sheet and the Publication Readiness sheet. But Step 1 (line 41) explicitly states: "Do not read the Findings or Publication Readiness sheets in Step 1," and the Step 0 backup declaration (line 13) confirms both sheets "are currently empty." An agent that follows the intro instruction first will either attempt to read empty sheets (wasted API calls, potentially misleading) or conclude it has already completed its Step 1 data gathering and skip reading the staging tabs entirely, silently dropping every finding.
+**Fix:** Replace lines 7–8 with: "Read all staging tabs listed in your session context — all rows — before doing anything else. The Findings sheet and Publication Readiness sheet are empty at this point; do not read them in Step 1." Also change the Step 0 coverage mandate at line 21 to read: "Read all rows from all staging tabs in batches before taking any action."
+
+---
+
+## W3-002
+**File(s):** `plugin/skills/vetting/agents/final-review-compaction.md`
+**Location:** Line 35
+**Category:** Gap
+**Severity:** High
+**Description:** Step 1 instructs the agent to call read_sheet_values with range `{tab_name}!A1:J500` as a single call, and offers only the vague caveat "adjust the upper bound upward if any tab might exceed 500 rows." Both the gap-fill agent (line 27) and the validation agent (line 23) explicitly document: "The MCP tool returns at most 50 rows per call — larger ranges silently truncate." A single call to A1:J500 returns only the first 50 rows. Any staging tab with more than 50 findings has all rows beyond row 51 silently dropped. In a large vet, formula-check-arithmetic alone can produce 60–100 findings; the compaction would process roughly half of every large agent's output without any error or warning. Adjusting the range upper bound to J1000 does not fix the issue — it is the per-call row limit, not the range bound, that causes truncation.
+**Fix:** Replace the single read_sheet_values call at line 35 with a batched read pattern identical to the one used in gap-fill and validation: call `A1:J51`, then `A52:J101`, `A102:J151`, etc. in 50-row increments, stopping after two consecutive empty batches. Add the explicit note: "The MCP tool returns at most 50 rows per call — larger ranges silently truncate. Always batch in 50-row increments."
+
+---
+
+## W3-003
+**File(s):** `plugin/skills/vetting/agents/final-review-compaction.md`
+**Location:** Steps 2, 3 (lines 64–116) and Step 3.5 (lines 137–151)
+**Category:** Ordering problem
+**Severity:** High
+**Description:** Step 3.5 (label normalization) runs after Step 2 (routing) and Step 3 (deduplication). This causes two independent failure modes. First, routing: Step 2 rule 1 checks "Error Type = Adjustment" exactly; if an agent wrote "Adjustment — wrong base" in column E, the literal string does not equal "Adjustment", so rule 1 does not match. The row falls through to rule 3 or rule 4; if the description resembles a documentation gap, rule 3 could misroute a genuine Adjustment finding to Publication Readiness. Second, deduplication: Step 3 matches duplicates by "Error Type/Issue (column E)". Two rows describing the same issue where one has "Sourcing" and another has "Sourcing — internal document" have non-identical column E values and are not recognized as duplicates, so both survive into the output.
+**Fix:** Move Step 3.5 to immediately after Step 1 (or relabel it Step 1.6 and insert it between Step 1 and Step 1.5 backup creation). Normalization must execute on the in-memory row set before any routing or deduplication logic reads column E values.
+
+---
+
+## W3-004
+**File(s):** `plugin/skills/vetting/agents/final-review-compaction.md`
+**Location:** Line 90 (routing audit spot-check 1)
+**Category:** Contradiction
+**Severity:** High
+**Description:** Routing audit spot-check 1 (line 90) instructs: "Scan all remaining Findings rows for any whose Error Type (column E) is Sourcing, Box Link, or Legibility AND whose Estimated CE Impact (column H) is blank or No CE impact — move any found to Publication Readiness." This treats Legibility identically to Sourcing and Box Link. But Sourcing and Box Link are publication-readiness-only types that should never appear in Findings. Legibility is a valid Findings Error Type. The output-format.md severity matrix specifies that a Defect finding with Zero CE impact is Medium (the Defect floor), and Legibility findings for section ordering inversions or terminology errors affecting model interpretation are filed as Medium in Findings with blank H. The routing audit would incorrectly move these legitimate Medium/Legibility Findings rows to Publication Readiness, where they lose their Severity value and are treated as cosmetic issues.
+**Fix:** Change the spot-check 1 instruction to: "Scan all remaining Findings rows for any whose Error Type (column E) is Sourcing or Box Link (these types are never valid in Findings) — move any found to Publication Readiness. For Legibility rows with blank or No CE impact, move to Publication Readiness only if Severity (column D) is also blank or Low AND the Recommended Fix is purely cosmetic (terminology, label style). Retain any Legibility row in Findings when Severity is Medium or High, regardless of CE impact."
+
+---
+
+## W3-005
+**File(s):** `plugin/skills/vetting/agents/final-review-compaction.md`
+**Location:** Lines 35–37 (Step 1 read loop)
+**Category:** Gap
+**Severity:** Medium
+**Description:** Step 1 instructs the agent to read each staging tab listed in session context (or the Dashboard A99 log fallback), but provides no error-handling instruction for the case where a staging tab listed in that log no longer exists in the spreadsheet. If a tab was deleted or renamed after the Dashboard log was written, the read_sheet_values call returns an error or empty result. The agent has no instruction to flag, skip, or abort in this scenario. Silently proceeding would mean findings from that agent pair are treated as "zero findings," potentially masking a real agent failure for an entire check category.
+**Fix:** Add after line 35: "If read_sheet_values returns an error for a tab (e.g., tab not found, access error), do NOT silently skip. Log: 'WARNING: staging tab [tab_name] could not be read — [error message]. Findings from this agent are excluded from compaction. Investigate before treating the vet as complete.' Include the missing tab in the coverage declaration with status ERROR rather than a finding count."
+
+---
+
+## W3-006
+**File(s):** `plugin/skills/vetting/agents/final-review-compaction.md`
+**Location:** Line 33 (completion marker description)
+**Category:** Gap
+**Severity:** Low
+**Description:** Line 33 states: "Completion marker rows are written by Wave 2 agents as their final action to signal a clean run." Wave 1 agents (formula-check-arithmetic, formula-check-data, etc.) also write AGENT_COMPLETE markers to their staging tabs. The compaction reads all stg-* tabs including Wave 1 tabs and must identify and discard AGENT_COMPLETE markers from all of them. If an agent interprets "Wave 2 only" literally, it might fail to filter out AGENT_COMPLETE rows from Wave 1 staging tabs, allowing them to be processed as findings.
+**Fix:** Change line 33 to: "Completion marker rows are written by Wave 1, Wave 2, and reconcile agents as their final action to signal a clean run."
+
+---
+
+## W3-007
+**File(s):** `plugin/skills/vetting/agents/final-review-compaction.md`
+**Location:** Line 91 (routing audit spot-check 2)
+**Category:** Gap
+**Severity:** Medium
+**Description:** When the routing audit moves a row from Publication Readiness back to Findings (spot-check 2), line 91 assigns "Medium as the default" Severity in column D and says "the validation agent will refine column H in Check 4." But the validation agent's Check 4 refines only column H (Estimated CE Impact) — it does not re-evaluate or correct column D (Severity). A row that was erroneously filed in PR and moved back to Findings with a default Medium severity may deserve High or Low. The Medium default is never revisited, so the severity is permanently wrong for these rows.
+**Fix:** After assigning the Medium default at line 91, add: "Flag this row with Researcher judgment needed ✓ and append to column F: 'Severity assigned as Medium default — row was recovered from Publication Readiness; verify severity is correct using the severity matrix in output-format.md.' Do not leave this row without the ✓ flag — the validation agent does not re-evaluate Severity for PR-recovered rows."
+
+---
+
+## W3-008
+**File(s):** `plugin/skills/vetting/agents/final-review-compaction.md`
+**Location:** Lines 72–76 (additional rules after priority routing)
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** The additional rules section (lines 72–76) contains instructions that contradict each other. Line 74 says: "Findings sheet rows where H is blank or No CE impact AND explanation describes only a documentation gap → move to Publication Readiness regardless of how its Error Type is worded." Line 76 says: "Adjustment and double-count findings always stay in Findings — never route an Adjustment finding to Publication Readiness." An Adjustment finding with blank H and an explanation containing language like "add a cell note to document this adjustment" matches line 74's condition ("regardless of Error Type") and would be moved to PR, then line 76 would require it to stay in Findings. The two instructions are irreconcilable.
+**Fix:** Add an explicit exception to line 74: "Regardless of how its Error Type is worded, EXCEPT: Error Type = Adjustment is never routed to PR on this basis, even with blank H and a documentation-gap description — see priority rule 1." Alternatively, delete line 76 as redundant since priority rules 1 and 3 already protect Adjustment findings, and amend line 74 to list the exception inline.
+
+---
+
+## W3-009
+**File(s):** `plugin/skills/vetting/agents/final-review-compaction.md`
+**Location:** Line 21 (Step 0 coverage mandate)
+**Category:** Dead code
+**Severity:** Low
+**Description:** The Step 0 coverage mandate states: "Read all rows from both sheets in batches before taking any action." The phrase "both sheets" refers to the Findings sheet and Publication Readiness sheet (as established in the intro). But Step 0 also declares: "The Findings sheet and Publication Readiness sheet are currently empty," and Step 1 explicitly prohibits reading them. The mandate to read empty, prohibited sheets is never reachable — the instruction is dead code that may confuse agents about the correct data source.
+**Fix:** Replace the Step 0 coverage mandate at line 21 with: "Read all rows from all staging tabs in batches before taking any action. After completing each step below, write a coverage declaration before moving to the next."
+
+---
+
+## W3-010
+**File(s):** `plugin/skills/vetting/agents/final-review-compaction.md`
+**Location:** Lines 120–133 (Step 3.3 researcher-to-confirm audit)
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** Step 3.3 instructs: "can this question be answered by (a) reading another cell or formula in the spreadsheet... If the finding was only a hypothesis that the spreadsheet contradicts, remove the entire row." But line 17 and the synthesis false-positive guard (line 114) both state: "Do not attempt to verify by reading the source spreadsheet — this agent's scope restriction prohibits reading source spreadsheet values." The compaction agent cannot read the source spreadsheet, so it cannot determine whether a finding is answerable by reading another cell, nor whether the spreadsheet contradicts a hypothesis. The instruction to "remove the entire row" when the spreadsheet contradicts a hypothesis is dead code.
+**Fix:** Revise Step 3.3 lines 124–128 to remove any reliance on reading the source spreadsheet. Change the criteria to: "can this question be answered by (a) the Explanation text and recommended fix being fully self-contained and unambiguous, or (b) checking a cited URL using WebFetch (if WebFetch is in permitted tools), or (c) the finding description referencing a value that is explicitly stated in key-parameters.md?" Remove the instruction "If the finding was only a hypothesis that the spreadsheet contradicts, remove the entire row" — this requires source-spreadsheet access the agent is prohibited from using. Instead: retain ✓ when uncertain.
+
+---
+
+## W3-011
+**File(s):** `plugin/skills/vetting/agents/final-review-compaction.md`
+**Location:** Lines 66–70 (routing priority rule 2)
+**Category:** Gap
+**Severity:** Medium
+**Description:** Priority rule 2 explicitly lists Formula, Parameter, and Assumption as the Error Types that route to Findings when column H is populated, but omits both Inconsistency and Legibility. Both are valid Findings Error Types and can legitimately have populated H (for example, a cross-sheet value mismatch that raises CE). An Inconsistency or Legibility finding with populated H would fail to match rule 2 and fall through to rule 3. Rule 3 asks whether the explanation describes only a documentation gap — an Inconsistency explanation using documentation-gap language (e.g., "a cell note should clarify which is authoritative") would be misrouted to PR despite having a CE impact estimate in column H.
+**Fix:** Change rule 2 to: "Error Type = Formula, Parameter, Assumption, Inconsistency, or Legibility AND column H is populated with a directional phrase (Raises CE, Lowers CE, Direction unknown) → Findings, regardless of additional rule application." This makes the Findings assignment explicit for CE-impacting Legibility and Inconsistency findings before the additional rules run.
+
+---
+
+## W3-012
+**File(s):** `plugin/skills/vetting/agents/final-review-compaction.md`
+**Location:** Lines 100–102 (Step 3 deduplication scope)
+**Category:** Gap
+**Severity:** Low
+**Description:** Step 3 specifies that deduplication scans "all rows across both sheets." A Findings row (column E = Legibility) and a PR row (column D = Legibility) describing the same issue at the same cell would be identified as duplicates under the stated criteria. But these rows have different destinations (Findings vs PR) and serve different purposes — they are not true duplicates. The instructions for resolving duplicates ("keep the finding with the more complete Explanation") would keep one and drop the other, losing one valid output.
+**Fix:** Add to Step 3: "Cross-sheet deduplication: only deduplicate rows that will route to the same output sheet. Do not treat a Findings-destined row and a PR-destined row as duplicates even if they reference the same cell and same issue type — they represent different resolution paths (model fix vs. publication checklist item) and should both be kept."
+
+---
+
+## W3-013
+**File(s):** `plugin/skills/vetting/agents/final-review-compaction.md`
+**Location:** Line 31 (meta-findings filter)
+**Category:** Gap
+**Severity:** Low
+**Description:** The meta-findings filter (filter type 4) discards any row whose Explanation (column F) or Error Type (column E) contains the word "agent." The word "agent" can appear legitimately in spreadsheet findings — for example, "dispensing agent cost" row in a malaria program CEA, a "CHW agent delivery rate" parameter, or a cell labeled "agent-adjusted mortality." The filter uses keyword matching without a subject test, so an LLM agent executing this rule may apply it too broadly and discard legitimate findings that happen to mention "agent" in the context of program delivery. This silently drops real findings with no recovery path.
+**Fix:** Replace the word-list approach for "agent" with a more precise signal. Change the filter to: exclude rows where the Explanation explicitly names vetting infrastructure entities ("Instance A," "Instance B," "readability agent," "formula-check agent," "vetting pipeline," "this vet") as the grammatical subject of the sentence — not merely as incidental words. Remove standalone "agent" from the discard trigger list; keep "readability agent," "vetting agent," "Instance A/B," "pipeline" as the discard keywords.
+
+---
+
+## W3-014
+**File(s):** `plugin/skills/vetting/agents/final-review-compaction.md`
+**Location:** Lines 159–163 (Step 4 secondary sort specification)
+**Category:** Gap
+**Severity:** Low
+**Description:** The secondary sort key for column H specifies an ordering within the two categories of magnitude findings, but within the "numeric magnitude" tier, there are both "Raises CE — X" and "Lowers CE — X" entries. The sort does not specify how to order these relative to each other. A pure lexicographic sort places "Lowers CE" before "Raises CE" (L < R), which may not be the intended order. Researchers reviewing a vetting output typically want to see findings that raise CE (suggesting the model is overstated) grouped together.
+**Fix:** Add to the secondary sort specification: "Within numeric magnitude findings, sort Raises CE entries before Lowers CE entries (findings that overstate CE are higher priority for correction). Within the magnitude-unknown tier, similarly sort Raises CE — magnitude unknown before Lowers CE — magnitude unknown."
+
+---
+
+## W3-015
+**File(s):** `plugin/skills/vetting/agents/final-review-compaction.md`
+**Location:** Lines 113–116 (synthesis false-positive guard)
+**Category:** Redundancy
+**Severity:** Low
+**Description:** The synthesis false-positive guard checks for language like "both instances flagged" in Explanation text and downgrades those findings. The reconcile agent's column-F prohibition ("Do not add any meta-commentary to the Explanation") is designed to prevent exactly this synthesis language from appearing in findings in the first place. The guard provides useful protection, but its scope description ("any claim at High/D severity that is not supported by a specific cell value read in FORMULA or FORMATTED_VALUE mode") is broader than needed and could incorrectly flag findings where an agent used "flagged" in a non-meta sense. The "High/D" notation also uses two-axis notation that is not written to any column.
+**Fix:** Narrow the trigger phrase list to only explicitly cross-agent phrases: remove the general "any claim at High/D severity not supported by FORMULA/FORMATTED_VALUE mode" trigger as too broad. Keep only: "both instances flagged," "A noted X while B noted Y," "combining these observations," "Instance A," "Instance B." Change "High/D severity" to plain "High severity" to avoid ambiguity with two-axis notation.
+
+---
+
+## W3-016
+**File(s):** `plugin/skills/vetting/agents/final-review-compaction.md`
+**Location:** Lines 49–60 (Step 1.5 backup scope)
+**Category:** Gap
+**Severity:** Low
+**Description:** The Findings_backup tab is described as capturing "all [W] finding rows" in the Findings sheet 10-column format. However, the [W] finding rows include findings that will ultimately route to Publication Readiness (those with blank column D). If the operator uses Findings_backup to recover from a failed compaction, they receive a flat list of both Findings-destined and PR-destined rows. The backup name "Findings_backup" implies it contains only Findings sheet content, but it actually contains pre-routing staging tab data for all findings including PR-destined ones. An operator might import the backup directly into the Findings sheet, incorrectly including PR rows.
+**Fix:** Rename the backup tab to "Staging_backup" to accurately reflect its content. Add a note to the backup header row or the announcement at line 56: "This backup contains all pre-routing staging tab rows. Rows with blank Severity (column D) are Publication Readiness findings that were not yet routed. Do not import this backup directly into the Findings sheet — re-run the compaction routing step first."
+
+---
+
+## W3-017
+**File(s):** `plugin/skills/vetting/agents/final-review-compaction.md`
+**Location:** Lines 98–100 (Step 3 deduplication notes-scan gap)
+**Category:** Gap
+**Severity:** Low
+**Description:** Step 3 notes that duplicates are "most common between sources and readability (both check Notes columns) and between plausibility agents." The notes-scan agent runs as A and B instances (stg-nscn-A and stg-nscn-B) with no reconcile agent — SKILL.md explicitly states that "the Wave 3 compaction agent deduplicates their overlapping findings in its standard Step 3 dedup pass." But Step 3 does not mention notes-scan as a cross-instance dedup case. An agent reading Step 3 in isolation would not know to prioritize dedup between stg-nscn-A and stg-nscn-B.
+**Fix:** Add to the Step 3 introduction: "Additionally, the notes-scan agent (stg-nscn-A and stg-nscn-B) has no reconcile agent — both instances may flag the same cell note issue. Apply the same substantive-identity dedup test to these two tabs explicitly."
+
+---
+
+## W3-018
+**File(s):** `plugin/skills/vetting/agents/final-review-compaction.md`
+**Location:** Lines 105–116 (Step 3 root-cause consolidation — Inconsistency drop without Findings routing check)
+**Category:** Gap
+**Severity:** Medium
+**Description:** Root-cause/symptom consolidation rule 1 (line 106) instructs: "If an Inconsistency finding and a Formula or Legibility finding both exist... keep only the root-cause finding. Drop the Inconsistency finding." The dropped Inconsistency finding may have been the sole row routing a particular cell issue to Findings. If the surviving Formula or Legibility root-cause finding has blank H and gets routed to PR by the routing audit (spot-check 1), the cell's issue is now in PR rather than Findings. The consolidation logic does not verify that the surviving root-cause finding will stay in Findings before dropping the Inconsistency row.
+**Fix:** Add to consolidation rule 1: "Before dropping the Inconsistency finding, confirm the surviving root-cause finding will route to Findings (Error Type is Formula, Parameter, Adjustment, or Assumption, OR column H is populated with a directional phrase). If the surviving root-cause finding would route to PR (e.g., its H is blank and description is a documentation gap), do not consolidate — retain the Inconsistency finding separately."
+
+---
+
+## W3-019
+**File(s):** `plugin/skills/vetting/agents/final-review-compaction.md`
+**Location:** Line 7 / throughout
+**Category:** Gap
+**Severity:** Low
+**Description:** The SKILL.md session context block appended to every sub-agent instructs: "Before starting your checks, read reference/pitfalls.md." The compaction agent overrides this with: "Do not invoke any skills or load additional context files. Your task is defined entirely within this prompt." The pitfalls.md entries include routing and severity calibrations (e.g., SC-002 on xCash/benchmark terminology scope, SC-009 on missing-source severity) that are directly relevant to the compaction agent's routing decisions in Step 2. Without reading pitfalls.md, the compaction agent applies routing rules without these calibrations, potentially misrouting findings that pitfalls.md specifically addresses.
+**Fix:** Add to Step 0 or the introductory instructions: "Before performing any routing, read reference/pitfalls.md using the Read tool. Apply SC-001 through SC-009 calibrations to routing decisions in Step 2 — specifically, SC-002 (xCash terminology findings belong in Findings, not PR) and SC-009 (missing-source severity thresholds affect whether a finding routes to Findings or PR). The prohibition on loading additional context files applies to skills and external URLs, not to local reference files in the reference/ directory."
+
+---
+
+## W3-020
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Line 19 (Coverage mandate header) and throughout file
+**Category:** Gap
+**Severity:** High
+**Description:** pitfalls.md is never gated. Every Wave 1 and Wave 2 agent file begins with a mandatory "Before starting checks, read reference/pitfalls.md using the Read tool." instruction. SKILL.md line 554 also mandates it for all agents. final-review-gap-fill.md has no such instruction anywhere. This means calibrations FP-001 through SC-009 — including the cascade-specific false-positive risk in FP-001 (absolute-reference columns) — are never applied, causing the cascade check to potentially file false positives or miss severity upgrades required by SC-003 and SC-008.
+**Fix:** Add as the first instruction after the preamble: "Before starting any check, read reference/pitfalls.md using the Read tool. Apply every entry relevant to cascade analysis, coverage gaps, and Won't Fix verification."
+
+---
+
+## W3-021
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Line 32 (Step 1 Won't Fix description)
+**Category:** Contradiction
+**Severity:** High
+**Description:** Step 1 instructs the agent to find Won't Fix decisions by looking for "gaps in Finding IDs (e.g., if IDs jump from F-003 to F-005, F-004 was deleted by a Won't Fix decision)." But Check 3 (line 105) explicitly corrects this: "There are no Finding ID gaps from Won't Fix decisions (IDs are assigned sequentially during compaction from non-WONT_FIX rows only)." The two instructions directly contradict each other. The Check 3 description is architecturally correct per SKILL.md — WONT_FIX rows are excluded before IDs are assigned, so no gaps appear. The Step 1 instruction will cause the agent to search for a signal that never exists, and to erroneously declare no Won't Fix candidates when there may be many.
+**Fix:** Remove the Won't Fix bullet from Step 1 entirely (lines 32–33). The "already-examined" cell set and High/Formula list are the only constructs Step 1 needs to build. Won't Fix detection is handled in Check 3 by reading the stg-* tabs directly.
+
+---
+
+## W3-022
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Lines 40–58 (Check 1 — Formula cascade check)
+**Category:** Gap
+**Severity:** High
+**Description:** The cascade check has no handling for circular references. Step 2 instructs the agent to "read the sheet in FORMULA mode, scan for any formula containing the flagged cell reference." If cell A references B which references A, the agent will identify A as a downstream cell of itself and enter an infinite reasoning loop. No break condition or circular-reference detection guard is specified. In practice, Google Sheets circular references are uncommon but real, and the omission could cause the agent to file a nonsensical cascade finding on the source error cell itself.
+**Fix:** Add to Check 1 after the hop definitions: "Circular reference guard: before processing any downstream cell, confirm it is not the same cell as the flagged source cell. If a formula scan reveals a cell that references itself (directly or via a chain that returns to the flagged cell), skip it and note 'circular reference detected — skipping' in reasoning."
+
+---
+
+## W3-023
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Lines 40–58 (Check 1) and line 153 (Writing new findings column reference)
+**Category:** Contradiction
+**Severity:** High
+**Description:** Check 1 mandates cascade findings be filed as "Medium/Formula" (line 40, repeated in line 49). However, the Writing new findings section (line 153) lists the column E allowlist as "Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency" — which matches the Findings sheet spec. But it omits the formula sub-type bracket requirement that output-format.md and column-reference.md mandate: when E=Formula, the Explanation must begin with a bracketed sub-type ([Copy-paste] | [Wrong reference] | [Year range] | [Sign error] | [Wrong operator] | [Off-by-one]). Cascade findings filed without the bracket will fail the compaction agent's format validation.
+**Fix:** In Check 1 step 4, change the example Explanation to: "File as Medium/Formula. In column F, lead with the appropriate sub-type bracket — for cascade errors the correct sub-type is typically [Wrong reference] or [Copy-paste] depending on the error. E.g.: '[Wrong reference] [Downstream cell] references [flagged cell]...'"
+
+---
+
+## W3-024
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Lines 40–58 (Check 1 — cascade check)
+**Category:** Gap
+**Severity:** Medium
+**Description:** The cascade check operates only on High/Formula findings (line 42: "For every High Formula finding"). Medium/Formula findings are excluded. However, a Medium/Formula error — for example a wrong cell reference in an adjustment row that materially affects CE — may also have downstream cells that do not self-correct after fix. There is no instruction for whether Medium/Formula findings should also be traced. The omission is not acknowledged (no explicit "do not check Medium/Formula" statement), leaving the agent with an ambiguous scope boundary.
+**Fix:** Add a clarifying sentence after the "For every High Formula finding" heading: "Scope is limited to High/Formula findings only. Medium/Formula findings are not checked for cascades in this step — their downstream effects are considered sufficiently bounded that the original agent's finding is adequate."
+
+---
+
+## W3-025
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Lines 62–79 (Check 2 — Coverage gap scan)
+**Category:** Gap
+**Severity:** Medium
+**Description:** Check 2 (line 77) limits the coverage gap scan to "the primary vetted sheet (Main CEA or equivalent)" and says "Do not gap-scan supporting data tabs, headers, or output-only tabs." But SKILL.md COVERAGE_ROWS reliability note (gap-fill line 21) discusses that source-data-check may have been conditionally skipped (SKILL.md line 649: "source-data-check: SKIPPED (no source data tabs)"). When source-data-check was skipped, all source data tab rows are necessarily ungapped — but Check 2 will not scan them. There is no instruction to check whether source-data-check was skipped and therefore exempt from gap analysis, versus skipped erroneously.
+**Fix:** Add to the Limit scope paragraph: "Exception: if source-data-check was conditionally skipped (record in session context shows source-data-check: SKIPPED), do not flag source data tab rows as coverage gaps — their absence is intentional. If source-data-check was NOT skipped but its COVERAGE_ROWS declaration omits large sections of source tabs, that is a legitimate coverage concern — note it in reasoning but do not file a gap finding for source tabs unless you have evidence of a specific anomaly there."
+
+---
+
+## W3-026
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Lines 103–119 (Check 3 — Won't Fix verification)
+**Category:** Gap
+**Severity:** Medium
+**Description:** Check 3 says "Focus only on Won't Fix decisions involving: (a) cells identified as known parameters (moral weight, benchmark, cross-cutting parameter), and (b) formula rows where the formula and row label diverge in a way that would be obvious on visual inspection." This light scope means all Won't Fix decisions on Sourcing, Box Link, Legibility, Assumption, and Inconsistency findings are silently ignored. If a reconcile agent incorrectly marked a High/Formula or High/Parameter finding as WONT_FIX, that finding would escape review unless it also happened to be a moral weight or benchmark parameter.
+**Fix:** Extend the scope statement to: "Focus on Won't Fix decisions involving: (a) any finding whose column D (Severity) is High — regardless of error type; (b) cells identified as known parameters (moral weight, benchmark, cross-cutting parameter); and (c) formula rows where the formula and row label diverge in a way that would be obvious on visual inspection. Medium and Low Won't Fix decisions on non-parameter rows do not require review unless they pass the volume threshold below."
+
+---
+
+## W3-027
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Lines 83–99 (Check 2.5 — Cross-band root cause trace)
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** Check 2.5 (line 89) filters to "all High/D findings whose cell reference row number exceeds band1_end." The "/D" notation (High/D = High severity, Defect nature) is instructional two-axis notation that the architecture facts say "is instructional only — column D must contain only High, Medium, Low, or blank." Column D never stores "/D" as text. The agent cannot filter on "/D" from sheet data — it can only filter on column D = "High". The instruction is internally inconsistent: it implies there is a "/D" marker to read, which does not exist in the sheet.
+**Fix:** Change "filter to all High/D findings" to "filter to all High findings" (column D = "High"). The Defect vs. Gap nature is not machine-readable from the sheet; apply the check to all High findings in band 2+.
+
+---
+
+## W3-028
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Lines 97, 115 (Check 2.5 step 5, Check 3 step 4 — severity notation)
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** Both Check 2.5 step 5 (line 97) and Check 3 step 4 (line 115) use the notation "Low/H" and "Medium/H" respectively to describe severity. The architecture facts state that two-axis notation (/D, /H, /O) is instructional only and that column D must contain only "High", "Medium", "Low", or blank. The agent may literally write "Low/H" or "Medium/H" into column D, causing compaction to fail to sort those rows correctly. The same issue appears in the coverage gap scan (line 75: "file as Low/H").
+**Fix:** Replace all occurrences of "Low/H" with "Low" and "Medium/H" with "Medium" in lines 75, 97, and 115. The Researcher judgment needed column (I) communicates the judgment flag; the slash notation must not appear in column D.
+
+---
+
+## W3-029
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Lines 123–143 (Check 4 — Mandatory category coverage declaration)
+**Category:** Ordering problem
+**Severity:** Medium
+**Description:** Check 4 is placed after Checks 1, 2, and 2.5, and its heading says "Before writing any new findings, verify that each of the following check categories was covered." But Checks 1 and 2 already produce new findings — they are written before Check 4 runs. The "Before writing any new findings" instruction is therefore impossible to honor: new findings have already been written when Check 4 begins.
+**Fix:** Change the Check 4 heading instruction from "Before writing any new findings" to "After completing Checks 1, 2, and 2.5 above, and before writing findings to the sheet for those checks:" — or restructure so that Check 4 runs first in the sequence. The simplest fix is to reorder: move Check 4 before Check 1, so category coverage is verified first, then cascade and gap checks proceed with that context.
+
+---
+
+## W3-030
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Lines 147–155 (Writing new findings — column mapping)
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** The Writing new findings column reference (line 153) maps column G to "Recommended Fix" and column H to "Estimated CE Impact" — which is consistent with the architecture. However, it omits the em-dash punctuation requirement from output-format.md: "Exact punctuation required: all phrases use an em-dash ( — ) with one space on each side. Do not use en-dash or hyphen." The column H description in the Writing section uses " | " as a separator between options, which could cause the agent to use a pipe character as a separator in actual output.
+**Fix:** Replace the column H option list in line 153 (which uses " | " separators) with a bulleted list matching output-format.md exactly, and add: "Use an em-dash ( — ) with one space on each side — do not use en-dash, hyphen, or pipe character."
+
+---
+
+## W3-031
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Lines 147–155 (Writing new findings section) and throughout file
+**Category:** Gap
+**Severity:** Medium
+**Description:** The file has no AGENT_COMPLETE marker instruction. SKILL.md (line 619) lists final-review-gap-fill permitted tools as "rv, rn, wv" and the agent is expected to signal completion so the orchestrator can verify it ran. All other Wave 1 and Wave 2 agents have explicit AGENT_COMPLETE writing instructions. The compaction agent (line 29) and SKILL.md (line 988) both check for AGENT_COMPLETE markers in staging tabs. Without an AGENT_COMPLETE instruction, the gap-fill agent will produce no completion signal, and any orchestrator or downstream pre-flight check will be unable to confirm it completed successfully versus failing silently.
+**Fix:** Add at the end of the file: "## Final step — Write AGENT_COMPLETE marker\n\nAfter all checks and new findings are written, write a completion row to the Findings sheet row immediately after the last finding row: column B = `final-review-gap-fill`, column D = `AGENT_COMPLETE`, column F = `COVERAGE_ROWS: Findings sheet rows 2–[last_row] | Staging sheet: Findings. Filed [K] new findings in rows [first_new_row]–[last_new_row].`"
+
+---
+
+## W3-032
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Lines 83–99 (Check 2.5 — band detection fallback)
+**Category:** Gap
+**Severity:** Low
+**Description:** Check 2.5 instructs the agent to check Dashboard cell A154 for band1_end if not in session context. But SKILL.md (line 413) says "write this only when band_count > 1; leave A154 and B154 blank when band-split is not active." A blank cell could also result from a band-split vet where the orchestrator failed to write the value. There is no instruction for the case where A154 is blank but session context was compacted. The agent will incorrectly conclude band-split is not active if A154 is blank, even if it actually was active.
+**Fix:** Add after the Dashboard A154 fallback check: "If A154 is blank and session context shows no band1_end, additionally check Dashboard A99 onward for a staging sheet log entry containing 'band-split' or 'band1_end' — the orchestrator may have logged it there. If no band-split evidence is found in any of these locations, proceed with the skip declaration."
+
+---
+
+## W3-033
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Lines 62–79 (Check 2 — Coverage gap scan)
+**Category:** Gap
+**Severity:** Low
+**Description:** Check 2 step 2 (line 68) says to look for "gaps of 15 or more consecutive rows with no findings anywhere in that range across any vetted sheet." The phrase "across any vetted sheet" is ambiguous: it could mean (a) a gap must span 15+ rows on every vetted sheet simultaneously, or (b) a gap on any single vetted sheet of 15+ rows qualifies. The intended reading is clearly (b), but the phrasing could be read as (a), causing the agent to under-flag gaps on sheets that other sheets cover.
+**Fix:** Change to: "look for gaps of 15 or more consecutive rows with no findings on a single vetted sheet" — removing "across any vetted sheet" and making clear this is a per-sheet scan.
+
+---
+
+## W3-034
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Lines 107–117 (Check 3 — Won't Fix scope)
+**Category:** Gap
+**Severity:** Low
+**Description:** Check 3 (line 109) says "Read the staging tabs for each agent pair (both stg-agent-A and stg-agent-B)." But some agents run as single instances (key-params-check B is skipped for small sheets per SKILL.md line 651; notes-scan has no B reconcile pair but has stg-nscn-A and stg-nscn-B). There is no instruction for how to handle pairs where only one staging tab exists. The agent may attempt to read a non-existent or empty stg-kp-B and incorrectly declare no WONT_FIX rows for that agent.
+**Fix:** Add: "For agents that ran in 1-instance mode (only A tab is populated), read only the A tab — the B tab will be empty and does not contain WONT_FIX rows."
+
+---
+
+## W3-035
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Lines 40–58 (Check 1 — cascade check step 2)
+**Category:** Gap
+**Severity:** Low
+**Description:** Step 2 of Check 1 (line 45) instructs the agent to "search formulas for B14" when looking for downstream references to cell Main CEA!B14. But a formula on a different sheet referencing Main CEA!B14 would use the notation ='Main CEA'!B14 or =Main CEA!B14 — not just "B14". The bare cell reference "B14" would match formulas within the same sheet but not cross-sheet references. If the most important downstream consumer is on a different sheet, it will be silently missed.
+**Fix:** Change the search instruction to: "scan for any formula containing the flagged cell reference — search for both the bare reference (e.g., B14) to catch same-sheet references, and the sheet-qualified reference (e.g., 'Main CEA'!B14 or Main CEA!B14) to catch cross-sheet references."
+
+---
+
+## W3-036
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Lines 123–143 (Check 4 — source-data-check coverage category)
+**Category:** Contradiction
+**Severity:** Low
+**Description:** Check 4 includes "Geography/country consistency" as a required category owned by source-data-check, and says "Do not file a gap finding when... (c) the workbook has no source data tabs (geography consistency check does not apply)." However, SKILL.md line 649 records source-data-check skips as "source-data-check: SKIPPED (no source data tabs)" in session context — not in any staging tab AGENT_COMPLETE marker. Check 4 looks for evidence of the check running in either the Findings sheet or an AGENT_COMPLETE row in the stg-* tab. When source-data-check was skipped, there is no stg-srcdt-A or stg-srcdt-B AGENT_COMPLETE row to find, so Check 4 will incorrectly file a gap finding for geography consistency even when the skip was legitimate.
+**Fix:** Add to the "Do not file" list for the geography consistency row: "Also do not file if session context contains source-data-check: SKIPPED — this records the conditional skip from the orchestrator and is sufficient evidence the check was intentionally omitted."
+
+---
+
+## W3-037
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Lines 147–155 (Writing new findings)
+**Category:** Gap
+**Severity:** Low
+**Description:** The Writing new findings section omits any instruction on how to handle a gap-fill observation that would be a Publication Readiness issue only (e.g., Check 4 category coverage gap discovers a sourcing citation missing). Every finding template shown routes to Findings. If a gap-fill finding would belong on Publication Readiness rather than Findings, there is no guidance.
+**Fix:** Add a routing note: "All gap-fill findings route to the Findings sheet. If a category coverage gap points to a publication-readiness issue only (e.g., a missing citation with no CE impact), file as Low/Legibility in the Findings sheet rather than Publication Readiness — gap-fill does not write to Publication Readiness directly."
+
+---
+
+## W3-038
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Lines 19 (Coverage mandate) and lines 58, 79, 99, 119, 143 (coverage declarations)
+**Category:** Redundancy
+**Severity:** Low
+**Description:** The coverage mandate header (line 19) says "After each of the three checks below, write a coverage declaration before moving to the next." But the file actually contains five checks (Check 1, Check 2, Check 2.5, Check 3, Check 4), not three. The discrepancy between "three checks" and the actual five is a staleness artifact — the mandate was written before Check 2.5 and Check 4 were added. It does not cause incorrect behavior (each check has its own coverage declaration), but it will confuse agents reading the mandate.
+**Fix:** Change "After each of the three checks below" to "After each check below" — removing the numeric reference that is stale.
+
+---
+
+## W3-039
+**File(s):** `plugin/skills/vetting/agents/final-review-gap-fill.md`
+**Location:** Lines 147–155 (Writing new findings — permitted tools)
+**Category:** Gap
+**Severity:** Low
+**Description:** SKILL.md (line 619) specifies that final-review-gap-fill's permitted tools are "rv, rn, wv" (read_sheet_values, read_sheet_notes, modify_sheet_values). There is no instruction warning the agent away from get_spreadsheet_info (si), which it does not have permission to call. If an agent attempts it (e.g., to list tabs for coverage verification), it will get an InputValidationError.
+**Fix:** Add a tool scope reminder near the preamble: "Permitted tools: read_sheet_values (rv), read_sheet_notes (rn), modify_sheet_values (wv). Do not call get_spreadsheet_info — it is not permitted for this agent."
+
+---
+
+## W3-040
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Line 17 (Coverage mandate) and throughout
+**Category:** Gap
+**Severity:** High
+**Description:** pitfalls.md is never gated in final-review-validation.md. The architecture mandates every agent read pitfalls.md before starting checks (SKILL.md line 554). All Wave 1 and Wave 2 agents include this gate. The validation agent performs CE baseline re-verification, fix-validation, and CE impact completeness — checks that are directly affected by SC-003 (parameter in CE chain → High), SC-006 (formula robustness grouping), and SC-009 (missing source severity thresholds). Without reading pitfalls.md, the validation agent may apply incorrect severity during fix-validation or CE impact completeness.
+**Fix:** Add as the first instruction after the preamble: "Before starting any check, read reference/pitfalls.md using the Read tool. Apply every entry relevant to CE impact estimation, fix validation, and completeness checks."
+
+---
+
+## W3-041
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Throughout (no AGENT_COMPLETE instruction anywhere in file)
+**Category:** Gap
+**Severity:** High
+**Description:** final-review-validation.md has no AGENT_COMPLETE marker instruction. SKILL.md lists the agent's permitted tools as "rv, rn, wv, si" and the orchestrator checks for AGENT_COMPLETE completion before spawning Wave 3 final-review-dashboard. Without an AGENT_COMPLETE marker, the orchestrator's self-verification pre-pass (SKILL.md line 988) will flag validation as a silent failure, causing the researcher to be warned or asked whether to re-run — even when validation completed successfully.
+**Fix:** Add at the end of the file, after the Hyperlink conversion step: "## Final step — Write AGENT_COMPLETE marker\n\nAfter hyperlink conversion is complete, write a completion row to the Findings sheet: column B = `final-review-validation`, column D = `AGENT_COMPLETE`, column F = `COVERAGE_ROWS: Findings sheet rows 2–[last_row] | Staging sheet: Findings. CE baseline: [verified/not found]. ID integrity: [clean/issues filed]. [K] new findings filed.`"
+
+---
+
+## W3-042
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Lines 74–90 (Check 2 — Confidence intervals sheet)
+**Category:** Gap
+**Severity:** High
+**Description:** Check 2 says "Do not apply this check to BOTECs, VOI models, or exploratory analyses that do not target a published CEA." But there is no instruction on how to determine which type the current workbook is. The agent is not told where to look for this classification — it is not in the Findings sheet, not reliably in a named tab, and not guaranteed to be in session context. If the agent cannot determine the model type, it has no guidance on whether to apply or skip the check, potentially filing a false positive Low/Publication Readiness finding on a BOTEC that will never be published.
+**Fix:** Add: "To determine whether this check applies: check session context for a model type declaration (e.g., 'program type: BOTEC' or 'optionality model'). If not in session context, read the workbook title from get_spreadsheet_info — titles containing 'BOTEC', 'optionality', 'VoI', or 'exploratory' indicate this check does not apply. If model type is ambiguous, apply the check and mark the finding as Researcher judgment needed ✓ with note: 'Apply only if this is a published top-charity CEA, not a BOTEC or exploratory analysis.'"
+
+---
+
+## W3-043
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Lines 40–52 (Check 0 — CE baseline re-verification, step 3)
+**Category:** Gap
+**Severity:** High
+**Description:** Check 0 step 3 instructs the agent to compare the stored cell value to session context baseline and file a High/Formula if the discrepancy exceeds 1%. But it does not specify which read mode to use for the comparison — step 1 uses FORMATTED_VALUE for reading the row label, and step 3 says "Read the cell value (UNFORMATTED_VALUE)." However, the instruction to "compare to the session context baseline" does not clarify how the session context baseline was originally read. If the session context baseline was stored as a formatted string (e.g., "17.4x") and the UNFORMATTED_VALUE is a raw float (e.g., 17.3892), the comparison will fail or produce a spurious >1% discrepancy due to display rounding.
+**Fix:** Add to step 3: "Both values must be compared as unformatted numerics. If the session context baseline is stored as a formatted string (e.g., '17.4x'), strip the 'x' suffix and treat as a float before comparing. A difference attributable solely to display rounding (≤2% and the formatted values match) is not a discrepancy — do not file."
+
+---
+
+## W3-044
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Lines 147–183 (Final step — Hyperlink conversion)
+**Category:** Ordering problem
+**Severity:** High
+**Description:** The Hyperlink conversion step (line 147) explicitly says "Run this step only after all checks are complete and all new findings have been written." However, Check 1 Fix-validation (line 62) also uses modify_sheet_values to "note the discrepancy in the finding's Explanation" — appending to column F of existing rows. The file says "run last" but the pre-condition for "last" is ambiguous: does it mean after the AGENT_COMPLETE marker, or before? The absent AGENT_COMPLETE instruction (W3-041) makes this ordering undefined. If hyperlink conversion runs after writing the AGENT_COMPLETE row, the AGENT_COMPLETE row's column C would receive a spurious HYPERLINK formula.
+**Fix:** Add explicit ordering: "Run hyperlink conversion after: (1) all five checks are complete, (2) all new findings have been written, and (3) all in-place updates to column F and column H are complete. Do NOT run hyperlink conversion after writing the AGENT_COMPLETE marker — the AGENT_COMPLETE row does not need a hyperlink."
+
+---
+
+## W3-045
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Lines 27–36 (ID integrity check — sequence check, step 4)
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** The ID integrity check step 4 says: "A gap in the sequence after compaction (e.g., F-003 present, F-004 missing, F-005 present) indicates a row was deleted after compaction ran — this is abnormal." But gap-fill (Step 10b) legitimately adds new findings after compaction with IDs continuing from compaction's highest ID. If compaction assigned through F-018 and gap-fill added F-019, F-021 (skipping F-020 for any reason), the validation agent's sequence check will file a Medium/Legibility finding about F-020 even though it is a gap-fill artifact.
+**Fix:** Change step 4 to: "A gap in the F-001 through F-[compaction_max] sequence indicates a row was deleted after compaction — file as Medium/Legibility. Gaps in IDs above compaction_max (assigned by gap-fill) may indicate gap-fill skipped an ID — note in reasoning but do not file a finding unless the gap is larger than 1 ID, since single-ID gaps can result from gap-fill aborting mid-write."
+
+---
+
+## W3-046
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Lines 109–129 (Check 4 — CE impact completeness, Pass A)
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** Check 4 Pass A (line 113) says for "Medium Assumption, Legibility, and Inconsistency findings where CE impact is confirmed zero" to leave those blank. But output-format.md (column H completeness) says: "No CE impact must be written explicitly — never leave blank when the determination is zero... Blank means CE impact not yet assessed." Pass A's instruction to "leave those blank" directly contradicts the output-format.md rule that blank = unassessed. After Pass A runs, Medium Assumption/Legibility/Inconsistency findings that truly have no CE impact will remain blank, causing any subsequent reviewer to treat them as unassessed.
+**Fix:** Change Pass A to: "For Medium Assumption, Legibility, and Inconsistency findings where CE impact is confirmed zero, write No CE impact — do not leave blank. Leave blank only when you genuinely cannot determine whether there is a CE impact (rare for these types)."
+
+---
+
+## W3-047
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Lines 56–70 (Check 1 — Fix-validation, step 2)
+**Category:** Gap
+**Severity:** Medium
+**Description:** Fix-validation step 2 (line 63) says "Identify cells that reference the changed cell by reading likely downstream consumers using targeted read_sheet_values (FORMULA mode) calls." The phrase "likely downstream consumers" provides no method for determining which cells are likely — the agent must guess which cells to read without a systematic scan. Unlike Check 1 in gap-fill (which explicitly scans for the cell reference string in FORMULA mode), validation's step 2 gives no technique for finding downstream cells. An agent that cannot identify "likely" consumers may skip the check entirely or check only adjacent rows, silently missing a downstream cell.
+**Fix:** Replace "by reading likely downstream consumers using targeted read_sheet_values (FORMULA mode) calls" with "by reading the row range around the fixed cell — read ±10 rows in FORMULA mode and scan for any formula containing the fixed cell reference (e.g., if fixing B14, search for formulas containing B14, $B$14, or B:B). For cross-sheet consumers, check if the fixed cell is referenced in the primary CEA tab if the fix is on a supporting sheet."
+
+---
+
+## W3-048
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Lines 94–105 (Check 3 — Stale placeholder and draft language)
+**Category:** Gap
+**Severity:** Medium
+**Description:** Check 3 (line 96) says "using targeted read_sheet_values calls on header rows and column A of each vetted sheet" to scan for TBD/TODO/DRAFT/Placeholder. But TBD and similar text can appear in any column — in formula explanations (column F), in recommended-fix cells, or in mid-sheet data cells. Limiting the scan to header rows and column A only will systematically miss TBD content in body cells and the data portion of the workbook. The cell note scan ("Cell notes beginning with Note to self...") also cannot be done with read_sheet_values — it requires read_sheet_notes (rn), which is listed as a permitted tool for this agent.
+**Fix:** Change to: "Using targeted read_sheet_values calls on column A and column B of each vetted sheet, scan row labels for TBD/TODO/DRAFT/Placeholder. For cell notes containing internal-only markers, use read_sheet_notes on each vetted sheet. Do not limit to header rows — scan all populated rows."
+
+---
+
+## W3-049
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Lines 109–129 (Check 4 — CE impact completeness, Pass B)
+**Category:** Gap
+**Severity:** Medium
+**Description:** Pass B (line 117) instructs the agent to "attempt to compute: what is the CE multiple if this finding is resolved as recommended?" This requires knowing the replacement value. However, the fix for many High findings is researcher-determined (the finding carries "Direction unknown" or "Researcher judgment needed ✓"). There is no guard against attempting arithmetic with a missing replacement value. If the replacement value is not in the finding's Recommended Fix (column G), the agent will either hallucinate a value or silently skip the computation.
+**Fix:** Add to Pass B step 3: "Before computing, confirm that the finding's Recommended Fix (column G) contains a specific numeric replacement value. If column G says 'Researcher to determine' or similar, skip computation and proceed to step 4 — retain magnitude unknown with reason: '(replacement value not specified in fix — researcher must supply)'"
+
+---
+
+## W3-050
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Lines 74–90 (Check 2 — CI sheet cell-reference verification, step 1)
+**Category:** Gap
+**Severity:** Medium
+**Description:** The CI sheet cell-reference verification (line 85) says "Read the CI sheet's CE output row using read_sheet_values (FORMULA mode). Look for a row labeled 'central estimate,' 'best estimate,' 'CE,' or equivalent." But if no such labeled row exists, the check will fail silently — the agent will declare the CI sheet verified without having found the CE output row. There is no instruction for what to do when the expected label is absent.
+**Fix:** Add: "If no row matching these labels is found after reading the CI sheet in FORMULA mode, file as Medium/Legibility with Researcher judgment needed ✓: 'CI sheet does not contain a clearly labeled central estimate row (looked for: central estimate, best estimate, CE). Cannot verify whether the CI sheet references the correct CE baseline cell. Researcher to confirm the CI sheet structure.'"
+
+---
+
+## W3-051
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Lines 27–36 (ID integrity check — presence check, step 2)
+**Category:** Gap
+**Severity:** Medium
+**Description:** The presence check (line 32) says: "Any row missing its ID is a compaction failure — file as High/Legibility." However, the gap-fill agent (Step 10b) also writes new findings to the Findings sheet. If gap-fill experienced a partial write failure — it wrote the finding row but then crashed before writing the ID to column A — the row will have content in columns B–J but no ID in column A. The validation agent's presence check is the correct place to catch this, but the finding's description blames "compaction agent" when the actual failure source may be gap-fill. This misleads the researcher during repair.
+**Fix:** Change to: "Any row missing its ID is a compaction or gap-fill failure — file as High/Legibility: 'Finding at row [N] (Sheet: [B], Cell: [C]) has no Finding ID assigned. If this row has a finding number below the compaction maximum, it was not processed by the compaction agent. If above the compaction maximum, it was written by gap-fill without a complete ID. Assign the next sequential ID.'"
+
+---
+
+## W3-052
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Lines 147–183 (Hyperlink conversion — step 3, comma-separated cell list case)
+**Category:** Gap
+**Severity:** Low
+**Description:** The comma-separated cell list parsing rule (line 160) says "extract the first cell ref before the first comma; sheet name = primary vetted sheet from session context." But a comma-separated list can include cells from multiple sheets (e.g., "Main CEA!B14, Inputs!C22"). In this case, extracting only the first cell and using the primary vetted sheet as the sheet name will produce a wrong hyperlink for a finding that explicitly names a cross-sheet cell in the first position.
+**Fix:** Add: "If the first cell in a comma-separated list includes a sheet qualifier (e.g., Main CEA!B14), use that sheet name and cell reference — do not fall back to the primary vetted sheet. Only fall back to the primary vetted sheet when the first cell has no sheet prefix."
+
+---
+
+## W3-053
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Lines 40–52 (Check 0 — CE baseline re-verification)
+**Category:** Gap
+**Severity:** Low
+**Description:** Check 0 step 2 (line 47) says "Confirm the row label contains 'final,' 'after adjustments,' or an equivalent phrase." The word "equivalent" is undefined — different GiveWell CEA templates use labels like "post-adjustment CE," "CE (adjusted)," "Final CE per [metric]," or program-specific names. Without a list of acceptable equivalents, the agent must make a judgment call that varies across runs.
+**Fix:** Add: "Acceptable row label phrases include (case-insensitive): 'final', 'after adjustments', 'adjusted', 'post-adjustment', 'CE (adjusted)', 'net CE'. Labels containing only the program name and 'CE' with no qualifier (e.g., 'SMC CE') are ambiguous — treat as label concern and file per step 4."
+
+---
+
+## W3-054
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Lines 94–105 (Check 3 — date staleness rule)
+**Category:** Gap
+**Severity:** Low
+**Description:** Check 3 (line 101) says "Any date visible in the workbook header, key tab, or title row that is more than 18 months before today — flag as Low/H if it appears to be a last-updated date rather than a data vintage date." The distinction between a "last-updated date" and a "data vintage date" is not explained. An agent has no reliable way to determine which type a date is without reading adjacent context. The rule will produce different outputs across runs.
+**Fix:** Add: "To distinguish last-updated from data vintage: a last-updated date typically appears in workbook metadata rows (e.g., a row labeled 'Last updated:', 'Version:', or 'As of:'). A data vintage date typically appears in a row label describing a data source (e.g., 'GBD 2021', 'DHS 2020 data'). If the date context is ambiguous (e.g., a standalone year in a header row), treat as a last-updated date and apply the 18-month rule."
+
+---
+
+## W3-055
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Lines 56–70 (Check 1 — Fix-validation) and lines 147–183 (Hyperlink conversion)
+**Category:** Redundancy
+**Severity:** Low
+**Description:** Check 1 fix-validation (line 68) states: "Do not mark prior findings as false positives or resolved unless you directly re-read the referenced cell via read_sheet_values (UNFORMATTED_VALUE) and confirm the raw stored value matches what is expected." This rule also applies to Check 4 Pass A and Pass B, but it is buried in Check 1 rather than placed as a global rule.
+**Fix:** Move the "Do not mark prior findings as false positives or resolved" paragraph from Check 1 to the preamble (before Step 1), retitled as a global rule: "Global rule: Do not mark any finding as resolved or false positive unless you have directly re-read the referenced cell via read_sheet_values (UNFORMATTED_VALUE) and confirmed the raw stored value. Formatted display values are not sufficient."
+
+---
+
+## W3-056
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Lines 109–129 (Check 4 — Pass A) and lines 40–52 (Check 0)
+**Category:** Contradiction
+**Severity:** Low
+**Description:** Check 4 Pass A (line 113) says to "compute the directional impact using the pre-vet baseline CE from session context." The pre-condition check (line 111) says to skip if Check 0 found the baseline missing or non-numeric. However, Check 0 step 3 (line 48) may have filed a High finding for a >1% discrepancy between the session context baseline and the live cell value — meaning the session context value is known to be wrong, but Pass A is still instructed to use it. If Check 0 flagged a discrepancy, Pass A should use the live cell value for CE impact computation.
+**Fix:** Add to Pass A: "If Check 0 found a >1% discrepancy between the live cell value and the session context baseline and filed a High finding, use the live cell value (from Check 0 step 3) as the baseline for CE impact estimation, not the session context value — the live value is more likely to be correct."
+
+---
+
+## W3-057
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Lines 21–23 (Step 1 — Read all findings, Publication Readiness read)
+**Category:** Gap
+**Severity:** Low
+**Description:** Step 1 instructs the agent to read Publication Readiness sheet rows starting from row 2. The ID integrity check depends on collecting all PR-* IDs from this read. However, if the Publication Readiness sheet has no rows (e.g., a clean BOTEC with no pub-readiness issues), there is no instruction for how to handle an empty sheet in the ID integrity check context — does it file "PR-001 missing" or declare the check clean?
+**Fix:** Add: "If the Publication Readiness sheet is empty (no rows after row 1), declare the PR ID integrity check clean: 'Publication Readiness sheet is empty — no PR-* IDs to verify.' Do not file a finding about missing PR IDs when the sheet is legitimately empty."
+
+---
+
+## W3-058
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Lines 133–143 (Writing new findings — column E allowlist)
+**Category:** Contradiction
+**Severity:** Low
+**Description:** The Writing new findings section lists the Findings sheet column E allowlist correctly. However, the ID integrity check (line 32) files findings as "High/Legibility" and the Check 2 blank CI sheet (line 77) files as "Medium" with no Error Type specified. Neither of these new-finding instructions explicitly states which column E label to use, creating ambiguity.
+**Fix:** In the ID integrity check step 2 and step 3, add "— write Legibility in column E" after each "file as High/Legibility" instruction. In Check 2, change "file as Medium, route to Findings" to "file as Medium/Assumption, route to Findings — write Assumption in column E (structural completeness gap)."
+
+---
+
+## W3-059
+**File(s):** `plugin/skills/vetting/agents/final-review-validation.md`
+**Location:** Lines 147–183 (Hyperlink conversion — step 6)
+**Category:** Gap
+**Severity:** Low
+**Description:** Hyperlink conversion step 6 (line 181) says "Write all hyperlinks in a single modify_sheet_values call per sheet, targeting only column C, using value_input_option: USER_ENTERED." For large Findings sheets with many findings, a single call targeting column C of hundreds of rows will include rows for dividers (column B contains ───) and the AGENT_COMPLETE marker row. Writing HYPERLINK formulas into column C of divider rows will corrupt those rows. There is no exclusion for divider rows in the hyperlink write step.
+**Fix:** Add to step 6: "Exclude divider rows and the AGENT_COMPLETE marker row from the hyperlink write. Only write HYPERLINK formulas to rows where column C is non-blank and the row is a valid finding row (column A contains an F-* or PR-* ID, or column A is blank and column B contains a sheet name, not a divider marker)."
+
+---
+
+## W3-060
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Line 15 (Step 1 — Read findings for summary)
+**Category:** Gap
+**Severity:** Medium
+**Description:** Step 1 reads Findings rows to compute severity counts (High/Medium/Low), but the batched read skips divider rows only by implication — there is no explicit instruction to exclude divider rows (where column B contains "───" and column D is empty) when counting. If divider rows are counted, the severity tallies and total finding count used in the Key Findings chat summary will be wrong. The validation agent explicitly instructs "Skip divider rows (column D empty, column B contains ───)" but the dashboard agent has no equivalent instruction.
+**Fix:** Add to Step 1, after "Collect: all High findings...": "When counting, skip divider rows — a row is a divider if column D is empty AND column B contains ───. Do not include divider rows in the High/Medium/Low finding counts or total count."
+
+---
+
+## W3-061
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Lines 25–36 (Step 2a and 2b)
+**Category:** Contradiction
+**Severity:** High
+**Description:** The Dashboard tab already has COUNTIF formulas written to cells B7–B10 (High/Medium/Low/Total) by the output-setup agent at the beginning of the vet (output-setup.md lines 64–67). Step 2b instructs the dashboard agent to write per-sheet COUNTIFS formulas in the rows-25-onward table, plus a totals row. The totals row formula =SUM(B25:B{last}) in column B sits in a different row range than the existing COUNTIF formula in B7, so there is no direct cell collision. However, the per-sheet table starts at row 25 per the reserved layout in output-setup.md. The instruction gives no row-floor protection — if the agent miscalculates where the table ends and places the totals row above row 24, it will overwrite existing setup content.
+**Fix:** Add an explicit note in Step 2b: "The per-sheet table starts at row 25 per the reserved layout in output-setup.md. Do not write above row 24 under any circumstances — rows 1–23 contain static setup content written during output initialization. If the per-sheet table plus unvetted tabs list would extend past row 148, warn the researcher before writing."
+
+---
+
+## W3-062
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Lines 29–36 (Step 2b — COUNTIFS formula column reference)
+**Category:** Contradiction
+**Severity:** High
+**Description:** The COUNTIFS formula in Step 2b uses Findings column B as the sheet-name column: `=COUNTIFS(Findings!B:B,A25,Findings!D:D,"High")`. This is correct for the final Findings sheet (post-compaction), where column B contains the source spreadsheet tab name. However, the agent prompt never explicitly distinguishes final Findings sheet column layout (B=Sheet name) from staging tab column layout (B=Agent name). An agent that confuses these could mistakenly populate the per-sheet table with agent names rather than sheet names.
+**Fix:** Add a clarifying note before the COUNTIFS instruction: "Note: in the final Findings sheet (post-compaction), column B contains the source spreadsheet tab name (e.g., Main CEA, Inputs) — not the vetting agent name. The COUNTIFS formulas reference this column to group findings by source tab. Do not confuse the final Findings sheet column layout with the staging tab layout."
+
+---
+
+## W3-063
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Lines 31, 69 (Step 2b sort order and Step 3 grouping)
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** Step 2b says to list sheet names "in order of first appearance after sorting" — the phrase "after sorting" is ambiguous. It could mean: (a) after sorting the sheet names alphabetically, then list in that sorted order; or (b) after the compaction agent has sorted the Findings sheet by severity, list sheet names in the order they first appear in the sorted findings. "After sorting" suggests sorting the sheet names, but then "order of first appearance" conflicts with alphabetical order. Step 3 says "grouped by sheet" for the High findings bullets, which implies grouping by source tab name. No canonical ordering is specified and the two instructions are inconsistent with each other.
+**Fix:** Replace "in order of first appearance after sorting" with a single unambiguous instruction: "sorted alphabetically by sheet name, with Multiple last if present." Remove the words "after sorting" entirely since they create ambiguity with "order of first appearance."
+
+---
+
+## W3-064
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Lines 25, 55 (Step 2a CE direction and Step 3 heading)
+**Category:** Gap
+**Severity:** Medium
+**Description:** Step 2a instructs the agent to compute the CE estimate direction by reviewing Estimated CE Impact (column H) for all High findings only. If there are zero High findings, it writes "Not quantified (no High findings)". However, there is no instruction for what to write in B22 if there are High findings but all of them have "No CE impact" or blank column H (e.g., all High findings are Legibility or Inconsistency type). In that case, "Not quantified (no High findings)" is factually wrong (there are High findings), and none of the other four provided phrases apply.
+**Fix:** Add a fifth option to the CE estimate direction phrase list in Step 2a: "High findings present but none affect CE — see Findings sheet" to cover the case where High findings exist but all have No CE impact or blank column H.
+
+---
+
+## W3-065
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Lines 46–71 (Step 3 — Key Findings summary)
+**Category:** Gap
+**Severity:** Medium
+**Description:** The Key Findings template includes an "Items requiring researcher input" section but specifies "If none, omit this section." There is no corresponding instruction for the case where there are zero High findings — the template only says "If no High findings, write 'No High findings.'" But there is no guidance about whether to still include the "High findings" heading in that case, or omit it entirely. The two zero-case behaviors are inconsistent: researcher input section is omitted entirely, but the High findings section keeps its heading with a negative message.
+**Fix:** Standardize the zero-case behavior: either always keep section headers with a "none" message, or always omit sections that have no content. Recommend: "If no High findings, omit the High findings section entirely (do not write the heading or 'No High findings'). If no researcher input items, omit that section entirely. Only include sections that have content."
+
+---
+
+## W3-066
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Lines 55, 68 (Step 3 — Vet scope line and get_spreadsheet_info usage)
+**Category:** Redundancy
+**Severity:** Low
+**Description:** The agent calls get_spreadsheet_info on the source spreadsheet in Step 2b (to build the unvetted tabs list) and then in Step 3 it says "Build the Vet scope line using the get_spreadsheet_info result from Step 2b" — correctly referencing a prior result. However, the Step 3 rule also re-explains the get_spreadsheet_info use as if Step 2b had not already been done, which could cause the agent to issue a second unnecessary get_spreadsheet_info call.
+**Fix:** Replace the Step 3 rule "Build the Vet scope line using the get_spreadsheet_info result from Step 2b" with a direct reference: "Use the tab list already retrieved in Step 2b — do not call get_spreadsheet_info again."
+
+---
+
+## W3-067
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Lines 75–83 (Cleanup — Delete Findings_backup tab)
+**Category:** Gap
+**Severity:** High
+**Description:** The Cleanup section instructs the agent to delete only the Findings_backup tab. However, all Wave 1 and Wave 2 analysis agents write to dedicated stg-* staging tabs that are never deleted by any prior agent — compaction reads from them but does not delete them. The final-review-dashboard agent is the last step in the pipeline, but it has no instruction to delete any stg-* staging tabs. Researchers will see raw staging tabs (stg-formula-arithmetic, stg-sources, stg-readability, etc.) alongside the clean output tabs, exposing intermediate per-agent data and creating confusion.
+**Fix:** Add a step before or alongside the Findings_backup deletion: "Also delete all stg-* staging tabs. Retrieve the full staging tab list from Dashboard A99 onward (written during output setup) or from session context. For each stg-* tab name, call ToolSearch for delete_sheet and delete the tab. Announce each deletion or a single summary: Deleted [N] staging tabs (stg-*). If delete_sheet is not found, instruct the researcher to delete all tabs whose names begin with stg- manually."
+
+---
+
+## W3-068
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Lines 75–83 (Cleanup — ToolSearch usage)
+**Category:** Gap
+**Severity:** High
+**Description:** The Cleanup section calls ToolSearch for "delete_sheet" but the actual MCP tool name in the hardened-workspace MCP is not confirmed as "delete_sheet" — output-setup.md uses "create_sheet" (mcp__hardened-workspace__create_sheet) for tab creation. There is no architecture documentation confirming a delete_sheet tool exists. More critically, the compaction agent (Step 10a line 53) demonstrates the correct pattern: "Call ToolSearch with query select:mcp__hardened-workspace__create_sheet". The dashboard agent uses a keyword search "delete_sheet" rather than the select: form, which is less reliable.
+**Fix:** Replace "ToolSearch for delete_sheet" with "ToolSearch with query select:mcp__hardened-workspace__delete_sheet (or check if the hardened-workspace MCP exposes a sheet-deletion tool under another name by searching ToolSearch with query 'delete sheet tab spreadsheet')." Also add a note acknowledging that if the MCP does not support tab deletion, no workaround is available and the researcher must delete manually.
+
+---
+
+## W3-069
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Lines 1–9 (Preamble — permitted tools not listed)
+**Category:** Gap
+**Severity:** Medium
+**Description:** The architecture facts state that "Permitted tools per agent are strictly enforced — calling an unlisted tool = InputValidationError." Every other final-review agent (compaction, gap-fill, validation) either lists permitted tools explicitly or references the tool set. The dashboard agent preamble lists no permitted tool set. The agent uses get_spreadsheet_info (si), modify_sheet_values (wv), read_sheet_values (rv), and ToolSearch — but none of these are declared.
+**Fix:** Add a "Permitted tools" section to the preamble: "Permitted tools: read_sheet_values (rv) — read Findings and Publication Readiness rows, and Dashboard metadata recovery cells; modify_sheet_values (wv) — write Dashboard content; get_spreadsheet_info (si) — retrieve source spreadsheet tab list (one call only); ToolSearch — load delete_sheet schema for cleanup. Do not call any other tool."
+
+---
+
+## W3-070
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Lines 1–9 (Preamble — no pitfalls.md read instruction)
+**Category:** Gap
+**Severity:** Medium
+**Description:** The architecture facts state: "pitfalls.md MUST be read before starting checks (Read tool)." The dashboard agent has no instruction to read pitfalls.md before proceeding. While pitfalls.md is primarily about finding calibration, it also contains the Cross-Agent Scope Reference section which the dashboard agent should be aware of for correct scope coverage reporting. The "MUST read pitfalls.md" requirement is an architecture-level rule and the dashboard agent violates it by omission.
+**Fix:** Add to the preamble, after the introductory paragraph: "Before starting: read reference/pitfalls.md using the Read tool. This file contains calibration rules that affect coverage reporting and scope declarations."
+
+---
+
+## W3-071
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Lines 13–17 (Step 1 — AGENT_COMPLETE marker not written)
+**Category:** Gap
+**Severity:** High
+**Description:** The architecture facts define a mandatory AGENT_COMPLETE marker that all agents must write. The dashboard agent has no instruction to write an AGENT_COMPLETE marker anywhere. While the dashboard agent does not write to a staging tab (it writes directly to the Dashboard tab), it still needs to signal completion. The compaction agent's logic checks for AGENT_COMPLETE markers to confirm clean runs — if the dashboard agent never writes one, the orchestrator or any recovery script cannot confirm the dashboard step completed successfully.
+**Fix:** Add at the end of the Cleanup section: "Write AGENT_COMPLETE marker to the Dashboard tab: cell B200 = 'final-review-dashboard', D200 = 'AGENT_COMPLETE', F200 = 'Dashboard content written. Key Findings written to chat. Findings_backup deleted (or researcher notified). Step 10d complete.' This cell range (row 200) is safely below all other Dashboard content."
+
+---
+
+## W3-072
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Lines 46–71 (Step 3 — TA BOTEC / ce-chain-trace-ta not handled)
+**Category:** Gap
+**Severity:** Medium
+**Description:** The architecture facts state that ce-chain-trace-ta "checks TA BOTEC denominator consistency (self-detecting — exits cleanly if no TA signals)." When a TA BOTEC is present, ce-chain-trace-ta populates stg-ceta-* staging tabs with findings that flow through compaction into the Findings sheet. The dashboard agent's Key Findings summary step has no instruction to surface TA-specific findings differently or to note in the Vet scope line whether the TA BOTEC was checked. A researcher receiving the Key Findings summary for a TA grant cannot tell from the summary whether ce-chain-trace-ta ran or was skipped.
+**Fix:** Add to the Vet scope line template in Step 3: "TA BOTEC: [checked / not detected / skipped]" — derive this from session context (whether ce-chain-trace-ta reported findings or announced a clean exit). If session context does not specify, omit this field rather than guessing.
+
+---
+
+## W3-073
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Lines 46–71 (Step 3 — Wave 1.5 source-citation-verify status not reported)
+**Category:** Gap
+**Severity:** Medium
+**Description:** The architecture facts note that source-citation-verify runs in Wave 1.5 and pre-fills Hardcoded Values sheet Verified? and Auto-check evidence columns. The Key Findings summary in Step 3 reports model findings and publication-readiness items but does not report the Wave 1.5 Hardcoded Values verification status. A researcher reading the Key Findings summary has no way to know whether source-citation-verify ran successfully or was skipped — particularly important because a skipped Wave 1.5 means all Verified? cells in the Hardcoded Values sheet are blank.
+**Fix:** Add to the Key Findings chat template a line after the publication-readiness count: "[N] hardcoded values pre-verified: [M] matched, [K] contradicted, [P] could not verify. [Or: Wave 1.5 source-citation-verify: skipped — Verified? column is blank throughout.]" Derive these counts by reading the Hardcoded Values sheet Verified? column (column G) in Step 1, or note them from session context.
+
+---
+
+## W3-074
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Lines 13–17 (Step 1 — zero findings not handled)
+**Category:** Gap
+**Severity:** Medium
+**Description:** Step 1 reads findings rows and collects counts, but there is no handling instruction for the case where the Findings sheet has zero non-divider rows (a vet that found no issues). In that case, the per-sheet table in Step 2b would have no rows to populate — the agent would write headers in row 24 and then a totals row immediately after with all zeros, producing a degenerate table. The =SUM(B25:B{last}) with last = 24 would produce a backwards range. More importantly, the B22 CE direction logic has no phrase for "No findings at all."
+**Fix:** Add a zero-findings gate at the start of Step 2: "If the Findings sheet has zero non-divider finding rows: write 'Not quantified (no findings)' in B22; write only the headers in row 24 and a single Totals row in row 25 with static zeros (not SUM formulas, since the SUM range would be empty); write the Sheets not vetted block below row 26. Skip the per-sheet rows entirely. Then proceed to Step 3 with the zero-finding counts."
+
+---
+
+## W3-075
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Lines 29–36 (Step 2b — formula-only vs. heads-up scope mode)
+**Category:** Gap
+**Severity:** Medium
+**Description:** The architecture facts mention a "formula/heads-up only scope mode where some agents were skipped." The dashboard agent has no instruction for how to represent the per-sheet table when only heads-up agents ran for certain tabs and full formula-check agents were skipped. In this mode, some tabs would appear in the per-sheet table with only heads-up findings, and the Sheets not vetted label would be misleading — the tabs were partially checked, not fully unchecked.
+**Fix:** Add a note in Step 2b after the Sheets not vetted section: "If session context indicates a formula/heads-up only scope mode: add a 'Partially vetted (heads-up only):' row below the Sheets not vetted list, listing any tabs where only heads-up agents ran. Do not list these tabs under Sheets not vetted — they were checked, just not at full depth."
+
+---
+
+## W3-076
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Lines 36–38 (Step 2b — Sheets not vetted bold formatting)
+**Category:** Gap
+**Severity:** Low
+**Description:** Step 2b says to write "Sheets not vetted:" in column A with bold formatting. The instruction says "write Sheets not vetted: in column A (bold)" but there is no instruction for how to apply bold formatting using modify_sheet_values (USER_ENTERED mode) or whether a separate format_sheet_range call is needed. USER_ENTERED mode does not apply bold — formatting requires a separate MCP call.
+**Fix:** Add after the "write Sheets not vetted: in column A (bold)" instruction: "After writing all Dashboard content with modify_sheet_values, make a single format_sheet_range call to bold the Sheets not vetted: cell. If format_sheet_range is not available, skip the bold — the label is readable without it."
+
+---
+
+## W3-077
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Lines 47–55 (Step 3 — Key Findings summary criterion for High findings)
+**Category:** Gap
+**Severity:** Medium
+**Description:** The Step 3 template says to list "every High finding" under the High findings section with no criterion for truncation or triage. A vet with 30 High findings will produce an unusably long chat summary. There is no instruction to truncate, group, or summarize when the High finding count is large. Additionally, many High findings will have "Direction unknown" — the agent has no instruction for how to represent that in a one-sentence bullet.
+**Fix:** Add guidance: "If there are more than 10 High findings: group them by sheet name and write one bullet per sheet summarizing the count and dominant issue type (e.g., Main CEA (4 findings): formula errors affecting CE chain). List individual bullets only for findings with a known CE direction and quantified magnitude — these are the most actionable. For Direction unknown findings, group under a subheading 'N High findings require researcher input (see Items requiring researcher input below).' For Direction unknown bullets, write: [Sheet / Cell ref] — direction depends on researcher input (see Finding ID F-NNN)."
+
+---
+
+## W3-078
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Lines 36–42 (Step 2b — Scope declaration recovery reads A151:B152 but output-setup.md uses B151:B153)
+**Category:** Contradiction
+**Severity:** High
+**Description:** The Scope declaration recovery instruction says: "read Dashboard cells A151:B152 of the output spreadsheet. Cell B151 = comma-separated fully vetted tabs, cell B152 = comma-separated lite-pass tabs." But SKILL.md line 410–412 says: "A151 = 'Fully vetted tabs' | B151 = comma-separated list; A152 = 'Lite-pass tabs' | B152 = comma-separated list; A153 = 'Vet scope' | B153 = 'full' or 'formula-only'." The dashboard agent reads range A151:B152, which includes A151 (the row label, not data) and B151/B152 (the data cells) but omits B153 (vet scope). The agent should read B151:B153, not A151:B152.
+**Fix:** Change "read Dashboard cells A151:B152" to "read Dashboard cells B151:B153" to match the SKILL.md specification (B151 = fully vetted tabs, B152 = lite-pass tabs, B153 = vet scope). Remove the reference to reading column A values in the recovery block since those are row labels, not data.
+
+---
+
+## W3-079
+**File(s):** `plugin/skills/vetting/agents/final-review-dashboard.md`
+**Location:** Lines 75–83 (Cleanup — ordering relative to Step 3)
+**Category:** Ordering problem
+**Severity:** Low
+**Description:** The Cleanup section says "After Step 3 is written to chat, clean up the Findings_backup tab." The stg-* staging tab deletions (which should also happen here per W3-067) would ideally occur before the Key Findings chat summary is written — the researcher should see a clean final state at the same time they receive the summary. Writing the summary then doing deletions means there is a window where the output spreadsheet is in an intermediate state.
+**Fix:** Consider moving all cleanup (Findings_backup deletion and stg-* tab deletions) to before Step 3 (the chat write), so the output spreadsheet is fully clean before the researcher reads the summary and opens the spreadsheet to review findings.
+
+---
+
+## W3-080
+**File(s):** `plugin/skills/vetting/agents/consistency-check.md`
+**Location:** Lines 39 and 100
+**Category:** Ordering problem
+**Severity:** High
+**Description:** The instructions at line 39 say "Declared-intentional deviation verification — do this before other parameter checks", but the mandatory check log template (lines 88–110) places "declared-intentional deviation verification" last among the GiveWell parameters group (line 100), after cross-vet parameter consistency, benchmark/final CE, moral weights numeric verification, and moral weights bounds guard. An agent following check-log order will run the cross-vet parameter consistency check, the benchmark check, and the moral weights checks before it has verified which deviations to exclude. This causes the agent to file High/D parameter findings for deviations that are declared-intentional and should be excluded — producing false positive High findings.
+**Fix:** Move "declared-intentional deviation verification [___]" to be the first entry in the GiveWell parameters section of the check log template (before "cross-vet parameter consistency — Cross-Cutting CEA doc loaded [___]"). This aligns the log's implied execution order with the instruction at line 39.
+
+---
+
+## W3-081
+**File(s):** `plugin/skills/vetting/agents/consistency-check.md`
+**Location:** Lines 74 and 98–99
+**Category:** Ordering problem
+**Severity:** Medium
+**Description:** The moral weights bounds guard section (line 74) explicitly states "This check runs before the percentage-deviation comparison", but the mandatory check log template (lines 98–99) lists "moral weights numeric verification — Moral Weights doc loaded" before "moral weights bounds guard". An agent following the log order will run the full numeric comparison first, then the bounds guard — inverting the required sequence. The practical consequence is that a value of 0 or >500 would be evaluated for percentage deviation first (producing a confusing or wrong severity assignment) rather than being unconditionally rejected by the bounds guard.
+**Fix:** Swap the two lines in the GiveWell parameters section of the check log template so "moral weights bounds guard [___]" appears before "moral weights numeric verification — Moral Weights doc loaded [___]."
+
+---
+
+## W3-082
+**File(s):** `plugin/skills/vetting/agents/consistency-check.md`
+**Location:** Lines 22 and 66
+**Category:** Redundancy
+**Severity:** Low
+**Description:** Line 22 says "Load always: ... GiveWell Moral Weights (1GAcGQSyBQxcB6oGJFGGWCYqwY-jW7oahJJK-cTZOkMc) via read_sheet_values in 50-row batches". Line 66 then says "Load the GiveWell Moral Weights doc (same ID) via read_sheet_values in 50-row batches" again within the moral weights numeric verification section. This double-load instruction could cause the agent to read the document twice, wasting context window and API quota.
+**Fix:** Replace the load instruction at line 66 with a cross-reference: "Using the GiveWell Moral Weights doc already loaded at the start of this file (already in context — do not reload it). Run two sub-checks:"
+
+---
+
+## W3-083
+**File(s):** `plugin/skills/vetting/agents/consistency-check.md`
+**Location:** Lines 16 and 37
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** The coverage mandate at line 16 instructs the agent to write two prose coverage declarations after each major check section. The unit consistency coverage declaration at line 37 also uses a prose format. However, the SKILL.md session context block (line 550) passed to every agent mandates a specific pipe-delimited machine-parseable format: "COVERAGE | [agent name] | [check name] | [rows/cells checked] | issues found: [N] | status: complete". The agent file's prose format contradicts the canonical format that the reconcile agent parses.
+**Fix:** Replace the prose coverage declaration at line 37 with the canonical format: "COVERAGE | consistency-check | unit consistency check | [all rows across all vetted sheets] | issues found: [N] | status: complete". Update line 16's coverage mandate to reference the canonical format from SKILL.md rather than specifying a custom prose format.
+
+---
+
+## W3-084
+**File(s):** `plugin/skills/vetting/agents/consistency-check.md`
+**Location:** Lines 57–64, 66–72, 74–75
+**Category:** Gap
+**Severity:** Medium
+**Description:** The cross-vet parameter consistency check (line 57), the benchmark and final CE rows check (line 64), the moral weights numeric verification (line 66), and the moral weights bounds guard (line 74) each cover many parameters and cells but none specifies a coverage declaration to write upon completion. Only the unit consistency check (line 37) has an explicit coverage declaration. Without explicit declarations, the reconcile agent cannot distinguish a check that was run and found nothing from a check that was silently skipped.
+**Fix:** Add a coverage declaration instruction at the end of each of the four check sections: after the cross-vet parameter consistency block, after the benchmark/final CE block, after the sub-check B moral weights block, and after the moral weights bounds guard block. Use the canonical format: "COVERAGE | consistency-check | [check name] | [N parameters checked] | issues found: [N] | status: complete."
+
+---
+
+## W3-085
+**File(s):** `plugin/skills/vetting/agents/consistency-check.md`
+**Location:** Line 123
+**Category:** Contradiction
+**Severity:** Low
+**Description:** Line 123 instructs: "file one finding listing all affected cells in column B (e.g., B4, B7, B11)". Column B of the Findings sheet is "Sheet" (the tab name from the source spreadsheet), not cell references. Cell references belong in column C ("Cell/Row"). An agent following this instruction will write cell references into the Sheet column, leaving the Cell/Row column blank and causing the compaction agent to mis-route findings.
+**Fix:** Change "listing all affected cells in column B (e.g., B4, B7, B11)" to "listing all affected cells in column C (e.g., B4, B7, B11)."
+
+---
+
+## W3-086
+**File(s):** `plugin/skills/vetting/agents/consistency-check.md`
+**Location:** Line 136
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** The AGENT_COMPLETE column F template at line 136 ends with "...Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context]." — placing "Staging sheet:" after "Filed [K] findings". The canonical format defined in SKILL.md (line 540) is "COVERAGE_ROWS: [row ranges] | Staging sheet: [name]. Filed [K] findings in rows 2–[K+1]." — placing "Staging sheet:" before "Filed [K] findings". The reconcile agent parses this field by splitting on "|" — a format divergence causes machine-parsing failures.
+**Fix:** Change the column F template at line 136 to match the canonical SKILL.md format: "Check log complete: [N] of [M] applicable checks run (VOI: [yes/no]; TA: [yes/no]; [K] checks skipped as not applicable) — see log above. COVERAGE_ROWS: [comma-separated source-sheet row ranges scanned] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]." Move "Staging sheet:" before "Filed [K] findings."
+
+---
+
+## W3-087
+**File(s):** `plugin/skills/vetting/agents/consistency-check.md`
+**Location:** Line 18 (agent file) vs SKILL.md line 754
+**Category:** Contradiction
+**Severity:** High
+**Description:** The agent file at line 18 states: "Always run the moral weights numeric verification and the cross-cutting parameter consistency check regardless of model type." However, SKILL.md line 754 passes a note in the consistency-check session context that reads: "For simple BOTECs and non-standard models that lack VOI content: skip the VOI structural completeness check and the cross-cutting CEA parameters check." The agent file and the session context directive give opposite instructions for simple BOTECs. An agent receiving both will not know whether to run the cross-cutting CEA parameters check for a simple BOTEC.
+**Fix:** Resolve the contradiction by deciding the authoritative rule and updating both locations. If the cross-cutting check should always run (preferred, since it catches stale parameters in all model types), remove the "skip the cross-cutting CEA parameters check" clause from SKILL.md line 754. If it should be skippable for simple BOTECs, update line 18 of the agent file to reflect that and add "cross-vet parameter consistency" to the n/a-eligible entries in the check log with "simple-BOTEC" as a recognized skip reason.
+
+---
+
+## W3-088
+**File(s):** `plugin/skills/vetting/agents/consistency-check.md`
+**Location:** Lines 20 and 58
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** Line 58 instructs: "Any deviation from the cross-cutting doc value for the same geography, regardless of magnitude: ... file as High/D" for all parameters in the cross-cutting CEA doc. However, the discount rate is a parameter that may appear in the cross-cutting doc and key-parameters.md's Acceptable Ranges table classifies discount rate deviations as "Yes — Medium", not High. Line 20 says to apply key-parameters.md special filing rules "instead of the general severity logic below", but the cross-vet parameter consistency section at line 58 does not explicitly exclude discount rate from its "any deviation = High/D" rule — only income effects gets an explicit Medium override.
+**Fix:** In line 58's cross-vet parameter consistency block, add an explicit carve-out: "Also note: discount rate deviations trigger Medium/H per the Acceptable Ranges table in reference/key-parameters.md — do not file High/D for discount rate deviations even when the cross-cutting doc shows a different value."
+
+---
+
+## W3-089
+**File(s):** `plugin/skills/vetting/agents/consistency-check.md`
+**Location:** Lines 1–25 (agent preamble)
+**Category:** Gap
+**Severity:** Low
+**Description:** The agent file has no explicit instruction to read reference/pitfalls.md before running checks. Many other agent files include explicit "Before running any check, read reference/pitfalls.md using the Read tool" instructions. The SKILL.md session context block does include a "Known calibrations" instruction to read pitfalls.md, so it is covered at the session level. However, SC-001 ("Benchmark parameter findings valid regardless of vet timing") directly applies to this agent, and relying solely on session context creates a single point of failure if the session context block is trimmed.
+**Fix:** Add to the preamble (after the loading instructions at line 22): "Before running any parameter checks, read reference/pitfalls.md using the Read tool. Apply every entry relevant to parameter consistency, benchmark validation, and moral weights checks — especially SC-001, SC-002, and SC-003."
+
+---
+
+## W3-090
+**File(s):** `plugin/skills/vetting/agents/source-data-check.md`
+**Location:** Lines 44 and 46
+**Category:** Contradiction
+**Severity:** High
+**Description:** The Step 3 heading at line 44 reads "Step 3 — Three checks per in-scope row" and line 46 instructs "Run all three checks on every in-scope row you locate. No check is skippable because the tab looks clean." The section then defines six distinct checks (A through F). An agent reading line 46 literally will stop after Check C, believing all three required checks are complete, and will silently skip Checks D, E, and F. This directly contradicts line 119 which says "After completing all six checks on all in-scope rows across all source tabs."
+**Fix:** Change the Step 3 heading at line 44 to "Step 3 — Six checks per in-scope row" and update line 46 to "Run all six checks on every in-scope row you locate. No check is skippable because the tab looks clean."
+
+---
+
+## W3-091
+**File(s):** `plugin/skills/vetting/agents/source-data-check.md`
+**Location:** Line 20
+**Category:** Dead code
+**Severity:** High
+**Description:** Step 1 at line 20 instructs: "If the list is missing or empty, call get_spreadsheet_info to get all tab names." However, per SKILL.md's per-agent permitted tools table (line 604), source-data-check's permitted tools are: rv, rn, rl, rc, wv, ws, wf. The tool si (get_spreadsheet_info) is not in this list. Calling get_spreadsheet_info will produce an InputValidationError, which the agent cannot recover from since the instruction does not provide a fallback. This dead-code path crashes the agent whenever the session context omits the source data tabs list.
+**Fix:** Replace the get_spreadsheet_info fallback with: "If the list is missing or empty, report to the researcher: 'Source data tabs list was not provided in session context — cannot identify source tabs without get_spreadsheet_info (not permitted for this agent). Please re-run and provide the source data tabs list in session context.' Then write the AGENT_COMPLETE marker and stop." Alternatively, add si to the source-data-check permitted tools in SKILL.md if the fallback is intended to work.
+
+---
+
+## W3-092
+**File(s):** `plugin/skills/vetting/agents/source-data-check.md`
+**Location:** Lines 48–65 (Checks A and B)
+**Category:** Gap
+**Severity:** Medium
+**Description:** Checks A and B are exclusively vaccine-specific: Check A tests BCG/OPV0 birth-dose parity, Penta dose series ordering, and PCV/Rota vs. Penta alignment. Check B tests adjacent vaccine column transposition. Neither check has any instruction for what to do when source tabs contain non-vaccine data (GBD mortality rates, IHME disease burden, IGME all-cause mortality, or DHS nutrition indicators). When run on a malaria or nutrition program, the agent has no column headers matching BCG, OPV0, Penta, PCV, Rota, or MCV, and has received no instruction to skip these checks or substitute analogous ordering checks.
+**Fix:** Add a conditioning clause at the start of Checks A and B: "These checks apply only when the source tab contains vaccine coverage data (column headers include BCG, OPV, Penta, DPT, PCV, Rota, MCV, or equivalent abbreviations). If the source tab contains non-vaccine data (mortality rates, disease burden, DHS nutrition indicators, WorldPop population), write COVERAGE | source-data-check | check-A/B | not applicable (non-vaccine tab) | issues found: 0 | status: complete and proceed to Check C."
+
+---
+
+## W3-093
+**File(s):** `plugin/skills/vetting/agents/source-data-check.md`
+**Location:** Line 69 (Check C)
+**Category:** Gap
+**Severity:** Medium
+**Description:** Check C defines a year-over-year anomaly threshold of ">30 percentage points in a single year". This threshold is calibrated for vaccine coverage rates, which are expressed as percentages (0–100). For non-coverage source tabs — GBD cause-specific mortality rates (typically 0–15 per 1,000), IHME incidence rates, or DHS nutrition indicators like stunting prevalence — a 30-percentage-point swing is either physically impossible or trivially large. Running Check C on a GBD mortality rate tab with this threshold would never trigger a flag even for catastrophically wrong values.
+**Fix:** Make the threshold relative for non-coverage indicators: "For vaccine coverage tabs (values expressed as percentages 0–100): flag year-over-year changes >30 percentage points. For non-coverage tabs (mortality rates, incidence rates, burden estimates — values expressed as rates per 1,000 or proportions): flag year-over-year changes >50% relative change (i.e., the new value is less than half or more than double the prior value) as anomalous."
+
+---
+
+## W3-094
+**File(s):** `plugin/skills/vetting/agents/source-data-check.md`
+**Location:** Lines 71–81 (Check D)
+**Category:** Gap
+**Severity:** Medium
+**Description:** Check D instructs the agent to identify whether the national summary row is a sum or a population-weighted average and then to "Compute the expected aggregate from the sub-national values." When the aggregation method is a population-weighted average, the agent needs population weights to compute the expected aggregate, but the instructions provide no guidance on where to find those weights — neither which column to read, which tab to look in, nor how to handle the case where population data is not in the same tab.
+**Fix:** Add to Check D step 1: "If the aggregation method is population-weighted: look for a population column in the same tab (column header typically labeled 'Population,' 'Denominator,' or 'N'). If no population column is present in the source tab, search for a corresponding population tab by name (e.g., WorldPop, Population). If population weights cannot be located after checking the same tab and the most obviously named population tab, write: 'Cannot verify population-weighted aggregate — population weights not found in tab or in a clearly named population tab' in your coverage declaration and skip the numerical comparison for this check."
+
+---
+
+## W3-095
+**File(s):** `plugin/skills/vetting/agents/source-data-check.md`
+**Location:** Line 121
+**Category:** Redundancy
+**Severity:** Low
+**Description:** The final coverage declaration template at line 121 lists Check E and Check F twice each with slightly different wording. The first occurrence: "Check E (cross-tab vintage consistency) issues: [list or none]. Check F (geography/country consistency) issues: [list or none]." The second occurrence (immediately following) has slightly different wording for check names and quoting of "none." The duplicate entries produce a redundant declaration and the slight wording differences could confuse agents about which format to use.
+**Fix:** Remove the duplicate Check E and Check F entries. Keep only one occurrence per check: "Check E (cross-tab data vintage consistency) issues: [list or 'none']. Check F (geography/country consistency) issues: [list of cells or 'none']." Use consistent quoting for "none" throughout the declaration template.
+
+---
+
+## W3-096
+**File(s):** `plugin/skills/vetting/agents/source-data-check.md`
+**Location:** Lines 113 and 119–122
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** The Check F coverage declaration at line 113 uses a prose format ("Geography/country consistency check complete. Source tabs checked: [N]...") and the final overall coverage declaration at lines 119–122 also uses a prose block-quote format. Both contradict the canonical coverage declaration format mandated in SKILL.md's session context block (line 550): "COVERAGE | [agent name] | [check name] | [rows/cells checked] | issues found: [N] | status: complete". The reconcile agent is designed to parse the pipe-delimited COVERAGE format; prose declarations are not machine-parseable and will be treated as missing coverage confirmations.
+**Fix:** Replace the prose coverage declarations at line 113 and lines 119–122 with the canonical pipe-delimited format. Example for Check F: "COVERAGE | source-data
+-check | check-F geography consistency | [N tabs checked] | issues found: [N] | status: complete". Replace the final block-quote declaration with a series of per-check COVERAGE lines, one per check A through F.
+
+---
+
+## W3-097
+**File(s):** `plugin/skills/vetting/agents/source-data-check.md`
+**Location:** Entire file (no WebSearch/WebFetch instructions present)
+**Category:** Gap
+**Severity:** Medium
+**Description:** The SKILL.md permitted tools for source-data-check include ws (WebSearch) and wf (WebFetch), and pitfalls.md FN-003 ("WebFetch required for any source with >=5% weight in a weighted average") and SC-004 ("Wrong subgroup from source paper requires WebFetch to confirm") both apply to source-data-check. However, the agent file contains no instructions whatsoever for when or how to use WebSearch or WebFetch. The agent knows these tools are available but has no criteria for invoking them. Without explicit invocation criteria, the agent will either never use them (missing FN-003/SC-004 catches) or use them inconsistently across runs.
+**Fix:** Add a WebFetch usage section after the Check B description: "When Check A or B identifies a plausible transposition and the source tab provides a URL or citation for the data, use WebFetch to retrieve the original source and confirm the correct column order. Per pitfalls.md FN-003: when a data value carries >=5% weight in a weighted average visible in the source tab, attempt WebFetch on the cited source URL before classifying the finding severity — confirming the source table column order upgrades a Medium to High when misidentification is confirmed."
+
+---
+
+## W3-098
+**File(s):** `plugin/skills/vetting/agents/source-data-check.md`
+**Location:** Lines 1–16 (agent preamble)
+**Category:** Gap
+**Severity:** Medium
+**Description:** The agent file has no explicit instruction to read reference/pitfalls.md before running checks. Source-data-check is named in more pitfalls.md entries than almost any other agent: FN-003, SC-003, SC-004, SC-005, SC-007, and SC-009. The SKILL.md session context block includes a pitfalls.md read instruction, but relying solely on the session context block creates a single point of failure: if the session context is trimmed during a long vet or the agent processes a large workbook, the pitfalls calibrations that govern this agent's most consequential severity decisions may not be applied.
+**Fix:** Add to the preamble after the Role calibration section: "Before running any checks, read reference/pitfalls.md using the Read tool. Apply every relevant entry — specifically FN-003 (WebFetch for weighted-average sources), SC-003 (CE chain confirmation before High), SC-004 (wrong subgroup requires WebFetch), SC-005 (methodology mismatch), SC-007 (intentional subgroup), and SC-009 (missing-source severity threshold)."
+
+---
+
+## W3-099
+**File(s):** `plugin/skills/vetting/agents/source-data-check.md`
+**Location:** Line 144
+**Category:** Contradiction
+**Severity:** Low
+**Description:** The AGENT_COMPLETE column F template at line 144 reads: "COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context]." The canonical SKILL.md format (line 540) is "COVERAGE_ROWS: [row ranges] | Staging sheet: [name]. Filed [K] findings in rows 2–[K+1]." — placing "Staging sheet:" before "Filed [K] findings". The divergence in token order may cause the reconcile agent's machine-parser to fail to locate the "Staging sheet:" value correctly when scanning column F.
+**Fix:** Update the column F template at line 144 to match the canonical format: "COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]." Move "Staging sheet: [name from session context]" before "Filed [K] findings."
+
+---
+
+## W3-100
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace.md`
+**Location:** Line 1 (entire file header / preamble section)
+**Category:** Gap
+**Severity:** High
+**Description:** pitfalls.md is never read. The SKILL.md session context block (line 554) requires every agent to "read reference/pitfalls.md before starting your checks." The ce-chain-trace.md file contains no instruction to read pitfalls.md. Because pitfalls.md contains the cross-agent scope ownership table (e.g., GBD vintage staleness deferred to formula-check-arithmetic, discount rate deferred to key-params-check) and severity calibrations that directly affect ce-chain-trace output, skipping it will cause the agent to file duplicate and mis-severity findings that pitfalls.md explicitly prohibits.
+**Fix:** Add a mandatory Read step at the top of the agent preamble, before Step 1: "Before starting any checks, read reference/pitfalls.md using the Read tool. Apply every entry relevant to this agent — in particular: GBD vintage staleness findings are deferred to formula-check-arithmetic (note in reasoning, do not file independently); discount rate Parameter findings are deferred to key-params-check."
+
+---
+
+## W3-101
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace.md`
+**Location:** Lines 43, 85, 142-144, 170
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** All coverage declarations use free-form prose formats (e.g., "Step 1 complete. Final CE cell: [ref]. Label: [label]...") instead of the canonical pipe-delimited machine-parseable format required by the SKILL.md session context block (line 550): "COVERAGE | [agent name] | [check name] | [rows/cells checked] | issues found: [N] | status: complete". The reconcile agent parses coverage declarations to verify completeness; prose-format declarations are not machine-parseable and will be silently ignored, removing the coverage verification safety net.
+**Fix:** Replace all free-form coverage declarations with the canonical format. Example for Step 1: "COVERAGE | ce-chain-trace | CE output cell location | 1 cell | issues found: [0 or 1] | status: complete". Adjust each step's declaration to include the check name and cells-checked count from that step.
+
+---
+
+## W3-102
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace.md`
+**Location:** Lines 258-261 (Final step — write completion marker)
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** The AGENT_COMPLETE column F field order diverges from the canonical format in SKILL.md. SKILL.md (line 540) specifies: "COVERAGE_ROWS: [row ranges] | Staging sheet: [name]. Filed [K] findings in rows 2–[K+1]." The agent file has "Staging sheet:" at the end rather than in the second position. The reconcile agent parses this field by splitting on "|" — if the canonical order is expected, any parser consuming "Staging sheet" as position 2 will instead get "Checked [N] rows..."
+**Fix:** Reorder column F to match the canonical SKILL.md format: "COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]."
+
+---
+
+## W3-103
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace.md`
+**Location:** Line 243 (Column reference in Writing findings section)
+**Category:** Gap
+**Severity:** High
+**Description:** The column E instruction lists "Formula" as an allowed error type but never requires the agent to prefix the Explanation with a bracketed sub-type when E=Formula. The output-format.md and column-reference.md both require: "When filing a Formula, include a bracketed sub-type at the start of the Explanation: [Copy-paste], [Wrong reference], [Year range], [Sign error], [Wrong operator], or [Off-by-one]." This agent files many Formula-type findings (Steps 3a, 3f, 4d) and will omit the required sub-type bracket, causing final-review-validation to flag these rows as malformed.
+**Fix:** Add to the column E instruction in Writing findings: "When E = Formula, begin the Explanation (column F) with a bracketed sub-type: [Copy-paste] | [Wrong reference] | [Year range] | [Sign error] | [Wrong operator] | [Off-by-one]. Example: [Wrong reference] B14 uses C22 (Nigeria rate) but should reference C23 (Kenya rate)."
+
+---
+
+## W3-104
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace.md`
+**Location:** Lines 142-144 (Named adjustment coverage declaration)
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** The named adjustment coverage declaration template instructs the agent to write "file as High/D (for IV/EV/leverage/funging) or Medium/D (for supplemental)" where /D denotes Defect. The architecture specification states that two-axis notation (/D, /H, /O) is instructional only and column D must contain only "High", "Medium", "Low", or blank. If the agent interprets this as an instruction to write "High/D" or "Medium/D" into column D of the staging sheet, it will produce malformed severity values that break compaction sorting.
+**Fix:** Replace "file as High/D (for IV/EV/leverage/funging) or Medium/D (for supplemental)" with "file as High (for IV/EV/leverage/funging) or Medium (for supplemental)". The /D notation is internal reasoning; column D must contain only High, Medium, or Low.
+
+---
+
+## W3-105
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace.md`
+**Location:** Lines 49-50 (Step 1b — CE plausibility guard)
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** Step 1b instructs flagging out-of-range CE multiples as "Medium/H" where /H denotes Judgment. The architecture specification states that two-axis notation is instructional only and column D must contain only "High", "Medium", "Low", or blank. The same /H issue appears in Step 5 ("Flag as Medium/H") and the Note on mixed TA/direct delivery programs ("route as Medium/H with Researcher judgment needed"). If an agent treats "/H" as a literal value to write in column D, every such finding will have a malformed severity value.
+**Fix:** Replace all occurrences of "Medium/H" with "Medium" and "High/D" with "High" throughout the file. The two-axis notation is useful in agent reasoning but must not appear in column D. In Step 1b: "Flag as Medium with Researcher judgment needed ✓." In Step 5: same replacement.
+
+---
+
+## W3-106
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace.md`
+**Location:** Lines 174-213 (Step 4 — entire section)
+**Category:** Gap
+**Severity:** Medium
+**Description:** Step 4 has no coverage declaration. The preamble (line 18) states "After completing each step below, write a coverage declaration. Do not proceed until you can write it." Steps 1, 2, 3e, and 3f all have coverage declarations. Step 4 (four sub-checks 4a–4d) has no terminal coverage declaration, breaking the sequential gating guarantee that prevents agents from skipping Step 4 silently.
+**Fix:** Add a coverage declaration at the end of Step 4, after sub-check 4d: "COVERAGE | ce-chain-trace | source input verification | [N cross-sheet references checked] | issues found: [N] | status: complete"
+
+---
+
+## W3-107
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace.md`
+**Location:** Lines 216-231 (Step 5 — entire section)
+**Category:** Gap
+**Severity:** Medium
+**Description:** Step 5 has no coverage declaration. Like Step 4, the checks in Step 5 (dropped/added outcomes vs. program context, VOI_Priors column-range consistency, novel program adjustment benchmarking) have no terminal coverage declaration, contrary to the preamble requirement that each step must have one before proceeding.
+**Fix:** Add a coverage declaration at the end of Step 5: "COVERAGE | ce-chain-trace | program context vs. chain completeness | [N outcomes checked] | issues found: [N] | status: complete"
+
+---
+
+## W3-108
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace.md`
+**Location:** Lines 133-136 (Step 3e check procedure)
+**Category:** Gap
+**Severity:** High
+**Description:** Step 3e instructs the agent to "search for the adjustment cell's address as a string appearing in any other formula in the vetted sheet(s)" but the read_sheet_values tool returns formulas one cell at a time or as a range — it has no full-text search capability. The agent cannot use a search-by-string method; it must read all formulas for the vetted sheets and scan them programmatically. The instruction implies a tool capability that does not exist, and an agent following it literally will be unable to complete the check and may either skip it or hallucinate a result.
+**Fix:** Replace the check procedure in Step 3e with: "1. Read the full FORMULA-mode output for all vetted sheets (already in pre-read cache if provided). 2. Scan every formula string in the pre-read cache for occurrences of the adjustment cell's address (both absolute and relative forms, e.g., $E$46, E46, E$46, $E46). 3. If any downstream formula contains the address, the adjustment is applied. 4. Only file if no formula in the pre-read cache references the adjustment cell."
+
+---
+
+## W3-109
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace.md`
+**Location:** Lines 58-85 (Step 2) and Lines 174-176 (Step 4 intro)
+**Category:** Gap
+**Severity:** Medium
+**Description:** The trace termination condition is never defined. The agent is told to "trace the full chain from final CE output back to every source input" (line 18) and Step 4 says to "verify the terminal inputs at the bottom of the chain," but no explicit stopping rule is given. Without this rule, the agent may recursively follow references into utility tabs, formatting cells, or reference-only parameter tables indefinitely, or stop prematurely at the first intermediate hardcoded cell it encounters.
+**Fix:** Add an explicit termination rule to Step 2: "Tracing stops when you reach a cell that (a) contains a hardcoded value with no further cell references, or (b) has already been verified earlier in this trace session. Do not follow references into section-divider tabs (names beginning -->) or pure formatting rows (no numeric content)."
+
+---
+
+## W3-110
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace.md`
+**Location:** Lines 1-24 (preamble) and Line 127 (Step 3d)
+**Category:** Gap
+**Severity:** Medium
+**Description:** The agent has no instruction to defer GBD vintage staleness findings to formula-check-arithmetic. The pitfalls.md cross-agent scope reference table explicitly states ce-chain-trace "should not independently file GBD vintage findings; if encountered, note GBD vintage staleness deferred to formula-check-arithmetic in reasoning." Because ce-chain-trace traces all cross-sheet references including those into GBD source tabs, it will encounter stale GBD rows during Step 4d and file GBD vintage findings that duplicate formula-check-arithmetic output, potentially with different severity classifications.
+**Fix:** Add to the preamble or the Step 4 intro: "GBD vintage staleness (stale GBD data year in a source tab) is owned by formula-check-arithmetic. If you encounter a stale GBD vintage during chain tracing, note it in your reasoning as deferred to formula-check-arithmetic but do not file a finding. Similarly, discount rate Parameter findings are owned by key-params-check — do not file independently."
+
+---
+
+## W3-111
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace.md`
+**Location:** Lines 258-261 (Final step) and Line 18 (Coverage mandate)
+**Category:** Contradiction
+**Severity:** Low
+**Description:** The AGENT_COMPLETE column F template says "Checked [N] rows across [sheet name(s)]" but ce-chain-trace does not scan rows sequentially — it traces backwards from the CE output cell. The "rows checked" concept applies to row-sequential agents; for a backwards-trace agent the meaningful coverage metric is the number of cells in the traced dependency chain, not row ranges. The field as written implies sequential row scanning and will produce misleading COVERAGE_ROWS values.
+**Fix:** Replace the AGENT_COMPLETE column F template with: "COVERAGE_ROWS: full chain trace (not row-sequential) | Staging sheet: [name from session context]. Traced CE chain: [N] cells across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]."
+
+---
+
+## W3-112
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace.md`
+**Location:** Line 10 (opening read instruction)
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** Line 10 instructs the agent to "Read the spreadsheet in FORMULA mode first across all vetted sheets," which conflicts with the pre-read cache architecture. The SKILL.md session context block (lines 514-515) states: "Use the provided cache as your primary data source for row-by-row scanning. Make targeted read_sheet_values calls only for cells or data modes outside your cache scope. Do not re-read full sheet ranges." The cache scoping table confirms ce-chain-trace receives FORMATTED_VALUE + FORMULA + Notes for all rows. An unconditional full-sheet FORMULA-mode read duplicates the cache and doubles the API calls.
+**Fix:** Replace line 10 with: "Use the pre-read cache (FORMATTED_VALUE and FORMULA modes for all rows) as your primary data source — do not unconditionally re-read full sheets. Make targeted read_sheet_values calls only for specific cells that need UNFORMATTED_VALUE or for cross-sheet references not included in the cache. Read read_spreadsheet_comments once for the workbook at startup."
+
+---
+
+## W3-113
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace.md`
+**Location:** Lines 26-43 (Step 1) — absence of Simple CEA handling
+**Category:** Gap
+**Severity:** Medium
+**Description:** Step 1 searches for the CE output cell only in "the Results tab, Main CEA tab, or a Summary section." It does not handle the case where a workbook expresses its primary CE output in the Simple CEA tab (a common GiveWell pattern noted in the tab ordering rules: AMF workbooks place Simple CEA as tab 2). If the Main CEA tab contains an intermediate CE value but the bottom-line CE is in Simple CEA, the agent will trace from the wrong starting cell and may miss errors in the Simple CEA final calculation.
+**Fix:** Add "Simple CEA" to the list of locations to search in Step 1: "Look for the final CE output in the Results tab, Main CEA tab, Simple CEA tab, or a Summary section. When both Main CEA and Simple CEA have CE outputs, record both and trace the Simple CEA chain as the primary trace — the Simple CEA is intended as the publication-facing number."
+
+---
+
+## W3-114
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace.md`
+**Location:** Lines 216-225 (Step 5 VOI_Priors check) vs. Lines 58-85 (Step 2 chain mapping)
+**Category:** Ordering problem
+**Severity:** Low
+**Description:** The VOI_Priors column-range consistency check is placed in Step 5 (program context comparison), but the agent will have already traced through any VOI tab formulas during Step 2 (chain mapping) and Step 3 (link verification). If the agent discovers a VOI_Priors reference mismatch during Step 2, it has no instruction to note it for later — and if it files it in Step 2, it will re-encounter the same formulas in Step 5 and may re-file.
+**Fix:** Add a note to Step 2: "When tracing through VOI tab formulas, note any column-range anomalies in your reasoning but defer filing to the VOI_Priors consistency check in Step 5 — do not file during Step 2 or Step 3 to avoid duplicate findings."
+
+---
+
+## W3-115
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace.md`
+**Location:** Line 227 (Note about leverage-uov-check) and line 229 (Note about ce-chain-trace-ta) vs. Line 229-231 (Note about mixed TA programs)
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** Line 229 says "TA cost denominator consistency checks are handled by a dedicated ce-chain-trace-ta agent — do not duplicate that check here." Lines 229-231 then immediately say "When the program combines technical assistance with direct delivery, verify which cost base the chain uses — TA-only costs, direct delivery costs, or a combined total." These two instructions cannot both be followed: the second instruction asks ce-chain-trace to verify cost base allocation in mixed programs, which is exactly the denominator consistency check the first instruction defers to ce-chain-trace-ta.
+**Fix:** Revise lines 229-231 to clearly carve out scope: "For mixed TA/direct delivery programs, verify only whether the Main CEA uses TA-only costs, delivery costs, or a combined total — but do not file a finding about the tab-to-tab cost base inconsistency (that is ce-chain-trace-ta scope). If the cost allocation between TA and direct delivery components is ambiguous and cannot be confirmed from the spreadsheet, note it in your reasoning and defer to ce-chain-trace-ta."
+
+---
+
+## W3-116
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace.md`
+**Location:** Lines 243-244 (Writing findings column reference) vs. Steps 3f and 4d findings
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** The Writing findings section omits the instruction that column H must never be blank for Medium or High Formula, Parameter, or Adjustment findings. Step 3c says "Flag as Medium if a formula contains an embedded number" with no mention of column H or CE impact direction, even though output-format.md requires column H to never be blank for Medium/High Formula findings. The agent has no instruction to always fill column H for Medium/High Formula, Parameter, and Adjustment findings.
+**Fix:** Add to the Writing findings section: "Column H must never be blank for Medium or High Formula, Parameter, or Adjustment findings. If direction is clear but magnitude unknown, write Raises CE — magnitude unknown or Lowers CE — magnitude unknown. If direction depends on researcher input, write Direction unknown. Write No CE impact only when confirmed zero CE effect."
+
+---
+
+## W3-117
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace.md`
+**Location:** Lines 225-226 (Novel program adjustment benchmarking) vs. Line 138 (Step 3e High severity rule)
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** Step 3e says "Flag as High if a named adjustment (IV, EV, leverage, funging) is absent from the CE chain." Step 5 says for novel programs where adjustments deviate from the GW standard malaria benchmark, file as Medium/Assumption with Researcher judgment needed rather than High. These instructions overlap when a novel program has a missing IV or EV adjustment: Step 3e mandates High for a missing named adjustment, but Step 5 would downgrade any adjustment deviation in a novel program to Medium/Assumption.
+**Fix:** Add a carve-out to Step 3e: "Exception for novel programs: if pitfalls.md or program context establishes this is a novel program type (not standard ITN/SMC/vaccine), and the adjustment row is absent rather than present-but-unapplied, file as Medium/Assumption with Researcher judgment needed ✓ rather than High — the researcher may have intentionally omitted it given the different theory of change. For standard programs, High applies regardless."
+
+---
+
+## W3-118
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace-ta.md`
+**Location:** Line 1 (entire file header / preamble section)
+**Category:** Gap
+**Severity:** High
+**Description:** pitfalls.md is never read. The SKILL.md session context block (line 554) requires every agent to "read reference/pitfalls.md before starting your checks." The ce-chain-trace-ta.md file contains no instruction to read pitfalls.md. While ce-chain-trace-ta has a narrower scope than most agents, pitfalls.md contains severity calibrations (e.g., SC-001 about benchmark parameter findings being valid regardless of vet timing) that apply when filing Inconsistency findings about cost denominators.
+**Fix:** Add a mandatory Read step at the top of the agent preamble, before the self-detection block: "Before running the self-detection check, read reference/pitfalls.md using the Read tool. Apply any entry relevant to denominator consistency or Inconsistency-type findings."
+
+---
+
+## W3-119
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace-ta.md`
+**Location:** Lines 10-15 (self-detection logic)
+**Category:** Gap
+**Severity:** Medium
+**Description:** The self-detection logic defines "strong structural signals" as a trigger to proceed when is_ta_botec: false, but "strong" is undefined — the agent cannot determine whether 1 tab-name match counts as strong or whether it requires 2+ signals from categories 2 and 3 together. An agent encountering one matching tab name (signal 2: yes, signal 3: no) has no rule for whether to proceed, and may apply inconsistent thresholds across runs.
+**Fix:** Define "strong structural signals" explicitly: "Strong structural signals means either (a) at least 2 of the 3 signals are present, or (b) signal 2 is present with 2 or more matching tab names. A single matching tab name from signal 2 alone, with no signal 3 match and is_ta_botec: false, is a weak signal — do not proceed; write your AGENT_COMPLETE marker noting the weak signal and stop."
+
+---
+
+## W3-120
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace-ta.md`
+**Location:** Lines 33-39 (Check procedure, steps 1-4)
+**Category:** Gap
+**Severity:** Medium
+**Description:** The check procedure assumes a Simple CEA tab always exists when TA signals are present, with no fallback for workbooks that lack a Simple CEA tab. Many TA BOTECs are standalone or early-stage and may not have a Simple CEA tab. If the agent cannot find the Simple CEA tab, it has no instruction: it will either throw an MCP error reading a non-existent sheet, produce a spurious "missing tab" finding, or silently skip the check.
+**Fix:** Add before step 1: "First, verify the Simple CEA tab exists in the workbook (check session context tab list). If no Simple CEA tab is present: file a Low/Assumption finding: 'Simple CEA tab absent — cannot verify cost denominator consistency.' Then write your AGENT_COMPLETE marker and stop. Do not attempt to read a non-existent tab."
+
+---
+
+## W3-121
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace-ta.md`
+**Location:** Lines 33-36 (Check procedure, steps 1-2)
+**Category:** Gap
+**Severity:** Medium
+**Description:** The check instructs the agent to "read the cost row formula (FORMULA mode) in the Main CEA tab" and "identify the label of the cell it references," but gives no guidance on how to find the cost row. TA BOTECs use varied row label conventions ("Total costs", "Grant amount", "GiveWell grant", "Cost", "Cost per child"). An agent that cannot locate the cost row by label will either read the wrong row or give up, producing no finding even when denominator mismatch exists.
+**Fix:** Add a cost-row location heuristic: "To find the cost row, scan column A of the Main CEA tab in FORMATTED_VALUE mode for rows labeled: Total cost, Cost, Grant amount, GW grant, GiveWell cost, Total GW costs, Cost of TA, or similar. The cost row is typically in the Costs section at the top of the tab. If multiple candidate rows exist, identify the one directly referenced in the CE denominator formula (the final CE cell's divisor chain)."
+
+---
+
+## W3-122
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace-ta.md`
+**Location:** Line 40 (Coverage declaration)
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** The coverage declaration format "TA denominator check complete. Main CEA cost: [ref] = [label]. Simple CEA cost: [ref] = [label]. Consistency: [match/mismatch]. Documentation: [present/absent]." uses free-form prose rather than the canonical pipe-delimited format required by SKILL.md (line 550). The reconcile agent parses coverage declarations by pipe delimiter — the prose format will not be parsed and coverage verification will silently fail.
+**Fix:** Replace the coverage declaration with: "COVERAGE | ce-chain-trace-ta | TA denominator consistency | Main CEA cost row [ref] + Simple CEA cost row [ref] | issues found: [0 or 1] | status: complete"
+
+---
+
+## W3-123
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace-ta.md`
+**Location:** Lines 60-64 (AGENT_COMPLETE column F)
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** The AGENT_COMPLETE column F in the "TA signals found" branch has "Staging sheet:" at the end rather than in the second pipe-delimited position as required by the canonical SKILL.md format (line 540). The "no TA signals found" branch has the same field-order issue. Both branches place "Staging sheet:" last, displacing it from the canonical second position where the reconcile agent expects to find it.
+**Fix:** Reorder both branches to: "COVERAGE_ROWS: [row ranges] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]. [Branch-specific info]."
+
+---
+
+## W3-124
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace-ta.md`
+**Location:** Line 38 (step 4 of check procedure) — Low/Inconsistency for same-cost-base, no documentation
+**Category:** Gap
+**Severity:** Medium
+**Description:** Step 4 says "If both use the same cost base but no cell note explains the choice, file as Low/Inconsistency." However, the column E allowlist in output-format.md defines Inconsistency as "values that should match across sheets or within the model don't" — when both tabs use the same cost base, there is no inconsistency, only a missing documentation note. The correct Error Type for a missing note explaining a modeling choice is Assumption. Mis-categorization causes the compaction agent to route this to the wrong severity bucket.
+**Fix:** Change step 4's Error Type from Inconsistency to Assumption: "file as Low/Assumption with Researcher judgment needed ✓: 'CE denominator uses [total cost of TA engagement / grant amount] — add a cell note explaining this choice and noting the alternative cost base so readers understand what CE the number represents.'"
+
+---
+
+## W3-125
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace-ta.md`
+**Location:** Lines 44-50 (Writing Findings section) — column H standard phrases
+**Category:** Gap
+**Severity:** Medium
+**Description:** The Writing Findings section column H instruction lists the standard phrases but omits the em-dash punctuation requirement that is mandatory in both output-format.md (line 45) and the SKILL.md session context block (line 538): "Exact punctuation required: all phrases use an em-dash ( — ) with one space on each side. Do not use en-dash (–) or hyphen (-)." Without this warning the agent may use hyphens or en-dashes, breaking compaction sort order.
+**Fix:** Add the punctuation requirement to the column H instruction in Writing Findings: "Exact punctuation required: use an em-dash ( — ) with one space on each side in all phrases. Do not use hyphen or en-dash. Example correct: Raises CE — magnitude unknown. Example incorrect: Raises CE - magnitude unknown."
+
+---
+
+## W3-126
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace-ta.md`
+**Location:** Line 10 ('check each one') vs. Lines 10-11 (signal authority rule)
+**Category:** Contradiction
+**Severity:** Low
+**Description:** The self-detection preamble says "Determine whether this spreadsheet is a TA BOTEC using ALL of the following signals — check each one" and then describes three signals. But signal 1 says "If the session context explicitly sets this flag, proceed to checks regardless of whether structural signals are present" — meaning signal 1 alone is sufficient to proceed and the agent need not check signals 2 and 3. The instruction to "check each one" contradicts signal 1's "proceed regardless."
+**Fix:** Clarify the logic: "Check signal 1 first. If is_ta_botec: true in session context, proceed to checks immediately — signals 2 and 3 are optional cross-verification in that case. If is_ta_botec is not set or is false, check signals 2 and 3. If NONE of the three signals are present, write your AGENT_COMPLETE marker and stop."
+
+---
+
+## W3-127
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace-ta.md`
+**Location:** Lines 62-63 (AGENT_COMPLETE — 'TA signals found' branch)
+**Category:** Gap
+**Severity:** Low
+**Description:** When TA signals are found but only from structural signals 2 or 3 (not from is_ta_botec: true), the AGENT_COMPLETE marker format for the "TA signals found" branch does not distinguish this from the case where is_ta_botec: true. The Signal authority paragraph says to "note the classification discrepancy in your AGENT_COMPLETE marker" when proceeding on structural signals alone. The AGENT_COMPLETE template for the "TA signals found" branch does not include a field for this classification discrepancy note.
+**Fix:** Add an optional classification note field to the "TA signals found" AGENT_COMPLETE template: "TA signals confirmed: [list]. Classification: [session-context-confirmed / structural-only-discrepancy: is_ta_botec was [value] in session context but structural signals triggered checks]."
+
+---
+
+## W3-128
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace-ta.md`
+**Location:** Line 10 (opening read instruction) vs. SKILL.md pre-read cache architecture
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** Line 33 says "Read the spreadsheet in FORMULA mode for the Main CEA and Simple CEA tabs." The ce-chain-trace-ta cache scoping table in SKILL.md shows ce-chain-trace-ta receives FORMATTED_VALUE + FORMULA + Notes for all rows. An unconditional full-tab FORMULA-mode read duplicates the cache. While ce-chain-trace-ta is a lightweight agent covering only one check, the instruction should align with the pre-read cache architecture to avoid duplicate API calls.
+**Fix:** Replace "Read the spreadsheet in FORMULA mode for the Main CEA and Simple CEA tabs" with: "Use the pre-read cache (FORMULA and FORMATTED_VALUE for all rows) as your primary data source. Make targeted read_sheet_values calls only for the specific cost row cells identified in the cost-row location step."
+
+---
+
+## W3-129
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace-ta.md`
+**Location:** Line 8 (preamble — permitted tools) vs. SKILL.md table
+**Category:** Gap
+**Severity:** Medium
+**Description:** The ce-chain-trace-ta permitted tool list in SKILL.md is: rv, rn, rc, wv, dc (get_doc_content). The agent file never mentions get_doc_content and there is no instruction about when to use it. The SKILL.md reference document table shows TA Modeling Guidance (doc #9) is loaded at Step 6 for TA grants. If the TA Modeling Guidance defines the canonical cost denominator convention, the ce-chain-trace-ta agent should read it to apply the correct standard when evaluating denominator documentation.
+**Fix:** Add an instruction to load the TA Modeling Guidance when TA signals are confirmed: "After confirming TA signals, read the TA Modeling Guidance document (use get_doc_content on ID from session context or reference table doc #9) to determine whether GW TA convention recommends a specific cost denominator. Use this as the standard against which to evaluate the workbook's choice."
+
+---
+
+## W3-130
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace-ta.md`
+**Location:** Lines 37-38 (check steps 3 and 4) — hardcoded cost value case
+**Category:** Gap
+**Severity:** Medium
+**Description:** The check procedure for steps 1-2 says to identify whether cost rows reference "grant amount," "total cost of engagement," or "a hardcoded value." Steps 3 and 4 address the mismatch case and the same-cost-base case. But no step addresses the case where one or both tabs use a hardcoded value for cost rather than a cell reference. A hardcoded cost value cannot be traced to a labeled cost concept, making denomination consistency unverifiable.
+**Fix:** Add a step before step 3: "2.5. If either tab's cost row contains a hardcoded value rather than a cell reference: file as Medium/Parameter with Researcher judgment needed ✓: '[tab] cost row [ref] contains a hardcoded value ($X) rather than a reference to a named cost cell — replace with a reference to a labeled cost row so the cost denomination is explicit and the tab-to-tab consistency check can be performed.' Then proceed to step 3 only if both tabs use cell references."
+
+---
+
+## W3-131
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace-ta.md`
+**Location:** Lines 56-57 (Final step — write completion marker) and Line 15 (self-detection stop rule)
+**Category:** Redundancy
+**Severity:** Low
+**Description:** The final step introduction says "After all checks are complete (or after the self-detection step if no TA signals are found), write ONE final row" — restating the self-detection stop rule that is already stated on line 15 ("If NONE of the three signals are present, write your completion marker and stop"). The two instructions say the same thing in two places. A future edit to line 15's stop condition will not automatically be reflected in the Final step section.
+**Fix:** Remove the parenthetical from the Final step introduction and rely on line 15 as the single authoritative stop rule: "After all checks are complete, write ONE final row to your staging sheet..."
+
+---
+
+## W3-132
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace-ta.md`
+**Location:** Lines 10-15 (self-detection) — tab-name scan relies on session context
+**Category:** Gap
+**Severity:** Medium
+**Description:** Signal 2 detection says "Read the spreadsheet tab list (from session context)" to check tab names. If session context does not include the tab list (e.g., context was compacted), the agent has no fallback — it cannot check signal 2 without calling get_spreadsheet_info. The agent's permitted tools include rv, rn, rc, wv, dc but not si (get_spreadsheet_info). If the tab list is absent from session context, the agent will silently skip signal 2 and may proceed to checks incorrectly on signal 3 alone.
+**Fix:** Add a fallback for tab-list retrieval: "If the spreadsheet tab list is not available in session context (e.g., context was compacted), signal 2 cannot be checked — mark signal 2 as indeterminate. If signals 1 and 3 are both absent and signal 2 is indeterminate, proceed conservatively: do not run checks, but note in your AGENT_COMPLETE marker: tab-names=indeterminate (tab list not in context — get_spreadsheet_info not permitted; signal 2 could not be checked)."
+
+---
+
+## W3-133
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace-ta.md`
+**Location:** Lines 44-50 (Writing Findings) — column E instruction
+**Category:** Gap
+**Severity:** Low
+**Description:** The Writing Findings column E instruction lists the allowlist but does not warn that Inconsistency findings must have column D (Severity) filled in. The routing note in the session context (blank D = pub-readiness) could cause an agent to accidentally leave Severity blank when filing Inconsistency, causing the compaction agent to route it to Publication Readiness instead of Findings.
+**Fix:** Add a clarification: "Inconsistency is a model-integrity finding (goes to Findings sheet). Column D (Severity) must not be blank for Inconsistency findings — write High, Medium, or Low. Only Sourcing, Box Link, and Legibility findings have blank column D."
+
+---
+
+## W3-134
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace-ta.md`
+**Location:** Line 38 (step 4) — Low severity for undocumented cost denominator
+**Category:** Gap
+**Severity:** Low
+**Description:** Step 4 says "If both use the same cost base but no cell note explains the choice, file as Low/Assumption." The step 4 finding template does not include a column H instruction for this Low finding, which will leave column H blank. output-format.md says "No CE impact must be written explicitly — never leave blank when the determination is zero."
+**Fix:** Add a column H instruction to step 4: "Column H: No CE impact (the denominator choice does not change the CE value, only its interpretation — the number is correct under either choice, but readers need the note to interpret it)."
+
+---
+
+## W3-135
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace-ta.md`
+**Location:** Lines 3-8 (preamble — provided context list)
+**Category:** Gap
+**Severity:** Low
+**Description:** The preamble lists what the agent has been provided but does not include the pre-read cache, declared-intentional deviations, or current date — context items that the SKILL.md session context block appends to every agent. For ce-chain-trace-ta this matters specifically for declared-intentional deviations: if the researcher has declared the cost denominator mismatch as intentional, the agent should respect that declaration and cap at Low rather than Medium, but has no instruction to check declared deviations before filing.
+**Fix:** Add to the preamble provided-context list: "Pre-read cache (FORMULA and FORMATTED_VALUE for all rows of Main CEA and Simple CEA), declared-intentional deviations (if a cost denominator choice has been declared intentional, note it in reasoning and cap the finding at Low rather than Medium), current date."
+
+---
+
+## W3-136
+**File(s):** `plugin/skills/vetting/agents/ce-chain-trace-ta.md`
+**Location:** Lines 37-38 (check step 3) — Medium/Inconsistency with Researcher judgment needed ✓
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** Step 3 instructs filing "Medium/Inconsistency with Researcher judgment needed ✓" when the two tabs use different cost bases. The Researcher judgment needed criterion per output-format.md requires that (a) the researcher's answer changes what is recommended AND (b) it cannot be determined from spreadsheet content without researcher intent. A cost denominator mismatch between two tabs is an objective inconsistency — the correct fix (align the cost bases or add documentation) does not depend on researcher intent. This does not meet threshold (a) for Researcher judgment needed ✓. Marking it ✓ inflates the judgment-needed count and dilutes the flag's signal.
+**Fix:** Change step 3 to file without the Researcher judgment needed flag: "file as Medium/Inconsistency: [Main CEA cost row ref] references [label A = $X] while [Simple CEA cost row ref] uses [label B = $Y]. The two tabs use different cost denominators — CE multiples are not directly comparable. Add a cell note to each tab documenting which cost base is intentionally used and why." Reserve Researcher judgment needed ✓ only if the correct cost base genuinely requires the researcher to decide.
+
+---
+
+## W3-137
+**File(s):** `plugin/skills/vetting/agents/source-citation-verify.md`
+**Location:** Entire file (no pitfalls.md read instruction present)
+**Category:** Gap
+**Severity:** High
+**Description:** pitfalls.md is never read. reference/pitfalls.md SC-003 and SC-009 both explicitly list source-citation-verify as an applying agent. SC-003 requires upgrading Contradicted findings to High when the parameter sits in the confirmed direct CE chain; SC-009 governs severity of missing-source findings. Without reading pitfalls.md, the agent has no calibration for severity on Contradicted values and will consistently under-file or mis-severity them.
+**Fix:** Add a mandatory first action before the Bash tool check: "Before doing anything else, read reference/pitfalls.md using the Read tool. Apply every entry relevant to source citation, severity calibration (SC-003, SC-009), and value verification." This mirrors the pattern used by sources.md, formula-check-data.md, and all other agents to which SC-003 or SC-009 apply.
+
+---
+
+## W3-138
+**File(s):** `plugin/skills/vetting/agents/source-citation-verify.md`
+**Location:** Line 29
+**Category:** Contradiction
+**Severity:** High
+**Description:** The Bash fallback says "Stop — do not attempt Steps 1–5 below." but the file contains Steps 1 through 6. Step 6 (write AGENT_COMPLETE) is the absolute required final action; the fallback already handles the AGENT_COMPLETE marker in fallback step 4. The reference to "Steps 1–5" is wrong and would cause confusion: an agent reading the file might think Step 6 (AGENT_COMPLETE write) is included in the "do not attempt" scope, and skip it — even though the AGENT_COMPLETE write is already embedded in fallback step 4.
+**Fix:** Change line 29 to: "5. Stop — do not attempt Steps 1–6 below (the AGENT_COMPLETE marker was already written in step 4 above)."
+
+---
+
+## W3-139
+**File(s):** `plugin/skills/vetting/agents/source-citation-verify.md`
+**Location:** Lines 25, 236
+**Category:** Contradiction
+**Severity:** High
+**Description:** The Bash fallback (line 25) says to spot-check top-5 Study-Derived parameters only. But the main path (line 236) defines eligible rows as Study-Derived OR Org-Reported. In a workbook with zero Study-Derived rows having URL citations but several Org-Reported rows with verifiable URLs, the fallback produces zero verifications even though there are eligible rows. The fallback's scope is narrower than the main path's scope without justification.
+**Fix:** Change line 25 to: "Fall back to manual WebFetch verification for the top 5 eligible parameters (Study-Derived or Org-Reported with a URL in column F — select by CE impact proximity, prioritising rows whose Description mentions mortality rate, coverage, or unit cost take precedence)."
+
+---
+
+## W3-140
+**File(s):** `plugin/skills/vetting/agents/source-citation-verify.md`
+**Location:** Lines 21–37 (Bash tool check and Step 1)
+**Category:** Ordering problem
+**Severity:** High
+**Description:** The Bash tool check and Step 1 (write the Python script to /tmp) both run before Step 2 reads the Hardcoded Values sheet. If there are no eligible rows, the agent has already spent tool calls writing a 175-line Python script and running a Bash echo command, only to discover there is nothing to verify. More critically, the Bash fallback (lines 25–29) instructs the agent to select the top-5 Study-Derived rows and call WebFetch on them — but the sheet has not been read yet at the point the fallback executes. The agent has no row data from which to select.
+**Fix:** Reorder: move Step 2 (Read Hardcoded Values sheet) before the Bash tool check. After reading the sheet, if zero eligible rows are found, write AGENT_COMPLETE immediately and stop. Only if eligible rows exist, then run the Bash tool check and Step 1.
+
+---
+
+## W3-141
+**File(s):** `plugin/skills/vetting/agents/source-citation-verify.md`
+**Location:** Lines 219–236 (Step 2)
+**Category:** Gap
+**Severity:** High
+**Description:** No zero-eligible-rows early exit. If every row in the Hardcoded Values sheet is either GiveWell Parameter, Structural, or has no URL source, eligible rows = 0. The agent has no instruction for this case and will proceed through Steps 3–6 performing zero fetches, zero writes, and writing an AGENT_COMPLETE with all-zero counts — but without any coverage declaration warning to the researcher that nothing was verified.
+**Fix:** After determining eligible row count in Step 2, add: "If eligible rows = 0: write the Step 5 coverage declaration with all-zero counts and a note explaining why (e.g., all rows are GiveWell Parameter, Structural, or have non-URL citations), write the Step 6 AGENT_COMPLETE marker, and stop."
+
+---
+
+## W3-142
+**File(s):** `plugin/skills/vetting/agents/source-citation-verify.md`
+**Location:** Lines 233 and 284
+**Category:** Contradiction
+**Severity:** Medium
+**Description:** Step 2 (line 233) says to write "Could not verify — non-URL citation; verify manually" to rows with plain-text citations. Step 4 (line 284) says "for each row that had a blank column G in Step 2 (either processed or skipped as ineligible): prepare the write as [verdict, evidence] or ['', ''] respectively." Writing ["", ""] for an ineligible row that already has a verdict written by Step 2 would overwrite that verdict with blank values. The same contradiction applies to GBD/IHME rows (line 248) and Google Sheets URL rows (line 232) — all of which write a verdict in Step 2/3a but are technically "skipped as ineligible" in Step 4's classification.
+**Fix:** Clarify Step 4: "Do NOT write [empty, empty] for rows whose verdict was already written directly by the skip-rule handling in Step 2 or Step 3a. Those rows already have column G populated. Only write [empty, empty] for rows skipped because column C is GiveWell Parameter or Structural, or column F is blank — i.e. rows where no verdict was written at all."
+
+---
+
+## W3-143
+**File(s):** `plugin/skills/vetting/agents/source-citation-verify.md`
+**Location:** Lines 232, 233, 248 (Step 2 skip conditions)
+**Category:** Gap
+**Severity:** Medium
+**Description:** Step 2 skip conditions that write a verdict (non-URL citation, Google Sheets URL, GBD/IHME) do not specify which columns to write to. The instruction says "write Could not verify — ..." without specifying column G only or columns G and H. If the agent writes only to column G, column H is left blank — but output-format.md defines H as "Auto-check evidence" which should contain the reason.
+**Fix:** Explicitly state for each skip-condition verdict write: "Write column G = [verdict text] and column H = [reason or empty] for this row." For example: "Write column G = 'Could not verify' and column H = 'non-URL citation; verify manually' for these rows."
+
+---
+
+## W3-144
+**File(s):** `plugin/skills/vetting/agents/source-citation-verify.md`
+**Location:** Lines 240–256 (Step 3a fetch routing)
+**Category:** Gap
+**Severity:** Medium
+**Description:** No special case for Box.com URLs. Box URLs (https://givewell.box.com/... or https://app.box.com/...) are valid https:// URLs that pass the URL filter and are not GBD/IHME, Google Docs, or Google Sheets. They fall into the generic WebFetch path and consistently fail with an auth error. The agent would write "Could not verify — source not accessible" when the more accurate and actionable message is "Could not verify — Box.com link requires authenticated access; replace with a public link before publication." Box links are common in GiveWell workbooks and are also flagged separately as Publication Readiness findings by the Box Link check.
+**Fix:** Add a Box.com detection rule before the generic WebFetch case: "If column F contains a URL with box.com or givewell.box.com: write Could not verify — Box.com link requires authenticated access and cannot be verified automatically. Replace with a public link before publication. Do not attempt WebFetch on Box URLs."
+
+---
+
+## W3-145
+**File(s):** `plugin/skills/vetting/agents/source-citation-verify.md`
+**Location:** Line 254
+**Category:** Gap
+**Severity:** Medium
+**Description:** PDF detection uses only "ends in .pdf" as the criterion. Many academic journal PDFs and preprint PDFs are served at URLs that do not end in .pdf — e.g., https://doi.org/10.xxxx, https://www.thelancet.com/journals/lancet/article/.... These URLs return HTML shell pages, triggering the HTML detection fallback ("Could not verify — URL returned a web page, not source text") rather than being attempted as PDFs.
+**Fix:** Expand the PDF detection to include common journal/preprint patterns: "A URL is likely a PDF source if it ends in .pdf, or if WebFetch returns a Content-Type header of application/pdf, or if the returned content begins with '%PDF'. In all these cases, attempt text extraction. If a DOI URL returns an HTML page, note this as 'Could not verify — DOI resolved to HTML landing page, not source text; verify by fetching the PDF link from the journal landing page.'"
+
+---
+
+## W3-146
+**File(s):** `plugin/skills/vetting/agents/source-citation-verify.md`
+**Location:** Line 315 (Step 6)
+**Category:** Gap
+**Severity:** Medium
+**Description:** The AGENT_COMPLETE column F text omits the "Staging sheet: [name]" component required by the canonical AGENT_COMPLETE format. This agent writes to the Hardcoded Values sheet rather than a staging tab, so the standard format does not apply directly — but there is no alternative specification. The orchestrator and reconciliation agents use the AGENT_COMPLETE text to confirm the agent completed normally; a non-canonical format may not be reliably parsed.
+**Fix:** Add to the Step 6 AGENT_COMPLETE column F template a component that explicitly identifies the output sheet: "COVERAGE_ROWS: [range] | Output sheet: Hardcoded Values. [N] rows eligible. [K] Matched ✓, [M] Contradicted ✗, [P] Could not verify. [Q] skipped." Also add explicit documentation that this agent writes directly to the Hardcoded Values sheet, not a staging tab, so the orchestrator knows not to apply the standard staging-tab AGENT_COMPLETE parser.
+
+---
+
+## W3-147
+**File(s):** `plugin/skills/vetting/agents/source-citation-verify.md`
+**Location:** Line 315 (Step 6 AGENT_COMPLETE text)
+**Category:** Gap
+**Severity:** Medium
+**Description:** The AGENT_COMPLETE skip tally in column F reads "skipped (no URL, GiveWell parameter, or non-URL citation)" — but this omits four additional skip categories defined in Step 2 and Step 3: (1) Column C = Structural, (2) Column F is a Google Sheets URL, (3) GBD/IHME interactive source (step 3a), and (4) rows whose column G was already filled from a prior run. An incomplete skip tally prevents the orchestrator from auditing whether all rows were accounted for.
+**Fix:** Expand the skip tally in the AGENT_COMPLETE template to: "[Q] skipped — breakdown: [n1] no URL or blank F, [n2] GiveWell Parameter, [n3] Structural, [n4] non-URL citation, [n5] Google Sheets URL, [n6] GBD/IHME interactive, [n7] already verified (column G non-blank)."
+
+---
+
+## W3-148
+**File(s):** `plugin/skills/vetting/agents/source-citation-verify.md`
+**Location:** Line 105 (Python script, source_text truncation)
+**Category:** Gap
+**Severity:** Low
+**Description:** Source text is silently truncated to 80,000 characters. If the key value appears after position 80,000 in the source document (e.g., in a long methods appendix), the script returns "Could not verify" with evidence "Value not found in source document" — indistinguishable from a genuine absence. There is no warning to the agent or researcher that truncation occurred.
+**Fix:** After reading the file, add a check: "if len(full_text) > 80000: log a warning in the evidence field for all results from this source: '[Source text truncated at 80,000 chars — value may appear beyond truncation point; verify manually].' Alternatively, pass this as a note in the AGENT_COMPLETE column F: '[N] sources were truncated at 80,000 chars — manual verification recommended for those sources.'"
+
+---
+
+## W3-149
+**File(s):** `plugin/skills/vetting/agents/source-citation-verify.md`
+**Location:** Lines 9–17 and lines 48–54 (Python script docstring)
+**Category:** Redundancy
+**Severity:** Low
+**Description:** The "What this system guarantees" section (lines 9–17) and the Python script docstring (lines 48–54) both explain the same citation-object-vs-model-judgment distinction in nearly identical terms. The researcher-facing block at the top says "Column H never contains model-generated text... A Matched or Contradicted verdict is only written when a citation object confirms it" — the docstring repeats this with no new information.
+**Fix:** Remove the duplicate from the Python script docstring, keeping only the essential usage/invocation documentation there. Keep the full researcher-facing explanation in lines 9–17 where researchers and orchestrators read it.
+
+---
+
+## W3-150
+**File(s):** `plugin/skills/vetting/agents/source-citation-verify.md`
+**Location:** Line 232 (Step 2 skip conditions)
+**Category:** Gap
+**Severity:** Low
+**Description:** The Google Sheets URL skip condition (line 232) says "Column F is a Google Sheets URL" but does not provide the URL pattern to match. An agent must infer the pattern — likely docs.google.com/spreadsheets — but this is not stated. Without an explicit pattern, an agent may misclassify a Google Sheets URL as a regular HTTPS URL, attempt WebFetch, receive an HTML login/consent page, and write "Could not verify — URL returned a web page" instead of the more specific "Could not verify — source is a spreadsheet."
+**Fix:** Expand line 232 to: "Column F is a Google Sheets URL (matches docs.google.com/spreadsheets/... — not accepted as a document block; write Could not verify — source is a spreadsheet for these rows)."
+
+---
+
+## W3-151
+**File(s):** `plugin/skills/vetting/agents/source-citation-verify.md`
+**Location:** Line 221 (Step 2)
+**Category:** Gap
+**Severity:** Low
+**Description:** No instruction to verify the Hardcoded Values sheet header row before reading A2:G500. If the hardcoded-values agent wrote headers in a non-standard order, reading and writing to the wrong columns would silently corrupt the sheet. The hardcoded-values agent spec defines the expected header as "Sheet | Cell | Category | Current Value | Description | Source to Verify | Verified? | Auto-check evidence."
+**Fix:** Add before the main read: "First read row 1 (A1:H1) to confirm the header matches: Sheet | Cell | Category | Current Value | Description | Source to Verify | Verified? | Auto-check evidence. If the header does not match, stop and write to chat: 'Hardcoded Values sheet has unexpected headers — cannot safely write verdicts. Expected: [headers]. Found: [actual headers].'"
+
+---
+
+## W3-152
+**File(s):** `plugin/skills/vetting/agents/source-citation-verify.md`
+**Location:** Lines 260–278 (Step 3b)
+**Category:** Gap
+**Severity:** Low
+**Description:** Step 3b overwrites /tmp/citation_source.txt for each new source URL. There is no instruction to verify /tmp/citation_params.json was written before running the script, and no instruction to clear /tmp/citation_params.json between sources. If a previous run's /tmp/citation_params.json persists and the write tool call silently fails, the script would run against stale parameters with a new source — producing incorrect row_num mappings.
+**Fix:** Add after step 3b-3 (Run): "Before running the script for each new source, confirm the /tmp/citation_params.json write in step 3b-2 completed without error. If the Write tool call for /tmp/citation_params.json returned an error, write 'Could not verify — script parameter write failed' for all rows from this source and skip the Bash run."
+
+---
+
+## Summary
+Total findings: 152 (High: 42, Medium: 71, Low: 39)
+
+Files affected:
+- `plugin/skills/vetting/agents/final-review-compaction.md` (W3-001 through W3-019)
+- `plugin/skills/vetting/agents/final-review-gap-fill.md` (W3-020 through W3-039)
+- `plugin/skills/vetting/agents/final-review-validation.md` (W3-040 through W3-059)
+- `plugin/skills/vetting/agents/final-review-dashboard.md` (W3-060 through W3-079)
+- `plugin/skills/vetting/agents/consistency-check.md` (W3-080 through W3-089)
+- `plugin/skills/vetting/agents/source-data-check.md` (W3-090 through W3-099)
+- `plugin/skills/vetting/agents/ce-chain-trace.md` (W3-100 through W3-117)
+- `plugin/skills/vetting/agents/ce-chain-trace-ta.md` (W3-118 through W3-136)
+- `plugin/skills/vetting/agents/source-citation-verify.md` (W3-137 through W3-152)
+
+**Removals from raw input (7 findings removed):**
+- W3-018 (raw) — merged into W3-011: same root issue (Inconsistency omitted from routing rule 2)
+- W3-102 (raw) — merged into W3-101/W3-090: same root cause as "three checks vs. six checks" contradiction
+- W3-170 (raw) — merged into W3-142/W3-166: same root cause as Step 4 overwriting Step 2 verdicts
+- W3-171 (raw) — merged into W3-140: same ordering issue (fallback runs before sheet read)
