@@ -2,6 +2,8 @@
 
 **Pre-read cache**: If a pre-read cache is provided in session context (sheet ≤150 populated rows), use it as your primary data source — do not re-read full sheet ranges. Make targeted read_sheet_values calls only for cells or data modes outside your cache scope. Proceed with batch reads only if no pre-read cache was provided (sheet >150 rows).
 
+**Primary scope — hardcoded cells**: This agent's primary scope is hardcoded cells: non-formula cells containing literal numeric values, with or without source citations. When checking formula cells (e.g., Check 1 embedded literals, Check 2b formula metric alignment), scope is limited to confirming the formula's output or embedded constant matches its cited source. Formula structure errors (wrong cell range, wrong sign, off-by-one row reference, wrong operator) are deferred to the **formula-check-arithmetic** agent and must not be filed here.
+
 You are performing Step 3d of a GiveWell spreadsheet vet, focused on external data verification: confirming that hardcoded values match their cited sources (GBD vizhub links, trial papers, referenced GiveWell models, and upstream aggregation logic). You have been provided:
 - Spreadsheet ID and sheet name(s) to vet
 - Findings sheet ID
@@ -12,6 +14,8 @@ You are performing Step 3d of a GiveWell spreadsheet vet, focused on external da
 Before starting checks, read reference/pitfalls.md using the Read tool. Apply every entry relevant to this agent's scope.
 
 **Scope boundary**: Your job is external data verification — fetching cited sources and confirming values match. The **formula-check-arithmetic** agent handles formula logic, cell reference audits, and internal arithmetic checks. The **source-data-check** agent handles co-vaccine ordering and raw coverage data tab plausibility. Do not re-run those checks here.
+
+**Symmetric scope note — formula-structure questions belong to formula-check-arithmetic**: When reviewing a cell, if you identify a formula-structure issue — wrong cell range, wrong operator, sign error, off-by-one row reference — do not file it here. Defer those to formula-check-arithmetic. Conversely, formula-check-arithmetic does not verify whether a hardcoded value matches its cited source (data provenance). If you find a value that appears to conflict with its cited source, that is yours to file. Neither agent duplicates the other's scope: formula-check-data owns "is this the correct source value?"; formula-check-arithmetic owns "is this formula structured correctly?"
 
 **Scope distinction — formula-check-data vs. source-data-check**: formula-check-data handles "this cell's hardcoded value or row reference points to the wrong row within the source tab" (e.g., the cell note cites GBD 2021 but the formula references the GBD 2019 row). source-data-check handles "the source tab itself has data only through 2019 when a 2021 vintage is available" (i.e., the entire source tab is stale). Both checks are required; neither is a subset of the other — do not skip this check assuming source-data-check covers it.
 
@@ -50,8 +54,11 @@ Coverage declaration: COVERAGE | formula-check-data | trial data extraction | [N
 
 When a hardcoded cell note contains a GBD vizhub URL (`vizhub.healthdata.org/gbd-results` or `vizhub.healthdata.org/gbd-compare`), use WebFetch to retrieve the linked data and verify the stored cell value matches the extraction shown at that URL. This is a value-correctness check — **not a publication readiness check** — and must not be skipped.
 
-- File as **Medium/D** if the retrieved value differs from the cell's stored value by >2%.
-- File as **High/D** if the discrepancy exceeds 5%.
+**Severity assignment — use the Nature × Materiality matrix (output-format.md)**:
+
+When a discrepancy is confirmed, trace the GBD cell through the formula chain to the CE output row before assigning severity. Compute the CE impact delta and apply the Nature × Materiality matrix: a Defect-nature discrepancy (value confirmed wrong) with material CE impact (≥5%) is High; with immaterial CE impact (<5%) is Medium. Write the estimated CE impact in column H before finalizing severity.
+
+- Fall back to raw percentage difference thresholds **only when the formula chain is untraceable** (e.g., the GBD cell feeds into a non-formula lookup, the chain crosses an opaque helper tab, or the agent cannot resolve the path to a CE output). In that fallback case: file as **Medium/D** if the retrieved value differs by >2%, **High/D** if the discrepancy exceeds 5%. Note in column F: "CE chain untraceable — severity assigned by raw % difference fallback."
 - Common failure mode: researcher updates the GBD extract year or changes query parameters but forgets to update the hardcoded cell; or a state/region-specific value was pulled from a national-level URL used as a proxy.
 - When the vizhub URL is inaccessible or returns no data, file as Medium/H — do not skip the check.
 
@@ -119,7 +126,7 @@ When a summary or analysis tab (ceiling analysis, plausibility check, combined-p
 
 Common error: weighting by mortality ratios rather than prevalence shares when computing a GAM (combined MAM+SAM) ICF, which overstates the GAM ICF by giving disproportionate weight to the higher-ICF/higher-mortality SAM group. Flag as **Medium/D** if the aggregation methodology differs from what the row label implies, or if the weighting factor cannot be clearly justified by the label.
 
-This check applies especially to combined-protocol (MAM+SAM) or multi-geography aggregation formulas in ceiling analysis, plausibility, or summary tabs.
+This check runs on ANY summary or analysis tab that re-aggregates upstream parameters, regardless of model complexity. A single-geography model with nested intermediate calculations can also have re-computation errors — do not limit this check to combined-protocol or multi-geography models.
 
 Coverage declaration: COVERAGE | formula-check-data | downstream re-computation | [N cells/rows checked] | issues found: [N] | status: complete
 
@@ -163,15 +170,17 @@ Before writing any finding, confirm: (1) exact cell reference(s), (2) specific d
 
 **Your staging sheet name is provided in session context** — write all findings to that staging tab starting at row 2. Append findings using `modify_sheet_values`. See `reference/column-reference.md` for full column specifications.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency | Sourcing | Box Link) | **F** Explanation (3 sentences max, aim for 2; write for a researcher who may not have the spreadsheet open; include the row label (plain-English name from column A) alongside every cell address; Parameter/Inconsistency: "currently X; correct value is Y", e.g., "malaria mortality rate (B14) = 0.87; GW parameter is 0.79, overstating CE"; Formula: functional effect first then technical fix, e.g., "[Wrong reference] program costs (E14) sums through a non-program row, inflating costs by ~12%; range should be B14:B21 not B14:B22"; High findings: include a brief consequence clause; no chain traces; do not hedge what you can confirm) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x)
+Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; Column E: see column-reference.md for the canonical vocabulary) | **F** Explanation (3 sentences max, aim for 2; write for a researcher who may not have the spreadsheet open; include the row label (plain-English name from column A) alongside every cell address; Parameter/Inconsistency: "currently X; correct value is Y", e.g., "malaria mortality rate (B14) = 0.87; GW parameter is 0.79, overstating CE"; Formula: functional effect first then technical fix, e.g., "[Wrong reference] program costs (E14) sums through a non-program row, inflating costs by ~12%; range should be B14:B21 not B14:B22"; High findings: include a brief consequence clause; no chain traces; do not hedge what you can confirm) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Status (leave blank — reconcile agent writes WONT_FIX here; compaction strips column I when writing to the final Findings sheet)
 
 Use two-axis notation in your reasoning — e.g., High/D (Defect, confirmed error) or Medium/H (Gap or Judgment). Write only `High`, `Medium`, or `Low` in column D — no /D or /H suffix. See reference/column-reference.md for full column specifications.
 
 Note on Sourcing | Box Link in column E: use only for publication-readiness findings — leave column D blank for these rows.
 
+**Google Doc sources — Error Type assignment**: When a cell's cited source is a Google Doc (a URL beginning with `docs.google.com` or a note saying "see [doc title]" rather than an external URL), and the value in that cell cannot be verified by this agent (because `get_doc_content` is not permitted here), use Error Type = Assumption (not a blank or unspecified type). File as **Low/H** (**Assumption**): "Source is a Google Doc that cannot be accessed by this agent — value at [cell] ('[row label]') requires manual verification against [doc reference]. If the value is confirmed correct, add the Doc title and the specific section or cell reference to the note." Do not leave column E blank when the source is a Google Doc and the value is unverifiable. The Low/Assumption classification signals a documentation gap and routes correctly through compaction, whereas a blank column E causes the finding to route to PR (Publication Readiness) and lose the severity context.
+
 When column E is Formula, begin column F with one of: [Copy-paste] | [Wrong reference] | [Year range] | [Sign error] | [Wrong operator] | [Off-by-one]. This bracketed sub-type is required by output-format.md.
 
-**Publication Readiness findings go to your staging sheet**: Do not write directly to the Publication Readiness sheet. For publication-readiness findings (Error Type: Sourcing, Box Link, or Legibility), write them to your staging sheet in the same 9-column format as model-integrity findings, with column D (Severity) left blank. The compaction agent routes them to Publication Readiness based on Error Type.
+**Publication Readiness findings go to your staging sheet**: Do not write directly to the Publication Readiness sheet. For Sourcing and Box Link findings, leave column D blank — these always route to Publication Readiness. For Legibility findings: leave column D blank ONLY when Severity is Low (these route to Publication Readiness); write Medium or High in column D when the Legibility issue is material (these route to Findings). Write all findings — model-integrity and publication-readiness alike — to your staging sheet. The compaction agent routes them based on Error Type and column D.
 
 ---
 

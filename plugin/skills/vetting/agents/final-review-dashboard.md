@@ -1,5 +1,17 @@
 # Final Review — Step 10d: Dashboard Agent
 
+## Guard — Verify prior stages are complete
+
+Before reading any findings or writing any dashboard output, verify that all three prior final-review stages have completed successfully. Read Findings sheet rows around the known AGENT_COMPLETE marker range (or scan batched rows) and confirm that rows with column D = `AGENT_COMPLETE` exist for each of the following column B values:
+
+- `final-review-compaction`
+- `final-review-gap-fill`
+- `final-review-validation`
+
+If any of these three markers is missing: write a single row to the Findings sheet with column B = `final-review-dashboard`, column D = `ERROR`, and column F = `Dashboard halted — AGENT_COMPLETE marker missing for [name of missing stage(s)]. Re-run that stage before running the dashboard agent.` Then **STOP** — do not proceed with any dashboard work, cleanup, or Key Findings summary until all three prior stages have completed. Do not attempt to proceed on a partial audit trail.
+
+---
+
 You are performing Step 10d of a GiveWell spreadsheet vet. This is the last of four sequential final-review steps. Compaction (10a), gap-fill (10b), and validation (10c) are already complete and Finding IDs are assigned. You have been provided:
 - Source spreadsheet ID (the workbook being vetted — used only for `get_spreadsheet_info` to retrieve the complete tab list)
 - Output spreadsheet ID (the spreadsheet containing Dashboard, Findings, Publication Readiness tabs)
@@ -16,11 +28,11 @@ You are performing Step 10d of a GiveWell spreadsheet vet. This is the last of f
 
 ## Step 1 — Read findings for summary
 
-Read all non-divider rows from the Findings sheet (batched: `A2:I51`, `A52:I101`, `A102:I151`, continuing in 50-row increments until two consecutive batches return no non-empty rows). **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Collect: all High findings (for Key Findings summary), and the count of High/Medium/Low findings. When counting, skip divider rows (column D is empty AND column B contains ───) and skip rows where column D = `AGENT_COMPLETE` — these are pipeline completion markers written by the final-review agents (compaction, gap-fill, validation), not findings. Do not include divider rows or AGENT_COMPLETE rows in any finding count or in the total count.
+Read all non-divider rows from the Findings sheet (batched: `A2:H51`, `A52:H101`, `A102:H151`, continuing in 50-row increments until two consecutive batches return no non-empty rows). **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Collect: all High findings (for Key Findings summary), and the count of High/Medium/Low findings. When counting, skip divider rows (column D is empty AND column B contains ───) and skip rows where column D = `AGENT_COMPLETE` — these are pipeline completion markers written by the final-review agents (compaction, gap-fill, validation), not findings. Do not include divider rows or AGENT_COMPLETE rows in any finding count or in the total count.
 
 Also read the Hardcoded Values sheet column G (Verified? column) in the same batched manner to collect Wave 1.5 verification status counts: number of matched, contradicted, and could-not-verify values. If the column is entirely blank, note that Wave 1.5 source-citation-verify was skipped.
 
-Read all rows from Publication Readiness (batched: `A2:H51`, `A52:H101`, continuing in 50-row increments until two consecutive batches return no non-empty rows). Collect the total count.
+Read all rows from Publication Readiness (batched: `A2:F51`, `A52:F101`, continuing in 50-row increments until two consecutive batches return no non-empty rows). Collect the total count.
 
 ---
 
@@ -43,7 +55,9 @@ Rows 25 onward: one row per unique sheet name found in column B of the Findings 
 - Repeat for each sheet name, incrementing row numbers.
 - Include `Multiple` as a row if any findings use that sheet name.
 
-After the last sheet row, write a totals row: `Total` in column A, `=SUM(B25:B{last})` in B, same pattern for C–D, `=SUM(E25:E{last})` in E.
+**Tab-name comma handling**: When reading the list of unique sheet names from column B of the Findings sheet to populate the per-sheet table rows, treat each cell value in column B as a single tab name — even if the value contains a comma. Do not split on commas when extracting tab names from column B. (Commas in tab names are uncommon but possible.) When writing tab names as static text in Dashboard column A, write the full tab name including any commas. The COUNTIFS formula uses the full tab name as its criteria string and will match correctly as long as the Findings sheet column B also contains the full name.
+
+After the last sheet row, write a totals row: `Total` in column A, `=SUM(B25:B{last})` in B, same pattern for C–D, `=SUM(E25:E{last})` in E. **{last} must be the row number of the last per-sheet data row — that is, the row immediately above the Totals row itself. The Totals row must not be included in the SUM range, or the formula will self-reference and produce a circular dependency error.**
 
 After the Total row, skip one blank row, then write `Sheets not vetted:` in column A. On each subsequent row, write one unvetted tab name in column A.
 
@@ -51,30 +65,13 @@ To compute the unvetted list accurately: call `get_spreadsheet_info` on the sour
 
 After writing all Dashboard content with `modify_sheet_values`, make a single `format_sheet_range` call to bold the `Sheets not vetted:` cell. If `format_sheet_range` is not available, skip the bold — the label is readable without it.
 
+**Validation-completion guard (DASH-7)**: Before writing any dashboard content, verify that the `final-review-validation` AGENT_COMPLETE marker is present in the Findings sheet. (The guard at the top of this file already checks for all three prior stage markers — if that guard passed, this condition is satisfied. If for any reason the guard was bypassed or the marker check is uncertain, re-read the Findings sheet in batched increments and confirm a row exists where column B = `final-review-validation` AND column D = `AGENT_COMPLETE`.) If this marker is absent when writing the dashboard, add the following warning in Dashboard cell B23 (immediately above the per-sheet table): "⚠️ Validation not completed — some findings may not have been verified. Re-run final-review-validation (Step 10c) before sharing this output." Do not omit this warning if the marker is genuinely absent.
+
 If session context indicates a formula/heads-up only scope mode: add a `Partially vetted (heads-up only):` row below the Sheets not vetted list, listing any tabs where only heads-up agents ran. Do not list these tabs under Sheets not vetted — they were checked, just not at full depth.
 
 The per-sheet table starts at row 25 per the reserved layout in output-setup.md. Do not write above row 24 under any circumstances — rows 1–23 contain static setup content written during output initialization. If the per-sheet table plus unvetted tabs list would extend past row 148, warn the researcher before writing.
 
 **Scope declaration recovery** — if session context was compacted and the vetted/lite-passed tab lists are not available: read Dashboard cells B151:B153 of the output spreadsheet (written by the orchestrator before Wave 1). Cell B151 = comma-separated fully vetted tabs, cell B152 = comma-separated lite-pass tabs, cell B153 = vet scope ('full' or 'formula-only'). Do not read column A values — those are row labels, not data. Use B151–B153 as the scope declaration. If B151 is also blank or unreadable, announce: "Scope declaration unavailable — vet metadata at Dashboard B151:B153 is missing. Ask the researcher which tabs were fully vetted vs. lite-passed before finalizing the unvetted list." Then proceed with the tab list from `get_spreadsheet_info` and leave the vetted/lite-passed categorization blank.
-
----
-
-## Cleanup — Delete staging tabs and Staging_backup
-
-Perform this cleanup **before** writing the Key Findings summary to chat (Step 3), so the output spreadsheet is fully clean when the researcher opens it.
-
-**Delete all stg-* staging tabs:**
-
-1. Call ToolSearch with query `select:mcp__hardened-workspace__delete_sheet` to load the delete_sheet tool schema. If that exact name is not found, search ToolSearch with query `delete sheet tab spreadsheet` to find the correct tool name.
-2. If found: retrieve the full list of stg-* tab names from Dashboard A99 onward (written during output setup) or from session context. For each stg-* tab name, call delete_sheet with the output spreadsheet ID and that tab name. Announce a single summary: `Deleted [N] staging tabs (stg-*). [N failed — researcher to delete manually: list]` (include failed deletions; do not silently omit them).
-3. If delete_sheet is not found or not available: announce: `⚠️ Could not delete staging tabs — researcher should delete all tabs whose names begin with stg- manually before sharing the output spreadsheet.`
-
-**Delete Staging_backup tab:**
-
-1. Using the same delete_sheet tool (already loaded above): call it with the output spreadsheet ID and tab name `Staging_backup`. Announce: `✓ Staging_backup tab deleted — output spreadsheet is clean.`
-2. If not found: announce: `⚠️ Could not delete Staging_backup tab — researcher should delete it manually before sharing the output spreadsheet (Dashboard → right-click Staging_backup → Delete).`
-
-This step is required to prevent researchers from seeing raw pre-compaction data alongside the clean, sorted output.
 
 ---
 
@@ -107,6 +104,25 @@ Rules:
 
 ---
 
+## Cleanup — Delete staging tabs and Staging_backup
+
+Perform this cleanup **after** writing the Key Findings summary to chat (Step 3) and **before** writing the AGENT_COMPLETE marker (Step 4). The Key Findings summary must be fully written first: if the summary reveals a finding count discrepancy, the audit trail (stg-* tabs and Staging_backup) is needed to re-run compaction before it is gone.
+
+**Delete all stg-* staging tabs:**
+
+1. Call ToolSearch with query `select:mcp__hardened-workspace__delete_sheet` to load the delete_sheet tool schema. If that exact name is not found, search ToolSearch with query `delete sheet tab spreadsheet` to find the correct tool name.
+2. If found: retrieve the full list of stg-* tab names from Dashboard A99 onward (written during output setup) or from session context. For each stg-* tab name, call delete_sheet with the output spreadsheet ID and that tab name. Announce a single summary: `Deleted [N] staging tabs (stg-*). [N failed — researcher to delete manually: list]` (include failed deletions; do not silently omit them).
+3. If delete_sheet is not found or not available: announce: `⚠️ Could not delete staging tabs — researcher should delete all tabs whose names begin with stg- manually before sharing the output spreadsheet.`
+
+**Delete Staging_backup tab:**
+
+1. Using the same delete_sheet tool (already loaded above): call it with the output spreadsheet ID and tab name `Staging_backup`. Announce: `✓ Staging_backup tab deleted — output spreadsheet is clean.`
+2. If not found: announce: `⚠️ Could not delete Staging_backup tab — researcher should delete it manually before sharing the output spreadsheet (Dashboard → right-click Staging_backup → Delete).`
+
+This step is required to prevent researchers from seeing raw pre-compaction data alongside the clean, sorted output.
+
+---
+
 ## Step 4 — Write AGENT_COMPLETE marker
 
 Write the AGENT_COMPLETE marker to the Dashboard tab:
@@ -114,4 +130,4 @@ Write the AGENT_COMPLETE marker to the Dashboard tab:
 - Cell D200 = `AGENT_COMPLETE`
 - Cell F200 = `Dashboard content written. Key Findings written to chat. Staging_backup deleted (or researcher notified). Step 10d complete.`
 
-This cell range (row 200) is safely below all other Dashboard content.
+**Dynamic row placement**: Row 200 is the default placement and is safely below all expected dashboard content. However, if the per-sheet table plus unvetted tabs list extends close to row 200 (within 10 rows), compute the AGENT_COMPLETE row dynamically as the last data row in the Dashboard tab + 10. Use `read_sheet_values` on Dashboard column A in a large range (e.g., `A1:A250`) to find the last non-empty row, then write the AGENT_COMPLETE marker to that row + 10. This prevents the marker from being overwritten if the dashboard content grows. Note: the COUNTIFS formulas in Step 2b use explicit row ranges (e.g., `B25:B{last}`) scoped to the per-sheet data rows — they are not affected by where the AGENT_COMPLETE marker is placed, so moving the marker does not introduce circular references.

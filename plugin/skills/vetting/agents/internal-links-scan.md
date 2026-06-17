@@ -19,12 +19,13 @@ Flag every URL matching one of these patterns:
 | Internal Google Sheet | `docs.google.com/spreadsheets/d/` | `Sourcing` |
 | Internal Google Presentation | `docs.google.com/presentation/d/` | `Sourcing` |
 | Internal Google Drive file | `drive.google.com/file/d/` | `Sourcing` |
+| Internal Google Form | `docs.google.com/forms/d/` | `Sourcing` |
 
 **Do NOT flag:**
 - The source spreadsheet itself or the output spreadsheet — their IDs are in session context; exclude any Google Sheets URL whose ID matches either
 - URLs where the hyperlink display text, cell note text, or nearby description contains "(public)" (case-insensitive) — these are intentionally published
-- Well-known public external sources: journal URLs (pubmed.ncbi.nlm.nih.gov, bmj.com, thelancet.com, doi.org, etc.), WHO, UNICEF, IHME/GBD, DHS Statcompiler, givewell.org, statcompiler.com, github.com, worldbank.org — these are not internal documents
-- givewell.org links — these are already public
+- Well-known public external sources: journal URLs (pubmed.ncbi.nlm.nih.gov, bmj.com, thelancet.com, doi.org, etc.), WHO, UNICEF, IHME/GBD, DHS Statcompiler, statcompiler.com, github.com, worldbank.org — these are not internal documents
+- givewell.org links where the URL path does NOT contain `/intranet/`, `/login/`, `/internal/`, `/staging/`, or `/draft/` — those path segments suggest non-public pages that require the same review as other internal links and must be flagged
 
 ---
 
@@ -36,7 +37,7 @@ For each vetted sheet, fire all of the following in a **single parallel batch** 
 - `read_sheet_notes` — finds all cell notes; scan each note for URLs matching the above patterns
 - `read_sheet_values` (FORMATTED_VALUE) — scan all cell values for plain-text URLs matching the above patterns (e.g. a URL typed directly into a cell rather than attached as a hyperlink)
 
-Use the full sheet range (e.g. `'Main CEA'!A1:Z1000`). If any sheet has more than 1000 populated rows, extend the range accordingly.
+Use the full sheet range (e.g. `'Main CEA'!A1:ZZ1000`). If any sheet has more than 1000 populated rows, extend the range accordingly. The ZZ upper bound covers wide multi-geography models whose source and notes columns extend beyond column Z.
 
 Also call `read_spreadsheet_comments` once for the whole workbook and scan comment text for URLs matching the above patterns.
 
@@ -83,7 +84,7 @@ Total flagged entries: [N]
 
 Write all findings to your staging sheet starting at row 2. Use the standard 9-column layout (columns A–I), leaving column D (Severity) and column H (Estimated CE Impact) blank — all findings from this agent are Publication Readiness items.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity (leave blank) | **E** Error Type/Issue (`Box Link` or `Sourcing`) | **F** Explanation (3 sentences max, aim for 2; state what was found and why it needs review in plain language) | **G** Recommended Fix (one sentence: "Verify this [document / Box file] is publicly accessible before publishing. If it cannot be made public, replace with an external citation or remove the link.") | **H** Estimated CE Impact (leave blank)
+Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity (leave blank) | **E** Error Type/Issue (`Box Link` or `Sourcing`) | **F** Explanation (3 sentences max, aim for 2; state what was found and why it needs review in plain language) | **G** Recommended Fix (one sentence: "Verify this [document / Box file] is publicly accessible before publishing. If it cannot be made public, replace with an external citation or remove the link.") | **H** Estimated CE Impact (leave blank) | **I** Status (leave blank — reconcile agent writes WONT_FIX here; compaction strips column I when writing to the final Findings sheet)
 
 **Explanation wording**:
 - For Box links: `Box link at [ref] ([cell note context if available]) requires publish-permission verification before publication.`

@@ -33,19 +33,26 @@ Exclude:
 - Cells in header rows (row 1 of a section, or cells whose adjacent column contains a column header like "Year" or "Country")
 - Cells containing only text labels with no numeric meaning
 - Cells in the output sheets (Dashboard, Findings, Publication Readiness, Hardcoded Values, Confidentiality Flags)
+- **Output and staging tabs** — Do not scan rows in the Findings sheet, PR sheet, Hardcoded Values sheet, or any tab whose name begins with `stg-`. These tabs may contain parameter values added during the vetting process and must not be enumerated as hardcoded model inputs.
 - Cells that are clearly lookup keys (e.g., `1`, `2`, `3` in an index column)
 - **Formula cells** — Exclude any cell whose value in FORMULA mode begins with `=` or `{=` (array formulas). Both are formula cells — they are not hardcoded values. Embedded literals in formula cells are **formula-check-arithmetic**'s scope. This agent enumerates hardcoded-value cells only. Do not double-count.
+
+> **Routing note — formula-embedded literals**: A literal inside a formula expression (e.g., `=2.47%*C43`) is **not captured by this agent and does not appear in the Hardcoded Values output sheet.** It belongs to `formula-check-arithmetic`, which should file it in Publication Readiness under Sourcing. If the embedded literal appears to be an incorrect parameter value — not merely an uncited one — `formula-check-arithmetic` should file it as a **Parameter** finding in the Findings sheet instead.
 
 ---
 
 ## Writing to the Hardcoded Values sheet
+
+**Pre-scan header verification**: Before writing any rows, read the first row of the Hardcoded Values sheet. Verify it contains the expected headers in columns A–H: `Sheet | Cell | Category | Current Value | Description | Source to Verify | Verified? | Auto-check evidence`. If the header row is missing, misaligned (wrong columns), or the sheet returns an error, write an error note to column A row 1 — "ERROR: Hardcoded Values sheet header missing or misaligned — cannot write findings safely" — and stop. Do not proceed with enumeration until the sheet structure is confirmed.
+
+**Staging-tab note**: If session context directs this agent to write to a staging tab rather than the Hardcoded Values sheet directly, add a visible note at the top of the staging tab output (row 1, column A): "NOTE: Hardcoded values written to staging tab [name] — not yet promoted to Hardcoded Values sheet."
 
 Write the header row first if the sheet is empty: `Sheet | Cell | Category | Current Value | Description | Source to Verify | Verified? | Auto-check evidence`
 
 Columns:
 - **A (Sheet)**: Tab name only (e.g., `Main CEA`)
 - **B (Cell)**: Cell reference only (e.g., `C14`)
-- **C (Category)**: Assign exactly one of the four categories below
+- **C (Category)**: Assign exactly one of the two categories below
 - **D (Current Value)**: The hardcoded value as it appears in FORMATTED_VALUE mode
 - **E (Description)**: The row/column label describing what this parameter represents — pull from adjacent column A label or column header (e.g., "Coverage rate — Penta3, Nigeria, 2022"). If no label is present, write "Unlabeled — [sheet row context]"
 - **F (Source to Verify)**: If a source is cited in a cell note or adjacent cell, write it here. Otherwise write "No source cited."
@@ -57,7 +64,7 @@ Columns:
 - `Org-Reported` — from the grantee's own data: coverage surveys, program reports, cost figures, delivery statistics. The researcher should confirm against the grantee's most recent reporting.
 
 **Do not enumerate — exclude from the sheet**:
-- **GiveWell standard parameters** — cells whose row label matches a GiveWell cross-cutting parameter (moral weights, discount rate, benchmark CEA, income elasticity, value of a life saved). These are verified by the key-params-check agent and any mismatch is filed in the Findings sheet.
+- **GiveWell standard parameters** — cells whose row label matches a GiveWell cross-cutting parameter (moral weights, discount rate, benchmark CEA, income elasticity, value of a life saved). Use both exact and approximate label matching (e.g., "mortality rate" matches "U5 mortality rate", "child mortality") — do not miss a match because of label variation. These are verified by the key-params-check agent and any mismatch is filed in the Findings sheet.
 - **Model constants** — cells whose value is determined by model design rather than empirical evidence (e.g., 12 months/year, 0.5 for mid-year timing, 100,000 population denominator). These have no external source to verify.
 
 **Category assignment — apply in this priority order** (stop at the first match):
@@ -67,7 +74,9 @@ Columns:
 
 If a cell cannot be assigned either category (GW standard parameter, model constant, or otherwise out of scope per the exclude list above), skip it. When category is ambiguous between the two, prefer `Org-Reported` only when the data comes from the grantee's own primary data collection with no external source cited.
 
-**One row per unique parameter** — if the same parameter value (e.g., discount rate, moral weight, units of value per dollar) appears in multiple cells, create a single row and list all cell references in column B, separated by commas (e.g., `C14, C22, E14`). Treat cells as the same parameter if they share the same row label or adjacent description and the same value. Each *distinct* parameter still gets its own row.
+**One row per conceptual parameter** — if the same hardcoded value appears in multiple cells (same sheet, different rows) representing different cost components or parameter instances, file one finding per conceptual parameter rather than one per cell. Group all cell references in column B, separated by commas (e.g., `C14, C22, E14`), and in column E (Description) note: "This value ([value]) appears in [N] rows — [list refs]." Treat cells as the same conceptual parameter if they share the same row label or adjacent description and the same value. Each *distinct* conceptual parameter still gets its own row.
+
+**Mixed-citation rule** — when multiple cells share the same source URL but have different values, write one row per cell (not one combined row), since each value needs independent verification.
 
 **One row per source table** — if a contiguous block of hardcoded cells all come from the same external data source (e.g., an entire GBD table, an IHME prevalence table, a WUENIC coverage table), consolidate them into a single row:
 - **B (Cell)**: the full cell range (e.g., `C5:H42`)
@@ -94,6 +103,8 @@ Do not use `get_spreadsheet_info` for this check — it returns the grid size (e
 
 Write in your reasoning before proceeding: "Coverage cross-check: [sheet name] — last non-empty row from FORMULA scan: [N]; scan covered through row [M]. Gap: [N-M rows or 'none']. [Confirmed complete / Re-read rows X–Y]."
 
+**Mid-sheet gap detection**: If the hardcoded values scan jumps from one row to another with a gap greater than 70 rows between consecutive hardcoded cells (e.g., last cell at row 50, next at row 121), flag the gap in the AGENT_COMPLETE marker as a potential missed section: "Mid-sheet gap detected: no hardcoded values found between rows [A] and [B] — possible missed section; verify this range is blank or contains formulas only."
+
 This cross-check guards against silent truncation from batch read limits — the MCP tool returns at most 50 rows per call, and a missed batch can leave whole sections unscanned.
 
 ---
@@ -105,7 +116,7 @@ After all rows are written and the coverage cross-check is complete, add ONE fin
 Write the row with:
 - Column B: `hardcoded-values`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Enumerated [N] hardcoded parameters across [sheet name(s)]. Coverage cross-check: scanned through row [M]; last non-empty row [K]. [Confirmed complete / Re-read rows X–Y].`
+- Column F: `Enumerated [N] hardcoded parameters across [sheet name(s)]. Coverage cross-check: scanned through row [M]; last non-empty row [K]. [Confirmed complete / Re-read rows X–Y]. [Mid-sheet gaps (if any): rows A–B / none detected].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The pre-Wave-3 self-verification check and the pre-Wave-1.5 guard detect this row to confirm the agent completed normally. This row is excluded before presenting the sheet to researchers.

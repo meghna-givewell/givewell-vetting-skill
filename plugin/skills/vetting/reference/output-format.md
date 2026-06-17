@@ -7,6 +7,8 @@
 - **Sourcing for standalone hardcoded cells → Hardcoded Values sheet** (not Publication Readiness) — the Hardcoded Values sheet already tracks source completeness in column F. Exception: hardcoded literals embedded *inside* formulas still go to Publication Readiness as `Sourcing`. If the value is outside the plausible range or inconsistent with other sources, file it as `Parameter` in Findings. **A value that is both potentially wrong and undocumented is always `Parameter` in Findings — do not also file `Sourcing` in Publication Readiness for the same cell.**
 - **Values labeled "guess" or "best guess" are not findings** — this is acceptable uncertainty documentation. Do not file `Parameter` or `Assumption` entries for these.
 - **Low severity + Legibility → Publication Readiness**: Any finding that is Low severity with Error Type = Legibility routes to Publication Readiness. Write these with column D blank in your staging sheet so the compaction agent routes them correctly. Rationale: Low/Legibility issues don't affect model correctness; they are pre-publication cleanup items.
+
+  **FORM-6 — Low + Legibility routing rule (standalone)**: `Low + Legibility → Publication Readiness (blank column D)`. This is a hard routing rule — it applies regardless of subject matter. When both conditions are met (severity = Low AND Error Type = Legibility), always write column D blank in the staging tab. The compaction agent reads blank-D rows as Publication Readiness items. Do not write `Low` in column D for these rows.
 - When in doubt between Findings and Publication Readiness, use Findings.
 
 ---
@@ -49,26 +51,32 @@ Columns (A–H): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
   Do not hedge what you can confirm. No chain traces, no reasoning.
 - **Recommended Fix** (G): One sentence or formula only. Lead with an imperative verb (Change, Replace, Add, Delete). Include the exact replacement formula or value. No explanation of why — only the action.
 - **Estimated CE Impact** (H): Always begin with one of these standard phrases, then append a magnitude note if known:
-  - `Raises CE — [estimate, e.g. 17.4x → ~23.6x]`
-  - `Lowers CE — [estimate, e.g. ~5% reduction]`
+  - `Raises CE — [estimate, e.g. 17.4x → ~23.6x]` or `Raises CE — ~5%` (the tilde `~` prefix indicates approximation and is acceptable)
+  - `Lowers CE — [estimate, e.g. ~5% reduction]` or `Lowers CE — 5%` (both exact and approximate forms are acceptable; use `~` when the estimate is rounded or derived)
   - `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown` (direction clear, size unclear)
   - `No CE impact`
   - `Direction unknown` (use when even direction requires researcher input)
 
+  **Estimate variant examples (FORM-4)**: Both `Raises CE — 5%` and `Raises CE — ~5%` are valid. The tilde (`~`) signals the estimate is approximate; omit it only when the figure is an exact calculation. Use the tilde liberally — precision that isn't there should not be implied.
+
   **Exact punctuation required**: all phrases use an em-dash (` — `) with one space on each side. Do not use en-dash (`–`) or hyphen (`-`). The compaction agent sorts column H lexicographically — any punctuation variation produces an inconsistent sort order and breaks grouping.
 
   **When to use `Direction unknown` — decision tree** (apply in order, stop at first match):
-  1. Does the researcher's answer determine both *what the fix is* AND *which direction it moves CE*? → `Direction unknown`
-  2. Could a reasonable researcher apply fixes that raise CE in one scenario and lower it in another (e.g., a placeholder where real-world evidence might revise up or down)? → `Direction unknown`
-  3. Is the direction clear but the magnitude unknown? → `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown`
-  4. Are both direction and magnitude clear? → `Raises CE — [estimate]` or `Lowers CE — [estimate]`
+  1. Is the affected cell in the confirmed direct CE chain (FORMULA-mode trace confirms ≥2 hops to CE output)? If no → skip to step 4.
+  2. Can you compute the sign of the CE impact by substituting the correct value? If yes and sign is positive → `Raises CE — [estimate or magnitude unknown]`. If yes and sign is negative → `Lowers CE — [estimate or magnitude unknown]`.
+  3. If CE impact is confirmed zero → `No CE impact`.
+  4. If direction requires researcher input or the affected parameter is ambiguously signed → `Direction unknown`.
+  5. If the cell is not in the CE chain and has no CE impact → `No CE impact`.
 
   **Do not use `Direction unknown`** when the direction is evident from the evidence but you simply cannot compute the magnitude — use `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown` instead.
 
-  **Column H completeness by Error Type**:
-  - `Formula`, `Parameter`, `Adjustment` findings at Medium or High severity: column H must **never be blank**. Use `Direction unknown` if the direction is unclear; use `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown` if the direction is clear.
+  **Column H completeness by Error Type** (Pattern D — "never blank" applies to ALL severity levels when a determination can be made):
+  - `Formula`, `Parameter`, `Adjustment` findings at **High severity**: column H must **never be blank**. Use `Direction unknown` if the direction is unclear; use `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown` if the direction is clear.
+  - `Formula`, `Parameter`, `Adjustment` findings at **Medium severity**: column H must **never be blank**. Same rule as High.
+  - `Formula`, `Parameter`, `Adjustment` findings at **Low severity**: column H must **never be blank**. When CE impact is confirmed zero, write `No CE impact`. When the direction is uncertain, write `Direction unknown`. The Low+Formula/Parameter/Adjustment combination always requires a column H entry.
   - `Assumption` findings at Medium severity: blank is acceptable only when the assumption has no clear directional CE effect. When the assumption does affect CE, use `Direction unknown` or a directional phrase.
   - `Inconsistency`, `Legibility` findings at Medium severity: blank is acceptable.
+  - **Summary**: For Formula, Parameter, and Adjustment — never blank at High, Medium, or Low. For Assumption — never blank at High or when direction is evident. For Inconsistency/Legibility — blank is acceptable at all severities.
 
   **`No CE impact` must be written explicitly — never leave blank when the determination is zero**: When you have assessed a finding's CE impact and determined it is zero, write `No CE impact` in column H — do not leave column H blank. Blank means "CE impact not yet assessed"; `No CE impact` means "assessed and confirmed as zero." A blank column H on a Formula, Parameter, or Adjustment finding will be treated as an unassessed impact during validation and routing. This applies at all severity levels — write `No CE impact` explicitly even for Low findings when CE impact is confirmed zero.
 
@@ -78,6 +86,7 @@ Every finding has a **Nature** and a **Materiality**. Determine both, then read 
 
 **Nature**
 - **Defect** — objectively wrong: there is a correct answer and the sheet has it wrong. Includes formula errors (wrong reference, wrong logic, sign error, broken range), confirmed value mismatches against a cited source, GW standard parameter violations with no documented rationale, logical impossibilities.
+  **FORM-7 — IFERROR Nature classification**: An active IFERROR that suppresses an underlying broken formula is a **Defect**, not a Gap. The IFERROR masks an objective error — the model has the wrong answer (a hidden error) rather than merely lacking something. Classify as Defect and apply the Defect floor (never below Medium). Contrast: a *missing* IFERROR guard on a formula that currently works correctly is a Gap (formula robustness — the absence of a protective guard, not an active suppression of an error). File the missing-guard case as Low per the formula-robustness Low category.
 - **Gap** — something required is absent: a source citation on a key input, a required adjustment, a link that should exist.
 - **Judgment** — a defensible modeling choice you would question, not an error: a parameter at the optimistic end of a plausible range, a discount rate choice, a structural modeling decision.
 
@@ -94,6 +103,16 @@ Every finding has a **Nature** and a **Materiality**. Determine both, then read 
 | **Defect** (incl. formula errors) | High | High | Medium | Medium |
 | **Gap** | High | High | Medium | Low |
 | **Judgment** | High | Medium | Low | — |
+
+**Judgment severity — explicit rows** (read from the matrix above; spelled out here to prevent under-severity):
+- **Judgment + Decision-changing → High**: A Judgment finding that would flip whether the program clears the funding bar is High, not automatically Low. Example: a model uses an unusual assumption about X that materially affects CE — if that assumption could change the funding decision, it is High.
+- **Judgment + Material → Medium**: A Judgment finding that moves bottom-line CE by ≥5% without flipping the decision is Medium.
+- **Judgment + Immaterial → Low**: A Judgment finding with <5% CE effect is Low.
+- **Judgment + Zero**: Not applicable (a Judgment finding has no meaning if the parameter is entirely outside the CE chain — reclassify as Gap or omit).
+
+**FORM-8 — Cross-agent deduplication standard**: When two agents file a finding for the same cell, the compaction agent applies this dedup rule: (1) **Higher severity wins** — keep the finding with the higher severity (High > Medium > Low) regardless of which agent filed it. (2) **If severities match, the more specialized agent is preferred** — e.g., `ce-chain-trace` > `formula-check-arithmetic` for cells in the confirmed CE chain; `key-params-check` > `formula-check-arithmetic` for GW-standard parameter rows; `leverage-funging` > `formula-check-arithmetic` for adjustment rows. (3) When the preferred finding is kept, merge any additional detail from the non-preferred finding into the Explanation before discarding the duplicate. Do not silently drop a finding that adds new technical content.
+
+**FORM-9 — Defect + Zero CE impact → Low severity**: A confirmed Defect finding with zero CE impact (the error does not touch the bottom-line CE) is **Low**, not Medium or High. The Defect floor ("never below Medium") applies when CE impact is *unknown* or when the error is objectively wrong but the CE effect is unquantified. It does not apply when CE impact is confirmed zero. A structural error in a non-CE cell (e.g., an orphaned formula in a documentation tab) is Low/D — it remains worth flagging because errors undermine model confidence and may become material if inputs change, but zero confirmed CE impact = Low severity. Write `No CE impact` in column H explicitly. Exception: GW-standard parameter deviations (benchmark, moral weights) are always High regardless of current CE impact — they are cross-cutting and affect model interpretability even at zero numerical effect.
 
 **Bright-line rules** — apply these before reading the matrix; they override it:
 1. **Defect floor**: A confirmed objective error is never below Medium, even with zero CE impact. An orphaned formula error, a confirmed value mismatch in a non-CE tab — both remain Medium. Errors may become material if inputs change; they also undermine confidence in adjacent calculations.
@@ -138,6 +157,8 @@ Sort by sheet (column B), then row number. Where the same issue applies to multi
 **Newly-added geography column — missing source batch finding**: When a column represents a newly-added geography and multiple parameters in that column lack cell notes or source citations, file a single grouped Medium finding listing all affected cells rather than one finding per cell. Example wording: "CIV column (J) has N parameters with no source note — newly-added geographies commonly have documentation gaps across the board. Cells: [J16, J34, J92, J135, J146, ...]. Recommend adding a source note or cell note for each before publication." This prevents alert fatigue from 8+ identical Low/H findings that all have the same fix.
 
 **Publication Readiness Sourcing — one row per citation class per sheet, never per cell**: For all Sourcing findings in Publication Readiness, group by citation class and sheet. File one PR row per citation class per sheet listing all affected cells in column C. Do not file individual per-cell Sourcing findings even after exhaustive per-cell checking. Citation class examples: "hardcoded values embedded in formulas without citation", "GBD/IHME text-only citations missing a URL", "cost input rows without a source note." The recommended fix for a grouped Sourcing finding is always the same imperative applied to all listed cells (e.g., "Add a source note or cell note to each citing the underlying data source"). The exception to grouping — "cells need different sources" — does **not** justify filing separately: different cells needing different individual sources is expected and normal; the action (add a source note) is still the same. Only file separately when the recommended action genuinely differs between cells. A sheet with 10 unsourced cells → 1–2 grouped PR rows, not 10 rows.
+
+**Pattern C — Column I (staging tab only): WONT_FIX annotation**: Column I exists only on the staging tab, not on the final Findings sheet. It is blank by default. The reconcile agent writes a brief note here when a researcher marks a finding as won't-fix during the reconciliation pass (e.g., "Researcher: intentional model choice, no fix planned"). The compaction agent strips column I entirely when writing the final Findings output — it is a reconciliation workflow artifact, not part of the published findings. Agents writing to the staging tab must never write to column I; only the reconcile agent may populate it.
 
 Write findings starting at row 2.
 

@@ -52,7 +52,7 @@ For each parameter in the table above, scan the collected labels for a match. A 
 - "5-14 deaths," "5-14 year," "age 5-14," "5 to 14," "five to fourteen" + moral weight → Avert over-5 death (malaria) — treat as a disaggregated over-5 sub-group; apply the Age-band moral weight handling rule in Step 3
 - "o14," "over 14," "over-14," "older than 14," "adult deaths" + moral weight → Avert over-5 death (malaria) — treat as a disaggregated over-5 sub-group; apply the Age-band moral weight handling rule in Step 3
 - "Discount rate" → Discount rate
-- "Income effect," "long-term income," "income increase," "income gain," "income benefits," "long-run income," "income multiplier," "ln(income)," "log income," "log-income," "% change in log income," "% increase in ln(income)," "% increase in ln(income) per malaria case averted" → Income effects
+- "Income effect," "income effects," "consumption effect," "consumption effects," "long-term income," "income increase," "income gain," "income benefits," "long-run income," "income multiplier," "ln(income)," "log income," "log-income," "% change in log income," "% increase in ln(income)," "% increase in ln(income) per malaria case averted" → Income effects
 - "Long-term income ratio," "income-to-mortality ratio" → Long-term income ratio
 - "Years to benefits," "time to benefits," "benefit horizon," "years of income benefits," "lag to benefits," "time lag," "lag" → Years to benefits
 
@@ -77,6 +77,12 @@ Key-params coverage log:
 ```
 
 If a parameter is not applicable to this program type **per the program-type applicability table below**, write `n/a — [one-word reason]` (e.g., `n/a — not-malaria`). Write `n/a` only because the program type excludes this parameter — not because the parameter is absent from the spreadsheet. A parameter that should appear (based on program type) but does not is "not found," not "n/a."
+
+**VOI parameter check**: If the model includes a VOI (value-of-information) rate, verify it matches the GW-standard VOI rate in `reference/key-parameters.md` (if listed there). If the model uses a VOI rate and key-parameters.md does not list a standard, note this in reasoning and do not file a mismatch finding.
+
+**Treatment-cost parameter check**: Verify that treatment costs for the relevant intervention type appear in the parameter scan. If the program type has an associated treatment cost listed in `reference/key-parameters.md`, confirm the model includes it and flag if the value differs.
+
+**Resource-sharing parameter checks**: If the model includes resource-sharing adjustments (e.g., shared overhead, shared staff costs), verify the sharing parameters match key-parameters.md values where applicable.
 
 **"Not found" behavior — do not silently skip**: If a parameter is applicable to this program type but was not located in the column A/B label scan, write `not found` as the cell ref in the coverage log AND also file a `Low/Parameter`. Writing 'not found' in the log records that the search was executed; the finding flags the researcher to locate or confirm the parameter. Do not stop at the log entry — both actions are required:
 
@@ -113,9 +119,14 @@ Before filing, check whether the mismatch is covered by a declared-intentional d
 **Age-band moral weight handling**: When a model contains **separate rows for 5-14 and over-14 moral weights** rather than a single over-5 row, do not compare each age-band cell to the aggregate over-5 standard (73) and state they should both be 73. The 73 value is the aggregate — not a per-band standard. Instead: (a) identify the source cited in each cell's note; (b) determine whether the source is a GiveWell malaria source or a different disease area (vaccines, nutrition); (c) if non-malaria, file as High: "B[X] = [value] citing [non-malaria source] — use a GiveWell malaria-specific age-band weight or document the derivation from the 73 aggregate." The explanation must describe the source mismatch (wrong disease area), not assert that the individual band value should be 73. **(d) If the source IS a GiveWell malaria source**: do not file a finding — the disaggregated bands from the GW malaria source are the intended inputs when the model uses age-specific weights. Record in reasoning: "Age-band moral weights use GW malaria-specific disaggregation — no deviation." Only file a finding if the values diverge from what that source document actually states (verify by reading the source document if accessible).
 
 **Severity**:
-- **High/D/Parameter**: Benchmark, neonatal moral weight, under-5 moral weight, over-5 moral weight, long-term income ratio deviations. These are bright-line Defect findings — the GW standard value is unambiguous. File at the severity shown in the Flag severity column of `reference/key-parameters.md` regardless of whether the stored value is inside the Min–Max range. The Min–Max range is reference context only — it does NOT define a tolerance zone.
-- **Medium/Parameter**: income effects, years to benefits, VAS moral weight, maternal death moral weight — more context-dependence; flag for researcher confirmation.
-- **Discount rate special rule**: if stored value differs from 4%, file as **Medium/H** — this matches the Acceptable Ranges table in `reference/key-parameters.md`. Do not apply a Low tier for values in the 3–5% range; the reference file defines no tolerance zone.
+- **High/D/Parameter**: Benchmark, neonatal moral weight, under-5 moral weight, over-5 moral weight, maternal death moral weight, long-term income ratio deviations. These are bright-line Defect findings — the GW standard value is unambiguous. File at the severity shown in the Flag severity column of `reference/key-parameters.md` regardless of whether the stored value is inside the Min–Max range. The Min–Max range is reference context only — it does NOT define a tolerance zone.
+- **Medium/Parameter**: income effects, years to benefits, VAS moral weight — more context-dependence; flag for researcher confirmation. For **years to benefits**: any deviation from the standard value (even within the stated range) triggers at least Medium/H. The note field must explain the specific program context justifying the deviation.
+- **VAS moral weight severity**: For the VAS-specific moral weight (neonatal deaths), verify it is classified at the correct severity matching key-parameters.md. The neonatal rate differs from the under-5 rate — if the model uses the under-5 rate in a VAS neonatal context (or vice versa), classify the mismatch appropriately for the specific moral weight type, not as a generic VAS finding.
+- **Neonatal-parameter applicability note**: Neonatal-specific parameters (e.g., neonatal mortality moral weight) apply to programs that avert deaths in the neonatal period. Programs that avert deaths outside the neonatal window should use the general under-5 weight. Verify which weight applies before filing a mismatch.
+- **Discount rate special rule**: if stored value differs from 4%, file as **Medium/H** — this matches the Acceptable Ranges table in `reference/key-parameters.md`. Do not apply a Low tier for values in the 3–5% range; the reference file defines no tolerance zone. **Exception**: if the researcher explicitly overrides the standard discount rate with a different value and provides a rationale (in a cell note or session context), downgrade the severity to **Low/H**.
+- **Age-band weighted average**: When the model uses an age-band weighted average rather than a single parameter value, verify the weights sum to 1.0 and each age-band value is within the acceptable range for that band. If weights do not sum to 1.0, file as High/D/Parameter. If an individual band value falls outside the acceptable range, file at the severity appropriate to that parameter type.
+
+**Rationale definition**: A "rationale" that justifies using a non-standard value must be documented in a cell note OR explicitly documented in the session context. A verbal explanation from the researcher without documentation does not count as a rationale for the purposes of severity downgrade or Judgment reclassification.
 
 **Explanation discipline — do not read source documents**: Do not navigate to or read any URL found in a cell note to characterize what the source document says. Your determination of whether a value is wrong is based solely on comparing the stored value to key-parameters.md — not on interpreting the source document's contents. If you need to describe the source, use only the text already present in the cell note (e.g., "cell note cites 'Moral weights [2020, Tool]_New Incentives CEA'"). Do not write "conflating," "misidentifying," or other language that characterizes what a source document contains. The explanation is always: "[cell] = [stored value] but key-parameters.md specifies [expected value]."
 
@@ -133,7 +144,7 @@ Before writing any finding, confirm: (1) exact cell reference, (2) specific stor
 
 Append findings using `modify_sheet_values` to your staging sheet. Start at row 2 and append sequentially. Your staging sheet name is provided in session context.
 
-Column reference: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write exactly: `Parameter`) | **F** Explanation (lead with "[cell] = [value] but key-parameters.md specifies [expected]") | **G** Recommended Fix (imperative verb; give exact replacement value) | **H** Estimated CE Impact (use exactly one of: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown)
+Column reference: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write exactly: `Parameter`) | **F** Explanation (lead with "[cell] = [value] but key-parameters.md specifies [expected]") | **G** Recommended Fix (imperative verb; give exact replacement value) | **H** Estimated CE Impact (use exactly one of: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown) | **I** Status (leave blank — reconcile agent writes WONT_FIX here; compaction strips column I when writing to the final Findings sheet)
 
 See `reference/output-format.md` for full column definitions.
 
@@ -148,7 +159,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `key-params-check`
 - Column D: `AGENT_COMPLETE`
-- Column F: `Coverage log complete: [N] of [M] applicable parameters — any unlisted parameter means that check was not run. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
+- Column F: `Coverage log complete: [N] of [M] applicable parameters checked against key-parameters.md (M-count: [M]) — any unlisted parameter means that check was not run. COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Checked [N] rows across [sheet name(s)]. Filed [K] findings in rows 2–[K+1]. Staging sheet: [name from session context].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure.
