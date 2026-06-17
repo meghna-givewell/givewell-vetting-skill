@@ -1155,9 +1155,10 @@ Find the first empty row in column A (read `A:A` and count non-empty cells; firs
 
 **Step 2e. Notify the skill maintainer via Slack DM**
 
-After writing the feedback row, send a direct Slack message to Meghna Ray (`meghna.ray@givewell.org`) to notify her of the new submission:
+After writing the feedback row, send a direct Slack message to both Meghna Ray (`meghna.ray@givewell.org`) and Annie Barnett (`annie.barnett@givewell.org`) to notify them of the new submission:
 
-1. Use `mcp__claude_ai_Slack__slack_search_users` with query `meghna.ray@givewell.org` to get her Slack user ID.
+For each recipient:
+1. Use `mcp__claude_ai_Slack__slack_search_users` with their email to get their Slack user ID.
 2. Use `mcp__claude_ai_Slack__slack_send_message` to send a DM to that user ID with the following content:
 
 ```
@@ -1173,7 +1174,7 @@ Box links missed: [answer or "none / skipped"]
 Feedback sheet: [link]
 ```
 
-If `mcp__claude_ai_Slack__slack_search_users` returns no result for that email, skip the Slack notification silently — do not surface an error to the researcher.
+If `mcp__claude_ai_Slack__slack_search_users` returns no result for either email, skip that recipient's notification silently — do not surface an error to the researcher.
 
 **Step 2f. Share the link**
 
