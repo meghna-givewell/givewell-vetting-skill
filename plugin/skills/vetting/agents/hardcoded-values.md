@@ -53,21 +53,19 @@ Columns:
 - **H (Auto-check evidence)**: Leave blank — filled by the source-citation-verify agent
 
 **Category values**:
-- `GiveWell Parameter` — must match a value in key-parameters.md (moral weights, discount rate, income elasticity, value of a life saved, benchmark CEA). Use this if the value is a GiveWell cross-cutting input that should be consistent across models.
 - `Study-Derived` — drawn from a specific external source: RCT, meta-analysis, DHS survey, GBD estimate, WUENIC, etc. Requires a source citation to verify.
 - `Org-Reported` — from the grantee's own data: coverage surveys, program reports, cost figures, delivery statistics. The researcher should confirm against the grantee's most recent reporting.
-- `Structural` — a model constant where the value is determined by model design rather than empirical evidence (e.g., 12 months/year, 0.5 for mid-year timing, 100,000 population denominator). Flag if the structural constant is unusually non-standard.
 
-Before beginning enumeration, read `reference/key-parameters.md` using the Read tool to load the authoritative list of GiveWell Parameter names and values. Use this list for the GiveWell Parameter category assignment in Step 1 of the priority order.
+**Do not enumerate — exclude from the sheet**:
+- **GiveWell standard parameters** — cells whose row label matches a GiveWell cross-cutting parameter (moral weights, discount rate, benchmark CEA, income elasticity, value of a life saved). These are verified by the key-params-check agent and any mismatch is filed in the Findings sheet.
+- **Model constants** — cells whose value is determined by model design rather than empirical evidence (e.g., 12 months/year, 0.5 for mid-year timing, 100,000 population denominator). These have no external source to verify.
 
 **Category assignment — apply in this priority order** (stop at the first match):
 
-1. **GiveWell Parameter first**: Look up the cell's row label in `reference/key-parameters.md`. If the parameter name or value matches an entry there (moral weight, discount rate, income elasticity, value of a life saved, benchmark CEA), assign `GiveWell Parameter`.
-2. **Study-Derived second**: Does the cell note or an adjacent cell cite a specific external source (RCT, meta-analysis, DHS survey, GBD/IHME estimate, WUENIC table)? If yes, assign `Study-Derived`.
-3. **Org-Reported third**: Does the value represent data the grantee itself reported — coverage surveys, program reports, cost figures, delivery statistics — rather than a published external study? If yes, assign `Org-Reported`.
-4. **Structural last**: Is the value determined by model design rather than empirical evidence (12 months/year, 0.5 mid-year convention, a 100,000 population denominator)? If yes, assign `Structural`.
+1. **Study-Derived first**: Does the cell note or an adjacent cell cite a specific external source (RCT, meta-analysis, DHS survey, GBD/IHME estimate, WUENIC table)? If yes, assign `Study-Derived`.
+2. **Org-Reported**: Does the value represent data the grantee itself reported — coverage surveys, program reports, cost figures, delivery statistics — rather than a published external study? If yes, assign `Org-Reported`.
 
-When category is ambiguous, prefer the more specific category. Prefer `Org-Reported` over `Study-Derived` only when the data comes from the grantee's own primary data collection with no external source cited.
+If a cell cannot be assigned either category (GW standard parameter, model constant, or otherwise out of scope per the exclude list above), skip it. When category is ambiguous between the two, prefer `Org-Reported` only when the data comes from the grantee's own primary data collection with no external source cited.
 
 **One row per unique parameter** — if the same parameter value (e.g., discount rate, moral weight, units of value per dollar) appears in multiple cells, create a single row and list all cell references in column B, separated by commas (e.g., `C14, C22, E14`). Treat cells as the same parameter if they share the same row label or adjacent description and the same value. Each *distinct* parameter still gets its own row.
 
