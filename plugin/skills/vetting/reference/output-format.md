@@ -58,15 +58,17 @@ Columns (A–H): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
   **Exact punctuation required**: all phrases use an em-dash (` — `) with one space on each side. Do not use en-dash (`–`) or hyphen (`-`). The compaction agent sorts column H lexicographically — any punctuation variation produces an inconsistent sort order and breaks grouping.
 
   **When to use `Direction unknown` — decision tree** (apply in order, stop at first match):
-  1. Does the researcher's answer determine both *what the fix is* AND *which direction it moves CE*? → `Direction unknown`
-  2. Could a reasonable researcher apply fixes that raise CE in one scenario and lower it in another (e.g., a placeholder where real-world evidence might revise up or down)? → `Direction unknown`
-  3. Is the direction clear but the magnitude unknown? → `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown`
-  4. Are both direction and magnitude clear? → `Raises CE — [estimate]` or `Lowers CE — [estimate]`
+  1. Is the affected cell in the confirmed direct CE chain (FORMULA-mode trace confirms ≥2 hops to CE output)? If no → skip to step 4.
+  2. Can you compute the sign of the CE impact by substituting the correct value? If yes and sign is positive → `Raises CE — [estimate or magnitude unknown]`. If yes and sign is negative → `Lowers CE — [estimate or magnitude unknown]`.
+  3. If CE impact is confirmed zero → `No CE impact`.
+  4. If direction requires researcher input or the affected parameter is ambiguously signed → `Direction unknown`.
+  5. If the cell is not in the CE chain and has no CE impact → `No CE impact`.
 
   **Do not use `Direction unknown`** when the direction is evident from the evidence but you simply cannot compute the magnitude — use `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown` instead.
 
   **Column H completeness by Error Type**:
   - `Formula`, `Parameter`, `Adjustment` findings at Medium or High severity: column H must **never be blank**. Use `Direction unknown` if the direction is unclear; use `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown` if the direction is clear.
+  - `Formula`, `Parameter`, `Adjustment` findings at **Low severity**: column H must **never be blank**. When CE impact is confirmed zero, write `No CE impact`. When the direction is uncertain, write `Direction unknown`.
   - `Assumption` findings at Medium severity: blank is acceptable only when the assumption has no clear directional CE effect. When the assumption does affect CE, use `Direction unknown` or a directional phrase.
   - `Inconsistency`, `Legibility` findings at Medium severity: blank is acceptable.
 

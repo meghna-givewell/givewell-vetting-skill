@@ -505,7 +505,7 @@ Reconcile staging tabs (one per reconcile agent, for net-new findings discovered
 
 For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read each agent file and pass its content as the agent prompt, appending the following session context:
 
-> Spreadsheet ID: `<id>` | Sheets to vet: `<names>` | In-scope sheets: `<comma-separated list of sheet names being vetted>` | Out-of-scope sheets: `<comma-separated list of all other sheet names in the workbook>` | Findings sheet ID: `<id>` | Publication Readiness sheet ID: `<id>` | Hardcoded Values sheet ID: `<id>` | Confidentiality Flags sheet ID: `<id>` | User email: `<email>` | Program context: `<summary from Step 0.5>` | Declared-intentional deviations: `<list or "none">` | Current date: `<today's date>`
+> Spreadsheet ID: `<id>` | Sheets to vet: `<names>` | In-scope sheets: `<comma-separated list of sheet names being vetted>` | Out-of-scope sheets: `<comma-separated list of all other sheet names in the workbook>` | Findings sheet ID: `<id>` | Publication Readiness sheet ID: `<id>` | Hardcoded Values sheet ID: `<id>` | Confidentiality Flags sheet ID: `<id>` | Staging tab: `<assigned per agent>` | User email: `<email>` | Program context: `<summary from Step 0.5>` | Declared-intentional deviations: `<list or "none">` | Current date: `<today's date>`
 >
 > **Scope enforcement**: There are two distinct rules — follow both.
 >
@@ -661,6 +661,8 @@ Agents run in four phases (Wave 1, Wave 2, Wave 2.5, Wave 3) with Wave 1.5 as a 
    - **Key-params-check 1-instance mode**: If `populated_rows ≤ 80`, skip key-params-check B. A runs only. Record: `key-params-check: 1-INSTANCE MODE (≤80 rows) — B skipped`. stg-kp-B remains created but empty.
    - **Formula-check-voi — always launch**: Do not skip formula-check-voi at spawn time, even if no VOI tab is detected by name. VOI content can appear within any CEA tab as an embedded section. The agent self-detects and exits cleanly (writing only an AGENT_COMPLETE marker) if no VOI content is found across any vetted sheet.
 
+   > **Row-scope mechanism note**: `split_row` and `band_start`/`band_end` are two distinct row-scope mechanisms — do not conflate them. `split_row` is used exclusively by `formula-check-arithmetic` to divide the sheet into top (A/B) and bottom (C/D) halves. `band_start`/`band_end` is used by `formula-check-data`, `formula-check-edge-cases`, and other sequentially scanning agents when `band_count > 1` (>150 rows). For sheets where only banding applies (>150 rows), `formula-check-arithmetic` still uses `split_row` (computed as `ceil(populated_rows / 2)`) — it does not use `band_start`/`band_end`. For sheets ≤150 rows, banding does not apply to any agent; `formula-check-arithmetic` uses `split_row` as normal (or all-rows in 2-instance mode if ≤80 rows). Never pass `band_start`/`band_end` parameters to `formula-check-arithmetic`, and never pass `split_row` to banded agents.
+
 4. **Band-split protocol** — evaluate before spawning:
 
    **Band computation**:
@@ -787,7 +789,7 @@ Wait for all spawned Wave 1 agents to complete before proceeding.
 |---|---|
 | formula-check-arithmetic (any instance) | **No** — every CEA has at least one formula worth noting. 0 findings from any instance is a failure signal regardless of sheet size. |
 | formula-check-data | Yes — if no external data citations or GBD/IHME source tabs exist, 0 findings may be valid. Check for an AGENT_COMPLETE marker with a confirming clean declaration. |
-| formula-check-edge-cases | Yes — on simple BOTECs with no INDIRECT, IFERROR, or SUMPRODUCT formulas, 0 findings is plausible. Check AGENT_COMPLETE. |
+| formula-check-edge-cases | Yes — on simple BOTECs with no INDIRECT, IFERROR, or SUMPRODUCT formulas, 0 findings is plausible. Check AGENT_COMPLETE. **When 0 findings are filed, the AGENT_COMPLETE marker's column F must explicitly state "No IFERROR/IFNA patterns found in CE chain" (or an equivalent confirmation). A blank or generic "0 findings" marker does not confirm the IFERROR check was actually performed and must be treated as a silent failure.** |
 | formula-check-structure | **No** — every workbook has at least one structural observation. 0 findings is a failure signal. |
 | consistency-check | **No** — moral weights are present in every CEA; 0 findings means moral weight check was skipped. |
 | key-params-check | Yes — if the model uses no standard GiveWell parameters, 0 findings is valid. Check AGENT_COMPLETE. |

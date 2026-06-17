@@ -25,7 +25,8 @@ def col_letter(n):
     return result
 
 def parse_cell_ref(ref):
-    """Parse 'A1' -> (row=1, col=1). Returns (row, col) 1-based."""
+    """Parse 'A1' or '$A$1' -> (row=1, col=1). Returns (row, col) 1-based."""
+    ref = ref.replace('$', '')  # strip absolute-reference markers (COORD-1)
     col_str = ''
     row_str = ''
     for ch in ref:
@@ -56,7 +57,7 @@ def load_shared_strings(zf):
     return strings
 
 def load_sheet_names(zf):
-    """Returns list of (name, rId) tuples."""
+    """Returns list of (name, rId, state) tuples. state is 'visible', 'hidden', or 'veryHidden'."""
     try:
         with zf.open('xl/workbook.xml') as f:
             tree = ET.parse(f)
@@ -70,7 +71,8 @@ def load_sheet_names(zf):
         for s in sheets_el.findall('ss:sheet', NS):
             name = s.get('name', '')
             rid = s.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id', '')
-            result.append((name, rid))
+            state = s.get('state', 'visible')  # TABS-1: capture hidden/veryHidden state
+            result.append((name, rid, state))
     return result
 
 def load_sheet_rels(zf):
@@ -93,7 +95,7 @@ HYPERLINK_REL_TYPE = (
 
 def load_hyperlink_rels(zf, sheet_target):
     """Return rId → URL for all hyperlinks declared in a sheet's _rels file."""
-    parts = sheet_target.rsplit('/', 1)
+    parts = sheet_target.lstrip('/').rsplit('/', 1)  # HYPER-2: strip leading slash before split
     if len(parts) == 2:
         rels_path = f"xl/{parts[0]}/_rels/{parts[1]}.rels"
     else:
@@ -135,8 +137,14 @@ def extract_hyperlinks(zf, path, hl_rels):
             rid = hl.get(
                 '{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id', ''
             )
-            if ref and rid in hl_rels:
-                hyperlinks[ref] = hl_rels[rid]
+            if ref:
+                if rid and rid in hl_rels:
+                    hyperlinks[ref] = hl_rels[rid]
+                else:
+                    # HYPER-1: internal anchor hyperlinks (e.g., #Sheet1!A1) use 'location' not rId
+                    loc = hl.get('location', '')
+                    if loc:
+                        hyperlinks[ref] = '#' + loc
     return hyperlinks
 
 
@@ -147,9 +155,10 @@ def hyperlinks_to_text(hyperlinks, sheet_name):
     return '\n'.join(lines) + '\n'
 
 
-_FORMULA_ERRORS = {'#REF!', '#VALUE!', '#DIV/0!', '#N/A', '#NAME?', '#NULL!', '#NUM!'}
-# Matches "x cash", "10x cash", "5.2x cash" etc. — any number (optional) followed by x cash.
-_X_CASH_PAT = re.compile(r'\b\d+x\s+cash\b|\bx\s+cash\b', re.IGNORECASE)
+# SCAN-1: use a tuple so we can test with startswith() for trailing-context variants
+_FORMULA_ERRORS = ('#REF!', '#VALUE!', '#DIV/0!', '#N/A', '#NAME?', '#NULL!', '#NUM!')
+# SCAN-2: broadened to catch xcash, x-cash, ×cash, and numeric-prefixed forms
+_X_CASH_PAT = re.compile(r'\b\d*[xX][-\s]?cash\b|\bxcash\b|\bx-cash\b|×\s*cash', re.IGNORECASE)
 _GD_PAT = re.compile(r'\bgivedirectly\b', re.IGNORECASE)
 _PLACEHOLDER_PAT = re.compile(r'\b(TBD|TODO|Placeholder)\b', re.IGNORECASE)
 _MAX_VAL_LEN = 100  # truncate long values in pre-findings display
@@ -164,8 +173,10 @@ def find_formula_errors(all_cells):
     results = []
     for sheet_name, cells in all_cells.items():
         for (row, col), cell in sorted(cells.items()):
-            if cell.get('type') == 'e' or cell.get('value') in _FORMULA_ERRORS:
-                results.append((sheet_name, cell['ref'], cell['value']))
+            val = cell.get('value', '') or ''
+            # SCAN-1: use startswith to catch error strings with trailing context text
+            if cell.get('type') == 'e' or any(val.startswith(e) for e in _FORMULA_ERRORS):
+                results.append((sheet_name, cell['ref'], val or '#ERROR'))
     return results
 
 
@@ -175,9 +186,11 @@ def find_terminology(all_cells):
     for sheet_name, cells in all_cells.items():
         for (row, col), cell in sorted(cells.items()):
             val = cell.get('value', '') or ''
-            if _X_CASH_PAT.search(val):
+            frm = cell.get('formula', '') or ''  # SCAN-3: also check formula text
+            text = val + ' ' + frm
+            if _X_CASH_PAT.search(text):
                 results.append((sheet_name, cell['ref'], val, 'x cash'))
-            if _GD_PAT.search(val):
+            if _GD_PAT.search(text):
                 results.append((sheet_name, cell['ref'], val, 'GiveDirectly'))
     return results
 
@@ -188,7 +201,8 @@ def find_placeholders(all_cells):
     for sheet_name, cells in all_cells.items():
         for (row, col), cell in sorted(cells.items()):
             val = cell.get('value', '') or ''
-            if _PLACEHOLDER_PAT.search(val):
+            frm = cell.get('formula', '') or ''  # SCAN-4: also check formula text
+            if _PLACEHOLDER_PAT.search(val) or _PLACEHOLDER_PAT.search(frm):
                 results.append((sheet_name, cell['ref'], val))
     return results
 
@@ -227,6 +241,40 @@ def pre_findings_to_text(errors, terminology, placeholders):
     return '\n'.join(lines)
 
 
+def _col_to_num(col_str):
+    """Convert 1–3 character column letters to 1-based index. Inverse of col_letter()."""
+    n = 0
+    for c in col_str.upper():
+        n = n * 26 + (ord(c) - 64)
+    return n
+
+
+def adjust_formula_refs(formula, delta_row, delta_col):
+    """Adjust relative cell references in a shared formula for a dependent cell.
+
+    CELL-3: Shared formulas in XLSX store the master cell's formula unchanged for
+    all dependents. Without adjustment, every dependent cell appears to reference
+    the master cell's rows/columns, making copy-paste reference errors invisible.
+
+    delta_row = dependent_row - master_row
+    delta_col = dependent_col - master_col
+
+    Absolute axes ($-prefixed) are not adjusted; relative axes are shifted by delta.
+    """
+    if delta_row == 0 and delta_col == 0:
+        return formula
+
+    def _adjust(m):
+        col_lock, col_str, row_lock, row_str = m.group(1), m.group(2), m.group(3), m.group(4)
+        new_col = col_letter(max(1, _col_to_num(col_str) + (0 if col_lock else delta_col)))
+        new_row = str(max(1, int(row_str) + (0 if row_lock else delta_row)))
+        return f"{col_lock}{new_col}{row_lock}{new_row}"
+
+    # Match: optional-$ + 1–3 uppercase column letters + optional-$ + 1–7 row digits.
+    # Negative lookbehind prevents matching inside function names or word identifiers.
+    return re.sub(r'(?<![A-Za-z])(\$?)([A-Z]{1,3})(\$?)(\d{1,7})', _adjust, formula)
+
+
 def extract_sheet(zf, path, shared_strings):
     """Extract cells from a sheet. Returns dict: (row, col) -> {value, formula, type}."""
     try:
@@ -240,7 +288,8 @@ def extract_sheet(zf, path, shared_strings):
             return {}
     root = tree.getroot()
     cells = {}
-    shared_formulas = {}  # si index -> master formula text
+    # CELL-3: store (formula_text, master_row, master_col) so dependents can adjust refs
+    shared_formulas = {}  # si index -> (master_formula, master_row, master_col)
     for row_el in root.iter('{http://schemas.openxmlformats.org/spreadsheetml/2006/main}row'):
         for c in row_el.findall('ss:c', NS):
             ref = c.get('r', '')
@@ -253,19 +302,25 @@ def extract_sheet(zf, path, shared_strings):
             raw_val = v_el.text if v_el is not None and v_el.text else None
 
             # Shared formulas: XLSX stores formula text only in the master cell.
-            # Dependent cells carry si=N but no text — look up the master.
+            # Dependent cells carry si=N but no formula text — look up and adjust the master.
             formula = None
             if f_el is not None:
                 si = f_el.get('si')
                 f_type = f_el.get('t', '')
                 if f_el.text:
                     formula = f_el.text
+                    # FORM-2/extract: annotate array (CSE) formulas
+                    if f_type == 'array':
+                        formula = '{' + formula + '}'
                     if f_type == 'shared' and si is not None:
-                        shared_formulas[si] = formula
+                        shared_formulas[si] = (formula, row, col)
                 elif f_type == 'shared' and si is not None:
-                    master = shared_formulas.get(si)
-                    if master is not None:
-                        formula = f'shared:{master}'
+                    master_entry = shared_formulas.get(si)
+                    if master_entry is not None:
+                        master_fml, master_row, master_col = master_entry
+                        # CELL-3: adjust relative refs for this dependent cell
+                        formula = adjust_formula_refs(master_fml, row - master_row, col - master_col)
+                    # CELL-4: if master not yet seen (malformed XLSX), formula stays None
 
             if t == 's' and raw_val is not None:
                 try:
@@ -274,14 +329,23 @@ def extract_sheet(zf, path, shared_strings):
                     display = raw_val
             elif t == 'b':
                 display = 'TRUE' if raw_val == '1' else 'FALSE'
+            elif t == 'e':
+                # CELL-1: error cells — always emit the error string, never blank
+                display = raw_val or '#ERROR'
+            elif t == 'd':
+                # CELL-2: date cells — tag with [date:] to avoid ambiguous serial numbers
+                display = f'[date:{raw_val}]' if raw_val else '[date]'
             elif t == 'str' and formula:
                 # Calculated string — value is in v
                 display = raw_val or ''
             elif t == 'inlineStr':
                 is_el = c.find('ss:is', NS)
                 if is_el is not None:
-                    t_els = is_el.findall('ss:t', NS)
-                    display = ''.join(el.text or '' for el in t_els)
+                    # CELL-5/6: use iter() to collect all <t> runs in rich-text inline strings
+                    t_texts = [el.text or '' for el in is_el.iter(
+                        '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}t'
+                    )]
+                    display = ''.join(t_texts)
                 else:
                     display = raw_val or ''
             else:
@@ -347,25 +411,33 @@ def main():
 
         with open(out_path, 'w', encoding='utf-8') as out:
             out.write(f"Workbook: {os.path.basename(path)}\n")
-            out.write(f"Sheets: {', '.join(n for n,_ in sheet_names)}\n")
+            out.write(f"Sheets: {', '.join(n for n, _, _s in sheet_names)}\n")
             out.write("=" * 80 + "\n\n")
 
             all_hyperlinks = {}
-            for name, rid in sheet_names:
+            # TABS-1: load_sheet_names now returns 3-tuples; annotate hidden/veryHidden sheets
+            for name, rid, state in sheet_names:
                 target = rels.get(rid, '')
+                # Build display name with visibility annotation for agents
+                if state == 'hidden':
+                    display_name = f"{name} [HIDDEN]"
+                elif state == 'veryHidden':
+                    display_name = f"{name} [VERY HIDDEN]"
+                else:
+                    display_name = name
                 if not target:
-                    out.write(f"[Could not find sheet target for '{name}']\n")
+                    out.write(f"[Could not find sheet target for '{display_name}']\n")
                     all_cells[name] = {}
                     all_hyperlinks[name] = {}
                     continue
                 cells = extract_sheet(zf, target, shared_strings)
                 all_cells[name] = cells
-                out.write(cells_to_text(cells, name))
+                out.write(cells_to_text(cells, display_name))
                 hl_rels = load_hyperlink_rels(zf, target)
                 hyperlinks = extract_hyperlinks(zf, target, hl_rels)
                 all_hyperlinks[name] = hyperlinks
                 if hyperlinks:
-                    out.write(hyperlinks_to_text(hyperlinks, name))
+                    out.write(hyperlinks_to_text(hyperlinks, display_name))
                 out.write("\n" + "=" * 80 + "\n\n")
 
     errors = find_formula_errors(all_cells)
@@ -376,7 +448,7 @@ def main():
 
     print(f"Extracted to: {out_path}")
     # Print summary from already-built cells dict
-    for name, rid in sheet_names:
+    for name, rid, state in sheet_names:
         cells = all_cells.get(name, {})
         rows = sorted(set(r for r, c in cells)) if cells else []
         hl_count = len(all_hyperlinks.get(name, {}))

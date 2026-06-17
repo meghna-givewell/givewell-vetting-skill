@@ -58,7 +58,9 @@ A note reading "GBD 2019" in a 2025–2027 grant model is a trigger to check whe
 
 **GBD/IHME-specific rule**: When the cited source is GBD (Global Burden of Disease) or IHME data and the vintage is ≥2 years before the model's grant period start year, file as **Medium/H** by vintage alone — do not require drift evidence before escalating from Low. Write 'Direction unknown' in column H. GBD data is updated annually and the direction of change for any specific parameter is not predictable without looking it up; the vintage staleness alone is a material parameter quality issue for GBD-derived values. This rule applies regardless of whether a WebSearch finds a current value — if the search finds an updated value and drift ≥2%, include both values; if the search finds no updated value, use the standard no-updated-value phrasing.
 
-**SC-008 escalation — stale GBD vintage in direct CE chain**: When the stale GBD vintage cell is confirmed to be in the direct CE chain (traceable to the final CE output with no intermediate flags or documented overrides), escalate from Medium/H to **High/D**. Confirm CE chain membership by reading the cell in FORMULA mode and tracing ≥2 explicit formula hops toward the CE output using read_sheet_values (FORMULA mode). If the chain cannot be confirmed via ≥2 FORMULA-mode hops, retain Medium/H.
+**SC-008 escalation — stale GBD vintage in direct CE chain**: When the stale GBD vintage cell is confirmed to be in the direct CE chain (traceable to the final CE output with no intermediate flags or documented overrides), escalate from Medium/H to **High/D**. Confirm CE chain membership by reading the cell in FORMULA mode and tracing ≥2 explicit formula hops toward the CE output using read_sheet_values (FORMULA mode). If the chain cannot be confirmed via ≥2 FORMULA-mode hops, retain Medium/H. The traced FORMULA path must terminate at the model's main CE output row — not a sensitivity analysis output, scenario column, or "what-if" row. A parameter that feeds only a sensitivity or scenario row does not qualify for SC-008 escalation; retain Medium/H in that case.
+
+**SC-008 ownership for GBD vintage**: This agent (formula-check-parameters) is the sole owner of SC-008 escalation for GBD vintage findings. formula-check-arithmetic defers all GBD vintage escalation decisions to this agent. If this agent confirms ≥2 FORMULA hops to the main CE output, it must escalate to High/D; if it cannot confirm the chain, it retains Medium/H and does not escalate.
 
 Do not file this finding if the note already explains why the older vintage is appropriate (e.g., "GBD 2019 used because the 2021 vintage does not disaggregate this age group").
 
@@ -98,9 +100,12 @@ When any hardcoded value corresponds to a parameter listed in `reference/key-par
 - **Deviation >5% with a note explaining the reason** → **Medium/H**: "[Cell] uses [value] (note: [summary]) vs. key-parameters.md standard of [standard]. Confirm the deviation is still appropriate."
 - **Deviation ≤5% with no note** → **Low/H**: "[Cell] = [value] vs. key-parameters.md standard of [standard] — minor deviation; add a note if this is intentional."
 
-**Exception**: benchmark and moral weight deviations use **High/D** (these are bright-line Defect findings — the GW standard value is unambiguous), even when a cell note exists explaining the deviation. The note does not override the bright-line rule for benchmark and moral weight parameters. Use **High/H** for program-specific parameter deviations with no explanatory note (discount rate, years-to-benefits, income effects). The Medium-with-note downgrade applies only to program-specific parameters where intentional variation is explicitly documented.
+**Nature (D vs H) classification rules**:
 
-Use two-axis notation in your reasoning — e.g., High/D (Defect) or High/H (Gap). Write only `High`, `Medium`, or `Low` in column D — no /D or /H suffix.
+- **Benchmark and moral weight deviations**: always **Defect (D)**, regardless of whether a cell note is present. These are bright-line findings — the GW standard value is unambiguous and no researcher note overrides it. File as High/D even when the note explains the deviation.
+- **All other parameter deviations**: **Gap (H)** when a researcher note acknowledges the deviation and explains why it is intentional; **Defect (D)** when no such note exists.
+
+Use two-axis notation in your reasoning — e.g., High/D (Defect) or High/H (Gap). Write only `High`, `Medium`, or `Low` in column D — no /D or /H suffix in the sheet. Never write "/D" or "/H" in column D.
 
 This rule applies regardless of whether the deviation is directionally conservative. A conservative deviation still misstates CE and should be documented. The key-params-check agent also applies this rule; the Wave 3 compaction agent will deduplicate overlapping findings across stg-params and stg-kp-A/B. There is no Wave 2.5 reconcile agent that reads stg-params.
 

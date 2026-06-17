@@ -9,6 +9,8 @@ You are a Wave 2 analysis agent performing a dedicated check on leverage section
 
 **Scope**: This agent covers three checks — leverage scenario CE rows (Step 6), leverage section intermediate UoV rate references (Step 6b), and VOI adjustment scope (Step 6c). These are the highest-risk formula patterns in the leverage/funging section: syntactically valid formulas that reference the wrong row, producing CE miscalculation with no error indicator. The CE chain trace agent covers all other chain integrity checks.
 
+**Scope partition — VOI adjustment vs. leverage-funging**: This agent (leverage-uov-check) is the authoritative owner of formula-level VOI adjustment scope checks. The leverage-funging agent's Check 7 covers ad hoc double-counting at the conceptual level (e.g., whether a VOI adjustment is being counted twice in the narrative framing); this agent covers formula-level correctness of the VOI rate application (e.g., whether funging formulas reference the wrong subtotal row). When both agents flag a VOI-related issue, retain both findings if the underlying issues are distinct — one conceptual, one formula-level.
+
 **VOI adjustment scope rule** (from `reference/key-parameters.md`): Wrong-risk and other-funders adjustments apply to the VOI component only; funging applies to total CE. When the model contains both a VOI section and a leverage/funging section, verify that funging formulas reference the total-CE row, not the VOI-adjusted subtotal. A funging formula that multiplies expected dollars by a VOI-only UoV rate is a scope error — flag as **High severity (column D), Error Type: Adjustment (column E)**.
 
 **Do not read the existing Findings sheet** — your staging sheet name is provided in session context, and deduplication is handled by the Wave 2.5 reconciliation agent.
@@ -46,6 +48,7 @@ Check each scenario CE row:
 2. Identify the UoV cell being referenced.
 3. Read the row label of that UoV cell and confirm it represents the *final* adjusted UoV — not an intermediate sum. The correct row is typically labeled "Total units of value (after all adjustments)" or "Adjusted units of value."
 4. If the referenced row is a pre-adjustment subtotal, flag as **High severity (column D), Error Type: Formula (column E)**: "Scenario CE row [ref] divides by cost but references [pre-adjustment UoV row label] instead of the final adjusted UoV row [correct ref]. All scenario CE multiples computed from this row are overstated/understated by the omitted adjustment factor."
+5. **Verify the final-adjusted UoV row itself**: once you have identified the final-adjusted UoV row referenced by the scenario row, read that row's own formula (FORMULA mode). Confirm the formula references the row immediately after the last supplemental adjustment (i.e., it sums or chains from the last adjustment row, not from a pre-supplemental subtotal). If the "final adjusted" row's formula actually points back to a pre-supplemental-adjustment row — bypassing one or more adjustments — flag separately as **High severity (column D), Error Type: Formula (column E)**: "Final adjusted UoV row [ref] is labeled as post-supplemental but its formula references [earlier row label] ([row ref]), which precedes the supplemental adjustments block. All CE values derived from this row omit the intervening adjustments."
 
 `COVERAGE | leverage-uov-check | Step 6 — Leverage scenario UoV references | [N rows] | issues found: [N] | status: complete`
 
@@ -79,7 +82,13 @@ A row absent from this table has not been checked. "POST" requires that the refe
 
 ## Step 6c — VOI adjustment scope
 
-**Check 6c — VOI adjustment scope**: When the model uses a leverage/funging adjustment row, verify that the funging formula references the total-CE row rather than a VOI-adjusted subtotal. If the funging formula references a pre-funging CE subtotal, the funging discount is applied before VOI rather than after, understating the total CE adjustment. File as Medium/Adjustment if confirmed.
+**Check 6c — VOI adjustment scope**: When the model uses a leverage/funging adjustment row, verify that the funging formula references the total-CE row rather than a VOI-adjusted subtotal. If the funging formula references a VOI-only UoV rate or a VOI-adjusted subtotal instead of the total-CE row, the funging discount is applied to only part of the CE chain rather than the full CE, misstating the total CE adjustment. File as **High severity (column D), Error Type: Adjustment (column E)** if confirmed.
+
+For every funging or leverage adjustment row in the model:
+1. **Identify funging-scope cells**: locate all rows whose label or formula indicates a funging or leverage adjustment (e.g., "Funging adjustment," "Leverage discount," "Counterfactual adjustment").
+2. **Read formula (FORMULA mode)**: for each such cell, read its formula and identify the CE or UoV row it references.
+3. **Trace to the CE output row**: follow the reference chain to determine whether the upstream cell represents total CE (incorporating all prior adjustments including VOI) or only a VOI-adjusted subtotal.
+4. **Compare scope**: check whether the total-CE row value differs from the VOI subtotal row value. If the funging formula references the VOI subtotal rather than total CE, the scope is narrower than intended — the funging discount does not apply to the full CE. Confirm by reading both row labels explicitly.
 
 `COVERAGE | leverage-uov-check | Step 6c — VOI adjustment scope | [N cells] | issues found: [N] | status: complete`
 

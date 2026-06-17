@@ -51,18 +51,34 @@ Funging adjustments should *reduce* expected impact (or equivalently, increase c
 
 `[ref] '[row label]': value/formula = [quote]. Effect on CE: [increases / decreases / unclear]. Expected: [decreases — funging/displacement | increases — leverage | depends on sign of crowding]. Direction correct: [YES / NO / UNCERTAIN].`
 
-When a leverage/funging adjustment appears to *increase* CE, do not immediately file High severity (column D), Error Type: Formula (column E) — follow the "Before flagging" procedure below first. File **High severity (column D), Error Type: Formula (column E)** only when the Before flagging procedure confirms all three: a note IS present AND the note explicitly uses displacement/funging language (e.g., 'displacement,' 'funging,' 'counterfactual reduction') AND the formula structure matches that mechanism. File **Medium severity (column D)** in all other cases where the direction appears wrong — no note, ambiguous note, or formula/note mismatch. For certainty guidance: condition (1) is never uncertain — a note either exists or it does not; condition (2) is **definitively met** (not uncertain) when the note explicitly uses the words "leverage" or "uplift," since these confirm a legitimate >1 mechanism; condition (2) is **definitively failed** (not uncertain) when the note explicitly uses "displacement," "funging," or "counterfactual reduction"; 'Additionality' describes absence of displacement, not presence of leverage — notes using only 'additionality' are uncertain in condition (2) and require the Before flagging procedure; uncertainty in condition (2) applies only when the note's language could describe either an increasing or decreasing effect without specifying which.
+When a leverage/funging adjustment appears to *increase* CE, do not immediately file — follow the "Before flagging" procedure below first. After that procedure, determine filing severity as follows:
+
+- **Do NOT file** when all three conditions confirm a legitimate mechanism: (a) a note IS present, AND (b) the note explicitly uses displacement/funging language (e.g., 'displacement,' 'funging,' 'counterfactual reduction'), AND (c) the formula structure matches that mechanism.
+- **File High severity (column D), Error Type: Formula (column E)** when ANY of the three conditions fail: (a) no note is present, OR (b) the note lacks displacement or funging language, OR (c) the formula does not match what the note describes.
+- **File Medium severity (column D)** when the direction appears ambiguous and none of the three conditions can be confirmed or denied — use Medium only when genuinely uncertain, not as a default downgrade.
+
+For certainty guidance: condition (a) is never uncertain — a note either exists or it does not; condition (b) is **definitively met** (not uncertain) when the note explicitly uses the words "leverage" or "uplift," since these confirm a legitimate >1 mechanism; condition (b) is **definitively failed** (not uncertain) when the note explicitly uses "displacement," "funging," or "counterfactual reduction"; 'Additionality' describes absence of displacement, not presence of leverage — notes using only 'additionality' are uncertain in condition (b) and require the Before flagging procedure; uncertainty in condition (b) applies only when the note's language could describe either an increasing or decreasing effect without specifying which.
 
 **Before flagging**: First, write in your reasoning the mechanically correct formula structure that would justify a >1 multiplier for this row type — for example: "If this is a leverage benefit multiplier, the correct form would be `=CE_without_leverage × (1 + leverage_ratio)`, which produces a value >1 when leverage_ratio > 0." Then explicitly read the cell note (via `read_sheet_notes` if not already in the pre-read cache) and the row labels immediately above and below the flagged row. Only if the note's stated mechanism AND the formula structure both match the form you wrote down is the >1 multiplier justified — a note mentioning "leverage" without specifying the formula convention is not sufficient; the formula structure must also match. If formula and note are both consistent with your written form, this is not an error. If no note is present, or the note's mechanism or formula structure diverges from your written form, file as **Medium severity (column D)** asking the researcher to confirm the sign convention, rather than immediately filing High severity (column D), Error Type: Formula (column E).
 
 **Coverage declaration for Check 1**: After completing all direction and program-type checks, write:
 `COVERAGE | leverage-funging | Check 1 — Direction of funging adjustment | [rows/cells checked] | issues found: [N] | status: complete`
 
-**Program-type direction consistency**: After verifying the sign convention and formula structure for each funging adjustment, verify the net direction is consistent with program-type expectations. Load CEA Consistency Guidance (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) via `get_doc_content`. For the program type identified in session context, find the guidance on expected funging direction. If the model's funging adjustment net-increases CE (i.e., benefits after funging exceed benefits before) but the Guidance indicates funging for this program type should net-decrease CE — or vice versa — file as **Medium severity (column D)**: "The funging adjustment at [cell] net-[increases/decreases] CE from [X]x to [Y]x. CEA Consistency Guidance indicates funging for [program type] should [expected direction]. If the model's adjustment represents leverage rather than funging, rename the row label and add a note describing the leverage mechanism. If this is intentional funging in an unusual direction, add a note documenting why." Do not file if: (a) a cell note already explains the unusual direction; (b) the row is explicitly labeled as a leverage (positive) adjustment rather than a funging (typically negative) adjustment; (c) the Guidance does not specify a direction for this program type.
+**Program-type direction consistency**: After verifying the sign convention and formula structure for each funging adjustment, verify the net direction is consistent with program-type expectations. Load CEA Consistency Guidance (`1aXV1V5tsemzcFiyx2xAna3coYAVzrjboXeghbe949Q8`) via `get_doc_content`. If the call fails (returns an error or empty result), write the following coverage note to your staging tab and skip the program-type direction check:
+
+```
+COVERAGE | leverage-funging | CEA Consistency Guidance | unavailable — get_doc_content failed or returned empty; program-type direction check skipped | issues found: 0 | status: skipped
+```
+
+If the document loaded successfully, for the program type identified in session context, find the guidance on expected funging direction. If the model's funging adjustment net-increases CE (i.e., benefits after funging exceed benefits before) but the Guidance indicates funging for this program type should net-decrease CE — or vice versa — file as **Medium severity (column D)**: "The funging adjustment at [cell] net-[increases/decreases] CE from [X]x to [Y]x. CEA Consistency Guidance indicates funging for [program type] should [expected direction]. If the model's adjustment represents leverage rather than funging, rename the row label and add a note describing the leverage mechanism. If this is intentional funging in an unusual direction, add a note documenting why." Do not file if: (a) a cell note already explains the unusual direction; (b) the row is explicitly labeled as a leverage (positive) adjustment rather than a funging (typically negative) adjustment; (c) the Guidance does not specify a direction for this program type.
 
 ---
 
 ## Check 2 — Multiplicative vs. additive application
+
+**Preliminary step — verify the adjustment cell exists**: Before testing consistency, confirm that each funging or leverage adjustment described in cell notes or row labels has a corresponding formula cell in the model. Search the identified leverage/funging rows for a formula cell that implements the described adjustment. If researcher notes or row labels describe an adjustment but no formula cell is found that implements it, file **High severity (column D), Error Type: Adjustment**: "Row label '[label]' describes a funging/leverage adjustment but no corresponding formula cell was found in the model. The adjustment appears to be described but not implemented, which would silently omit it from the CE calculation. Add the adjustment formula or remove the label if the adjustment is not intended."
+
+Only after confirming each described adjustment has a formula cell proceed to the consistency checks below.
 
 Leverage and funging adjustments can be applied multiplicatively (scaling the whole benefit or cost) or additively (shifting the numerator or denominator by a fixed amount). Both can be correct; what matters is internal consistency with the model's stated approach.
 
@@ -100,7 +116,9 @@ If coverage is a benefit driver:
 - If the model claims to use incremental coverage, verify that the coverage values sourced from a raw data tab are not total program coverage inadvertently pulled for the incremental calculation.
 - Flag if coverage and funging are **both** applied as separate adjustments in the same model — there is a risk of double-adjusting for the counterfactual (once via coverage being incremental, once via a funging discount on top).
 
-**Required Error Type**: Assumption
+**Incremental coverage formula check**: For any row labeled "incremental," "net new," or equivalent (e.g., "incremental coverage," "net new beneficiaries"), read the cell formula in FORMULA mode. If the formula is a plain cell reference (e.g., `=B12` or `=DataTab!C5`) with no subtraction of a baseline or counterfactual value (i.e., no `-` operator subtracting another cell), file **High severity (column D), Error Type: Formula [Sign error]**: "Row '[label]' ([cell]) is labeled as incremental/net-new coverage but the formula is a plain reference `[formula]` with no counterfactual subtracted. If this cell holds total program coverage rather than the GiveWell-funded increment, CE will be materially overstated. Verify whether the cell already returns a delta value from the source tab; if not, subtract the baseline coverage cell."
+
+**Required Error Type**: Assumption (or Formula [Sign error] for the incremental coverage formula check above)
 
 **Coverage declaration**: After completing this check, write:
 `COVERAGE | leverage-funging | Check 4 — Coverage counterfactual | [rows/cells checked] | issues found: [N] | status: complete`
@@ -119,6 +137,38 @@ When a program has multiple cost components (e.g., direct delivery + government 
 
 **Coverage declaration**: After completing this check, write:
 `COVERAGE | leverage-funging | Check 5 — Leverage allocation across cost components | [rows/cells checked] | issues found: [N] | status: complete`
+
+---
+
+## Check 5b — IFERROR masking on leverage/funging cells
+
+For every leverage and funging formula cell identified in the section detection step, read the formula text and check whether it is wrapped in `IFERROR` or `IFERROR(expr, 0)` (or the equivalent `IFERROR(expr, "")`, `IFERROR(expr, 1)`, etc.).
+
+- If the formula is wrapped in IFERROR, extract the inner formula (the first argument to IFERROR).
+- Evaluate whether the inner formula contains a broken reference: look for references to cells or named ranges that do not exist, references that would return `#REF!`, `#NAME?`, `#DIV/0!`, or `#VALUE!` under normal model inputs, or references that point outside the expected data range.
+- If the inner formula contains a broken reference or would return an error value if the IFERROR wrapper were removed, file **High severity (column D), Error Type: Formula [Wrong reference]**: "Leverage/funging cell [cell] wraps `[inner formula]` in IFERROR, silently returning [fallback value] when the inner formula errors. The inner formula appears to contain a broken reference ([reason]). This means the leverage adjustment is silently zeroed (or set to [fallback]) rather than applying the intended value, which will misstate CE without any visible error. Remove the IFERROR wrapper and fix the broken reference."
+- If the IFERROR wrapper is present but the inner formula is structurally sound (no broken references, no expected error conditions), note the masking in your coverage declaration but do not file a finding.
+
+**Coverage declaration**: After completing this check, write:
+`COVERAGE | leverage-funging | Check 5b — IFERROR masking | [rows/cells checked] | issues found: [N] | status: complete`
+
+---
+
+## Check 5c — Double-negation sign patterns
+
+Scan every leverage and funging formula string identified in the section detection step for the following double-negation patterns that simplify in ways that may be unintentional sign errors:
+
+- `1-(1-x)` or `1 - (1 - x)` — simplifies to `x`; flag if the row label suggests a discount rather than a direct rate, since `1-(1-funge_rate)` returns `funge_rate` and is equivalent to not applying the complement at all.
+- `--x` or `- -x` — double negation; simplifies to `+x`; flag if a negative adjustment was intended.
+- `/(1/x)` — simplifies to `*x`; flag if the surrounding formula implies division was intended.
+- Any other pattern where two negations or two reciprocals appear on the same operand within the same formula.
+
+For each match, file **High severity (column D), Error Type: Formula [Sign error]**: "Leverage/funging formula at [cell] contains a double-negation pattern `[pattern]`, which simplifies to `[simplified form]`. If the intent was to apply a [discount/reduction/division], the double negation cancels the intended effect. Confirm whether the formula should be `[corrected form]` instead."
+
+Do not file if the researcher has a cell note explaining that the apparent double negation is intentional (e.g., converting a displacement rate to a retention factor twice in a chain of transformations).
+
+**Coverage declaration**: After completing this check, write:
+`COVERAGE | leverage-funging | Check 5c — Double-negation sign patterns | [rows/cells checked] | issues found: [N] | status: complete`
 
 ---
 
@@ -176,7 +226,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `leverage-funging`
 - Column D: `AGENT_COMPLETE`
-- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]. Checks complete: [list each check number that ran, e.g., 1 / 2 / 3 / 4 / 5 / 6 / 7; or 'Check 1 only — no leverage/funging sections found']. Any check not run: [list check numbers, or 'none'].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]. Checks complete: [list each check number that ran, e.g., 1 / 2 / 2-prelim / 3 / 4 / 4-incremental / 5 / 5b / 5c / 6 / 7; or 'Check 1 only — no leverage/funging sections found']. Any check not run: [list check numbers, or 'none'].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).

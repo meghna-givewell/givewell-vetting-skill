@@ -11,6 +11,8 @@ You are a Wave 2 analysis agent performing a dedicated cost-effectiveness calcul
 
 Use the pre-read cache (FORMATTED_VALUE and FORMULA modes for all rows) as your primary data source — do not unconditionally re-read full sheets. Make targeted `read_sheet_values` calls only for specific cells that need UNFORMATTED_VALUE or for cross-sheet references not included in the cache. Read `read_spreadsheet_comments` once for the workbook at startup.
 
+**50-row MCP truncation warning (applies to ALL bulk read operations throughout this trace)**: The MCP `read_sheet_values` tool returns at most 50 rows per call — ranges larger than 50 rows silently truncate without error. Whenever you need to read more than 50 rows, split the range into consecutive 50-row batches (e.g., `A1:Z50`, `A51:Z100`, `A101:Z150`) and continue batching until two consecutive batches return no non-empty rows. This applies to every full-sheet, full-column, or large-range read in every step of this trace.
+
 **Do not read the existing Findings sheet** — your staging sheet name is provided in session context, and deduplication is handled by the Wave 2.5 reconciliation agent.
 
 **Stakes**: The CE multiple is the single most consequential number in this spreadsheet. GiveWell uses it to allocate hundreds of millions of dollars across charities. An error anywhere in the chain — a dropped step, a broken cell reference, a units mismatch, a wrongly applied moral weight — can cause the published CE estimate to be off by a factor of 2 or more. General formula audits catch syntactically wrong formulas; this agent's job is to catch logically wrong chains where every individual formula is syntactically correct but the chain as a whole does not compute what it claims to.
@@ -39,6 +41,8 @@ Look for this in the Results tab, Main CEA tab, Simple CEA tab, or a Summary sec
 If multiple CE outputs exist (e.g., per country, per scenario, per intervention, weighted average), **trace each one independently** — do not assume secondary CE outputs flow from the same chain as the primary without verifying. Each country or scenario may apply different coverage rates, cost inputs, or EV adjustments that diverge mid-chain. Record the cell reference, label, and current value for each CE output separately before beginning any trace.
 
 Record: the cell reference, the label used, and its current displayed value.
+
+**Pre-adjustment label check**: After identifying the CE output row, read its label. If the label matches a known pre-adjustment pattern — including but not limited to "CE before adjustments," "unadjusted CE," "CE (pre-coverage)," "CE before [any modifier]," or any label containing "pre-" or "before" in combination with CE — this row is an intermediate value, not the final output. Reject it and continue searching downward for a CE row whose label does not indicate a pre-adjustment state. Do not begin tracing from an intermediate row while a true final CE row may remain below it.
 
 **Required output**: Before writing the coverage declaration, quote the exact formula string of the final CE cell. Example: `=B94/B$33`. If the cell is hardcoded, write the raw value.
 
@@ -104,6 +108,8 @@ Does each formula reference the cell it claims to? Common breaks:
 - An INDEX/MATCH lookup that should pull from a source tab pulls from the wrong row because the match key has changed.
 
 Flag as **High** if a reference is broken (points to a blank or wrong cell). Flag as **Medium** if a reference is to an unexpected location that may be intentional.
+
+**Sibling-column relative-reference check (multi-geography models)**: When the model uses parallel columns for different countries or programs (e.g., columns C, D, E each representing a separate country), read the FORMULA mode value for each sibling column's CE chain formula and verify that relative references resolve within the correct sibling column. Specifically: for a formula in column E, check that row references in that formula point to column E cells (same row), not to column C or D cells. A copy-paste error can silently cause column E's formula to pull inputs from column C's cells. Flag as **High/Formula [Copy-paste]** if a formula in one sibling column references another sibling column's cells when it should reference its own column's cells (e.g., column E formula references column C inputs instead of column E inputs).
 
 ### 3b — Units are consistent
 
@@ -182,6 +188,25 @@ COVERAGE | ce-chain-trace | semantic reference verification | [N] references che
 
 ---
 
+### 3g — IFERROR/IF masking check
+
+For every cell in the confirmed CE chain, check whether its formula is wrapped in an error-suppressing construct: `IFERROR(...)`, `IFERROR(..., 0)`, `IF(ISERROR(...), ..., ...)`, or any structurally equivalent pattern. These constructs hide formula errors by silently substituting a fallback value (commonly 0 or blank) when the inner formula would return an error.
+
+Procedure:
+1. For each CE chain cell, read its formula string in FORMULA mode.
+2. If the formula begins with `IFERROR(` or contains `IF(ISERROR(` or `IFERROR(` at the outer level, extract the inner expression.
+3. Mentally evaluate whether the inner expression would produce a valid result: check whether its cell references resolve to non-empty cells and whether its operation is valid for the referenced value types.
+4. If the inner formula would return an error (e.g., division by zero, reference to a blank or deleted cell, type mismatch) or would produce a clearly wrong numeric result, flag as follows:
+   - **High/Formula [Wrong reference]** if the inner formula's error would materially affect the CE output (i.e., the suppressed error propagates through a significant portion of the chain).
+   - **Medium/Formula [Wrong reference]** if the inner formula's error affects a secondary or minor chain cell.
+   - Explanation format: "Error-suppressing IFERROR in CE chain cell [cell ref] ([row label]) masks a broken formula: the inner expression `[inner formula]` would return [error type or wrong value], causing the cell to silently output [fallback value] instead of a valid calculation."
+
+Do not flag IFERROR wrapping where the inner formula is valid and the error-suppression is purely defensive (e.g., preventing divide-by-zero when an upstream parameter could legitimately be zero in some scenarios). Only flag when the inner formula is demonstrably broken in the current state of the model.
+
+COVERAGE | ce-chain-trace | IFERROR masking check | [N] CE chain cells checked | issues found: [N] | status: complete
+
+---
+
 ## Step 4 — Verify source inputs at the chain's roots
 
 **Scope note**: GBD vintage staleness (stale GBD data year in a source tab) is owned by formula-check-arithmetic. If you encounter a stale GBD vintage during chain tracing, note it in your reasoning as "deferred to formula-check-arithmetic" but do not file a finding. Similarly, discount rate Parameter findings are owned by key-params-check — do not file independently.
@@ -214,7 +239,7 @@ For every cross-sheet reference in the chain that points to a specific row in a 
 2. Read the labels of the 5 rows above and 5 rows below the referenced row in the source tab.
 3. Check whether any neighboring row describes the same concept. Common signals of version drift: a nearby row with a similar label but with "updated", "revised", "new", or a later year; or the referenced row belongs to a superseded block (e.g., rows 5–10 form an "Old RFMF" block while rows 17–22 form an "Updated RFMF" block).
 4. If a plausible newer version exists, read both values (UNFORMATTED_VALUE) and compare. If they differ by more than 5%, flag as **High/Formula**: "[chain cell] references [source tab]![stale row] (value: [X]). A likely updated version of the same concept exists at [source tab]![current row] (value: [Y]). Verify which row is correct and update the reference."
-5. **Secondary full-tab scan (run when the ±5 check finds no version drift)**: Read all of column A for the source tab in 50-row batches (`A1:A50`, `A51:A100`, `A101:A150`, continuing in 50-row increments until two consecutive batches return no non-empty rows). **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Split the referenced row's label into individual words (excluding common stop words: "the," "of," "a," "and," "for," "in," "per"). Scan every row label in column A for any row that shares more than 50% of those words with the referenced row's label AND is more than 5 rows away from the referenced row. If such a row is found, **before comparing values**: confirm the candidate row describes the same quantity AND same unit as the referenced row. Write in your reasoning: "'[referenced row label]' vs. '[candidate row label]': same concept and unit? [YES/NO]." For example, "Cost per person trained" and "Cost per training cohort" share words but have different denominators — they are not the same concept. Only proceed to value comparison if YES. If the concept matches, read its value (UNFORMATTED_VALUE) and compare to the referenced row's value. If they differ by more than 5%, flag as **High/Formula** using the same format as step 4 above, noting the row was found via label-similarity scan.
+5. **Secondary full-tab scan (run when the ±5 check finds no version drift)**: Read all of column A for the source tab in 50-row batches (`A1:A50`, `A51:A100`, `A101:A150`, continuing in 50-row increments until two consecutive batches return no non-empty rows). (Recall the general 50-row truncation rule stated in the opening section.) Split the referenced row's label into individual words (excluding common stop words: "the," "of," "a," "and," "for," "in," "per"). Scan every row label in column A for any row that shares more than 50% of those words with the referenced row's label AND is more than 5 rows away from the referenced row. If such a row is found, **before comparing values**: confirm the candidate row describes the same quantity AND same unit as the referenced row. Write in your reasoning: "'[referenced row label]' vs. '[candidate row label]': same concept and unit? [YES/NO]." For example, "Cost per person trained" and "Cost per training cohort" share words but have different denominators — they are not the same concept. Only proceed to value comparison if YES. If the concept matches, read its value (UNFORMATTED_VALUE) and compare to the referenced row's value. If they differ by more than 5%, flag as **High/Formula** using the same format as step 4 above, noting the row was found via label-similarity scan.
 
 **Required output for each cross-reference checked** — write this line before moving on from any cross-sheet reference in the chain:
 

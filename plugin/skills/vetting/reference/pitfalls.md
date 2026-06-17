@@ -36,6 +36,20 @@ Leverage/funging adjustments can be applied multiplicatively (scaling benefits o
 
 ---
 
+### FP-005 (2026-06) — Don't over-flag intentional range exclusions
+Before filing a "range too short" finding on a SUM or AVERAGE formula, read the label of the row just outside the range boundary (the first excluded row). If that label is "Subtotal", "Total", "Header", "Assumption", "N/A", or otherwise describes a non-component row, do not file — the exclusion is likely intentional and correct. Only file if the excluded row's label indicates it is a data component that should logically be included in the aggregation.
+
+**Applies to**: formula-check-arithmetic, formula-check-edge-cases
+
+---
+
+### FP-006 (2026-06) — Time-series off-by-one may be correct due to label column offset
+Before filing an off-by-one finding on a time-series SUM or AVERAGE, read the column (or row) headers to check whether a label column offsets the data start by one position. A range starting at the second year column instead of the first may be correct if the first column is a text label (e.g., "Year 1" as a row label) rather than a data column. Confirm the actual data columns versus label columns before filing.
+
+**Applies to**: formula-check-arithmetic, formula-check-edge-cases
+
+---
+
 ## False Negative Risks — make sure to catch these
 
 ### FN-001 (2026-04) — GBD data vintage: always flag, even without a CE magnitude
@@ -56,6 +70,20 @@ When a cell note cites a data vintage more than 2 years before the model's grant
 When a parameter is a weighted-average input with weight ≥5%, attempt WebFetch on the source URL before filing or classifying the finding. Without fetching: a wrong subgroup looks like an undocumented assumption (Medium at best); a methodology mismatch (rate vs. proportion) looks like a plausibility concern (Low or Medium). With fetching: the same issues become confirmed errors (High). Filing a finding without fetching on a ≥5% input is under-severity by default.
 
 **Applies to**: formula-check-data, source-data-check, key-params-check
+
+---
+
+### FN-004 (2026-06) — SUMPRODUCT filter coverage: verify all intended rows are included
+When checking SUMPRODUCT formulas, verify that the condition array explicitly covers all intended rows — not just that the formula evaluates without error. An implicit partial-range filter (e.g., a condition array that stops two rows above the data range's last row) silently excludes rows without raising an error or returning a visibly wrong result. Enumerate the condition array boundaries and compare them to the data array boundaries; if they differ, file a finding.
+
+**Applies to**: formula-check-edge-cases, formula-check-arithmetic
+
+---
+
+### FN-005 (2026-06) — Copy-paste relative-reference errors across geography columns
+When checking multi-geography models, compare FORMULA-mode values across all parallel geography columns, with particular focus on recently-added columns. A newly-added country column often copies formulas from an adjacent column; relative references then point to the source column's rows rather than the new column's rows, producing silently wrong values. Flag any geography column where formula references do not follow the same relative-offset pattern as all other geography columns.
+
+**Applies to**: formula-check-arithmetic, formula-check-edge-cases
 
 ---
 
@@ -156,6 +184,10 @@ This section identifies which agent **owns** each check category. When a non-own
 | Simple CEA section ordering (correct calculation sequence: delivery parameters → effect size → costs → CE multiple) | `readability` (mandatory first check — runs a full sequence verification at Medium/H) | `formula-check-structure` includes Simple CEA ordering in its structural completeness checklist. When both agents run, formula-check-structure should record the checklist result (✓ or ✗) in its coverage declaration but **must NOT file a finding** — readability's more thorough sequence check already covers this at the correct severity. If readability is not running (formula-only scope), formula-check-structure should file the Low finding normally. |
 | Staff first-name source citations in cell notes or source columns (e.g., "per Jack's model," "Bea's analysis," "from Meghna's spreadsheet") | `readability` (dedicated check — files as Publication Readiness Sourcing) | `notes-scan` Category H also catches these in the addressed-to-person and informal-citation scan. When both agents run, notes-scan should note instances in reasoning ("first-name citation observed at [ref]; deferred to readability") but must NOT file a separate finding — readability's exhaustive source-column scan already covers this. If readability is not running, notes-scan should file as normal under Category H. |
 | Terminology ("x cash," "GiveDirectly" → "benchmark") | `readability` (primary — dedicated "Terminology" section with full sheet scan mandate) | `notes-scan` also catches these via SC-002, which explicitly applies to both agents. Both may file — the Wave 2.5 reconcile agent deduplicates overlapping PR findings. However: when readability is running, notes-scan should prefer noting the observation in reasoning and omitting a separate Legibility filing (the finding will already be filed at the correct grouped form by readability). If readability is not running, notes-scan should file normally. |
+| IFERROR/IFNA error-masking checks in CE chain; array-formula SUMPRODUCT filter dimension checks | `formula-check-edge-cases` | Other agents (formula-check-arithmetic, ce-chain-trace) may observe IFERROR masking or SUMPRODUCT dimension mismatches but must not independently file — note "IFERROR/SUMPRODUCT dimension check deferred to formula-check-edge-cases" in reasoning. |
+| SC-008 escalation for GBD vintage findings (High when CE chain confirmed) | `formula-check-parameters` | formula-check-arithmetic and heads-up-epi file GBD vintage findings at the correct base severity; formula-check-parameters owns the SC-008 escalation decision. Non-owning agents should not escalate a GBD vintage finding to High — note "SC-008 escalation deferred to formula-check-parameters" if the chain appears confirmed. |
+| Enumeration of standalone hardcoded cells (non-formula) | `hardcoded-values` | Other agents may encounter hardcoded values during formula traversal but must not duplicate-enumerate them as standalone findings. Note the cell reference in reasoning and mark "hardcoded-values agent will enumerate" — do not file a separate Hardcoded finding. |
+| Confidentiality/PII flag checks | `sensitivity-scan` | All other agents that encounter potential PII or confidential data (names, email addresses, donor information, financial figures) must not file findings — note "potential sensitivity flag deferred to sensitivity-scan" in reasoning and continue. |
 
 **Applies to**: all agents
 

@@ -84,12 +84,12 @@ Coverage declaration: "Label normalization complete. Findings: [N] labels normal
 **Apply routing in this exact priority order — stop at the first match:**
 1. **Error Type = `Adjustment`** → Findings, regardless of CE impact value or documentation status. Adjustment scope errors are model-integrity issues by definition. A blank CE impact column means unknown, not zero.
 2. **Error Type = `Formula`, `Parameter`, `Assumption`, `Inconsistency`, or `Legibility`, AND column H is populated with a directional phrase (`Raises CE`, `Lowers CE`, or `Direction unknown`)** → Findings, regardless of additional rule application.
-3. **Column H is blank or "No CE impact" AND the Explanation describes only a documentation gap** (the recommended fix is: add a source note, add a cell note, fix a label, update a broken link, change terminology) → Publication Readiness. **Exception: Error Type = `Adjustment` is never routed to Publication Readiness under rule 3, even with blank column H — it stays in Findings.**
+3. **Column H is blank or "No CE impact" AND the Explanation describes only a documentation gap** (the recommended fix is: add a source note, add a cell note, fix a label, update a broken link, change terminology) → Publication Readiness. **Exception: Error Type = `Formula`, `Parameter`, or `Adjustment` is NEVER routed to Publication Readiness solely because column H is blank — these types must stay in the Findings sheet. Leave column H blank and let final-review-validation fill it later.**
 4. **All other cases** → Findings. When in doubt, leave in Findings.
 
 Check each row using the priority above, then apply these additional rules (apply only to rows where Severity (column D) is blank or Low — never move a Medium or High finding to Publication Readiness via these bullets; the severity assignment exists precisely because the finding deserves researcher attention in the model-integrity review):
 - Findings sheet rows whose **sole** issue is citation format, link permissions, terminology, labeling, or style (no model impact) → move to Publication Readiness, provided Severity is blank or Low.
-- Findings sheet rows where **Estimated CE Impact (column H) is blank or "No CE impact"** AND the explanation describes only a documentation gap (missing source, missing cell note, missing label) → move to Publication Readiness, provided Severity is blank or Low. A finding that does not change CE and only recommends adding a note belongs in Publication Readiness regardless of how its Error Type is worded. **Exception: Error Type = `Adjustment` is never routed to Publication Readiness on this basis — see priority rule 1.**
+- Findings sheet rows where **Estimated CE Impact (column H) is blank or "No CE impact"** AND the explanation describes only a documentation gap (missing source, missing cell note, missing label) → move to Publication Readiness, provided Severity is blank or Low. A finding that does not change CE and only recommends adding a note belongs in Publication Readiness regardless of how its Error Type is worded. **Exception: Error Type = `Formula`, `Parameter`, or `Adjustment` is NEVER routed to Publication Readiness on this basis — these are model-integrity types that must stay in Findings. Leave column H blank; final-review-validation will fill it. See priority rule 1 for `Adjustment`; the same no-PR-routing logic applies to `Formula` and `Parameter`.**
 - Publication Readiness sheet rows that affect model outputs or interpretation → move to Findings.
 - **Adjustment and double-count findings always stay in Findings** — never route an `Adjustment` finding to Publication Readiness on the basis of "No CE impact" or a blank CE impact column. A blank CE impact column for an Adjustment finding means the impact is unknown, not zero — leave it in Findings with "Direction unknown" in column H.
 
@@ -97,9 +97,16 @@ Check each row using the priority above, then apply these additional rules (appl
 - PR A (Finding #): leave blank
 - PR B (Sheet): = Findings B
 - PR C (Cell/Row): = Findings C
-- PR D (Error Type/Issue): = Findings E
+- PR D (Error Type/Issue): reclassified to a valid PR type (see below)
 - PR E (Explanation): = Findings F
-- PR F (Recommended Fix): = Findings G
+- PR F (Recommended Fix): = Findings G (Findings column G only — do not carry over Findings columns H or I)
+
+**Before writing to PR, discard Findings columns G, H, and I from the source row** — these are Findings-specific columns (Recommended Fix used only to populate PR F, Estimated CE Impact, and Status). Do not write them into any PR column.
+
+**Error Type reclassification for PR (Findings column E → PR column D)**: The PR sheet accepts only three types — `Sourcing`, `Box Link`, or `Legibility`. Reclassify the Findings Error Type before writing:
+- If the finding concerns a missing or inaccessible source → `Sourcing`
+- If the finding concerns a Box link → `Box Link`
+- All other cases → `Legibility` (default)
 
 Do not write column G or beyond in Publication Readiness under any circumstances. There is no Status column in Publication Readiness.
 
@@ -166,7 +173,16 @@ Coverage declaration: "Sort and rewrite complete. Findings: [N] High, [M] Medium
 
 ## Step 5 — Assign Finding IDs
 
-After sort is complete, write sequential IDs to column A. Skip divider rows — a row is a divider if column D (Severity) is empty and column B contains `───`.
+**Before assigning IDs, clear all data rows from both output sheets.** Prior partial runs may have left AGENT_COMPLETE rows or stale finding rows in the Findings sheet or Publication Readiness sheet that were not part of the Step 4 rewrite. To prevent these from being re-numbered as findings, clear rows 2 onward on both sheets before writing IDs:
+
+1. Read the current last row of the Findings sheet (use `read_sheet_values` with range `Findings!A2:A500` or a similarly large range to find the last non-empty row).
+2. Use `modify_sheet_values` to overwrite all cells in rows 2 through [last_row] with empty strings, clearing any residual content.
+3. Repeat for the Publication Readiness sheet.
+4. Then rewrite both sheets from row 2 using the sorted in-memory rows from Step 4.
+
+If the sheets were already empty (first run or Step 4 wrote cleanly), this step is a no-op and can be confirmed as such in the declaration.
+
+After clearing and rewriting, write sequential IDs to column A. Skip divider rows — a row is a divider if column D (Severity) is empty and column B contains `───`.
 
 - Findings sheet: write `F-001`, `F-002`, `F-003`, … for each non-divider row from row 2 onward.
 - Publication Readiness sheet: write `PR-001`, `PR-002`, … from row 2 onward (no dividers to skip).

@@ -30,7 +30,7 @@ Flag deviations from these values unless the sheet provides an explicit document
 | Discount rate — TA death-averting programs | **1.4%** per year | Temporal uncertainty component only; used for TA grants where the primary benefit is near-term mortality reduction; use **4%** for income/consumption streams in the same model |
 | TA — p(failure to shift status quo) | Default **30%** | Probability TA engagement fails to change government behavior; distinct from VOI p(trial fails) = 10%; calibrate lower if government is already publicly committed or has co-funded the program. **Quality-improvement TA scope**: The 30% default is calibrated for scale-up TA (shifting a government to adopt a new program or scale coverage). For grants that improve the quality of an existing program already in operation (e.g., fortification standards enforcement, improving quality of ongoing iron fortification delivery), the standard p(failure) framing may not apply. Flag absence as **Low/H** only, not Medium — do not auto-file as Medium for quality-improvement TA structures without first confirming with the researcher that scale-up p(failure) logic applies. |
 | TA speed-up benchmarks (years to reach steady-state coverage) | RTS,S: **2**; DtW: **4**; IFA: **4**; Dual tests: **5**; HPV: **6**; ILC: **13** | Cross-program reference for the "speed-up of steady state due to TA" parameter; ILC is high due to dual steady-state structure |
-| Years to benefits | **10** | Years from grant disbursement until the program's benefits start flowing. Program-specific; deviation from 10 triggers **Medium/H** — program context determines the appropriate value. |
+| Years to benefits | **10** | Years from grant disbursement until the program's benefits start flowing. ANY deviation from 10 years triggers at minimum **Medium/H**, even if the value falls within the Min/Max range in the acceptable-ranges table. The finding may be downgraded to **Low/H** only if the researcher explicitly provides a rationale in Step 0.5 or in a cell note — do not omit the finding on the grounds that the value is "within range" or that program context justifies it absent an explicit documented rationale. |
 
 ## Moral Weights by Age Band (UoV per death averted)
 
@@ -80,6 +80,7 @@ Deviations from the Exact Value column trigger a finding at the severity shown i
 | Discount rate (general) | 4% | 3% | 5% | Yes — Medium/H |
 | Discount rate (TA death-averting) | 1.4% | 1% | 2% | Yes — Medium/H |
 | Discount rate (long-term health) | 0.5% | 0.3% | 0.8% | Yes — Medium/H |
+| Discount rate — absent / 0% / omitted | N/A | — | — | Yes — **Low/H** (model-completeness gap; escalate to Medium only if researcher confirms discounting should apply) |
 | Income effects malaria | 0.58088% | 0.55% | 0.65% | Yes — Medium/H |
 | Long-term income ratio | 0.3064 | 0.25 | 0.35 | Yes — High/D |
 | Years to benefits | 10 | 8 | 15 | Yes — Medium/H |

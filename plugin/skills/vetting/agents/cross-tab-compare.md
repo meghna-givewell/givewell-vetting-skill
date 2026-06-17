@@ -7,7 +7,7 @@ You are performing Step 3c of a GiveWell spreadsheet vet. You have been provided
 - User email for MCP calls
 - Program context from Step 0.5, including any declared-intentional deviations
 
-**Self-detection — run this first**: Check the in-scope sheets list for both a Simple CEA tab (names containing `Simple CEA`, `Simple`, or `SimpleCEA`) AND a Main CEA or CEA tab (names containing `Main CEA`, `CEA`, or `BOTEC` — but not `Simple`). If fewer than two matching tabs exist, write your completion marker and stop. Do not scan any sheets. This check is silent — do not announce the skip in chat.
+**Self-detection — run this first**: Check the in-scope sheets list for both a Simple CEA tab (names containing `Simple CEA`, `Simple`, or `SimpleCEA`) AND a Main CEA or CEA tab (names containing `Main CEA`, `CEA`, or `BOTEC` — but not `Simple`). If no Simple CEA tab is found using those patterns, also try alternate names: `Cost Model`, `CE Analysis`, `CE Model`. If no Main CEA tab is found using those patterns, also try those same alternates for the main/full model tab. If after trying all alternates fewer than two matching tabs exist, write your completion marker with the reason in column F (e.g., `SKIP: No Simple CEA tab found matching standard or alternate patterns. Tabs scanned: [list tab names].`) and stop. Do not scan any sheets. Do not silently skip — the reason must be visible in the AGENT_COMPLETE row.
 
 **Stakes**: The Simple CEA is often the first tab a reviewer reads and the final CE figures it presents must match the logic in the Main CEA. Silent divergences — different formula structures computing the same quantity, column headers that misdescribe what they contain, independent recalculations that drift from the source — mislead reviewers without triggering any formula error. This check exists because general formula audits read each tab independently and do not catch cross-tab structural inconsistencies.
 
@@ -86,9 +86,11 @@ Simple CEA typically has a lower-bound, best-guess, and upper-bound column. Each
 For each scenario column in Simple CEA (typically columns C and D):
 1. Read the column header row (usually row 1 or 2) to identify what this column claims to represent
 2. Read the formula(s) for the CE output row in this column
-3. Verify: does the formula reference the matching scenario column in Main CEA? Or does it independently compute it?
+3. **Also read 3–5 structural input-row formulas in this column** — specifically rows for inputs such as cost per beneficiary, coverage rate, and mortality/effectiveness reduction (whichever are present). Record the formula from each of these rows alongside the CE output formula.
+4. Verify: does the CE output formula reference the matching scenario column in Main CEA? Or does it independently compute it?
+5. Verify: do the structural input-row formulas reference the same scenario column in Main CEA as the CE output row does? A mismatch here — where the CE output formula pulls the correct scenario column but an upstream input row pulls a different scenario — is an input-level scenario mismatch that would not appear in the CE formula alone.
 
-File as **Medium/Inconsistency** when: a scenario column pulls from a different scenario in Main CEA than its header claims (e.g., "upper bound" column formula references Main CEA's lower-bound column).
+File as **Medium/Inconsistency** when: a scenario column pulls from a different scenario in Main CEA than its header claims (e.g., "upper bound" column formula references Main CEA's lower-bound column), **or** when a structural input row in this scenario column references a different scenario than the CE output row references.
 
 File as **Low/Legibility** when: a scenario column header is ambiguous or mislabeled (e.g., says "25th–75th percentile" but the formula pulls lower/upper scenario values rather than a percentile range).
 
@@ -111,6 +113,17 @@ File as **Low/Legibility** when a header misdescribes what the column contains. 
 Locate the GiveDirectly benchmark row in both tabs. Verify both reference the same cell or the same hardcoded value. If one is hardcoded and the other references a parameter cell, or if they reference different cells, flag:
 - **Medium/Parameter** if the values differ
 - **Low/Inconsistency** if the values match but one is hardcoded while the other references a cell (creates drift risk)
+
+### Check 5b — Benchmark value against key-parameters.md canonical value
+
+After completing Check 5, perform a second benchmark check that is independent of cross-tab consistency. The canonical GiveDirectly benchmark mortality/effectiveness value is approximately **0.00333** (sourced from `reference/key-parameters.md`). Both tabs may share the same stale benchmark — which makes them internally consistent but both wrong — so cross-tab agreement does not clear this check.
+
+For each tab that has a GiveDirectly benchmark row:
+1. Read the displayed value and the formula/hardcoded value of the benchmark cell
+2. Compare it against 0.00333 (the key-parameters.md canonical value). A tolerance of ±2% is acceptable (i.e., values between ~0.00326 and ~0.00340 pass)
+3. If the value deviates beyond that tolerance, file **High/Parameter**: "[Tab name] [cell] contains a GiveDirectly benchmark value of [value], which deviates from the canonical key-parameters.md value of 0.00333. Both tabs may share this stale value, so cross-tab consistency does not resolve this. Update to the current canonical benchmark."
+
+Note: if both tabs are stale, file two rows — one per tab — not a single combined finding, because each cell needs its own recommended fix.
 
 ### Check 6 — Independent recalculations
 

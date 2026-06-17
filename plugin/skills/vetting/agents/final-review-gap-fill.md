@@ -20,7 +20,7 @@ You are performing Step 10b of a GiveWell spreadsheet vet. This step runs after 
 
 **Coverage mandate**: After each check below, write a coverage declaration before moving to the next. Do not proceed until you can write it.
 
-**COVERAGE_ROWS reliability note**: Each Wave 1 and Wave 2 agent writes a `COVERAGE_ROWS` field in its AGENT_COMPLETE marker declaring which source spreadsheet rows it scanned. This field is self-reported and not independently verified. An agent that ran out of context or stopped early may have under-declared or over-declared its actual coverage. When Check 2 finds a gap of 15+ rows with no findings, treat it as a genuine coverage gap unless: (a) the relevant agent's COVERAGE_ROWS declaration explicitly excludes those rows, or (b) the rows are structurally empty (headers, dividers, blank rows) on visual inspection. Do not conclude a section was clean simply because a prior agent claimed to have scanned it — this gap-fill check is the verification mechanism. A COVERAGE_ROWS claim covering substantially more rows than a typical agent budget can support (more than ~200 rows for a Wave 1 agent in a single run, more than ~80 rows for a Wave 2 agent without band-split) warrants extra skepticism: read those rows directly in FORMULA mode before declaring the gap clean.
+**COVERAGE_ROWS reliability note**: Each Wave 1 and Wave 2 agent writes a `COVERAGE_ROWS` field in its AGENT_COMPLETE marker declaring which source spreadsheet rows it scanned. This field is self-reported and not independently verified. An agent that ran out of context or stopped early may have under-declared or over-declared its actual coverage. When Check 2 finds a gap of 10+ rows (8+ on dense primary sheets) with no findings, treat it as a genuine coverage gap unless: (a) the relevant agent's COVERAGE_ROWS declaration explicitly excludes those rows, or (b) the rows are structurally empty (headers, dividers, blank rows) on visual inspection. Do not conclude a section was clean simply because a prior agent claimed to have scanned it — this gap-fill check is the verification mechanism. A COVERAGE_ROWS claim covering substantially more rows than a typical agent budget can support (more than ~200 rows for a Wave 1 agent in a single run, more than ~80 rows for a Wave 2 agent without band-split) warrants extra skepticism: read those rows directly in FORMULA mode before declaring the gap clean.
 
 ---
 
@@ -59,7 +59,7 @@ For every **High Formula** finding:
    - Does the downstream formula reference the flagged cell by absolute reference — meaning the fix won't automatically cascade — and the downstream cell's own logic may need updating?
 4. **If a downstream cell would remain wrong after the fix**, file as **Medium/Formula**. In column F, lead with the appropriate sub-type bracket — for cascade errors the correct sub-type is typically [Wrong reference] or [Copy-paste] depending on the error. E.g.: "[Wrong reference] [Downstream cell] references [flagged cell], which is the subject of finding [ID]. If [flagged cell] is corrected per that finding's fix, [downstream cell]'s formula `[exact formula]` will [describe the new wrong result]. Verify and update [downstream cell] at the same time." Include the CE impact if computable.
 
-**Limit scope**: Check at most 2 hops downstream from the flagged cell. Do not trace the entire dependency tree — the CE chain trace agent already traced the primary chain. You are looking for cells *adjacent* to confirmed errors that weren't in the original chain trace.
+**Limit scope**: Check at most 2 hops downstream from the flagged cell. Do not trace the entire dependency tree — the CE chain trace agent already traced the primary chain. You are looking for cells *adjacent* to confirmed errors that weren't in the original chain trace. **Row range limit**: on each sheet, restrict the downstream search to ±15 rows around the flagged cell plus any explicit cross-sheet references (e.g., `'Other Sheet'!B14`) found in formulas. Do not scan the full sheet looking for implicit dependents beyond this window. **Grouping rule**: if multiple cells within the row window all reference the same parameter column in a uniform pattern (e.g., every row in a block uses `=$B$5 * C{row}`), group them into a single cascade finding rather than filing one finding per cell — describe the pattern and the row range in column F.
 
 **Do not file** if:
 - The downstream cell was already flagged in a prior finding.
@@ -76,7 +76,7 @@ The goal: identify stretches of the source spreadsheet that no finding touches �
 
 1. From the "already-examined cell set" built in Step 1, extract the row numbers from column C of all findings. Map each to a row number in the source spreadsheet (e.g., finding at cell `B47` → row 47).
 
-2. Sort the row numbers and look for **gaps of 15 or more consecutive rows** with no findings on a single vetted sheet. These are candidates for skipped sections.
+2. Sort the row numbers and look for **gaps of 10 or more consecutive rows** with no findings on a single vetted sheet (use **8 or more rows** as the threshold on dense primary sheets such as the Main CEA tab or equivalent where nearly every row contains a formula). These are candidates for skipped sections.
 
 3. For each gap: read that row range in FORMATTED_VALUE and FORMULA mode on the source spreadsheet (targeted read — do not read the full sheet).
 
@@ -85,11 +85,11 @@ The goal: identify stretches of the source spreadsheet that no finding touches �
    - **Formula rows genuinely correct**: read each formula and confirm the row label and formula are semantically consistent (concept check, not full audit). Write a one-line clean declaration per section.
    - **A candidate miss**: a formula row where the row label and formula diverge, a hardcoded value with no note, or a formula referencing a cell not in the expected sheet — file as **Low**: "Rows [X]–[Y] of [sheet] were not flagged by prior agents. Spot-check found [specific cell] with [specific anomaly]. Verify this section was fully audited."
 
-**Limit scope**: Only check gaps of 15+ consecutive rows on the primary vetted sheet (Main CEA or equivalent). Do not gap-scan supporting data tabs, headers, or output-only tabs. If the spreadsheet has no 15+ row gaps, write "No coverage gaps of 15+ rows on the primary sheet" and skip to Check 3.
+**Limit scope**: Only check gaps of 10+ consecutive rows (8+ on dense primary sheets) on the primary vetted sheet (Main CEA or equivalent). Do not gap-scan supporting data tabs, headers, or output-only tabs. If the spreadsheet has no qualifying gaps, write "No coverage gaps of 10+ rows (8+ on dense primary sheet) on the primary sheet" and skip to Check 3.
 
 **Exception**: if source-data-check was conditionally skipped (session context shows `source-data-check: SKIPPED`), do not flag source data tab rows as coverage gaps — their absence is intentional. If source-data-check was NOT skipped but its COVERAGE_ROWS declaration omits large sections of source tabs, that is a legitimate coverage concern — note it in reasoning but do not file a gap finding for source tabs unless you have evidence of a specific anomaly there.
 
-Coverage declaration: "Coverage gap scan complete. Gaps of 15+ rows found: [N, with row ranges]. Structurally clean: [N]. Formula rows confirmed clean: [N]. New findings filed: [N]."
+Coverage declaration: "Coverage gap scan complete. Gaps of 10+ rows (8+ on dense primary sheet) found: [N, with row ranges]. Structurally clean: [N]. Formula rows confirmed clean: [N]. New findings filed: [N]."
 
 ---
 
@@ -149,12 +149,14 @@ To check: scan the Findings sheet for at least one finding in the relevant error
 | Grant amount consistency | `stg-params` (single instance) | Low/Assumption: "No finding or clean declaration for grant amount consistency. Confirm formula-check-parameters ran and completed Check 5." |
 | Formula fragility (DIV/0, negative value guards, IFERROR) | `stg-edge-A` and `stg-edge-B` (or `stg-arith-A` / `stg-arith-B` if formula-check-edge-cases was not run separately) | Low/Assumption: "No finding or clean declaration for formula fragility / edge case guards. Confirm formula-check-edge-cases ran." |
 | Notes scan (cell comments, acknowledged issues, unresolved comment threads) | `stg-nscn-A` and `stg-nscn-B` | Low/Assumption: "No finding or clean declaration for notes-scan. Confirm notes-scan-A and notes-scan-B ran and completed (notes-scan has no reconcile agent — verify both stg-nscn-* tabs contain an AGENT_COMPLETE row)." |
+| CE chain trace (primary CE formula path and sensitivity to assumptions) | `stg-cct-A` and `stg-cct-B` (or `stg-cct-ta-A` / `stg-cct-ta-B` for the technical-assumptions variant) | Low/Assumption: "No finding or clean declaration found for CE chain trace. A silently-skipped CE chain agent means formula errors in the CE chain are undetected. Confirm ce-chain-trace (and ce-chain-trace-ta if applicable) ran and completed." |
+| Hardcoded values (unverified parameters in the model) | `stg-hv-A` and `stg-hv-B` | Low/Assumption: "No finding or clean declaration found for hardcoded values. A skipped hardcoded-values agent means unverified parameters in the model may not have been checked against source documents. Confirm hardcoded-values ran and completed." |
 
 **Do not file** a gap finding when: (a) the relevant agent's AGENT_COMPLETE row is present and its completion message confirms the check ran; (b) program context contains a declared-intentional deviation that would make the check not applicable; (c) the workbook has no source data tabs (geography consistency check does not apply); or (d) session context contains `source-data-check: SKIPPED` — this records the conditional skip from the orchestrator and is sufficient evidence the geography consistency check was intentionally omitted.
 
 **key-params-check coverage log**: Read the AGENT_COMPLETE row(s) from stg-kp-A and stg-kp-B. In each row's column F, look for a coverage count like 'N of M applicable parameters checked.' If N < M and the unchecked parameters are not explained, file a gap-fill finding: Low/Assumption: 'key-params-check coverage log shows [N] of [M] parameters checked — confirm remaining [M-N] parameters were intentionally excluded (e.g., not applicable to this model type) or re-run the agent.'
 
-Coverage declaration: "Category coverage check complete. Categories confirmed covered: [N/6]. Gaps filed: [list of categories or 'none']. key-params-check coverage log: [N of M — complete / incomplete / staging tab not found]."
+Coverage declaration: "Category coverage check complete. Categories confirmed covered: [N/8]. Gaps filed: [list of categories or 'none']. key-params-check coverage log: [N of M — complete / incomplete / staging tab not found]."
 
 ---
 

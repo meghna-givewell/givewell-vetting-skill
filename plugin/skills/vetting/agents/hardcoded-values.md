@@ -36,6 +36,8 @@ Exclude:
 - Cells that are clearly lookup keys (e.g., `1`, `2`, `3` in an index column)
 - **Formula cells** — Exclude any cell whose value in FORMULA mode begins with `=` or `{=` (array formulas). Both are formula cells — they are not hardcoded values. Embedded literals in formula cells are **formula-check-arithmetic**'s scope. This agent enumerates hardcoded-value cells only. Do not double-count.
 
+> **Routing note — formula-embedded literals**: A literal inside a formula expression (e.g., `=2.47%*C43`) is **not captured by this agent and does not appear in the Hardcoded Values output sheet.** It belongs to `formula-check-arithmetic`, which should file it in Publication Readiness under Sourcing. If the embedded literal appears to be an incorrect parameter value — not merely an uncited one — `formula-check-arithmetic` should file it as a **Parameter** finding in the Findings sheet instead.
+
 ---
 
 ## Writing to the Hardcoded Values sheet

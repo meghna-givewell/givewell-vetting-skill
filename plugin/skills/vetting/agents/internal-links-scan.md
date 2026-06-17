@@ -19,12 +19,13 @@ Flag every URL matching one of these patterns:
 | Internal Google Sheet | `docs.google.com/spreadsheets/d/` | `Sourcing` |
 | Internal Google Presentation | `docs.google.com/presentation/d/` | `Sourcing` |
 | Internal Google Drive file | `drive.google.com/file/d/` | `Sourcing` |
+| Internal Google Form | `docs.google.com/forms/d/` | `Sourcing` |
 
 **Do NOT flag:**
 - The source spreadsheet itself or the output spreadsheet — their IDs are in session context; exclude any Google Sheets URL whose ID matches either
 - URLs where the hyperlink display text, cell note text, or nearby description contains "(public)" (case-insensitive) — these are intentionally published
-- Well-known public external sources: journal URLs (pubmed.ncbi.nlm.nih.gov, bmj.com, thelancet.com, doi.org, etc.), WHO, UNICEF, IHME/GBD, DHS Statcompiler, givewell.org, statcompiler.com, github.com, worldbank.org — these are not internal documents
-- givewell.org links — these are already public
+- Well-known public external sources: journal URLs (pubmed.ncbi.nlm.nih.gov, bmj.com, thelancet.com, doi.org, etc.), WHO, UNICEF, IHME/GBD, DHS Statcompiler, statcompiler.com, github.com, worldbank.org — these are not internal documents
+- givewell.org links where the URL path does NOT contain `/intranet/`, `/login/`, `/internal/`, `/staging/`, or `/draft/` — those path segments suggest non-public pages that require the same review as other internal links and must be flagged
 
 ---
 
@@ -36,7 +37,7 @@ For each vetted sheet, fire all of the following in a **single parallel batch** 
 - `read_sheet_notes` — finds all cell notes; scan each note for URLs matching the above patterns
 - `read_sheet_values` (FORMATTED_VALUE) — scan all cell values for plain-text URLs matching the above patterns (e.g. a URL typed directly into a cell rather than attached as a hyperlink)
 
-Use the full sheet range (e.g. `'Main CEA'!A1:Z1000`). If any sheet has more than 1000 populated rows, extend the range accordingly.
+Use the full sheet range (e.g. `'Main CEA'!A1:ZZ1000`). If any sheet has more than 1000 populated rows, extend the range accordingly. The ZZ upper bound covers wide multi-geography models whose source and notes columns extend beyond column Z.
 
 Also call `read_spreadsheet_comments` once for the whole workbook and scan comment text for URLs matching the above patterns.
 

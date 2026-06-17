@@ -1,5 +1,17 @@
 # Final Review — Step 10d: Dashboard Agent
 
+## Guard — Verify prior stages are complete
+
+Before reading any findings or writing any dashboard output, verify that all three prior final-review stages have completed successfully. Read Findings sheet rows around the known AGENT_COMPLETE marker range (or scan batched rows) and confirm that rows with column D = `AGENT_COMPLETE` exist for each of the following column B values:
+
+- `final-review-compaction`
+- `final-review-gap-fill`
+- `final-review-validation`
+
+If any of these three markers is missing: write a single row to the Findings sheet with column B = `final-review-dashboard`, column D = `ERROR`, and column F = `Dashboard halted — AGENT_COMPLETE marker missing for [name of missing stage(s)]. Re-run that stage before running the dashboard agent.` Then **STOP** — do not proceed with any dashboard work, cleanup, or Key Findings summary until all three prior stages have completed. Do not attempt to proceed on a partial audit trail.
+
+---
+
 You are performing Step 10d of a GiveWell spreadsheet vet. This is the last of four sequential final-review steps. Compaction (10a), gap-fill (10b), and validation (10c) are already complete and Finding IDs are assigned. You have been provided:
 - Source spreadsheet ID (the workbook being vetted — used only for `get_spreadsheet_info` to retrieve the complete tab list)
 - Output spreadsheet ID (the spreadsheet containing Dashboard, Findings, Publication Readiness tabs)
@@ -43,7 +55,7 @@ Rows 25 onward: one row per unique sheet name found in column B of the Findings 
 - Repeat for each sheet name, incrementing row numbers.
 - Include `Multiple` as a row if any findings use that sheet name.
 
-After the last sheet row, write a totals row: `Total` in column A, `=SUM(B25:B{last})` in B, same pattern for C–D, `=SUM(E25:E{last})` in E.
+After the last sheet row, write a totals row: `Total` in column A, `=SUM(B25:B{last})` in B, same pattern for C–D, `=SUM(E25:E{last})` in E. **{last} must be the row number of the last per-sheet data row — that is, the row immediately above the Totals row itself. The Totals row must not be included in the SUM range, or the formula will self-reference and produce a circular dependency error.**
 
 After the Total row, skip one blank row, then write `Sheets not vetted:` in column A. On each subsequent row, write one unvetted tab name in column A.
 
@@ -56,25 +68,6 @@ If session context indicates a formula/heads-up only scope mode: add a `Partiall
 The per-sheet table starts at row 25 per the reserved layout in output-setup.md. Do not write above row 24 under any circumstances — rows 1–23 contain static setup content written during output initialization. If the per-sheet table plus unvetted tabs list would extend past row 148, warn the researcher before writing.
 
 **Scope declaration recovery** — if session context was compacted and the vetted/lite-passed tab lists are not available: read Dashboard cells B151:B153 of the output spreadsheet (written by the orchestrator before Wave 1). Cell B151 = comma-separated fully vetted tabs, cell B152 = comma-separated lite-pass tabs, cell B153 = vet scope ('full' or 'formula-only'). Do not read column A values — those are row labels, not data. Use B151–B153 as the scope declaration. If B151 is also blank or unreadable, announce: "Scope declaration unavailable — vet metadata at Dashboard B151:B153 is missing. Ask the researcher which tabs were fully vetted vs. lite-passed before finalizing the unvetted list." Then proceed with the tab list from `get_spreadsheet_info` and leave the vetted/lite-passed categorization blank.
-
----
-
-## Cleanup — Delete staging tabs and Staging_backup
-
-Perform this cleanup **before** writing the Key Findings summary to chat (Step 3), so the output spreadsheet is fully clean when the researcher opens it.
-
-**Delete all stg-* staging tabs:**
-
-1. Call ToolSearch with query `select:mcp__hardened-workspace__delete_sheet` to load the delete_sheet tool schema. If that exact name is not found, search ToolSearch with query `delete sheet tab spreadsheet` to find the correct tool name.
-2. If found: retrieve the full list of stg-* tab names from Dashboard A99 onward (written during output setup) or from session context. For each stg-* tab name, call delete_sheet with the output spreadsheet ID and that tab name. Announce a single summary: `Deleted [N] staging tabs (stg-*). [N failed — researcher to delete manually: list]` (include failed deletions; do not silently omit them).
-3. If delete_sheet is not found or not available: announce: `⚠️ Could not delete staging tabs — researcher should delete all tabs whose names begin with stg- manually before sharing the output spreadsheet.`
-
-**Delete Staging_backup tab:**
-
-1. Using the same delete_sheet tool (already loaded above): call it with the output spreadsheet ID and tab name `Staging_backup`. Announce: `✓ Staging_backup tab deleted — output spreadsheet is clean.`
-2. If not found: announce: `⚠️ Could not delete Staging_backup tab — researcher should delete it manually before sharing the output spreadsheet (Dashboard → right-click Staging_backup → Delete).`
-
-This step is required to prevent researchers from seeing raw pre-compaction data alongside the clean, sorted output.
 
 ---
 
@@ -104,6 +97,25 @@ Rules:
 - If there are more than 10 High findings: group them by sheet name and write one bullet per sheet summarizing the count and dominant issue type (e.g., `Main CEA (4 findings): formula errors affecting CE chain`). List individual bullets only for findings with a known CE direction and quantified magnitude — these are the most actionable.
 - If there are 10 or fewer High findings, list each individually grouped by sheet.
 - Keep each bullet to one sentence — the full detail is in the Findings sheet.
+
+---
+
+## Cleanup — Delete staging tabs and Staging_backup
+
+Perform this cleanup **after** writing the Key Findings summary to chat (Step 3) and **before** writing the AGENT_COMPLETE marker (Step 4). The Key Findings summary must be fully written first: if the summary reveals a finding count discrepancy, the audit trail (stg-* tabs and Staging_backup) is needed to re-run compaction before it is gone.
+
+**Delete all stg-* staging tabs:**
+
+1. Call ToolSearch with query `select:mcp__hardened-workspace__delete_sheet` to load the delete_sheet tool schema. If that exact name is not found, search ToolSearch with query `delete sheet tab spreadsheet` to find the correct tool name.
+2. If found: retrieve the full list of stg-* tab names from Dashboard A99 onward (written during output setup) or from session context. For each stg-* tab name, call delete_sheet with the output spreadsheet ID and that tab name. Announce a single summary: `Deleted [N] staging tabs (stg-*). [N failed — researcher to delete manually: list]` (include failed deletions; do not silently omit them).
+3. If delete_sheet is not found or not available: announce: `⚠️ Could not delete staging tabs — researcher should delete all tabs whose names begin with stg- manually before sharing the output spreadsheet.`
+
+**Delete Staging_backup tab:**
+
+1. Using the same delete_sheet tool (already loaded above): call it with the output spreadsheet ID and tab name `Staging_backup`. Announce: `✓ Staging_backup tab deleted — output spreadsheet is clean.`
+2. If not found: announce: `⚠️ Could not delete Staging_backup tab — researcher should delete it manually before sharing the output spreadsheet (Dashboard → right-click Staging_backup → Delete).`
+
+This step is required to prevent researchers from seeing raw pre-compaction data alongside the clean, sorted output.
 
 ---
 

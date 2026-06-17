@@ -138,6 +138,10 @@ Then make one of four determinations:
 
 → Proceed to Won't Fix only if ALL three conditions hold. If any condition fails, use Retain.
 
+**Sourcing/Legibility routing guard — apply before Won't Fix on divergent findings**: When A and B disagree specifically about whether a finding with Error Type Sourcing or Legibility belongs in Findings vs. Publication Readiness — and not about whether the underlying issue exists — the default resolution is Publication Readiness (leave column D blank). Do not use Won't Fix to suppress these findings; route them to Publication Readiness by leaving column D blank. This guard prevents a Legibility finding from being escalated to Findings through reconcile solely because one instance filed it with a non-blank severity.
+
+**High-severity Won't Fix gate**: High-severity findings (column D = "High") may NOT be marked Won't Fix without an explicit escalation note from the researcher. If a High finding carries a WONT_FIX annotation with no escalation note, keep the finding in Findings and append to column F: "WONT_FIX annotation on a High finding requires explicit researcher approval before exclusion."
+
 **Won't Fix** (high bar — requires specific affirmative evidence):
 - You may mark a finding `Won't Fix` **only** if you can state the specific, affirmative reason the formula or value is correct — not merely that you couldn't confirm the issue.
 - Qualifying reasons: "The formula references cell D22 labeled 'Seasonal concentration (non-Sahel)' — the correct concept for this column." / "The declared-intentional deviation explicitly covers this parameter." / "The cell note explains this value is intentionally set at X because [reason the note gives], and the formula confirms this — it computes [X] by [formula structure consistent with the note's explanation]."
