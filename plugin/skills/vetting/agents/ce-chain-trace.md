@@ -125,6 +125,18 @@ Check that units are consistent at each step:
 - Check that future benefits use 1/(1+r)^n discounting consistently, not sometimes n years and sometimes n-1.
 - Check that consumption changes are measured as ln(1 + % change) where logarithmic utility is assumed, not as a raw percentage.
 
+**Benefit stream discounting inventory** (mandatory for all models with multiple benefit streams): Before completing Step 3b, enumerate every distinct benefit stream in the model. Read the formula for each stream's multi-year value calculation in FORMULA mode and determine whether present-value discounting is applied. Write the inventory before proceeding:
+
+```
+Discounting inventory:
+  [stream] (e.g. YLL/mortality): discounted? [YES / NO — cite cell ref]
+  [stream] (e.g. YLD/morbidity): discounted? [YES / NO — cite cell ref]
+  [stream] (e.g. SWB): discounted? [YES / NO — cite cell ref]
+  [stream] (e.g. income/consumption): discounted? [YES / NO — cite cell ref]
+```
+
+If any stream is NOT discounted while other streams ARE, file **Medium/Assumption** unless a cell note explicitly documents the asymmetric treatment: "[Stream] benefit ([cell]) is not discounted while [other streams] apply a [X]% discount rate. Adding discounting would reduce the undiscounted stream's relative weight, lowering CE. Either apply consistent discounting across all streams, or add a cell note documenting the rationale for asymmetric treatment." CE impact: `Lowers CE — magnitude unknown`. Do not file if the entire model is consistently undiscounted — only file when there is a within-model inconsistency across streams. Note: mortality/YLL and morbidity/YLD streams are often left undiscounted by default in GiveWell models — always check all streams, not only SWB.
+
 **Discount exponent year-offset check**: For each row in the CE chain that applies a discount factor of the form `1/(1+r)^n` (or equivalent, e.g., `(1+r)^-n`, `POWER(1+r, -n)`, `1/POWER(1+r, n)`):
 1. Read the year label for that row — typically found in column A or B of the same row, or in a column header if the model is column-oriented by year.
 2. Identify the base year used in the model (commonly labeled "Year 0," "Base year," or the first year of the program; read from a parameter cell or tab header if not immediately adjacent).
