@@ -41,6 +41,30 @@ If the report shows "Matching rows: none" and "Leverage/Funging tab: absent": wr
 
 ---
 
+## Check 0 — Presence of funging adjustment in direct CE chain
+
+Before auditing existing adjustments, check whether any funging or counterfactual displacement adjustment exists in the **direct CE calculation chain** — the rows that feed into the final CE multiple, separate from any leverage tab rows.
+
+Scan the Main CEA tab column A for rows containing: `fung`, `counterfactual`, `government replacement`, `displacement`, `additionality`, `crowding out`. This is separate from the Leverage/Funging tab scan above — this check specifically looks for these adjustments within the primary chain that produces the CE output.
+
+**If no such rows are found in the direct CE chain**, determine whether an adjustment enters the chain indirectly through leverage:
+1. If a Leverage/Funging tab exists AND its output row feeds into the direct CE chain → no gap; the adjustment enters via the leverage calculation. Write: "Check 0: Funging present via leverage tab — direct chain gap not applicable."
+2. If a Leverage/Funging tab exists but its output does NOT feed into the direct CE chain → apply FN-008 from pitfalls.md. Compare against comparable GiveWell programs for this intervention type and file accordingly.
+3. If no Leverage/Funging tab exists and no funging row exists in the direct CE chain → apply FN-008. File **Medium/Adjustment** when a comparable GW program applies explicit funging; file **Low/Adjustment** when the program type is novel with no comparable GW precedent.
+
+**Required output for Check 0**:
+```
+Check 0: Direct CE chain funging scan.
+  Funging/counterfactual keyword rows in Main CEA: [list with row refs, or 'none']
+  Leverage tab present: [YES / NO]
+  Leverage output feeds into direct CE chain: [YES / NO / N/A]
+  Gap applicable (FN-008): [YES / NO — rationale]
+```
+
+Write this block before proceeding to Check 1.
+
+---
+
 ## Check 1 — Direction of funging adjustment
 
 Funging adjustments should *reduce* expected impact (or equivalently, increase cost per outcome) when government programs are fungible with GiveWell-funded activities. Verify the sign convention:
