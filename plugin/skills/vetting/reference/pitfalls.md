@@ -360,6 +360,26 @@ This calibration target is per-agent. If multiple agents run in parallel and the
 
 ---
 
+### SC-019 (2026-06) — Geographic transfer of a key parameter without documented justification → Medium/Assumption
+
+When a model applies a key parameter (transmission rate, efficacy estimate, disease burden figure) derived from a study in a different country or income-group context — e.g., US or European rates applied to LMIC programs — and no cell note documents why the extrapolation to the target geography is valid, file as **Medium/Assumption** when the parameter is confirmed in the direct CE chain. Do not file as Low on the grounds that the value is numerically plausible: plausibility and transferability are different tests. The required test is: can a researcher verify that the value applies to this program's target population from the cited source alone? If not, file Medium. Low is correct only when (a) a cell note explicitly justifies the geographic transfer with literature supporting the extrapolation, or (b) a sensitivity analysis confirms the parameter has negligible CE impact. Do not escalate to High under SC-003 — a geographic transfer assumption is not "demonstrably wrong" unless a specific LMIC-context study shows a materially different value and the CE chain is FORMULA-confirmed.
+
+Example: Li 2019 HIV transmission rates from US surveillance applied to LMIC program populations without documentation. AB filed Low (plausible); MR filed Medium (unverifiable applicability to target context). MR is correct.
+
+**Applies to**: formula-check-data, source-data-check, heads-up-epi, heads-up-intervention, ce-chain-trace
+
+---
+
+### SC-020 (2026-06) — Stale cost estimate in cost denominator without inflation adjustment → Medium/Parameter
+
+When the cost denominator uses cost estimates from a source published more than 3 years before the model's grant period start year, and no cell note documents an inflation adjustment or explains why nominal costs remain valid, file as **Medium/Parameter** — not Low. Program delivery and healthcare costs in LMIC settings change materially over multi-year periods (commodity price changes, currency fluctuation, procurement scale). A cost estimate more than 3 years old without adjustment is a concrete parameter gap, not merely a documentation gap. This extends FN-002's stale-vintage logic explicitly to cost rows: run a targeted WebSearch for updated cost benchmarks before filing; if a current estimate differs by ≥5%, upgrade to High/D per SC-003. Low is correct only when (a) the cell note includes an explicit inflation adjustment or documents why nominal costs are stable, or (b) sensitivity analysis confirms cost uncertainty has negligible CE impact.
+
+Example: CHAI 2014 cost estimates in the cost denominator of a current-grant BOTEC, no inflation adjustment noted. AB filed Low; MR filed Medium. MR is correct.
+
+**Applies to**: formula-check-arithmetic, formula-check-data, source-data-check, ce-chain-trace
+
+---
+
 ## Entry template
 
 ```

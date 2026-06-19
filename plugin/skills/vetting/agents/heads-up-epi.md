@@ -173,6 +173,7 @@ Heads-up epi-B check log — Model Structure & Timing Checks + adversarial Secti
   adjustment combination method [___]
   probability-chain enumeration [___]
   cross-tab time-parameter sourcing [___]
+  FN-009 cascade timing — staged disease model wrong-stage reference [___]
   full-scale-up assumption (undocumented 100%) [___]
   cost denominator scope [___]
   benefit/cost allocation for leverage [___]
