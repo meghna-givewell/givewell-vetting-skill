@@ -116,6 +116,8 @@ The severity rule already states: "When impact is unknown but the affected param
 
 Example: Mengstie et al 2025 C20 = 33.1% per 100 person-years used as a cumulative probability. C20 → weighted average C21 → baseline mortality CEA!B11 → mortality reduction B13 → final CE B36: direct chain confirmed. File High, not Low.
 
+**SC-003 applies only to confirmed errors, not to questions or gaps.** When the finding is fundamentally a question about researcher intent — "is this adjustment applicable?", "is this approach correct?" — SC-003 does not escalate it to High. The test: could a reasonable researcher defend the current model state without it being an error? If yes, the finding is a gap or assumption question (Medium ceiling), not a confirmed error. Examples of question-type findings that stay at Medium even when the parameter is in the CE chain: absent funging where applicability is uncertain (FN-008 ceiling: Medium), tiny parameter deviations where the magnitude is below the materiality threshold (FN-002 ceiling: Medium/H). When another pitfall entry explicitly specifies a ceiling severity ("file at Medium"), that ceiling holds — SC-003 does not override it.
+
 **Applies to**: all formula-check agents and source-data-check, source-citation-verify, sources, heads-up-epi, heads-up-evidence, heads-up-intervention
 
 ---
