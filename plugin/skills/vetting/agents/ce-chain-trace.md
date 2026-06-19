@@ -233,13 +233,15 @@ COVERAGE | ce-chain-trace | sign-consistency check | [N] adjustment rows checked
 
 ### 3f — Semantic reference verification in high-risk sections
 
-Three sections of a GiveWell CEA are especially prone to "wrong row" or "wrong column" errors that are syntactically valid but semantically incorrect — the formula resolves to a plausible number from the wrong source cell. These errors are invisible to syntax audits and only surface by reading the label at the referenced address.
+Four sections of a GiveWell CEA are especially prone to "wrong row" or "wrong column" errors that are syntactically valid but semantically incorrect — the formula resolves to a plausible number from the wrong source cell. These errors are invisible to syntax audits and only surface by reading the label at the referenced address.
 
 **1. Indirect effects section**: For every formula in rows labeled "indirect effects," "indirect benefit," "indirect mortality," or similar, read the row label of the referenced upstream cell and verify it describes an indirect-effects-specific source. A copy-paste from the direct benefits section commonly leaves the indirect effects formula referencing a direct-effects row.
 
 **2. External validity adjustments by cohort, round, or geography**: When the model applies EV adjustments across multiple cohorts, rounds, or geographies, verify that each column's EV formula references the column-appropriate row in the source — not a single shared row or another column's row. Read the referenced row label for each column.
 
 **3. All-cause mortality and disease burden inputs**: For every cross-sheet formula pulling mortality rates or disease burden figures, verify both: (a) the row label at the referenced cell describes the correct mortality concept (e.g., under-5 ACM, not all-ages), and (b) the column at the referenced cell corresponds to the correct geography for the formula's context.
+
+**4. Treatment cascade timing parameters** *(applies to staged disease models — HIV, TB, hepatitis)*: When a formula computes duration of exposure, transmission risk, or time-at-risk, verify that the timing parameter referenced from a source tab matches the correct cascade stage. In HIV models, adjacent rows commonly contain "time from infection to diagnosis," "time from infection to treatment start," and "time from infection to viral suppression" — with similar numerical values. The conceptually correct row depends on which event ends the risk window: transmission risk ends at *treatment start* (when ART suppresses viral load), not at *diagnosis* (a diagnosed but untreated person remains infectious). For each such formula, read the row label at the referenced cell and confirm it names the intended cascade stage. If the model is not a staged disease model, write "not applicable" for this section.
 
 For each section, produce a mandatory verification table before filing or declining to file:
 
@@ -248,12 +250,13 @@ For each section, produce a mandatory verification table before filing or declin
 | Indirect effects | [ref] | [source ref] | [label] | [header] | YES/NO |
 | EV by cohort | [ref] | [source ref] | [label] | [header] | YES/NO |
 | ACM/burden | [ref] | [source ref] | [label] | [header] | YES/NO |
+| Cascade timing | [ref] | [source ref] | [label] | [header] | YES/NO |
 
 If a section does not exist in the model, write "not present" for that section's rows. A row absent from the table has not been checked. File any "NO" as **High/Formula**: "[cell] references [source ref] (label: '[referenced label]') but this formula computes [intended concept] for [intended geography/cohort]. Change the reference to [correct cell]."
 
 **Step 3f completeness declaration**: After completing the verification table above, write the following coverage note before proceeding to Step 3g:
 
-`Step 3f coverage: [N] formula cells in indirect-effects section found, [N] included in semantic table, [list any skipped and reason]. [N] formula cells in EV-by-cohort section found, [N] included, [list any skipped and reason]. [N] formula cells in ACM/burden section found, [N] included, [list any skipped and reason]. If all cells in all sections are covered, state: "All covered."`
+`Step 3f coverage: [N] formula cells in indirect-effects section found, [N] included in semantic table, [list any skipped and reason]. [N] formula cells in EV-by-cohort section found, [N] included, [list any skipped and reason]. [N] formula cells in ACM/burden section found, [N] included, [list any skipped and reason]. [N] formula cells in cascade-timing section found (or: not applicable — not a staged disease model), [N] included, [list any skipped and reason]. If all cells in all sections are covered, state: "All covered."`
 
 A cell is "skipped" only if it was found during section scanning but deliberately excluded from the table (e.g., a header row, a non-formula cell, or a cell verified as a pure passthrough with no cross-sheet reference). Do not omit a cell from the table without listing it in the skipped column of this declaration. Silent partial coverage — checking some cells in a section but not declaring the rest as skipped — is not permitted.
 

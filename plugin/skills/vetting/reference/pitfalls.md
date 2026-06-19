@@ -237,6 +237,18 @@ When the direct CE calculation chain (the rows between the effect-size inputs an
 
 ---
 
+### FN-009 (2026-06) — Treatment cascade timing confusion in staged disease models
+
+In staged disease models (HIV, TB, hepatitis), transmission risk and benefit duration formulas require a specific cascade-stage timing parameter. Cross-sheet references to an adjacent timing row produce numerically plausible but conceptually wrong values. The canonical HIV cascade has multiple closely proximate timing rows — e.g., "time from infection to diagnosis," "time from infection to treatment start," "time from infection to viral suppression" — with similar numerical values; a wrong-row reference passes a plausibility check. The conceptually correct row depends on which event ends the risk window: in HIV models, transmission risk ends at *treatment start* (when ART suppresses viral load), not at *diagnosis* (a diagnosed but untreated person remains infectious).
+
+When a formula computes duration of exposure, transmission risk, or time-at-risk in a staged disease model, explicitly verify that the row label at the referenced cell matches the required cascade stage — not just that the value is in a plausible range. Apply this check during Step 3f semantic verification and Step 4d stale-row checks.
+
+File as **High/Formula [Wrong reference]** if a wrong-cascade-stage timing reference is confirmed in FORMULA mode AND the cell feeds the direct CE chain (≥1 hop per SC-012).
+
+**Applies to**: ce-chain-trace, formula-check-arithmetic, heads-up-epi, heads-up-intervention
+
+---
+
 ### FN-006 (2026-06) — Cross-tab reference row-label mismatch (PIT-6)
 
 When a formula references another tab and the referenced row produces a numerically plausible value, verify that the row **label** in the referenced tab also matches the expected parameter — not just the row number. Cross-tab references can point to the correct row number but the wrong logical row if rows have been inserted or deleted since the formula was written. Example: `='Inputs'!B14` may have been written when B14 = "Malaria mortality rate" but now B14 = "ITN usage rate" after a row insertion — the value might still be in a plausible range, masking the mismatch. Verify row labels whenever tracing cross-tab references.
