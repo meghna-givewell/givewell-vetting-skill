@@ -50,6 +50,14 @@ Before filing an off-by-one finding on a time-series SUM or AVERAGE, read the co
 
 ---
 
+### FP-007 (2026-06) — High-severity protection does not override a confirmed no-CE-impact finding
+
+When two instances of the same issue are filed at different severities, the high-severity protection rule retains the higher severity. This rule does NOT apply when CE impact is confirmed to be zero — i.e., the affected cell or formula demonstrably does not enter any CE calculation chain. A finding with "No CE impact" in column H is correctly filed at Low regardless of how many instances were observed. Do not elevate a no-CE-impact finding beyond Low even if two instances were flagged at different severities. Common examples: budget tab label swaps, Simple CEA header text errors, hardcoded benchmark in a non-CE display cell.
+
+**Applies to**: all agents, final-review-compaction
+
+---
+
 ## False Negative Risks — make sure to catch these
 
 ### FN-001 (2026-04) — GBD data vintage: always flag, even without a CE magnitude
@@ -229,6 +237,8 @@ When the direct CE calculation chain (the rows between the effect-size inputs an
 
 When a formula references another tab and the referenced row produces a numerically plausible value, verify that the row **label** in the referenced tab also matches the expected parameter — not just the row number. Cross-tab references can point to the correct row number but the wrong logical row if rows have been inserted or deleted since the formula was written. Example: `='Inputs'!B14` may have been written when B14 = "Malaria mortality rate" but now B14 = "ITN usage rate" after a row insertion — the value might still be in a plausible range, masking the mismatch. Verify row labels whenever tracing cross-tab references.
 
+**VoI parameter corollary**: When tracing VoI cells, do not assume cell addresses based on template position. Always read the cell label (FORMATTED_VALUE, column A/B of the same row) before describing what the cell contains — VoI models frequently deviate from standard template row order. Mislabeling a cell in a finding's Recommended Fix can corrupt the model if the researcher applies the fix without verifying.
+
 **Applies to**: formula-check-arithmetic, ce-chain-trace, formula-check-data
 
 ---
@@ -256,6 +266,38 @@ SC-003 ("Parameter in the direct CE chain → High even when CE impact is not qu
 - SC-008 GBD vintage escalation: **≥2 hops** (FORMULA-mode confirmed) → High; otherwise Medium
 
 **Applies to**: formula-check-arithmetic, formula-check-data, ce-chain-trace, key-params-check
+
+---
+
+### SC-013 (2026-06) — Cost denominator gap: quantify the ratio; High when full budget / denominator > 1.2×
+
+When the CE denominator is a subset of the total grant budget (e.g., programmatic costs only, excluding evaluation costs), compute the ratio: full_grant_budget / CE_denominator. If this ratio exceeds 1.2× (i.e., the omitted cost component is more than 20% of what was counted), the CE estimate is materially overstated → file as **High/Parameter**. Quantify the CE impact: "Reported CE of [X]× → ~[X / ratio]× when full budget is used as denominator." If the ratio is ≤1.2×, file at Medium. If a cell note explicitly justifies the exclusion (e.g., "evaluation costs funded by a separate earmarked grant"), file at Low. Do not file at all if the excluded costs genuinely do not generate the grant's benefits.
+
+**Applies to**: formula-check-arithmetic, ce-chain-trace, leverage-funging
+
+---
+
+### SC-014 (2026-06) — Funging applied to VoI component only (not total CE) → High/Adjustment
+
+When a model contains both a direct CE component and a VoI/optionality component, and a funging or downside adjustment exists but is applied only to the VoI sub-calculation (not to total CE), this is a structural misapplication — file as **High/Adjustment**: "Funging adjustment at [cell] is applied only to the VoI component ([VoI cell]) and not to the direct CE component ([direct CE cell]). Total CE ([total CE cell] = [X]×) therefore omits the funging penalty on the direct component. Restructure to apply funging to total CE, not only the VoI sub-calculation." If the model's stated approach explicitly justifies VoI-only scoping with a documented rationale, file at Medium and ask the researcher to confirm. If uncertain whether scoping is intentional, file at Medium.
+
+**Applies to**: leverage-funging, ce-chain-trace
+
+---
+
+### SC-015 (2026-06) — GBD permalink returns 403: WebFetch IHME directly before defaulting to Medium
+
+When a GBD/IHME permalink in the spreadsheet returns HTTP 403 (expired session link), do not immediately default to Medium. Run a targeted WebFetch or WebSearch to confirm the latest available GBD vintage — e.g., search "GBD 2024 released" or fetch the IHME website directly. If a newer vintage is confirmed available (published before the model's grant period), escalate to High per SC-008 when the CE chain is confirmed via FORMULA-mode trace (≥2 hops). Use Medium only when (a) the IHME fetch also fails and no newer vintage can be confirmed, or (b) the CE chain cannot be confirmed in FORMULA mode. Document in the finding: "Permalink returned 403; IHME website confirmed GBD [year] released [date], making the model's GBD [year-1] data stale."
+
+**Applies to**: formula-check-arithmetic, formula-check-data, heads-up-epi
+
+---
+
+### SC-016 (2026-06) — Explicitly labeled placeholder in the CE chain → always High
+
+When a cell note explicitly labels a value as a "placeholder," "pending update," "to be confirmed," "TBC," or "TBD" — AND the cell is confirmed in the direct CE chain (≥1 hop to CE output per SC-012) — file as **High** regardless of whether the current value seems numerically reasonable. The explicit placeholder label signals the researcher has not yet committed to this value; any CE estimate depending on it is provisional. Sensitivity coefficient is not required to justify High: the label alone is sufficient. Required Explanation language: "[Param] ([cell]) = [value] is explicitly marked as a placeholder in the cell note; as the highest-sensitivity parameter in the direct CE chain, do not publish CE until this is replaced with an empirically grounded value." Apply jointly with SC-003 — SC-016 adds only the "explicit placeholder label" trigger; CE chain confirmation is still required.
+
+**Applies to**: all formula-check agents, heads-up-evidence, ce-chain-trace
 
 ---
 

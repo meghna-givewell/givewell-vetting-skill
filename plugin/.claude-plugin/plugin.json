@@ -1,7 +1,7 @@
 {
   "name": "givewell-vetting",
   "description": "Run a full GiveWell-style spreadsheet vet on a workbook. Checks formulas, sources, readability, hardcoded values, and severity-classified findings across multi-wave parallel agents. Outputs a Vetting Summary Google Doc and a Findings Google Sheet.",
-  "version": "1.2.17",
+  "version": "1.2.19",
   "author": {
     "name": "GiveWell"
   },

@@ -63,6 +63,18 @@ Check 0: Direct CE chain funging scan.
 
 Write this block before proceeding to Check 1.
 
+**Check 0b — Funging scope when present**: If Check 0 finds that funging rows exist in the direct CE chain (or in a leverage tab that feeds the chain), verify their scope. When the model contains both a direct CE component (non-VoI, e.g., B2 or equivalent) and a VoI/optionality component (e.g., B3 or equivalent), check whether the funging adjustment applies to both or only to the VoI sub-calculation. Read the funging cell formula: if it adjusts only the VoI sub-total (e.g., `=(B65-B64)*(1+B67)`) and the direct CE numerator has no corresponding funging row, apply SC-014 and file as **High/Adjustment**. Write the required Check 0b output block:
+
+```
+Check 0b: Funging scope (runs only when Check 0 finds funging present).
+  Direct CE component row: [ref and label, or 'not found']
+  VoI/optionality component row: [ref and label, or 'not found']
+  Funging adjustment scope: [total CE / VoI-only / direct-CE-only / unclear]
+  SC-014 applicable: [YES / NO — rationale]
+```
+
+If Check 0 found no funging, write: "Check 0b: skipped — no funging found in Check 0."
+
 ---
 
 ## Check 1 — Direction of funging adjustment
