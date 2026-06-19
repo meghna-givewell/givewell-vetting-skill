@@ -804,9 +804,13 @@ Wait for all spawned Wave 1 agents to complete before proceeding.
 
 **Researcher checkpoint definition**: Present to the researcher: (a) a summary of any pre-findings flagged during the pre-vet acknowledged-issue extraction and declared-deviation verification (Step 0.5), and (b) a one-paragraph sheet overview — number of vetted tabs, row count of the main CEA sheet, and any structural deviations noted in Step 2. **Skip condition**: proceed without presenting if the researcher is absent (no response within 30 seconds of sending) or if the model has ≤ 20 populated rows (simple enough that orientation context adds no value). **Continue condition**: proceed when the researcher replies confirming they are ready, or when 30 seconds elapse with no response — note in session context which condition triggered.
 
-**Silent failure check — do this before the researcher checkpoint**: For each Wave 1 agent, read its staging sheet and check whether any non-header, non-AGENT_COMPLETE rows exist. An agent that has no AGENT_COMPLETE row and no finding rows in its staging sheet may have failed silently (auth timeout, context limit, API error) rather than genuinely found no issues. Read each staging tab in batched 50-row increments: `{staging_tab_name}!A1:I50`, then `A51:I100`, `A101:I150`, continuing until two consecutive batches return no non-empty rows or the AGENT_COMPLETE marker is found. **The MCP tool returns at most 50 rows per call — a single A1:I500 call silently truncates at row 50.** Check for AGENT_COMPLETE in each batch before proceeding to the next. Report any empty staging sheet in chat:
+**Silent failure check — do this before the researcher checkpoint**: For each Wave 1 agent, read its staging sheet and check whether any non-header, non-AGENT_COMPLETE rows exist. An agent that has no AGENT_COMPLETE row and no finding rows in its staging sheet may have failed silently (auth timeout, context limit, API error) rather than genuinely found no issues. Read each staging tab in batched 50-row increments: `{staging_tab_name}!A1:I50`, then `A51:I100`, `A101:I150`, continuing until two consecutive batches return no non-empty rows or the AGENT_COMPLETE marker is found. **The MCP tool returns at most 50 rows per call — a single A1:I500 call silently truncates at row 50.** Check for AGENT_COMPLETE in each batch before proceeding to the next. For agents where 0-findings is marked **No** in the per-agent thresholds table below, treat an empty staging tab as a **hard halt** — do not proceed to Wave 2:
 
-> ⚠️ Silent failure warning: [agent name] staging sheet `[staging_tab_name]` is empty (no AGENT_COMPLETE marker and no findings). This may indicate agent failure. Consider re-running this agent before proceeding to Wave 2.
+> 🛑 **HALT — [agent name]** staging sheet `[staging_tab_name]` has no AGENT_COMPLETE marker and no findings. This agent must complete before Wave 2 begins. Re-spawn `[agent name]` with the same session context (staging tab, row scope, pre-read cache). Do not proceed until the re-spawned agent writes an AGENT_COMPLETE marker. If the agent fails a second time, post in #ai-claude-code-pilot before continuing.
+
+For agents where 0-findings is **Yes** (a plausible clean pass), report a softer warning but do not halt:
+
+> ⚠️ Silent failure warning: [agent name] staging sheet `[staging_tab_name]` is empty (no AGENT_COMPLETE marker and no findings). This may be a valid clean pass — confirm by checking AGENT_COMPLETE text. If no AGENT_COMPLETE marker is present, consider re-running this agent before proceeding.
 
 **Per-agent thresholds for zero-finding results** — use these instead of general judgment:
 
@@ -932,9 +936,13 @@ For A instances, pass the standard session context only. The only difference bet
 - For agents where 0-findings is **not** plausible (heads-up-evidence, heads-up-epi, ce-chain-trace), an empty staging tab with no AGENT_COMPLETE is a failure signal regardless.
 - For agents where 0-findings is plausible (readability when formula-only scope, leverage-uov-check when no leverage tab exists, sources when formula-only scope): verify the AGENT_COMPLETE text explicitly declares the check clean or the skip was pre-approved.
 
-Report any failed agent:
+For agents where 0-findings is **not** plausible (heads-up-evidence, heads-up-epi, ce-chain-trace), treat an empty staging tab as a **hard halt** — do not spawn Wave 2.5 reconciliation:
 
-> ⚠️ Wave 2 silent failure warning: [agent name] staging tab `[staging_tab]` is empty (no AGENT_COMPLETE and no findings). Consider re-running this agent before spawning Wave 2.5 reconciliation.
+> 🛑 **HALT — [agent name]** staging tab `[staging_tab]` has no AGENT_COMPLETE marker and no findings. This agent must complete before Wave 2.5 reconciliation begins. Re-spawn `[agent name]` with the same session context. Do not proceed until the re-spawned agent writes an AGENT_COMPLETE marker.
+
+For agents where 0-findings is plausible (readability when formula-only scope, leverage-uov-check when no leverage tab exists, sources when formula-only scope): verify the AGENT_COMPLETE text explicitly declares clean or the skip was pre-approved. If no AGENT_COMPLETE exists, report:
+
+> ⚠️ Wave 2 silent failure warning: [agent name] staging tab `[staging_tab]` is empty (no AGENT_COMPLETE and no findings). Confirm whether this is a legitimate clean pass before spawning Wave 2.5.
 
 ---
 
@@ -1097,7 +1105,11 @@ Issue each warning independently — a clean `stg-nscn-A` does not suppress a `s
 
 **Checking skipped agents**: For any agent that was explicitly skipped (source-data-check when no source tabs exist, leverage-uov-check when no leverage tab exists, notes-scan when formula-only scope, readability when formula-only scope): confirm the skip was recorded in session context before the tab was created. If the tab is empty but the skip was NOT recorded, treat as a potential silent failure rather than a legitimate skip.
 
-For any required agent whose staging tab is empty and where 0-findings is **not** a plausible clean pass: announce `⚠️ Pre-Wave-3 self-verification failed: [agent] staging tab [tab] is empty. Consider re-running this agent before compaction.` Proceed only after either re-running the missing agent or obtaining explicit researcher approval to proceed with incomplete coverage.
+For any required agent whose staging tab is empty and where 0-findings is **not** a plausible clean pass: this is a **hard halt** — do not spawn compaction:
+
+> 🛑 **HALT — Pre-Wave-3 self-verification failed**: `[agent]` staging tab `[tab]` is empty (no AGENT_COMPLETE, no findings). This agent must complete before Wave 3 compaction. Re-spawn `[agent]` with the original session context. If the agent fails a second time, post in #ai-claude-code-pilot — do not proceed with incomplete coverage without researcher approval.
+
+Proceed only after either (a) the missing agent successfully completes, or (b) explicit researcher approval: the researcher types PROCEED and you note in the Dashboard: "⚠️ Vet proceeded with incomplete coverage — [agent name] did not complete."
 
 **Wave 3 session context** — pass to each Wave 3 agent:
 

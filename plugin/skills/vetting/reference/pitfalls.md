@@ -209,6 +209,22 @@ All new entries should use the appropriate prefix. When uncertain whether an ent
 
 ---
 
+### FN-007 (2026-06) — Cross-source effect construction vs. within-trial estimate
+
+When a model derives its primary mortality (or morbidity) reduction by comparing values from two independently-sourced studies — e.g., `1 - (treated_mortality / baseline_mortality)` where the treated rate comes from one study and the baseline from another — flag this as a cross-source construction and verify against available within-trial or meta-analytic estimates (e.g., a Cochrane review for the same intervention). A within-trial randomized contrast is methodologically stronger because it controls for population differences across sources. Run a targeted WebSearch: `"[intervention] [outcome] Cochrane review"` or `"[intervention] [outcome] meta-analysis systematic review"`. If a Cochrane or comparable systematic review reports a materially different raw effect (>15% relative from the model's constructed number), file as **Medium/Assumption**: "The model's [X%] reduction is constructed by dividing two independently-sourced rates rather than drawn from a within-trial comparison. [Source] reports [Y%] from a within-trial/meta-analytic contrast. Confirm whether the cross-source construction is appropriate, and document the justification in a cell note." If no external meta-analysis is available, file as **Low/Assumption**: "The model constructs its primary effect size from two independently-sourced rates — verify a within-trial comparison is not available that would be more directly applicable."
+
+**Applies to**: heads-up-evidence, formula-check-data
+
+---
+
+### FN-008 (2026-06) — Absent funging adjustment in direct CE chain when comparable programs have one
+
+When the direct CE calculation chain (the rows between the effect-size inputs and the final CE multiple) contains no funging or counterfactual displacement adjustment row, check whether comparable GiveWell programs of the same type apply an explicit funging reduction. GiveWell's top-charity CEAs include explicit funging adjustments for SMC (~43%), VAS (~26%), deworming (~24%), and ITNs (~30%). For a new intervention in the same category (malaria prevention, child health, nutrition), the absence of a funging row in the direct CE chain is a gap to verify — not to assume intentional. File as **Medium/Adjustment**: "No funging or government replacement adjustment appears in the direct CE chain. Comparable GiveWell programs of this type apply funging adjustments of [X%–Y%]. If funging is not applicable (e.g., no comparable government program exists), add a cell note documenting this judgment." File **Low** if the program type is genuinely novel with no comparable GiveWell precedent. Do not flag if a funging row exists in a leverage tab whose output feeds into the CE chain — in that case the adjustment enters the chain through the leverage calculation.
+
+**Applies to**: leverage-funging, ce-chain-trace
+
+---
+
 ### FN-006 (2026-06) — Cross-tab reference row-label mismatch (PIT-6)
 
 When a formula references another tab and the referenced row produces a numerically plausible value, verify that the row **label** in the referenced tab also matches the expected parameter — not just the row number. Cross-tab references can point to the correct row number but the wrong logical row if rows have been inserted or deleted since the formula was written. Example: `='Inputs'!B14` may have been written when B14 = "Malaria mortality rate" but now B14 = "ITN usage rate" after a row insertion — the value might still be in a plausible range, masking the mismatch. Verify row labels whenever tracing cross-tab references.
