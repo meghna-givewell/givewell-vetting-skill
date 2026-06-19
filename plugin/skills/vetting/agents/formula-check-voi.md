@@ -69,6 +69,24 @@ Coverage declaration: `COVERAGE | formula-check-voi | probability row column-ref
 
 ---
 
+## Check 2.5 — VoI probability row label-formula semantic consistency
+
+For every row in the VoI/optionality section whose label contains a probability concept — e.g., "probability," "P(," "counterfactual," "marginal," "incremental," "without research," "with research," "additionality" — read the row label (FORMATTED_VALUE, column A) and the formula (FORMULA mode) together and verify they describe the same quantity.
+
+Three specific mismatches to detect:
+
+1. **Label says "counterfactual" / "without research" but formula computes a difference**: A cell labeled "counterfactual probability" (i.e., the baseline probability the program is funded absent this research) should hold a single probability value or reference — not a subtraction formula. If the formula is `=[cell] - [cell]`, the cell is computing an *incremental* or *marginal* probability, not the counterfactual itself. Flag as **Medium/Inconsistency**: "Row '[label]' ([cell]) is labeled as the counterfactual probability but the formula `[formula]` computes a *difference* between two probability cells — this is the incremental (marginal) probability attributable to the research, not the counterfactual baseline. Relabel to 'Incremental probability of funding attributable to this grant' (or equivalent), or restructure the formula so this cell holds the standalone counterfactual probability."
+
+2. **Label says "incremental" / "marginal" / "additionality" but formula is a plain reference or hardcode**: A cell labeled as the incremental probability (the change in probability due to research) should compute a difference. If the formula is a plain cell reference (`=[cell]`) or a hardcoded number, the incremental framing may be misleading. Flag as **Low/Inconsistency**: "Row '[label]' ([cell]) is labeled as an incremental probability but the formula `[formula]` does not compute a difference — confirm this cell returns the incremental (not absolute) probability of funding."
+
+3. **"With research" probability ≤ "without research" probability**: Locate the pair of rows representing P(fund with research) and P(fund without research). Read both values in FORMATTED_VALUE mode. If P(with research) ≤ P(without research), the incremental value of the research is zero or negative — flag as **High/Parameter**: "P(fund with research) ([cell] = [value]) is not greater than P(fund without research) ([cell] = [value]). The research is expected to increase the probability of a good funding decision — if P(with) ≤ P(without), the VoI calculation produces zero or negative optionality value. Verify both probability values are correctly sourced."
+
+Do not file if a cell note already acknowledges and explains the apparent label-formula mismatch.
+
+Coverage declaration: `COVERAGE | formula-check-voi | probability label-formula semantic consistency | [N probability rows checked] | mismatches: [N] | issues found: [N] | status: complete`
+
+---
+
 ## Check 3 — Cross-actor symmetry assumption check
 
 When a VOI sheet defines parallel parameters for different actors (e.g., GiveWell opportunity cost CE and other philanthropic funders' opportunity cost CE), identify any two structurally parallel cells that hold identical values for actors with plausibly different cost-effectiveness thresholds. Flag as **Low/Assumption**: "Row [X] assumes [actor 1]'s [parameter] equals [actor 2]'s [parameter] (both = [value]). Equal values across different modeled actors are a non-obvious assumption — if intentional, add a cell note explaining why both actors share this assumption." Do not flag where a cell note already explains the equality.
@@ -180,6 +198,7 @@ formula-check-voi check log:
   grant cost logical consistency [___]
   VOI/optionality ad hoc adjustment scope [___]
   probability row column-reference consistency [___]
+  probability label-formula semantic consistency [___]
   cross-actor symmetry assumption [___]
   VOI_Priors cross-formula column-scope [___]
   annuity-due vs. annuity-immediate [___]
