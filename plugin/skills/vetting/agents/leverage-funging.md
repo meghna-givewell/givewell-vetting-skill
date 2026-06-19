@@ -37,11 +37,11 @@ Leverage/funging section detection:
   Sections identified: [named sections with row ranges, e.g., "Leverage section (rows 45–55), Funging section (rows 60–72)"; or 'none']
 ```
 
-If the report shows "Matching rows: none" and "Leverage/Funging tab: absent": write "No leverage or funging sections identified in this workbook. Checks 1–7 skipped." Write the AGENT_COMPLETE marker with: Column B: leverage-funging | Column D: AGENT_COMPLETE | Column F: COVERAGE_ROWS: none | Staging sheet: [name from session context]. Filed 0 findings. No leverage or funging sections identified — Checks 1–7 skipped. And stop.
+If the report shows "Matching rows: none" and "Leverage/Funging tab: absent": **do not stop here — proceed immediately to Check 0.** Check 0 scans the Main CEA tab for funging row presence and runs regardless of section detection result. After completing Check 0, write in the AGENT_COMPLETE marker "Checks 1–7 skipped — no leverage/funging sections found" and stop. Do not write AGENT_COMPLETE before running Check 0.
 
 ---
 
-## Check 0 — Presence of funging adjustment in direct CE chain
+## Check 0 — Presence of funging adjustment in direct CE chain *(always runs — not skipped by section detection)*
 
 Before auditing existing adjustments, check whether any funging or counterfactual displacement adjustment exists in the **direct CE calculation chain** — the rows that feed into the final CE multiple, separate from any leverage tab rows.
 
@@ -288,7 +288,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `leverage-funging`
 - Column D: `AGENT_COMPLETE`
-- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]. Checks complete: [list each check number that ran, e.g., 1 / 2 / 2-prelim / 3 / 4 / 4-incremental / 5 / 5b / 5c / 6 / 7; or 'Check 1 only — no leverage/funging sections found']. Any check not run: [list check numbers, or 'none'].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]. Checks complete: [list each check number that ran — Check 0 must always appear here regardless of section detection result, e.g., '0 / 0b / 1 / 2 / 3 / 4 / 5 / 5b / 5c / 6 / 7' or '0 only — Checks 1–7 skipped, no leverage/funging sections found']. Any check not run: [list check numbers, or 'none'].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).
