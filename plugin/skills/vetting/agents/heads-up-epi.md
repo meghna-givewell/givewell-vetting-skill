@@ -32,7 +32,7 @@ Do not re-run checks owned by the other two agents.
 This agent runs as two complementary instances covering distinct check sets. Check your instance scope in session context before starting:
 
 - **heads-up-epi-A**: Run **Section A — Epidemiological Parameter Checks** only. Skip Section B entirely.
-- **heads-up-epi-B**: Primary scope is **Section B — Model Structure & Timing Checks**. After Section B, run a targeted adversarial pass of three Section A checks: (1) disease burden multi-source check, (2) GBD/IGME vintage staleness check, (3) counterfactual coverage floor check.
+- **heads-up-epi-B**: Primary scope is **Section B — Model Structure & Timing Checks**. After Section B, run a targeted adversarial pass of four Section A checks: (1) disease burden multi-source check, (2) GBD/IGME vintage staleness check, (3) counterfactual coverage floor check, (4) HIV/ART life expectancy vintage check (HIV models only — write "n/a — not HIV" if not applicable).
 
 The TA-A and TA-B instances apply only when the model is a TA BOTEC with a dedicated counterfactual burden tab:
 - **heads-up-epi-TA-A**: Run **Section A — Epidemiological Parameter Checks** on the TA BOTEC counterfactual burden tab only. Skip Section B.
@@ -92,6 +92,14 @@ Before filing the GBD vintage staleness finding, read the GBD vintage cell in FO
 **Sideways benchmark staleness check**: When a model uses a sideways benchmark comparison (e.g., cost-effectiveness relative to GiveDirectly cash transfers, xCash, or a similar benchmark program) to contextualize CE results, extract the citation year for the benchmark value from the cell note or source column. Apply the following staleness rule: if the benchmark citation year is more than 3 years before the current model's data year, or predates the current model's data year by more than 3 years, flag as **Low/Parameter**: "Benchmark citation at [cell] uses [benchmark name] data from [cited year] — benchmark may be stale. Verify against current GiveWell parameters to confirm the benchmark value is still current." If no citation year is stated for the benchmark, file a Legibility finding (column D blank): "Benchmark value at [cell] does not state the citation year — add the source year to the cell note." Do not assume the benchmark is current because it appears in a standard parameters tab.
 
 **NI (neonatal iron) coverage trend staleness**: When a model includes neonatal iron (NI) or iron-folic acid (IFA) supplementation and uses a coverage trend parameter (rate of change in coverage over time), extract the data year for the coverage trend estimate from the cell note or source column. If the data year is more than 2 years before the current model's data year, flag as **Low/Parameter**: "NI/IFA coverage trend data at [cell] is from [data year] — coverage trend data is more than 2 years old; verify against current survey data (DHS, MICS, or government HMIS) to confirm the trend still applies." If no data year is stated, file a Legibility finding (column D blank): "NI/IFA coverage trend at [cell] does not state the data year — add the survey year to the cell note." Skip this check if the model does not include NI or IFA coverage trend parameters.
+
+**HIV/ART life expectancy vintage** *(applies to HIV-specific intervention models only — PrEP, ART, PMTCT, HIV testing)*: When a model includes a life expectancy or survival parameter for people living with HIV on treatment, verify the source is from the post-dolutegravir (DTG) era (2017 onward). Pre-DTG studies (e.g., Mills et al. 2011, AATCC cohort data pre-2015) estimated ~5–10 years of remaining life after HIV diagnosis due to earlier drug toxicities. Post-DTG first-line regimens achieve near-normal life expectancy — approximately 40–45 additional life-years for a 30-year-old starting modern ART in an LMIC setting (Teeraananchai et al. 2017; UNAIDS 2021). Using a pre-DTG source understates life-years gained per HIV infection averted by a factor of 3–8×, which can dramatically understate CE for HIV prevention interventions.
+
+Check procedure: (a) locate the life expectancy or survival parameter row(s); (b) extract the publication year from the cell note or source column; (c) apply the filing rule if the source predates 2017.
+
+File as **Medium/Parameter**: "Life expectancy for PLHIV at [cell] cites [source, year] — this predates the dolutegravir era. Post-DTG first-line ART achieves near-normal life expectancy; using pre-2017 estimates understates life-years gained per infection averted. Update to a post-2017 source (e.g., UNAIDS 2021 data, Teeraananchai et al. 2017, or a regional cohort study using DTG-containing regimens)." Upgrade to **High/D** if CE is within 3× of GiveWell's funding bar — the magnitude of understatement can affect the funding decision.
+
+Skip if: (a) the model is not HIV-specific; (b) the LE parameter explicitly represents the untreated counterfactual (pre-DTG LE may be appropriate as a counterfactual baseline — but file a Legibility note if this is undocumented); (c) a cell note explicitly explains why an older estimate is retained.
 
 ### Section B — Model Structure & Timing Checks *(heads-up-epi-B only)*
 
@@ -160,6 +168,7 @@ Heads-up epi-A check log — Epidemiological Parameter Checks:
   multi-program substitution [___]
   sideways benchmark staleness [___]
   NI/IFA coverage trend staleness [___]
+  HIV/ART life expectancy vintage (HIV models only) [___]
 ```
 
 **heads-up-epi-B log** (Section B primary + adversarial Section A pass):
@@ -190,6 +199,7 @@ Heads-up epi-B check log — Model Structure & Timing Checks + adversarial Secti
   SC-003 applied to counterfactual coverage — adversarial pass [___]
   sideways benchmark staleness — adversarial pass [___]
   NI/IFA coverage trend staleness — adversarial pass [___]
+  HIV/ART life expectancy vintage — adversarial pass (HIV models only) [___]
   GBD vintage findings filed; deduplication with formula-check-arithmetic handled by Wave 2.5 reconciliation [___]
 ```
 
