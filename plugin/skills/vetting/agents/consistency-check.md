@@ -71,6 +71,10 @@ Use the Cross-Cutting CEA Parameters doc already loaded at the top of this file 
 
 Coverage declaration: `COVERAGE | consistency-check | cross-vet parameter consistency | [N parameters checked] | issues found: [N] | status: complete`
 
+**In-kind government cost adjustment — hospital and facility programs**: When a program delivers services through government or hospital infrastructure (e.g., government nurses provide care, government health posts distribute commodities, government training facilities run training), verify that the cost denominator includes an in-kind government cost adjustment. The GW CEA Consistency Guidance specifies that hospital-implemented or government-facility-delivered programs should include an upward cost adjustment of approximately 20–30% to capture the value of in-kind government inputs (staff time, space, equipment, facility management overhead) not reflected in the direct grant budget. Check: (a) identify from the program context and model header whether services are delivered through government infrastructure rather than program-owned or NGO-operated facilities; (b) scan the cost denominator rows for a line labeled "in-kind," "government contribution," "facility overhead," "cost sharing," or similar; (c) if absent and the program demonstrably uses government infrastructure, file as **Medium/Assumption**: "The program is delivered through government/hospital infrastructure but the cost denominator does not include an in-kind government cost adjustment. GW CEA Consistency Guidance specifies approximately 20–30% uplift for hospital/facility-delivered programs. Confirm whether this was intentionally excluded, document the rationale, or add the adjustment." Skip this check if: (a) the program delivers services through NGO-owned or program-contracted facilities (not government), OR (b) a note explicitly documents why in-kind government costs are excluded from the denominator.
+
+Coverage declaration: `COVERAGE | consistency-check | in-kind government cost adjustment | [program delivery infrastructure identified] | issues found: [N] | status: complete`
+
 **Benchmark and final CE rows — always check, regardless of declared scope**: Even in targeted or heads-up vets where specific rows are declared in scope, always locate and check: (a) the GW benchmark row (typically labeled "Units of value per $, GiveWell benchmark" or similar) and (b) the final CE row (typically labeled "Final cost effectiveness (x cash/benchmark)"). These are the highest-stakes cells. Compare the benchmark value against `reference/key-parameters.md`. A stale benchmark is always High/D — no materiality threshold applies per the key-parameters.md bright-line rule and the severity matrix in SKILL.md. When a researcher has declared a restricted row scope for this vet, note explicitly in your output that benchmark and final CE rows are being checked regardless — these rows are never excludable by scope declaration.
 
 Coverage declaration: `COVERAGE | consistency-check | benchmark and final CE rows | [N parameters checked] | issues found: [N] | status: complete`
@@ -115,6 +119,7 @@ Cross-parameter:
 GiveWell parameters:
   declared-intentional deviation verification [___]
   cross-vet parameter consistency — Cross-Cutting CEA doc loaded [___]
+  in-kind government cost adjustment (hospital/facility programs) [___]
   benchmark and final CE rows [___]
   moral weights bounds guard [___]
   moral weights numeric verification — Moral Weights doc loaded [___]

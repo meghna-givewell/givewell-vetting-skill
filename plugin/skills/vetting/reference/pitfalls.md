@@ -50,6 +50,14 @@ Before filing an off-by-one finding on a time-series SUM or AVERAGE, read the co
 
 ---
 
+### FP-007 (2026-06) — High-severity protection does not override a confirmed no-CE-impact finding
+
+When two instances of the same issue are filed at different severities, the high-severity protection rule retains the higher severity. This rule does NOT apply when CE impact is confirmed to be zero — i.e., the affected cell or formula demonstrably does not enter any CE calculation chain. A finding with "No CE impact" in column H is correctly filed at Low regardless of how many instances were observed. Do not elevate a no-CE-impact finding beyond Low even if two instances were flagged at different severities. Common examples: budget tab label swaps, Simple CEA header text errors, hardcoded benchmark in a non-CE display cell.
+
+**Applies to**: all agents, final-review-compaction
+
+---
+
 ## False Negative Risks — make sure to catch these
 
 ### FN-001 (2026-04) — GBD data vintage: always flag, even without a CE magnitude
@@ -107,6 +115,10 @@ The "xCash" → "benchmark" and "GiveDirectly" → "benchmark" terminology requi
 The severity rule already states: "When impact is unknown but the affected parameter sits in the confirmed direct CE calculation chain, treat as High." Apply this before concluding "Direction unknown" or filing Low. Confirm the chain by tracing from the affected cell to the final CE output. If confirmed, file High regardless of whether you can quantify the impact.
 
 Example: Mengstie et al 2025 C20 = 33.1% per 100 person-years used as a cumulative probability. C20 → weighted average C21 → baseline mortality CEA!B11 → mortality reduction B13 → final CE B36: direct chain confirmed. File High, not Low.
+
+**SC-003 applies only to confirmed errors, not to questions or gaps.** When the finding is fundamentally a question about researcher intent — "is this adjustment applicable?", "is this approach correct?" — SC-003 does not escalate it to High. The test: could a reasonable researcher defend the current model state without it being an error? If yes, the finding is a gap or assumption question (Medium ceiling), not a confirmed error. Examples of question-type findings that stay at Medium even when the parameter is in the CE chain: absent funging where applicability is uncertain (FN-008 ceiling: Medium), tiny parameter deviations where the magnitude is below the materiality threshold (FN-002 ceiling: Medium/H). When another pitfall entry explicitly specifies a ceiling severity ("file at Medium"), that ceiling holds — SC-003 does not override it.
+
+**SC-003 High escalation requires demonstrated wrongness, not just chain membership.** Being in the CE chain is necessary but not sufficient for High. SC-003 escalates to High when ALL of the following hold: (1) the cell is confirmed in the direct CE chain via FORMULA mode; AND (2) the value is demonstrably wrong — it contradicts a GiveWell standard, is arithmetically incorrect, or has been confirmed (via WebFetch or FORMULA inspection) to be a transcription error, wrong subgroup, or wrong methodology. When condition (2) cannot be met — because the finding is a documentation gap, a plausibility concern, or a researcher approach that is debatable but possibly defensible — file at **Medium**, even when the cell is confirmed in the CE chain. Examples where CE-chain membership alone does NOT justify High: a discount rate choice where the correct rate is debated, GBD vintage staleness where only chain membership is confirmed (no value contradiction proven), a funging scope choice that may be intentional, a formula that deviates from a template but has a plausible alternative justification. The threshold for High is: a researcher presented with this finding would agree it is wrong without needing to make a new judgment call — the error is self-evident from the data, formula, or standard.
 
 **Applies to**: all formula-check agents and source-data-check, source-citation-verify, sources, heads-up-epi, heads-up-evidence, heads-up-intervention
 
@@ -229,6 +241,8 @@ When the direct CE calculation chain (the rows between the effect-size inputs an
 
 When a formula references another tab and the referenced row produces a numerically plausible value, verify that the row **label** in the referenced tab also matches the expected parameter — not just the row number. Cross-tab references can point to the correct row number but the wrong logical row if rows have been inserted or deleted since the formula was written. Example: `='Inputs'!B14` may have been written when B14 = "Malaria mortality rate" but now B14 = "ITN usage rate" after a row insertion — the value might still be in a plausible range, masking the mismatch. Verify row labels whenever tracing cross-tab references.
 
+**VoI parameter corollary**: When tracing VoI cells, do not assume cell addresses based on template position. Always read the cell label (FORMATTED_VALUE, column A/B of the same row) before describing what the cell contains — VoI models frequently deviate from standard template row order. Mislabeling a cell in a finding's Recommended Fix can corrupt the model if the researcher applies the fix without verifying.
+
 **Applies to**: formula-check-arithmetic, ce-chain-trace, formula-check-data
 
 ---
@@ -256,6 +270,81 @@ SC-003 ("Parameter in the direct CE chain → High even when CE impact is not qu
 - SC-008 GBD vintage escalation: **≥2 hops** (FORMULA-mode confirmed) → High; otherwise Medium
 
 **Applies to**: formula-check-arithmetic, formula-check-data, ce-chain-trace, key-params-check
+
+---
+
+### SC-013 (2026-06) — Cost denominator gap: quantify the ratio; High when full budget / denominator > 1.2×
+
+When the CE denominator is a subset of the total grant budget (e.g., programmatic costs only, excluding evaluation costs), compute the ratio: full_grant_budget / CE_denominator. If this ratio exceeds 1.2× (i.e., the omitted cost component is more than 20% of what was counted), the CE estimate is materially overstated → file as **High/Parameter**. Quantify the CE impact: "Reported CE of [X]× → ~[X / ratio]× when full budget is used as denominator." If the ratio is ≤1.2×, file at Medium. If a cell note explicitly justifies the exclusion (e.g., "evaluation costs funded by a separate earmarked grant"), file at Low. Do not file at all if the excluded costs genuinely do not generate the grant's benefits.
+
+**Applies to**: formula-check-arithmetic, ce-chain-trace, leverage-funging
+
+---
+
+### SC-014 (2026-06) — Funging applied to VoI component only (not total CE) → High/Adjustment
+
+When a model contains both a direct CE component and a VoI/optionality component, and a funging or downside adjustment exists but is applied only to the VoI sub-calculation (not to total CE), this is a structural misapplication — file as **High/Adjustment**: "Funging adjustment at [cell] is applied only to the VoI component ([VoI cell]) and not to the direct CE component ([direct CE cell]). Total CE ([total CE cell] = [X]×) therefore omits the funging penalty on the direct component. Restructure to apply funging to total CE, not only the VoI sub-calculation." If the model's stated approach explicitly justifies VoI-only scoping with a documented rationale, file at Medium and ask the researcher to confirm. If uncertain whether scoping is intentional, file at Medium.
+
+**Applies to**: leverage-funging, ce-chain-trace
+
+---
+
+### SC-015 (2026-06) — GBD permalink returns 403: WebFetch IHME directly before defaulting to Medium
+
+When a GBD/IHME permalink in the spreadsheet returns HTTP 403 (expired session link), do not immediately default to Medium. Run a targeted WebFetch or WebSearch to confirm the latest available GBD vintage — e.g., search "GBD 2024 released" or fetch the IHME website directly. If a newer vintage is confirmed available (published before the model's grant period), escalate to High per SC-008 when the CE chain is confirmed via FORMULA-mode trace (≥2 hops). Use Medium only when (a) the IHME fetch also fails and no newer vintage can be confirmed, or (b) the CE chain cannot be confirmed in FORMULA mode. Document in the finding: "Permalink returned 403; IHME website confirmed GBD [year] released [date], making the model's GBD [year-1] data stale."
+
+**Applies to**: formula-check-arithmetic, formula-check-data, heads-up-epi
+
+---
+
+### SC-016 (2026-06) — Explicitly labeled placeholder in the CE chain → always High
+
+When a cell note explicitly labels a value as a "placeholder," "pending update," "to be confirmed," "TBC," or "TBD" — AND the cell is confirmed in the direct CE chain (≥1 hop to CE output per SC-012) — file as **High** regardless of whether the current value seems numerically reasonable. The explicit placeholder label signals the researcher has not yet committed to this value; any CE estimate depending on it is provisional. Sensitivity coefficient is not required to justify High: the label alone is sufficient. Required Explanation language: "[Param] ([cell]) = [value] is explicitly marked as a placeholder in the cell note; as the highest-sensitivity parameter in the direct CE chain, do not publish CE until this is replaced with an empirically grounded value." Apply jointly with SC-003 — SC-016 adds only the "explicit placeholder label" trigger; CE chain confirmation is still required.
+
+**Applies to**: all formula-check agents, heads-up-evidence, ce-chain-trace
+
+---
+
+### SC-018 (2026-06) — Low finding filing threshold: actionable issues only, not questions or observations
+
+A finding at any severity — but especially Low — must describe something the researcher should **fix, update, or change**. Do not file a finding if the primary purpose is to note an observation, ask a clarifying question, or suggest adding documentation.
+
+**Do NOT file Low for:**
+- Observations the researcher already knows ("control group received enhanced standard of care" — this is a structural feature of RCTs, not a finding)
+- Questions whose answer might be "yes, that's intentional" with no action needed ("confirm this coverage assumption is appropriate" — if you have no evidence it's *wrong*, don't file)
+- Legibility, sourcing, or terminology notes — these route to Publication Readiness, not main Findings
+- "For publication, add a note explaining..." suggestions — Publication Readiness is the correct channel
+- Speculative concerns with no supporting evidence ("this might overstate CE if...")
+- Generic documentation suggestions where the value is likely correct ("document why 100% scale-up is assumed")
+
+**DO file Low for:**
+- A specific formula that has a specific wrong output and a specific fix
+- A concrete parameter known to be outdated, with a newer source already identified
+- A small arithmetic discrepancy with a specific corrected value
+- A grouping of formula robustness issues (IFERROR, division guards) per SC-006 — these have a specific fix (add IFERROR)
+- A missing required element (per a defined GW standard) where the fix is concrete
+
+**The test before filing any Low:** "If a researcher reads this finding, will they take a specific action — look something up, change a value, fix a formula — or will they read it and move on?" If the answer is "move on," don't file. A well-calibrated vet has very few Lows in the main Findings sheet; most low-severity observations belong in Publication Readiness or should not be filed at all.
+
+**Applies to**: all agents
+
+---
+
+### SC-017 (2026-06) — High finding calibration: 3–8 Highs per vet is typical; review if more
+
+A well-calibrated GiveWell vet of a standard BOTEC produces **3–8 High findings**. If an agent has filed more than 8 Highs before writing AGENT_COMPLETE, it must pause and review each High for downgrade to Medium using the following gate:
+
+1. Does this finding identify a value that is **demonstrably wrong** — i.e., contradicts a GiveWell standard, is arithmetically incorrect, or has been confirmed via source-fetching to be a wrong subgroup or transcription error?
+2. **If no**: downgrade to Medium. A CE-chain cell with a debatable or potentially-defensible value is a Medium, not a High.
+3. **If yes**: keep at High.
+
+Bright-line High exceptions that always stay High regardless of count (do not downgrade these): moral weight violations, benchmark value violations, explicitly labeled placeholders in the CE chain (SC-016), demonstrated arithmetic errors with confirmed CE impact, clearly broken formulas with bad output.
+
+This calibration target is per-agent. If multiple agents run in parallel and the reconciled total exceeds ~10 Highs, Wave 2.5 reconciliation should consolidate findings that cover the same root issue before promoting to the final Findings sheet.
+
+**Why this matters**: Over-elevation to High creates review fatigue and obscures the findings that genuinely require immediate researcher action. When every CE-chain concern is High, the signal of "this is broken now" is lost.
+
+**Applies to**: all formula-check agents, ce-chain-trace, heads-up-epi, heads-up-evidence, heads-up-intervention, final-review-compaction
 
 ---
 
