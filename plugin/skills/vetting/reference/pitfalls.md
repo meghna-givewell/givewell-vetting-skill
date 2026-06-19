@@ -305,6 +305,31 @@ When a cell note explicitly labels a value as a "placeholder," "pending update,"
 
 ---
 
+### SC-018 (2026-06) — Low finding filing threshold: actionable issues only, not questions or observations
+
+A finding at any severity — but especially Low — must describe something the researcher should **fix, update, or change**. Do not file a finding if the primary purpose is to note an observation, ask a clarifying question, or suggest adding documentation.
+
+**Do NOT file Low for:**
+- Observations the researcher already knows ("control group received enhanced standard of care" — this is a structural feature of RCTs, not a finding)
+- Questions whose answer might be "yes, that's intentional" with no action needed ("confirm this coverage assumption is appropriate" — if you have no evidence it's *wrong*, don't file)
+- Legibility, sourcing, or terminology notes — these route to Publication Readiness, not main Findings
+- "For publication, add a note explaining..." suggestions — Publication Readiness is the correct channel
+- Speculative concerns with no supporting evidence ("this might overstate CE if...")
+- Generic documentation suggestions where the value is likely correct ("document why 100% scale-up is assumed")
+
+**DO file Low for:**
+- A specific formula that has a specific wrong output and a specific fix
+- A concrete parameter known to be outdated, with a newer source already identified
+- A small arithmetic discrepancy with a specific corrected value
+- A grouping of formula robustness issues (IFERROR, division guards) per SC-006 — these have a specific fix (add IFERROR)
+- A missing required element (per a defined GW standard) where the fix is concrete
+
+**The test before filing any Low:** "If a researcher reads this finding, will they take a specific action — look something up, change a value, fix a formula — or will they read it and move on?" If the answer is "move on," don't file. A well-calibrated vet has very few Lows in the main Findings sheet; most low-severity observations belong in Publication Readiness or should not be filed at all.
+
+**Applies to**: all agents
+
+---
+
 ### SC-017 (2026-06) — High finding calibration: 3–8 Highs per vet is typical; review if more
 
 A well-calibrated GiveWell vet of a standard BOTEC produces **3–8 High findings**. If an agent has filed more than 8 Highs before writing AGENT_COMPLETE, it must pause and review each High for downgrade to Medium using the following gate:
