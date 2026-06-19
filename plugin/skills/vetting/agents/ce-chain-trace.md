@@ -25,6 +25,8 @@ Use the pre-read cache (FORMATTED_VALUE and FORMULA modes for all rows) as your 
 
 **Exhaustiveness requirement**: Do not stop reading after the first several cells in the broken range appear to be cascade-caused. Read every cell in the broken range before concluding the cascade has no independent errors — an early independent error can be visually obscured by later cascade errors in the same range.
 
+**Systematic same-source error scan**: After filing a wrong-reference finding for any cell in the CE chain (e.g., a Treatment effect row referencing the wrong Inputs row, or a SUMPRODUCT referencing the wrong disease burden column), scan all other formula cells in the same tab and section for references to the same wrong source. Copy-paste errors frequently replicate across SUMPRODUCT, AVERAGE, SUMIF, SUMPRODUCT, and similar aggregation functions in the same geographic or scenario block. Read each candidate formula in FORMULA mode — do not assume the same error is present without confirming. File each additional instance as a separate finding. This step is distinct from multi-root-cause discipline (which handles downstream cascade from a single broken upstream cell); this step handles lateral replication of the same logical wrong-reference across parallel formula cells.
+
 ---
 
 ## Step 1 — Locate the final CE output

@@ -380,6 +380,14 @@ Example: CHAI 2014 cost estimates in the cost denominator of a current-grant BOT
 
 ---
 
+### SC-021 (2026-06) — Stale benchmark: prescribing value change when rationale note is the correct fix
+
+When a stale GiveDirectly benchmark is identified (e.g., 0.00335 when the current value is 0.00333), do not prescribe "update to 0.00333" as the only recommended fix. Researchers frequently retain the older value intentionally for cross-program comparability — changing it would invalidate comparisons against prior GiveWell analyses. The correct Recommended Fix is: "Either update the benchmark to the current GW value (0.00333) OR add a rationale note documenting why the older value is retained (e.g., 'kept at 0.00335 for consistency with [program X] analysis')." Prescribing only the value change has occurred in 3 consecutive stable-period vets (#32, #34, #35), making this the most consistent calibration error for stale benchmark findings.
+
+**Applies to**: key-params-check, ce-chain-trace, cross-tab-compare, formula-check-data
+
+---
+
 ## Entry template
 
 ```

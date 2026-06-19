@@ -169,6 +169,16 @@ File as **Low/Inconsistency** when: a Key Parameters cell is hardcoded while the
 
 `COVERAGE | cross-tab-compare | Check 8 — Key Parameters tab cross-check | [N parameters checked] | issues found: [N] | status: complete (or: n/a — no Key Parameters tab)`
 
+### Check 9 — Percentage-contribution formula denominator consistency
+
+For any row in Simple CEA that computes a percentage contribution (e.g., each scenario's share of total expected value, each worldview's weight), read the denominator formula for every column in that row in FORMULA mode. Verify that all columns use the same denominator cell reference or equivalent formula structure. A mismatch — where one column's denominator references a different cell than all others — silently produces a non-unit sum and a misleading percentage breakdown.
+
+If any column's denominator formula differs from the majority pattern without a cell note explaining why, file as **Medium/Formula [Wrong reference]**: "Percentage-contribution formula at [cell] uses denominator [ref A] while all other columns use [ref B]. This produces an inconsistent share total. Confirm whether [ref A] is the correct denominator, or update to match the other columns." CE impact: `Direction unknown` (depends on which denominator is correct and the column weights).
+
+Do not file if: (a) the denominator difference is explained by a cell note, (b) the row is not computing a percentage contribution (e.g., it is a raw count or absolute value row), or (c) a scenario-specific denominator is structurally justified (e.g., the column's sum is a subset of the total by design).
+
+`COVERAGE | cross-tab-compare | Check 9 — Percentage-contribution formula denominator consistency | [N rows checked] | issues found: [N] | status: complete (or: n/a — no percentage-contribution rows found)`
+
 ---
 
 ## Writing Findings
