@@ -124,6 +124,17 @@ Run both sub-checks for every country column and every SAM/MAM row independently
 - Program exit / withdrawal effect (~−10% to −30% in new operating states): incentive withdrawal reduces vaccination rates 1–3 pp
 - Fraud adjustment (~−12%: −10% double-enrollment + −2% other errors)
 
+**KMC (Kangaroo Mother Care) — mortality benefit stream completeness** *(Assumption — benefit stream completeness)*: When vetting a KMC or Kangaroo Mother Care model, verify that the benefit structure captures **both** of the two primary mortality pathways supported by the evidence base:
+
+1. **Early neonatal mortality** (0–28 days): the primary KMC evidence base — Cochrane reviews of kangaroo care, WHO KMC guidance — shows significant mortality reduction in the early neonatal period for low-birth-weight and preterm infants.
+2. **Post-neonatal mortality** (28–364 days): the same evidence base documents continued mortality reduction through the post-neonatal period. This stream is distinct from early neonatal mortality and represents an additional, separately quantifiable benefit.
+
+Check the benefit row structure for both a row labeled (or equivalent to) "early neonatal mortality" or "neonatal mortality (0–28 days)" AND a row labeled (or equivalent to) "post-neonatal mortality" or "infant mortality (28–364 days)." If either stream is absent from the model entirely:
+- If absent with no explanatory note: file as **Medium/Assumption** — "The model does not include a [early neonatal / post-neonatal] mortality benefit stream. The KMC evidence base (WHO guidance, Cochrane reviews) documents mortality reduction across both the early neonatal (0–28 days) and post-neonatal (28–364 days) periods for LBW/preterm infants. Omitting this stream understates CE. Confirm whether the exclusion is intentional and document the rationale."
+- If absent with a note documenting the exclusion: flag as **Low/H** — confirm the rationale is sufficient.
+
+Do not file if a row exists but is hardcoded at zero with an explanatory note — that is a documented exclusion, not a missing stream.
+
 ---
 
 ### Section B — TA Grant Checks *(heads-up-intervention-B only)*
@@ -184,6 +195,7 @@ Heads-up intervention-A check log — Intervention-Specific Checks:
   IPTp — parity restriction on birthweight effect [___]
   water quality — non-significant pooled RR + adjustments [___]
   New Incentives — standard adjustment set [___]
+  KMC — mortality benefit stream completeness [___]
   VOI BOTEC — GiveDirectly benchmark fix prescription [___]
 ```
 
@@ -212,6 +224,7 @@ Heads-up intervention-B check log:
     adversarial pass — IPTp parity restriction on birthweight effect [___]
     adversarial pass — water quality non-significant pooled RR + adjustments [___]
     adversarial pass — New Incentives standard adjustment set [___]
+    adversarial pass — KMC mortality benefit stream completeness [___]
     adversarial pass — VOI BOTEC GiveDirectly benchmark fix prescription [___]
   [If TA — Section B checks:]
     TA model type and structural consistency [___]
