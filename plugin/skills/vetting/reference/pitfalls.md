@@ -118,6 +118,8 @@ Example: Mengstie et al 2025 C20 = 33.1% per 100 person-years used as a cumulati
 
 **SC-003 applies only to confirmed errors, not to questions or gaps.** When the finding is fundamentally a question about researcher intent — "is this adjustment applicable?", "is this approach correct?" — SC-003 does not escalate it to High. The test: could a reasonable researcher defend the current model state without it being an error? If yes, the finding is a gap or assumption question (Medium ceiling), not a confirmed error. Examples of question-type findings that stay at Medium even when the parameter is in the CE chain: absent funging where applicability is uncertain (FN-008 ceiling: Medium), tiny parameter deviations where the magnitude is below the materiality threshold (FN-002 ceiling: Medium/H). When another pitfall entry explicitly specifies a ceiling severity ("file at Medium"), that ceiling holds — SC-003 does not override it.
 
+**SC-003 High escalation requires demonstrated wrongness, not just chain membership.** Being in the CE chain is necessary but not sufficient for High. SC-003 escalates to High when ALL of the following hold: (1) the cell is confirmed in the direct CE chain via FORMULA mode; AND (2) the value is demonstrably wrong — it contradicts a GiveWell standard, is arithmetically incorrect, or has been confirmed (via WebFetch or FORMULA inspection) to be a transcription error, wrong subgroup, or wrong methodology. When condition (2) cannot be met — because the finding is a documentation gap, a plausibility concern, or a researcher approach that is debatable but possibly defensible — file at **Medium**, even when the cell is confirmed in the CE chain. Examples where CE-chain membership alone does NOT justify High: a discount rate choice where the correct rate is debated, GBD vintage staleness where only chain membership is confirmed (no value contradiction proven), a funging scope choice that may be intentional, a formula that deviates from a template but has a plausible alternative justification. The threshold for High is: a researcher presented with this finding would agree it is wrong without needing to make a new judgment call — the error is self-evident from the data, formula, or standard.
+
 **Applies to**: all formula-check agents and source-data-check, source-citation-verify, sources, heads-up-epi, heads-up-evidence, heads-up-intervention
 
 ---
@@ -300,6 +302,24 @@ When a GBD/IHME permalink in the spreadsheet returns HTTP 403 (expired session l
 When a cell note explicitly labels a value as a "placeholder," "pending update," "to be confirmed," "TBC," or "TBD" — AND the cell is confirmed in the direct CE chain (≥1 hop to CE output per SC-012) — file as **High** regardless of whether the current value seems numerically reasonable. The explicit placeholder label signals the researcher has not yet committed to this value; any CE estimate depending on it is provisional. Sensitivity coefficient is not required to justify High: the label alone is sufficient. Required Explanation language: "[Param] ([cell]) = [value] is explicitly marked as a placeholder in the cell note; as the highest-sensitivity parameter in the direct CE chain, do not publish CE until this is replaced with an empirically grounded value." Apply jointly with SC-003 — SC-016 adds only the "explicit placeholder label" trigger; CE chain confirmation is still required.
 
 **Applies to**: all formula-check agents, heads-up-evidence, ce-chain-trace
+
+---
+
+### SC-017 (2026-06) — High finding calibration: 3–8 Highs per vet is typical; review if more
+
+A well-calibrated GiveWell vet of a standard BOTEC produces **3–8 High findings**. If an agent has filed more than 8 Highs before writing AGENT_COMPLETE, it must pause and review each High for downgrade to Medium using the following gate:
+
+1. Does this finding identify a value that is **demonstrably wrong** — i.e., contradicts a GiveWell standard, is arithmetically incorrect, or has been confirmed via source-fetching to be a wrong subgroup or transcription error?
+2. **If no**: downgrade to Medium. A CE-chain cell with a debatable or potentially-defensible value is a Medium, not a High.
+3. **If yes**: keep at High.
+
+Bright-line High exceptions that always stay High regardless of count (do not downgrade these): moral weight violations, benchmark value violations, explicitly labeled placeholders in the CE chain (SC-016), demonstrated arithmetic errors with confirmed CE impact, clearly broken formulas with bad output.
+
+This calibration target is per-agent. If multiple agents run in parallel and the reconciled total exceeds ~10 Highs, Wave 2.5 reconciliation should consolidate findings that cover the same root issue before promoting to the final Findings sheet.
+
+**Why this matters**: Over-elevation to High creates review fatigue and obscures the findings that genuinely require immediate researcher action. When every CE-chain concern is High, the signal of "this is broken now" is lost.
+
+**Applies to**: all formula-check agents, ce-chain-trace, heads-up-epi, heads-up-evidence, heads-up-intervention, final-review-compaction
 
 ---
 
