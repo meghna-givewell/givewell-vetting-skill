@@ -99,6 +99,8 @@ Within any section where multiple adjacent rows compute the same type of quantit
 
 Do not flag if: (a) the Notes cell or a nearby cell note already explains the rationale; (b) the row label itself makes the different method self-evident (e.g., a label reading "5-year average mortality" is self-documenting); (c) no consistent peer pattern exists in the section to compare against (all rows use different methods).
 
+Also apply this check **across parallel geography or scenario columns** — not just across rows. When the same quantity is computed for multiple geographies (countries or regions) or scenarios structured as parallel columns (e.g., columns D–H each represent a different country), read the formula for each geography's cell in that row. If one geography's cell uses a materially different aggregation method than all other geographies in the same row — e.g., one country column averages across multiple source values with `AVERAGE()` while all other country columns reference a single source value directly — AND the Notes cell for that row contains no explanation for why that specific geography uses a different method, file in Publication Readiness as Legibility (column D blank): "Column [ref] ([geography name]) computes [row label] using [describe method, e.g., AVERAGE across N years] while all other geography columns in this row use [describe peer method, e.g., a single direct reference]; add a cell note explaining why this geography requires a different aggregation approach." The same do-not-flag criteria above apply (existing note, self-evident label, no consistent peer pattern).
+
 ---
 
 ## Step 3 — Mandatory declaration table

@@ -149,6 +149,14 @@ A GiveWell cross-cutting standard citation (`"GiveWell standard for [program typ
 
 File using the severity above: "Effect size for [parameter] is sourced from [study/geography — Tier X] and applied to [target geography — Tier Y]. [Describe tier mismatch.] Add a note explaining why the transfer is appropriate, or document any adjustment applied for contextual differences."
 
+**Proxy study population/context matching**: When the study pathway directness check identifies that a benefit stream's effect size is derived from a proxy study (a study not conducted on the program's own population), apply this additional check to evaluate whether the proxy study's population and delivery context are close enough to the program's target population. Read the study citation or hyperlink to determine the proxy study's key characteristics. Then compare against the program's context on three dimensions:
+
+1. **Population characteristics**: Does the proxy study target the same age group (e.g., infants, school-age children, pregnant women), nutritional status, and baseline health profile as the program? A study of well-nourished children is not a close proxy for a program targeting acutely malnourished children without additional justification.
+2. **Disease severity / exposure level**: Is the study's underlying disease burden, malnutrition severity, or baseline exposure level roughly comparable to the program's target geography? Large baseline differences (e.g., a high-burden study applied to a moderate-burden geography) materially affect generalizability.
+3. **Delivery channel**: Does the study's delivery mechanism (e.g., clinic-based vs. community health worker distribution, mass campaign vs. routine immunization) match the program's delivery approach?
+
+If the proxy study differs from the program on one or more of these dimensions without a documented rationale (IV/EV text, cell note, or explicit GiveWell standard citation), file as **Low/H (Assumption)**: "The effect size for [parameter] is drawn from a proxy study ([study citation]) whose population/context differs from the program on [describe dimension — e.g., 'study enrolled moderately malnourished children; this program targets the general under-5 population']. Add a note documenting why this proxy is appropriate, or apply an EV adjustment for the contextual mismatch." Do not file if: (a) the IV/EV text already acknowledges the mismatch and explains the rationale; (b) a GiveWell cross-cutting standard validates the proxy; (c) you cannot confirm the mismatch from the hyperlinked source (do not infer from program name alone — only flag what you can confirm from the citation text).
+
 **Mandatory check log — write this before filing any findings.** For each item below, write `ran: [brief result or finding cell]` or `n/a: [one-word reason — e.g., not a top-charity, no income benefit]`. A blank or placeholder entry is not acceptable — it means the check was not considered. The log must be complete before any findings are written to the sheet.
 
 ```
@@ -183,6 +191,7 @@ Evidence quality:
   control group standard-of-care bias [___]
   subgroup analysis validity [___]
   benefit transfer documentation [___]
+  proxy study population/context [___]
 ```
 
 ## Writing Findings

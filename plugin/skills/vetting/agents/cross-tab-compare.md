@@ -179,6 +179,28 @@ Do not file if: (a) the denominator difference is explained by a cell note, (b) 
 
 `COVERAGE | cross-tab-compare | Check 9 — Percentage-contribution formula denominator consistency | [N rows checked] | issues found: [N] | status: complete (or: n/a — no percentage-contribution rows found)`
 
+### Check 10 — Simple CEA section ordering
+
+In GiveWell Simple CEAs, the calculation should flow top-to-bottom: inputs and parameters appear first, then adjustments, then the final CE output (cost-effectiveness multiple or cost-per-outcome row). When the CE output row appears near the top of the Simple CEA — before the input rows that feed into it — the math flows backward and misleads readers who expect to follow the logic from assumptions down to conclusion.
+
+Using the row labels already read in Step 1 and Step 2: identify the row containing the final CE output (labeled with variants of "cost-effectiveness," "CE multiple," "x GiveDirectly," "cost per outcome"). Then identify rows that are clearly inputs or parameters (coverage, mortality rate, effect size, costs, moral weights, discount rate, benchmark). If the CE output row's row number is less than (i.e., appears above) the majority of input rows, the section is ordered backward.
+
+File as **Medium/Legibility** (column D blank — routes to Publication Readiness): "The Simple CEA section displays the cost-effectiveness result ([row label], row [N]) before the input rows that compute it (e.g., [input row label], row [M]). Reordering so that inputs appear above the CE output improves readability — a reviewer reading top-to-bottom can follow the logic to its conclusion rather than seeing the answer first."
+
+Do not file if: (a) the Simple CEA is a pure lookup summary with no computational rows (all values are direct references to Main CEA with no local inputs), (b) the inverted order is documented as intentional (e.g., an executive-summary style layout with a stated rationale), or (c) fewer than 3 identifiable input rows exist in Simple CEA (insufficient basis for ordering claim).
+
+`COVERAGE | cross-tab-compare | Check 10 — Simple CEA section ordering | [row number of CE output vs. median input row, or: n/a — no ordering issue detected / no Simple CEA input rows] | status: complete`
+
+### Check 11 — Same-label, different-concept rows
+
+When building the label map in Step 2, flag any row pair where the label matched but the formula structures are fundamentally different in kind — not just a cell reference that differs, but the type of calculation. Examples: one tab computes a rate (events / population) while the other computes an absolute count for the same label; one tab uses the value as a multiplier while the other uses it as an addend. This pattern indicates the same term is being used for conceptually different quantities across tabs, which misleads any reader who assumes consistency.
+
+For any candidate identified during label-mapping: read both cells in FORMULA mode to confirm the structural difference, then file as **Medium/Inconsistency**: "The row labeled '[label]' computes [describe computation A] in Simple CEA ([cell]) but [describe computation B] in Main CEA ([cell]). Verify whether these are the same quantity used consistently, or two different concepts sharing a label — if different, rename one to eliminate the ambiguity."
+
+Do not file if: (a) the difference is explained by scope (Simple CEA shows a subset, Main CEA shows the total), (b) the formula difference is purely a reference path (same calculation, different tab path), or (c) a cell note in either tab explains why the computations differ.
+
+`COVERAGE | cross-tab-compare | Check 11 — Same-label, different-concept rows | [N candidates reviewed] | issues found: [N] | status: complete`
+
 ---
 
 ## Writing Findings
