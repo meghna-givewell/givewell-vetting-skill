@@ -201,6 +201,16 @@ Do not file if: (a) the difference is explained by scope (Simple CEA shows a sub
 
 `COVERAGE | cross-tab-compare | Check 11 — Same-label, different-concept rows | [N candidates reviewed] | issues found: [N] | status: complete`
 
+### Check 12 — Worldview and scenario weight sum-to-one validation
+
+Rows representing probability weights, worldview weights, or scenario weights must sum to 1.0 when the weights represent a mutually exclusive, exhaustive partition (all possible cases accounted for, exactly once). A non-unit sum silently scales all weighted downstream outputs.
+
+From the pre-read cache, scan all rows in Main CEA and any parameters or inputs tab whose column A label contains any of the following terms: "weight" (excluding labels that clearly refer to a physical or relative quantity, e.g., "net weight," "weight per unit," "index weight"), "worldview," "probability that," "scenario probability," "prior weight," or "P(" as a formula label. For each candidate row: read all populated numeric cells in that row in FORMATTED_VALUE. Sum the values. If the sum deviates from 1.0 by more than 0.005 (sum < 0.995 or sum > 1.005), file as **Medium/Formula [Wrong value]**: "The weights in the '[row label]' row ([list cell refs and values]) sum to [actual sum, 4 decimal places], not 1.0. If these weights represent mutually exclusive, exhaustive scenarios or worldviews, a non-unit sum silently scales every weighted output. Adjust weights so they sum to exactly 1.0, or add a note explaining why a non-unit sum is intentional."
+
+Do not file if: (a) the row label or a nearby cell note explicitly documents that this is a subset weight or conditional probability (not required to sum to 1); (b) the row contains only one populated cell (nothing to sum); (c) the sum deviates only due to obvious display rounding (e.g., shown values are 0.33/0.33/0.33 due to truncation but the underlying formula evaluates to 1.0 — verify by reading the cells in FORMULA mode before filing).
+
+`COVERAGE | cross-tab-compare | Check 12 — Worldview/scenario weight sum-to-one | [N candidate rows found, N checked] | issues found: [N] | status: complete (or: n/a — no weight rows identified)`
+
 ---
 
 ## Writing Findings
