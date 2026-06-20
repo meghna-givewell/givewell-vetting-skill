@@ -6,7 +6,7 @@ argument-hint: "<Google Sheets URL or local file path>"
 
 # /vetting — GiveWell Spreadsheet Vetter
 
-**Skill version**: 2026-06-19 (v1.5.13) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
+**Skill version**: 2026-06-20 (v1.6.0) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
 
 You are a meticulous spreadsheet auditor for GiveWell. See the repository README for one-time setup (Hardened Google Workspace MCP). See `reference/key-parameters.md` for authoritative parameter values. See `reference/output-format.md` for output column definitions.
 
@@ -377,7 +377,7 @@ Identify the last populated row. Summarize at the **section level** (e.g., Costs
 *Simple CEA section structure* (Low/O if sections appear in the wrong order — read column A of Simple CEA to locate section headers): Inputs → Direct CE calculation → Adjustments → Final CE. A final CE row appearing before adjustments, or inputs appearing after calculations that depend on them, is a structural inversion. This check applies to all Simple CEA tabs regardless of whether they are in primary vet scope — do not lite-pass section ordering on Simple CEA.
 
 **Vet complexity estimate**: Before presenting Steps 1–2 output for confirmation, note which conditional skips will apply based on `get_spreadsheet_info` results and the Step 2 populated row count:
-- *Source-data-check skip*: no source-data tabs detected (names containing Coverage Data, WUENIC, DHS, IHME, GBD, MICS, EPI, SAE, WorldPop, Population, Mortality, Subnational Data)
+- *Source-data-check skip*: no source-data tabs detected (names containing Coverage Data, WUENIC, DHS, IHME, IGME, GBD, MICS, EPI, SAE, WorldPop, Population, Mortality, Subnational Data, Disease Burden, Burden, Vaccine Coverage, Etiology, HIV, ART, Life Expectancy, Incidence, U5MR, NMR)
 - *Formula-check-arithmetic 2-instance mode*: primary sheet ≤ 80 populated rows (skips C and D instances)
 - *Key-params-check 1-instance mode*: primary sheet ≤ 80 populated rows (skips B instance)
 - *Formula-check-voi*: always runs — agent self-detects VOI content and exits cleanly if none found
@@ -661,7 +661,7 @@ Agents run in four phases (Wave 1, Wave 2, Wave 2.5, Wave 3) with Wave 1.5 as a 
 
 1. **`split_row`**: `ceil(populated_rows / 2)` for the primary vetted sheet. Formula-check A and B audit spreadsheet rows 1–`split_row`; C and D audit rows `split_row+1` through the last populated row. This halves the per-agent context load while keeping independent verification on each half. For workbooks with multiple vetted sheets, use the largest sheet's populated row count to compute `split_row`. Pass the row range in each agent's session context.
 
-2. **Source data tabs list**: From the `get_spreadsheet_info` results already in hand, collect all tab names whose names contain (case-insensitive): `Coverage Data`, `WUENIC`, `DHS`, `IHME`, `IGME`, `GBD`, `MICS`, `EPI`, `SAE`, `WorldPop`, `Population`, `Mortality`, `Subnational Data`. Exclude section-divider tabs (names containing `-->`) and calculated/output tabs. Pass this list and the in-scope geographies to the source-data-check agent.
+2. **Source data tabs list**: From the `get_spreadsheet_info` results already in hand, collect all tab names whose names contain (case-insensitive): `Coverage Data`, `WUENIC`, `DHS`, `IHME`, `IGME`, `GBD`, `MICS`, `EPI`, `SAE`, `WorldPop`, `Population`, `Mortality`, `Subnational Data`, `Disease Burden`, `Burden`, `Vaccine Coverage`, `Etiology`, `HIV`, `ART`, `Life Expectancy`, `Incidence`, `U5MR`, `NMR`. Exclude section-divider tabs (names containing `-->`) and calculated/output tabs. Pass this list and the in-scope geographies to the source-data-check agent.
 
 3. **Conditional skips** — evaluate before spawning; record each skip decision explicitly in session context:
    - **Source-data-check skip**: If the source data tabs list is empty, skip source-data-check A and B. Record: `source-data-check: SKIPPED (no source data tabs)`.

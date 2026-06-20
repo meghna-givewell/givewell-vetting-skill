@@ -31,6 +31,12 @@ These are the authoritative current values. They must match `reference/key-param
 | Income effects — malaria programs | 0.58088% | See Acceptable Ranges in reference/key-parameters.md for boundary values — do not hardcode boundaries here as they may become stale |
 | Long-term income ratio | 0.3064 | |
 | Years to benefits (benefit horizon) | 10 | Applies to malaria and other mortality-reduction programs; flag values other than 10 |
+| TA p(failure to shift status quo) | 30% (default) | TA grants only |
+| Treatment costs averted (top-4 charities) | +20% supplemental | AMF, Malaria Consortium, HKI, New Incentives only; 0% for all other program types |
+| Resource-sharing multiplier — household income | ×5 | Programs with household income or consumption effects |
+| Resource-sharing multiplier — individual income | ×2.5 | Programs with individual income effects |
+| Resource-sharing multiplier — development benefits | ×2 | Programs with children's long-term development benefits |
+| VOI p(update) cap | ≤50% | When model includes a VOI/optionality section |
 
 ---
 
@@ -74,6 +80,12 @@ Key-params coverage log:
   Income effects malaria (0.58088%): [cell ref or 'not found'] = [raw value]. Match: YES/NO.
   Long-term income ratio (0.3064): [cell ref or 'not found'] = [raw value]. Match: YES/NO.
   Years to benefits (10): [cell ref or 'not found'] = [raw value]. Match: YES/NO.
+  TA p(failure) (30%): [cell ref or 'not found' or 'n/a — not-TA'] = [raw value]. Match: YES/NO.
+  Treatment costs averted (+20%): [cell ref or 'not found' or 'n/a — not-top-4-charity'] = [raw value]. Match: YES/NO.
+  Resource-sharing — household income (×5): [cell ref or 'not found' or 'n/a — no household income effects'] = [raw value]. Match: YES/NO.
+  Resource-sharing — individual income (×2.5): [cell ref or 'not found' or 'n/a — no individual income effects'] = [raw value]. Match: YES/NO.
+  Resource-sharing — development benefits (×2): [cell ref or 'not found' or 'n/a — no dev benefits'] = [raw value]. Match: YES/NO.
+  VOI p(update) cap (≤50%): [cell ref or 'not found' or 'n/a — no VOI section'] = [raw value]. Match: YES/NO.
 ```
 
 If a parameter is not applicable to this program type **per the program-type applicability table below**, write `n/a — [one-word reason]` (e.g., `n/a — not-malaria`). Write `n/a` only because the program type excludes this parameter — not because the parameter is absent from the spreadsheet. A parameter that should appear (based on program type) but does not is "not found," not "n/a."
@@ -96,7 +108,11 @@ Parameters and their program-type applicability:
 - **VAS programs only**: Avert death 6–59m VAS
 - **MNH/reproductive health only**: Avert maternal death
 - **Income-effects-heavy programs**: Discount rate — long-term health benefits (0.5%/year)
-- **TA grants only**: Discount rate — TA death-averting (1.4%/year)
+- **TA grants only**: Discount rate — TA death-averting (1.4%/year); TA p(failure)
+- **Top-4 charities only (AMF, Malaria Consortium, HKI, New Incentives)**: Treatment costs averted
+- **Programs with household income or consumption effects**: Resource-sharing multiplier — household income; Resource-sharing multiplier — development benefits (when children's development benefits are modeled)
+- **Programs with individual income effects**: Resource-sharing multiplier — individual income
+- **Models with a VOI/optionality section**: VOI p(update) cap
 
 **Applicability is determined solely by the program-type name from Step 0.5 session context** — not by what parameters appear or do not appear in the spreadsheet. Do not expand the applicable set because the spreadsheet happens to include a row for a parameter outside the program type; do not contract it because the spreadsheet omits a row. A malaria model that omits an income effects row still requires the income effects check — file `Low/Parameter` if not found. A malaria model that includes a secondary maternal outcomes section does not require the maternal death moral weight check — its program type is malaria, not MNH.
 

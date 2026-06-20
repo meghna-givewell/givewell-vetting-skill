@@ -62,7 +62,7 @@ If session context does not set an `is_ta_botec` flag or identify a counterfactu
 
 This explicit extraction step is required because the general GBD vintage check above can fail to fire when the vintage year is embedded in a URL rather than the note text, or when the citation is on a different tab from the hardcoded value. Do not rely on a single scan — check the notes column, the source column, any linked GBD vizhub URLs (which often embed the year in the query string), and any cell-level comments. Note: this check is in addition to, not a replacement for, the GBD vizhub value-verification performed by the formula-check-arithmetic agent (Check 2).
 
-Before filing the GBD vintage staleness finding, read the GBD vintage cell in FORMULA mode and trace its formula chain toward the CE output. Per SC-008: any cell in the confirmed direct CE chain qualifies for SC-008 escalation — there is no hop-count cap. A cell 3 or more hops from the final CE output fires SC-008 just as a 2-hop cell does, provided the chain is confirmed in FORMULA mode to be part of the direct CE calculation (not a side-table or display-only reference). If the cell is confirmed anywhere in the direct CE chain, file as High/D per pitfalls.md SC-008. If the chain cannot be confirmed in FORMULA mode, file as Medium/H as before.
+File all GBD vintage staleness findings from this agent as **Medium/H**. Do not attempt SC-008 escalation from this agent — SC-008 escalation for GBD vintage findings (Medium/H → High/D when the stale cell is confirmed in the direct CE chain) is owned exclusively by the `formula-check-parameters` agent. If you believe a cell is in the direct CE chain, note this in column F, but do not change the severity to High/D.
 
 **Indirect deaths multiplier cap**: When a model applies the standard GiveWell indirect deaths multiplier for malaria (×1.75 of direct malaria deaths — i.e., adding 75% more indirect deaths on top of direct), verify that total malaria-attributable mortality does not exceed 100% of all-cause mortality in the target age group. In high-direct-burden geographies where malaria directly accounts for >57% of under-5 deaths (e.g., Lagos, Chad, South Sudan), a blanket 75% indirect multiplier would produce implausible results (>100% of deaths from malaria). In these cases, the indirect deaths multiplier should be scaled down — for example, GiveWell used ~40% for Lagos (where direct share was ~50–55%), resulting in ~75% total malaria attribution. Flag as High/D if the model applies the standard 75% add-on in a geography where this would exceed 100% total attribution.
 
@@ -84,7 +84,7 @@ Before filing the GBD vintage staleness finding, read the GBD vintage cell in FO
 
 **Counterfactual coverage floor**: When a model assumes counterfactual coverage ≤5% for a widely-distributed health product (bed nets, routine vaccines, vitamin A capsules), flag as Medium/H. GiveWell historically used ~5% counterfactual net access based on 30-year-old RCT data; updated DHS estimates show 23–29% in current AMF target countries — a correction that reduced ITN cost-effectiveness by 20–25%. Similarly, VAS counterfactual coverage in Nigeria was revised from ~5% to ~45%. Before flagging, run a targeted WebSearch for DHS or MICS data for the specific country and product. If published household survey data supports a materially higher counterfactual, upgrade to High/D.
 
-**SC-003 for counterfactual coverage**: When checking counterfactual coverage assumptions (including the floor check above), apply SC-003 (the "acknowledged deviation" rule) before filing: read the cell note and any nearby notes column for explicit researcher acknowledgment of the deviation from standard parameters. If the researcher has documented the deviation and provided a rationale, downgrade by one severity level and note "SC-003 applied — researcher acknowledged deviation in cell note." Only file at full severity if no acknowledgment is present.
+**Acknowledged deviation — counterfactual coverage**: When checking counterfactual coverage assumptions (including the floor check above), apply the acknowledged deviation rule before filing: read the cell note and any nearby notes column for explicit researcher acknowledgment of the deviation from standard parameters. If the researcher has documented the deviation and provided a rationale, downgrade by one severity level and note "Acknowledged deviation applied — researcher acknowledged deviation in cell note." Only file at full severity if no acknowledgment is present.
 
 **Program-reported vs. independent coverage discrepancy**: When a model's coverage or uptake parameter is sourced from program-reported data (grantee M&E, facility-based records, or administrative monitoring) rather than independent survey data (DHS, MICS, third-party evaluation), flag as Medium/H. GiveWell's retrospective lookbacks show a systematic pattern: program-reported coverage tends to exceed independent survey coverage. Documented examples: (a) Evidence Action Dispensers for Safe Water — program uptake estimates were materially higher than independent household surveys, contributing to CE downgrade from ~7x to ~5x in the 2025 lookback; (b) Nutrition International IFA India — NI's program data showed a 34 pp coverage increase while government data showed only 17 pp, no faster than the national trend, raising attribution concerns. When the model's coverage parameter is based solely on grantee or facility records, recommend the researcher check whether independent survey data exists and whether it corroborates the modeled value. If independent survey data contradicts the program estimate by >15 pp, upgrade to High/D.
 
@@ -159,7 +159,7 @@ Heads-up epi-A check log — Epidemiological Parameter Checks:
   IHME age range adjustment [___]
   GBD risk factor scope vs. denominator population mismatch [___]
   counterfactual coverage floor [___]
-  SC-003 applied to counterfactual coverage [___]
+  Acknowledged deviation applied to counterfactual coverage [___]
   program-reported vs. independent coverage [___]
   program-reported coverage skip applied where labeled [___]
   population denominator accuracy [___]
@@ -197,7 +197,7 @@ Heads-up epi-B check log — Model Structure & Timing Checks + adversarial Secti
   disease burden multi-source — adversarial pass [___]
   GBD/IGME vintage staleness — adversarial pass [___]
   counterfactual coverage floor — adversarial pass [___]
-  SC-003 applied to counterfactual coverage — adversarial pass [___]
+  Acknowledged deviation applied to counterfactual coverage — adversarial pass [___]
   sideways benchmark staleness — adversarial pass [___]
   NI/IFA coverage trend staleness — adversarial pass [___]
   HIV/ART life expectancy vintage — adversarial pass (HIV models only) [___]
@@ -220,7 +220,7 @@ Heads-up epi-TA-A check log — Epidemiological Parameter Checks (TA burden tab)
   IHME age range adjustment [___]
   GBD risk factor scope vs. denominator population mismatch [___]
   counterfactual coverage floor [___]
-  SC-003 applied to counterfactual coverage [___]
+  Acknowledged deviation applied to counterfactual coverage [___]
   program-reported vs. independent coverage [___]
   program-reported coverage skip applied where labeled [___]
   population denominator accuracy [___]
@@ -230,6 +230,7 @@ Heads-up epi-TA-A check log — Epidemiological Parameter Checks (TA burden tab)
   multi-program substitution [___]
   sideways benchmark staleness [___]
   NI/IFA coverage trend staleness [___]
+  HIV/ART life expectancy vintage (HIV models only) [___]
 ```
 
 **heads-up-epi-TA-B log** (TA burden tab, Section B primary + adversarial Section A pass):
@@ -256,9 +257,10 @@ Heads-up epi-TA-B check log — Model Structure & Timing Checks + adversarial Se
   disease burden multi-source — adversarial pass [___]
   GBD/IGME vintage staleness — adversarial pass [___]
   counterfactual coverage floor — adversarial pass [___]
-  SC-003 applied to counterfactual coverage — adversarial pass [___]
+  Acknowledged deviation applied to counterfactual coverage — adversarial pass [___]
   sideways benchmark staleness — adversarial pass [___]
   NI/IFA coverage trend staleness — adversarial pass [___]
+  HIV/ART life expectancy vintage — adversarial pass (HIV models only) [___]
   GBD vintage findings filed; deduplication with formula-check-arithmetic handled by Wave 2.5 reconciliation [___]
 ```
 

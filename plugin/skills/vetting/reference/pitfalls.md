@@ -61,14 +61,14 @@ When two instances of the same issue are filed at different severities, the high
 ## False Negative Risks — make sure to catch these
 
 ### FN-001 (2026-04) — GBD data vintage: always flag, even without a CE magnitude
-When a tab uses an older GBD vintage (e.g., GBD 2019 when GBD 2021 is available), always flag it — even if you cannot compute the CE impact from updated data. Write `Direction unknown` in the CE Impact column — GBD burden trends vary by geography and cause and cannot be assumed directional. Do not skip or downgrade the finding because CE impact cannot be quantified. Severity Medium is acceptable and counts as a full catch.
+When a tab uses an older GBD vintage (e.g., GBD 2021 or earlier when GBD 2024 is available), always flag it — even if you cannot compute the CE impact from updated data. Write `Direction unknown` in the CE Impact column — GBD burden trends vary by geography and cause and cannot be assumed directional. Do not skip or downgrade the finding because CE impact cannot be quantified. Severity Medium is acceptable and counts as a full catch.
 
 **Applies to**: formula-check-data, formula-check-arithmetic
 
 ---
 
 ### FN-002 (2026-04) — Stale year in cell note: verify the value, not just the note
-When a cell note cites a data vintage more than 2 years before the model's grant period start year AND the row is a key epidemiological or cost parameter (mortality rate, incidence, coverage, unit cost, or any parameter in `reference/key-parameters.md`), treat this as a trigger to verify the underlying value itself — not just the documentation. Run a WebSearch for the current value. If drift is <5%, file as **Medium/H** (Defect + Immaterial — the Defect floor applies; confirmed drift, even small, is not Low) and include the current value in the Explanation. If drift is ≥5%, file as **High/D** (Defect + Material) and include the current value (e.g., "Cell B14 note cites GBD 2019 — current GBD 2021 value is 0.42 vs. model's 0.38 (11% difference)"). If no updated value is found after searching, file as **Medium/H**.
+When a cell note cites a data vintage more than 2 years before the model's grant period start year AND the row is a key epidemiological or cost parameter (mortality rate, incidence, coverage, unit cost, or any parameter in `reference/key-parameters.md`), treat this as a trigger to verify the underlying value itself — not just the documentation. Run a WebSearch for the current value. If drift is <5%, file as **Medium/H** (Defect + Immaterial — the Defect floor applies; confirmed drift, even small, is not Low) and include the current value in the Explanation. If drift is ≥5%, file as **High/D** (Defect + Material) and include the current value (e.g., "Cell B14 note cites GBD 2019 — current GBD 2024 value is 0.42 vs. model's 0.38 (11% difference)"). If no updated value is found after searching, file as **Medium/H**.
 
 **Applies to**: formula-check-arithmetic
 

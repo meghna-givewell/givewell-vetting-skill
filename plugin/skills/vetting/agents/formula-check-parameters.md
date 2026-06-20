@@ -100,6 +100,8 @@ Coverage declaration: `COVERAGE | formula-check-parameters | grant amount consis
 
 When any hardcoded value corresponds to a parameter listed in `reference/key-parameters.md` and deviates from the standard value:
 
+**Bright-line exception — benchmark and moral weight parameters**: Any deviation from the GiveDirectly benchmark value or moral weights listed in `reference/key-parameters.md` is always **High/D**, regardless of deviation size or whether a cell note is present explaining the reason. Do not apply the deviation-size or note-presence rules below to these parameters.
+
 - **Deviation >5% with no explanatory cell note** → **High/H**: "[Cell] = [value], which deviates [X]% from the key-parameters.md standard of [standard]. Add a note documenting why the deviation is intentional, or update to the standard value."
 - **Deviation >5% with a note explaining the reason** → **Medium/H**: "[Cell] uses [value] (note: [summary]) vs. key-parameters.md standard of [standard]. Confirm the deviation is still appropriate."
 - **Deviation ≤5% with no note** → **Low/H**: "[Cell] = [value] vs. key-parameters.md standard of [standard] — minor deviation; add a note if this is intentional."

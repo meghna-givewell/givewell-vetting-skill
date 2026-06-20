@@ -145,6 +145,8 @@ All findings in this agent have unambiguous fixes regardless of researcher inten
 
 ## Final step — write completion marker
 
+**Instance B only — verify Instance A completion**: Before writing your AGENT_COMPLETE row, read the Instance A staging sheet (`stg-nscn-A` — or the tab that replaces `-B` with `-A` in your own staging sheet name). Check whether it contains a row where column D = `AGENT_COMPLETE`. If no such row is found, include a warning in your AGENT_COMPLETE column F: `WARNING: stg-nscn-A has no AGENT_COMPLETE row — Instance A may have failed silently. Verify stg-nscn-A completed before final compaction.`
+
 After all findings are written and all other steps are complete, write ONE final row to your staging sheet immediately after your last finding (or at row 2 if no findings were written). This is the absolute last action you take before finishing.
 
 Write the row with:

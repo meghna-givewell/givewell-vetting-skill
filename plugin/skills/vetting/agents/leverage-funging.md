@@ -77,42 +77,6 @@ If Check 0 found no funging, write: "Check 0b: skipped — no funging found in C
 
 ---
 
-## Check 0 — Presence of funging adjustment in direct CE chain
-
-Before auditing existing adjustments, check whether any funging or counterfactual displacement adjustment exists in the **direct CE calculation chain** — the rows that feed into the final CE multiple, separate from any leverage tab rows.
-
-Scan the Main CEA tab column A for rows containing: `fung`, `counterfactual`, `government replacement`, `displacement`, `additionality`, `crowding out`. This is separate from the Leverage/Funging tab scan above — this check specifically looks for these adjustments within the primary chain that produces the CE output.
-
-**If no such rows are found in the direct CE chain**, determine whether an adjustment enters the chain indirectly through leverage:
-1. If a Leverage/Funging tab exists AND its output row feeds into the direct CE chain → no gap; the adjustment enters via the leverage calculation. Write: "Check 0: Funging present via leverage tab — direct chain gap not applicable."
-2. If a Leverage/Funging tab exists but its output does NOT feed into the direct CE chain → apply FN-008 from pitfalls.md. Compare against comparable GiveWell programs for this intervention type and file accordingly.
-3. If no Leverage/Funging tab exists and no funging row exists in the direct CE chain → apply FN-008. File **Medium/Adjustment** when a comparable GW program applies explicit funging; file **Low/Adjustment** when the program type is novel with no comparable GW precedent. **For health programs where major multilateral co-funders (PEPFAR, Global Fund, bilateral donors, or domestic government health ministries) are known active funders in the same disease area and target geographies** — including HIV/AIDS prevention and treatment, malaria, tuberculosis, and maternal and child nutrition — treat this as having comparable GW precedent and file **Medium/Adjustment** regardless of whether GiveWell has funded this specific intervention modality before. The test is co-funder presence in the disease area, not prior GW grant history in the exact modality. Write the finding as: "No funging or additionality adjustment is present in the CE chain. [PEPFAR / Global Fund / domestic government] co-finances [disease area] programs in [target geographies]; whether GiveWell's incremental spending is fully additional to these co-funders is undocumented. Add a leverage/funging row documenting the additionality assumption, or add a cell note explaining why 100% additionality is assumed."
-
-**Required output for Check 0**:
-```
-Check 0: Direct CE chain funging scan.
-  Funging/counterfactual keyword rows in Main CEA: [list with row refs, or 'none']
-  Leverage tab present: [YES / NO]
-  Leverage output feeds into direct CE chain: [YES / NO / N/A]
-  Gap applicable (FN-008): [YES / NO — rationale]
-```
-
-Write this block before proceeding to Check 1.
-
-**Check 0b — Funging scope when present**: If Check 0 finds that funging rows exist in the direct CE chain (or in a leverage tab that feeds the chain), verify their scope. When the model contains both a direct CE component (non-VoI, e.g., B2 or equivalent) and a VoI/optionality component (e.g., B3 or equivalent), check whether the funging adjustment applies to both or only to the VoI sub-calculation. Read the funging cell formula: if it adjusts only the VoI sub-total (e.g., `=(B65-B64)*(1+B67)`) and the direct CE numerator has no corresponding funging row, apply SC-014 and file as **High/Adjustment**. Write the required Check 0b output block:
-
-```
-Check 0b: Funging scope (runs only when Check 0 finds funging present).
-  Direct CE component row: [ref and label, or 'not found']
-  VoI/optionality component row: [ref and label, or 'not found']
-  Funging adjustment scope: [total CE / VoI-only / direct-CE-only / unclear]
-  SC-014 applicable: [YES / NO — rationale]
-```
-
-If Check 0 found no funging, write: "Check 0b: skipped — no funging found in Check 0."
-
----
-
 ## Check 1 — Direction of funging adjustment
 
 Funging adjustments should *reduce* expected impact (or equivalently, increase cost per outcome) when government programs are fungible with GiveWell-funded activities. Verify the sign convention:

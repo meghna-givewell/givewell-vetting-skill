@@ -106,9 +106,9 @@ When granularity divergence exists:
 
   **Low + Legibility severity guard**: When the finding's Error Type (column E) is Legibility and the correct severity is Low, leave column D (Severity) **blank** — these also route to Publication Readiness. Medium and High Legibility findings write the severity in column D (Medium or High) and route to Findings.
 
-  **To record the severity comparison** (when either instance rated High): identify which staging sheet (A or B) holds the surviving version of the Confirmed finding. Append the severity comparison string to that row's column F (e.g., 'Instance A: High. Instance B: Medium. High retained per high-severity protection rule.'). If both instances held the finding at different rows, write to the row in staging sheet A (prefer A for confirmed findings). Do not add this note to the row in staging sheet B.
+  **To record the severity comparison** (when either instance rated High): identify which staging sheet (A or B) holds the surviving version of the Confirmed finding. Append the severity comparison string to that row's column F (e.g., 'Instance A: High. Instance B: Medium. Retaining High per high-severity protection rule.'). If both instances held the finding at different rows, write to the row in staging sheet A (prefer A for confirmed findings). Do not add this note to the row in staging sheet B.
 
-  Do not note the severity comparison in the Explanation. Do not append any meta-commentary (e.g., "Confirmed by both independent agents", "Two independent agents assessed this at different severities") to the surviving row's Explanation.
+  Do not append generic meta-commentary (e.g., "Confirmed by both independent agents", "Two independent agents assessed this at different severities") to the surviving row's Explanation. The severity comparison note appended above is structured metadata for the compaction agent's synthesis guard — it is permitted in column F and distinct from meta-commentary.
 
 - **A-only**: A caught it, B did not → investigate (Step 4).
 - **B-only**: B caught it, A did not → investigate (Step 4).

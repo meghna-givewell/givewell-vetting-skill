@@ -138,6 +138,18 @@ When in doubt about whether a tab is primary or secondary, treat it as primary. 
 
 > **Coverage metric calibration**: Before filing a finding for a coverage source mismatch, verify that the coverage metric definition in the model actually matches what the source reports. Different sources may report coverage by different denominators (surviving infants vs. live births) or at different administrative levels. Confirm the metric definition aligns before filing.
 
+For each source data tab containing coverage data (vaccine coverage, program uptake, health service utilization):
+
+1. Identify the denominator the tab uses — look for terms in column headers or row labels such as "surviving infants," "live births," "children 6–59 months," "enrolled population," or survey-specific denominators (e.g., DHS standard: surviving infants per 1,000 live births).
+
+2. Identify the denominator assumed in the Main CEA tab for the corresponding coverage input. Read the formula or cell note for the coverage cell in the Main CEA that references this source tab.
+
+3. If the denominators differ (e.g., source reports per-live-birth but the model uses per-surviving-infant), file as **Medium/H** (**Assumption**): "[Coverage cell] uses [source tab] which reports coverage per [source denominator], but the Main CEA applies this rate as if coverage were per [model denominator]. Verify the denominator is consistent and update either the source tab reference or the conversion factor."
+
+4. If the coverage tab's denominator cannot be determined from available data (e.g., no denominator label in row 1 or column headers), note "format indeterminate — denominator check skipped" in the coverage declaration and do not file a finding.
+
+`COVERAGE | source-data-check | check-E-coverage coverage source | [N tabs checked] | issues found: [N] | status: complete`
+
 ### Check F — Geography/country consistency across source tabs
 
 After completing Checks A–E, verify that every source data tab in the workbook contains data from the correct geography for the program being modeled.

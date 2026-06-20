@@ -101,7 +101,7 @@ For each key parameter ask: Is the assumption reasonable given program context? 
 
 **Inaccessible links**: When `WebFetch` returns an error (private Google Doc, Box link requiring login, paywalled journal article), do not skip — file as **Low/H** for any high-priority parameter: "Cell note links to [URL], which could not be accessed. Researcher should confirm the cell value is consistent with the linked source." For low-priority parameters, note the inaccessible link in your reasoning but do not file a finding.
 
-*High-priority parameter* for this check: a parameter is high-priority if it (a) appears in the top-5 sensitivity list you identified in Step 6a-ii (the 2-level dependency tree), OR (b) is confirmed in the direct CE chain within 3 formula hops of the final CE cell. Any parameter not meeting criterion (a) or (b) is low-priority regardless of its row label.
+*High-priority parameter* for this check: a parameter is high-priority if it (a) appears in the top-5 sensitivity list you identified in Step 6a-ii (the 2-level dependency tree), OR (b) is confirmed in the direct CE chain within any number of formula hops of the final CE cell. Any parameter not meeting criterion (a) or (b) is low-priority regardless of its row label.
 
 **Coverage declaration required**: After completing this check, write: "Followed [N] hyperlinks from cell notes. Accessible: [N]. Inaccessible: [N]. Found discrepancies at: [list of cells or 'none']. No other value-match or trend issues found."
 
@@ -192,6 +192,9 @@ Evidence quality:
   subgroup analysis validity [___]
   benefit transfer documentation [___]
   proxy study population/context [___]
+  IPTp dosing schedule — FORM-28 (IPTp models only) [___]
+  VAS indirect deaths ceiling — FORM-30 (VAS models only) [___]
+  SMC seasonal overlap boundary — FORM-32 (SMC models only) [___]
 ```
 
 ## Writing Findings
