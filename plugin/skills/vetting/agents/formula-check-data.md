@@ -48,6 +48,10 @@ Common errors that require paper access to catch:
 
 Coverage declaration: COVERAGE | formula-check-data | trial data extraction | [N cells/rows checked] | issues found: [N] | status: complete
 
+**Non-trial study tables (modeling studies and systematic reviews)**: When a formula using `AVERAGE()` or explicit arithmetic embeds 2+ numeric literals and the cell note or adjacent source column cites a specific table in a non-RCT paper (e.g., "Fritz et al. 2021 Table 3," "Table 1, Tanzania row"), apply the same WebFetch verification: retrieve the paper, locate the cited table, and verify each embedded literal against the table row for the relevant country, scenario, and column. File as **High/Parameter** if any value differs by >1% from the cited table: "[cell] embeds [value] for [country/scenario] but [paper] Table [N] shows [paper value] for the same row — [CE impact if traceable]." Common failure mode: transcribing a value from the wrong scenario column or wrong country row of a multi-arm table. If 3+ literals in a single formula are sourced from the same table, list all discrepancies in one grouped finding. Apply the same paywall fallback as trial data above (WebSearch for open-access version before filing the manual-verification placeholder).
+
+Coverage declaration (extend the trial data declaration to include non-trial table checks): write one combined `COVERAGE | formula-check-data | trial + non-trial data extraction | [N cells/rows checked] | issues found: [N] | status: complete`
+
 ---
 
 ## Check 2 — GBD vizhub link verification
@@ -159,6 +163,20 @@ For every hardcoded value sourced from a study (identified by an external URL or
 Before filing a High/D: retrieve and read the cited source to confirm the mismatch. Do not file High/D based solely on the cell note description.
 
 Coverage declaration: COVERAGE | formula-check-data | study data accuracy | [N cells/rows checked] | issues found: [N] | status: complete
+
+---
+
+## Check 5b — Multi-source AVERAGE subcategory consistency
+
+When a formula uses `AVERAGE()` with 2+ embedded literals (e.g., `=AVERAGE(0.05, 0.13, 0.08, 0.14)`) and the cell note cites a specific study table, use WebFetch to retrieve the table and identify which row or column each literal came from. If the study table distinguishes subcategories — e.g., vaccine programs vs. non-vaccine programs, pediatric vs. adult, antibiotic vs. ORS commodities, treatment arm vs. control arm — verify that all averaged values belong to the subcategory the model is computing for.
+
+A formula that averages values from two different subcategories without documentation is **High/Parameter**: "[cell] averages [N] values from [paper] Table [X], but [values A and B] come from the [vaccine / non-vaccine / etc.] rows while the model targets [the other subcategory]. Using only the [correct subcategory] values gives [recalculated average] vs. the current [current value], [raising/lowering] CE by approximately [X]%."
+
+**Severity calibration**: Confirmed subcategory mismatch with material CE impact (>5%) → High/D. Plausible mismatch but subcategory breakdown requires paper access to confirm → Medium/H with a manual-verification request. If the paper is inaccessible, fall back to the paywall procedure in Check 1 (WebSearch for open-access version; file manual-verification placeholder if still inaccessible).
+
+**Scope note**: This check applies to AVERAGE formulas with embedded literals only — it does not apply to AVERAGE formulas that reference cells by address. Cross-cell reference consistency is covered by formula-check-arithmetic. Do not re-run this check on cells already verified by Check 1 (RCT trial statistics) or Check 5 (individual hardcoded value cohort verification).
+
+Coverage declaration: `COVERAGE | formula-check-data | AVERAGE subcategory consistency | [N cells/rows checked] | issues found: [N] | status: complete`
 
 ---
 

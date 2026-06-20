@@ -168,7 +168,9 @@ The GiveWell VOI guidance (Section 2.1.6) states the conservative default is "1�
 
 Do not flag either case if a cell note documents the assumption or if it appears in the researcher's Step 0.5 declared deviations.
 
-Coverage declaration: `COVERAGE | formula-check-voi | CE reallocated vs. bar | CE: [value] | bar: [value] | issues found: [N] | status: complete`
+3. **Cross-scenario arithmetic pattern consistency**: When the "CE of reallocated funding" row contains hardcoded values across ≥3 scenario columns (e.g., bars at 6×, 8×, 10×, 12×), extract all (bar, CE) pairs and check for a consistent arithmetic increment. If ≥3 of the columns follow bar+N for the same N (e.g., bar 6→CE 7, bar 8→CE 9, bar 10→CE 11 all follow bar+1), compute the expected CE for the remaining column under the same rule. If the actual value deviates by >1 from that expectation, flag as **High/D** (**Formula**): "[Off-by-one] `[cell]` = [value] breaks the bar+[N] pattern shared by the other [N−1] scenario columns ([list bar→CE pairs]). Expected value under the bar+[N] convention is [expected], not [actual]. If this scenario intentionally uses a different CE premium, add a cell note." Before filing, trace the anomalous column forward: read the scenario weight (from the scenario-weight row) and estimate the CE impact of the off-by-one error on the SUMPRODUCT headline CE. Include this estimate in column H. An anomalous column with a zero scenario weight produces no CE impact — file as Low/H in that case.
+
+Coverage declaration: `COVERAGE | formula-check-voi | CE reallocated vs. bar | CE: [value] | bar: [value] | cross-scenario pattern: [consistent / DEVIATION at column(s) X] | issues found: [N] | status: complete`
 
 ---
 
@@ -205,7 +207,7 @@ formula-check-voi check log:
   scenario weight sum verification [___]
   VOI CE reference source verification [___]
   P(wrong) parameter floor [___]
-  CE of reallocated funding vs. funding bar [___]
+  CE of reallocated funding vs. funding bar + cross-scenario pattern [___]
   SUMPRODUCT final CE range alignment [___]
 ```
 
