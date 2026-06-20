@@ -63,7 +63,7 @@ Check 0: Direct CE chain funging scan.
 
 Write this block before proceeding to Check 1.
 
-**Check 0b — Funging scope when present**: If Check 0 finds that funging rows exist in the direct CE chain (or in a leverage tab that feeds the chain), verify their scope. When the model contains both a direct CE component (non-VoI, e.g., B2 or equivalent) and a VoI/optionality component (e.g., B3 or equivalent), check whether the funging adjustment applies to both or only to the VoI sub-calculation. Read the funging cell formula: if it adjusts only the VoI sub-total (e.g., `=(B65-B64)*(1+B67)`) and the direct CE numerator has no corresponding funging row, apply SC-014 and file as **High/Adjustment**. Write the required Check 0b output block:
+**Check 0b — Funging scope when present**: If Check 0 finds that funging rows exist in the direct CE chain (or in a leverage tab that feeds the chain), verify their scope. When the model contains both a direct CE component (non-VoI, e.g., B2 or equivalent) and a VoI/optionality component (e.g., B3 or equivalent), check whether the funging adjustment applies to both or only to the VoI sub-calculation. Read the funging cell formula: if it adjusts only the VoI sub-total (e.g., `=(B65-B64)*(1-B67)` where B67 is the funging rate) and the direct CE numerator has no corresponding funging row, apply SC-014 and file as **High/Adjustment**. Write the required Check 0b output block:
 
 ```
 Check 0b: Funging scope (runs only when Check 0 finds funging present).
@@ -92,12 +92,12 @@ Funging adjustments should *reduce* expected impact (or equivalently, increase c
 When a leverage/funging adjustment appears to *increase* CE, do not immediately file — follow the "Before flagging" procedure below first. After that procedure, determine filing severity as follows:
 
 - **Do NOT file** when all three conditions confirm a legitimate mechanism: (a) a note IS present, AND (b) the note explicitly uses displacement/funging language (e.g., 'displacement,' 'funging,' 'counterfactual reduction'), AND (c) the formula structure matches that mechanism.
-- **File High severity (column D), Error Type: Formula (column E)** when ANY of the three conditions fail: (a) no note is present, OR (b) the note lacks displacement or funging language, OR (c) the formula does not match what the note describes.
-- **File Medium severity (column D)** when the direction appears ambiguous and none of the three conditions can be confirmed or denied — use Medium only when genuinely uncertain, not as a default downgrade.
+- **File High severity (column D), Error Type: Formula (column E)** only when the formula is demonstrably wrong with no ambiguity — for example, an inverted sign (e.g., `1 + funge_rate` where `1 - funge_rate` is required) that cannot be reconciled with any reasonable interpretation of the row label or cell note.
+- **File Medium severity (column D)** when any of the three conditions fail but the formula is not demonstrably wrong: (a) no note is present, OR (b) the note lacks displacement or funging language, OR (c) the formula diverges from what the note describes — use Medium to ask the researcher to confirm the sign convention.
 
 For certainty guidance: condition (a) is never uncertain — a note either exists or it does not; condition (b) is **definitively met** (not uncertain) when the note explicitly uses the words "leverage" or "uplift," since these confirm a legitimate >1 mechanism; condition (b) is **definitively failed** (not uncertain) when the note explicitly uses "displacement," "funging," or "counterfactual reduction"; 'Additionality' describes absence of displacement, not presence of leverage — notes using only 'additionality' are uncertain in condition (b) and require the Before flagging procedure; uncertainty in condition (b) applies only when the note's language could describe either an increasing or decreasing effect without specifying which.
 
-**Before flagging**: First, write in your reasoning the mechanically correct formula structure that would justify a >1 multiplier for this row type — for example: "If this is a leverage benefit multiplier, the correct form would be `=CE_without_leverage × (1 + leverage_ratio)`, which produces a value >1 when leverage_ratio > 0." Then explicitly read the cell note (via `read_sheet_notes` if not already in the pre-read cache) and the row labels immediately above and below the flagged row. Only if the note's stated mechanism AND the formula structure both match the form you wrote down is the >1 multiplier justified — a note mentioning "leverage" without specifying the formula convention is not sufficient; the formula structure must also match. If formula and note are both consistent with your written form, this is not an error. If no note is present, or the note's mechanism or formula structure diverges from your written form, file as **Medium severity (column D)** asking the researcher to confirm the sign convention, rather than immediately filing High severity (column D), Error Type: Formula (column E).
+**Before flagging**: First, write in your reasoning the mechanically correct formula structure that would justify a >1 multiplier for this row type — for example: "If this is a leverage benefit multiplier, the correct form would be `=CE_without_leverage × (1 + leverage_ratio)`, which produces a value >1 when leverage_ratio > 0." Then explicitly read the cell note (via `read_sheet_notes` if not already in the pre-read cache) and the row labels immediately above and below the flagged row. Only if the note's stated mechanism AND the formula structure both match the form you wrote down is the >1 multiplier justified — a note mentioning "leverage" without specifying the formula convention is not sufficient; the formula structure must also match. If formula and note are both consistent with your written form, this is not an error. If no note is present, or the note's mechanism or formula structure diverges from your written form, file as **Medium severity (column D)** asking the researcher to confirm the sign convention.
 
 **Coverage declaration for Check 1**: After completing all direction and program-type checks, write:
 `COVERAGE | leverage-funging | Check 1 — Direction of funging adjustment | [rows/cells checked] | issues found: [N] | status: complete`
@@ -182,15 +182,17 @@ When a program has multiple cost components (e.g., direct delivery + government 
 
 ## Check 5b — IFERROR masking on leverage/funging cells
 
+**Scope deferral (SC-010)**: IFERROR/IFNA error-masking checks are owned by `formula-check-edge-cases` per the Cross-Agent Scope Reference in pitfalls.md. This agent observes IFERROR patterns but does not independently file High findings for them.
+
 For every leverage and funging formula cell identified in the section detection step, read the formula text and check whether it is wrapped in `IFERROR` or `IFERROR(expr, 0)` (or the equivalent `IFERROR(expr, "")`, `IFERROR(expr, 1)`, etc.).
 
-- If the formula is wrapped in IFERROR, extract the inner formula (the first argument to IFERROR).
-- Evaluate whether the inner formula contains a broken reference: look for references to cells or named ranges that do not exist, references that would return `#REF!`, `#NAME?`, `#DIV/0!`, or `#VALUE!` under normal model inputs, or references that point outside the expected data range.
-- If the inner formula contains a broken reference or would return an error value if the IFERROR wrapper were removed, file **High severity (column D), Error Type: Formula [Wrong reference]**: "Leverage/funging cell [cell] wraps `[inner formula]` in IFERROR, silently returning [fallback value] when the inner formula errors. The inner formula appears to contain a broken reference ([reason]). This means the leverage adjustment is silently zeroed (or set to [fallback]) rather than applying the intended value, which will misstate CE without any visible error. Remove the IFERROR wrapper and fix the broken reference."
-- If the IFERROR wrapper is present but the inner formula is structurally sound (no broken references, no expected error conditions), note the masking in your coverage declaration but do not file a finding.
+- If the formula is wrapped in IFERROR, note the observation in your reasoning: "IFERROR masking observed at [cell] — deferred to formula-check-edge-cases per SC-010."
+- File a **Low/Assumption** placeholder: "Possible issue — deferred to formula-check-edge-cases: IFERROR wrapper observed on leverage/funging cell [cell] wrapping `[inner formula]`. If the inner formula contains a broken reference, the leverage adjustment may be silently zeroed. See Cross-Agent Scope Reference in pitfalls.md."
+- Do not independently file High findings for IFERROR masking on leverage cells — formula-check-edge-cases owns this check and will file at the appropriate severity (including High/D per FORM-7 when active error suppression is confirmed).
+- If the IFERROR wrapper is present but the inner formula is structurally sound (no broken references, no expected error conditions), note the masking in your coverage declaration only — do not file any finding.
 
 **Coverage declaration**: After completing this check, write:
-`COVERAGE | leverage-funging | Check 5b — IFERROR masking | [rows/cells checked] | issues found: [N] | status: complete`
+`COVERAGE | leverage-funging | Check 5b — IFERROR masking | [rows/cells checked] | issues found: [N] | status: complete (IFERROR observations noted and deferred to formula-check-edge-cases per SC-010)`
 
 ---
 
@@ -235,7 +237,7 @@ For each leverage/funging parameter and formula found:
 - Is there a cell note or adjacent label explaining what the parameter represents and its source?
 - If the model deviates from GiveWell's standard leverage/funging methodology (as described in program context or grant documents), is the deviation documented?
 
-Flag undocumented leverage parameters as Low severity, Error Type: Assumption (column E) if the value is outside typical ranges for this intervention type, or as Error Type: Legibility (column E), column D blank (Publication Readiness routing) if the value is plausible and the only issue is missing documentation.
+Flag undocumented leverage parameters as Low severity, Error Type: Assumption (column E) if the value is outside typical ranges for this intervention type, or as Error Type: Legibility (column E), column D blank (Publication Readiness routing) if the value is plausible and the only issue is missing documentation. For Low/Assumption findings, write column H as follows: write "Direction unknown" when the direction of CE impact is unclear; write "Raises CE — magnitude unknown" or "Lowers CE — magnitude unknown" when the direction is known. Do not leave column H blank on Low/Assumption findings.
 
 **Coverage declaration**: After completing this check, write:
 `COVERAGE | leverage-funging | Check 6 — Documentation | [rows/cells checked] | issues found: [N] | status: complete`
@@ -267,7 +269,7 @@ This check does not apply when the ad hoc adjustment is clearly labeled as cover
 
 **Two-axis notation note**: Two-axis notation (e.g., /D, /H) in check instructions describes Nature — write only 'High', 'Medium', or 'Low' in column D.
 
-**Sourcing entry grouping (SKILL-12)**: If multiple leverage findings apply to the same source cell (e.g., a single parameter cell that is both undocumented and referenced incorrectly), group them under one Sourcing entry rather than creating duplicate rows for the same cell. Combine the distinct issues into a single Explanation sentence and a single Recommended Fix.
+**Finding grouping (SKILL-12)**: If multiple leverage findings apply to the same source cell (e.g., a single parameter cell that is both undocumented and referenced incorrectly), group them under one finding row rather than creating duplicate rows for the same cell. Combine the distinct issues into a single Explanation sentence and a single Recommended Fix.
 
 Before writing any finding, confirm: (1) exact cell reference(s), (2) specific issue (which sign is wrong, which components are double-counted, etc.), (3) precise fix required.
 
@@ -288,7 +290,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `leverage-funging`
 - Column D: `AGENT_COMPLETE`
-- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]. Checks complete: [list each check number that ran — Check 0 must always appear here regardless of section detection result, e.g., '0 / 0b / 1 / 2 / 3 / 4 / 5 / 5b / 5c / 6 / 7' or '0 only — Checks 1–7 skipped, no leverage/funging sections found']. Any check not run: [list check numbers, or 'none'].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]. Checks complete: [list each check number that ran — Check 0 must always appear here regardless of section detection result, e.g., '0 / 0b / 1 / 2 / 3 / 4 / 5 / 5b / 5c / 5d / 6 / 7' or '0 only — Checks 1–7 skipped, no leverage/funging sections found']. Any check not run: [list check numbers, or 'none'].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The compaction agent filters out `AGENT_COMPLETE` rows — they are never shown to the researcher. Their sole purpose is to let the reconciliation agent confirm this instance completed normally without a silent failure (auth timeout, context limit, API error).

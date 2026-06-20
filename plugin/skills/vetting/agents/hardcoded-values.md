@@ -74,7 +74,7 @@ Columns:
 
 If a cell cannot be assigned either category (GW standard parameter, model constant, or otherwise out of scope per the exclude list above), skip it. When category is ambiguous between the two, prefer `Org-Reported` only when the data comes from the grantee's own primary data collection with no external source cited.
 
-**One row per conceptual parameter** — if the same hardcoded value appears in multiple cells (same sheet, different rows) representing different cost components or parameter instances, file one finding per conceptual parameter rather than one per cell. Group all cell references in column B, separated by commas (e.g., `C14, C22, E14`), and in column E (Description) note: "This value ([value]) appears in [N] rows — [list refs]." Treat cells as the same conceptual parameter if they share the same row label or adjacent description and the same value. Each *distinct* conceptual parameter still gets its own row.
+**One row per conceptual parameter** — if the same conceptual parameter appears in multiple cells — identified by shared row label and shared value — file one row listing all cell references rather than one row per cell. Group all cell references in column B, separated by commas (e.g., `C14, C22, E14`), and in column E (Description) note: "This value ([value]) appears in [N] rows — [list refs]." Treat cells as the same conceptual parameter if they share the same row label or adjacent description and the same value. Each *distinct* conceptual parameter still gets its own row.
 
 **Mixed-citation rule** — when multiple cells share the same source URL but have different values, write one row per cell (not one combined row), since each value needs independent verification.
 

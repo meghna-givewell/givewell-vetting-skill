@@ -26,6 +26,7 @@ These are the authoritative current values. They must match `reference/key-param
 | Avert death, 6–59 month child (VAS) | 119 UoV | |
 | Avert maternal death (MNH/reproductive health) | 125 UoV | |
 | Discount rate | 4% | |
+| Discount rate — income benefits | 4%/year | Standard discount rate for income/consumption benefits over any time horizon. Applicable to income-effects-heavy programs. A model applying 1.4% to income streams (the TA death-averting rate) instead of 4% is a misconfiguration. |
 | Discount rate — long-term health benefits | 0.5%/year | Only for health benefits spanning decades (long-term income effects, intergenerational). Applicable to income-effects-heavy programs. |
 | Discount rate — TA death-averting | 1.4%/year | Temporal uncertainty component for TA grants. Applicable to TA grants only. |
 | Income effects — malaria programs | 0.58088% | See Acceptable Ranges in reference/key-parameters.md for boundary values — do not hardcode boundaries here as they may become stale |
@@ -61,6 +62,16 @@ For each parameter in the table above, scan the collected labels for a match. A 
 - "Income effect," "income effects," "consumption effect," "consumption effects," "long-term income," "income increase," "income gain," "income benefits," "long-run income," "income multiplier," "ln(income)," "log income," "log-income," "% change in log income," "% increase in ln(income)," "% increase in ln(income) per malaria case averted" → Income effects
 - "Long-term income ratio," "income-to-mortality ratio" → Long-term income ratio
 - "Years to benefits," "time to benefits," "benefit horizon," "years of income benefits," "lag to benefits," "time lag," "lag" → Years to benefits
+- "Treatment cost supplement," "treatment costs averted," "treatment cost adjustment," "treatment cost offset," "supplemental treatment" → Treatment costs averted
+- "Resource sharing," "household sharing," "household multiplier," "sharing within household," "within-household sharing" → Resource-sharing multiplier — household income
+- "Individual income sharing," "individual sharing multiplier," "individual income multiplier" → Resource-sharing multiplier — individual income
+- "Development benefits sharing," "children's development multiplier," "development multiplier," "dev benefits sharing" → Resource-sharing multiplier — development benefits
+- "Discount rate — income," "income discount rate," "income benefit discount rate," "discount rate income benefits," "discount rate for income" → Discount rate — income benefits
+- "TA discount rate," "TA death-averting discount," "discount rate — TA," "temporal uncertainty discount" → Discount rate — TA death-averting
+- "Long-term health discount," "health benefit discount," "discount rate — long-term health," "health discount rate" → Discount rate — long-term health benefits
+- "p(no change)," "p(fail)," "p(failure)," "probability of failure," "probability no change," "p(government doesn't adopt)" → TA p(failure to shift status quo)
+- "VAS moral weight," "avert death 6-59m," "avert death 6–59m," "avert 6–59 month death," "6-59 month," "6 to 59 month" + moral weight → Avert death 6–59m VAS
+- "p(update)," "probability of update," "VOI p(update)," "probability update cap," "p(trial updates belief)" → VOI p(update) cap
 
 For each match: call `read_sheet_values` (UNFORMATTED_VALUE) on that specific cell to get the raw stored number.
 
@@ -75,7 +86,8 @@ Key-params coverage log:
   Avert death 6–59m VAS (119): [cell ref or 'not found'] = [raw value]. Match: YES/NO.
   Avert maternal death (125): [cell ref or 'not found'] = [raw value]. Match: YES/NO.
   Discount rate (4%): [cell ref or 'not found'] = [raw value]. Match: YES/NO.
-  Discount rate — long-term health benefits (0.5%/year): [cell ref or 'not found' or 'n/a — program type'] = [raw value]. Match: YES/NO.
+  Discount rate — income benefits (4%/year): [cell ref or 'not found' or 'n/a — not-income-effects-heavy'] = [raw value]. Match: YES/NO.
+  Discount rate — long-term health benefits (0.5%/year): [cell ref or 'not found' or 'n/a — not-income-effects-heavy'] = [raw value]. Match: YES/NO.
   Discount rate — TA death-averting (1.4%/year): [cell ref or 'not found' or 'n/a — not-TA'] = [raw value]. Match: YES/NO.
   Income effects malaria (0.58088%): [cell ref or 'not found'] = [raw value]. Match: YES/NO.
   Long-term income ratio (0.3064): [cell ref or 'not found'] = [raw value]. Match: YES/NO.
@@ -96,9 +108,11 @@ If a parameter is not applicable to this program type **per the program-type app
 
 **Resource-sharing parameter checks**: If the model includes resource-sharing adjustments (e.g., shared overhead, shared staff costs), verify the sharing parameters match key-parameters.md values where applicable.
 
-**"Not found" behavior — do not silently skip**: If a parameter is applicable to this program type but was not located in the column A/B label scan, write `not found` as the cell ref in the coverage log AND also file a `Low/Parameter`. Writing 'not found' in the log records that the search was executed; the finding flags the researcher to locate or confirm the parameter. Do not stop at the log entry — both actions are required:
+**"Not found" behavior — do not silently skip**: If a parameter is applicable to this program type but was not located in the column A/B label scan, write `not found` as the cell ref in the coverage log AND also file a finding. Do not stop at the log entry — both actions are required:
 
 > *"[Parameter name] was not located in column A or B row labels. Verify the spreadsheet contains this parameter and that its value matches the GiveWell standard of [expected value]. Common alternative labels: [list from the synonyms above]."*
+
+**Carve-out — absent treatment costs for top-4 charities**: If the program is AMF, Malaria Consortium, HKI, or New Incentives (top-4 charities) and the treatment costs averted adjustment is entirely absent from the model, file as **Medium/H** per KEY-5 — not Low/Parameter. KEY-5 explicitly requires a +20% supplemental adjustment for these programs; complete omission is a gap with direct CE impact (Raises CE — magnitude unknown). For all other "not found" parameters, file as `Low/Parameter`.
 
 Parameters and their program-type applicability:
 - **All program types**: Benchmark, Discount rate
@@ -107,7 +121,7 @@ Parameters and their program-type applicability:
 - **Any program that averts deaths in the neonatal period (including malaria, VAS, vaccines, New Incentives, MNH)**: Neonatal moral weight
 - **VAS programs only**: Avert death 6–59m VAS
 - **MNH/reproductive health only**: Avert maternal death
-- **Income-effects-heavy programs**: Discount rate — long-term health benefits (0.5%/year)
+- **Income-effects-heavy programs**: Discount rate — income benefits (4%/year); Discount rate — long-term health benefits (0.5%/year)
 - **TA grants only**: Discount rate — TA death-averting (1.4%/year); TA p(failure)
 - **Top-4 charities only (AMF, Malaria Consortium, HKI, New Incentives)**: Treatment costs averted
 - **Programs with household income or consumption effects**: Resource-sharing multiplier — household income; Resource-sharing multiplier — development benefits (when children's development benefits are modeled)
@@ -122,7 +136,9 @@ Parameters and their program-type applicability:
 
 **Read cell note before filing any parameter mismatch**: For every cell where the stored value does not match the expected standard, call `read_sheet_notes` on that specific cell before writing the finding. Then apply the following logic:
 
-- **Note contains a rationale** — an explanation of why the non-standard value was intentionally chosen (e.g., "using 0.003355 for comparability with prior vet from 2024," "applying vaccine-preventable-disease weight because this program is closer to NI than malaria," "discount rate set to 3% per funder requirement," "10-year horizon extended to 15 because this is infrastructure") — change the Nature from Defect to Judgment and re-classify using the Nature × Materiality table: Judgment + Material → Medium; Judgment + Immaterial → Low. Include the note text verbatim in the Explanation field so the researcher can confirm the rationale is still current.
+**Bright-line carve-out — benchmark and moral weight deviations are never reclassified from Defect to Judgment regardless of note content.** These parameters are explicitly listed under Bright-line rule 4 in output-format.md: "always High regardless of deviation size or whether a cell note is present." A rationale note on a benchmark or moral weight cell does not change the Nature from Defect to Judgment and does not reduce severity below High. The note text should still be included verbatim in the Explanation so the researcher can confirm the rationale, but severity stays at High/D.
+
+- **Note contains a rationale** (applies to non-benchmark, non-moral-weight parameters only) — an explanation of why the non-standard value was intentionally chosen (e.g., "applying vaccine-preventable-disease weight because this program is closer to NI than malaria," "discount rate set to 3% per funder requirement," "10-year horizon extended to 15 because this is infrastructure") — change the Nature from Defect to Judgment and re-classify using the Nature × Materiality table: Judgment + Material → Medium; Judgment + Immaterial → Low. Include the note text verbatim in the Explanation field so the researcher can confirm the rationale is still current.
 - **Note contains only a source citation** with no explanation of why the non-standard value was chosen (e.g., "per WHO 2022" with no explanation of why it differs from the GW standard) — file at the standard severity. A source citation without a rationale does not constitute a documented deliberate choice.
 - **Note is absent** — file at the standard severity.
 
@@ -135,8 +151,8 @@ Before filing, check whether the mismatch is covered by a declared-intentional d
 **Age-band moral weight handling**: When a model contains **separate rows for 5-14 and over-14 moral weights** rather than a single over-5 row, do not compare each age-band cell to the aggregate over-5 standard (73) and state they should both be 73. The 73 value is the aggregate — not a per-band standard. Instead: (a) identify the source cited in each cell's note; (b) determine whether the source is a GiveWell malaria source or a different disease area (vaccines, nutrition); (c) if non-malaria, file as High: "B[X] = [value] citing [non-malaria source] — use a GiveWell malaria-specific age-band weight or document the derivation from the 73 aggregate." The explanation must describe the source mismatch (wrong disease area), not assert that the individual band value should be 73. **(d) If the source IS a GiveWell malaria source**: do not file a finding — the disaggregated bands from the GW malaria source are the intended inputs when the model uses age-specific weights. Record in reasoning: "Age-band moral weights use GW malaria-specific disaggregation — no deviation." Only file a finding if the values diverge from what that source document actually states (verify by reading the source document if accessible).
 
 **Severity**:
-- **High/D/Parameter**: Benchmark, neonatal moral weight, under-5 moral weight, over-5 moral weight, maternal death moral weight, long-term income ratio deviations. These are bright-line Defect findings — the GW standard value is unambiguous. File at the severity shown in the Flag severity column of `reference/key-parameters.md` regardless of whether the stored value is inside the Min–Max range. The Min–Max range is reference context only — it does NOT define a tolerance zone.
-- **Medium/Parameter**: income effects, years to benefits, VAS moral weight — more context-dependence; flag for researcher confirmation. For **years to benefits**: any deviation from the standard value (even within the stated range) triggers at least Medium/H. The note field must explain the specific program context justifying the deviation.
+- **High/D/Parameter**: Benchmark, neonatal moral weight, under-5 moral weight, over-5 moral weight, VAS moral weight (Avert death 6–59m), maternal death moral weight, long-term income ratio deviations. These are bright-line Defect findings — the GW standard value is unambiguous. File at the severity shown in the Flag severity column of `reference/key-parameters.md` regardless of whether the stored value is inside the Min–Max range. The Min–Max range is reference context only — it does NOT define a tolerance zone.
+- **Medium/Parameter**: income effects, years to benefits — more context-dependence; flag for researcher confirmation. For **years to benefits**: any deviation from the standard value (even within the stated range) triggers at least Medium/H. The note field must explain the specific program context justifying the deviation.
 - **VAS moral weight severity**: For the VAS-specific moral weight (neonatal deaths), verify it is classified at the correct severity matching key-parameters.md. The neonatal rate differs from the under-5 rate — if the model uses the under-5 rate in a VAS neonatal context (or vice versa), classify the mismatch appropriately for the specific moral weight type, not as a generic VAS finding.
 - **Neonatal-parameter applicability note**: Neonatal-specific parameters (e.g., neonatal mortality moral weight) apply to programs that avert deaths in the neonatal period. Programs that avert deaths outside the neonatal window should use the general under-5 weight. Verify which weight applies before filing a mismatch.
 - **Discount rate special rule**: if stored value differs from 4%, file as **Medium/H** — this matches the Acceptable Ranges table in `reference/key-parameters.md`. Do not apply a Low tier for values in the 3–5% range; the reference file defines no tolerance zone. **Exception**: if the researcher explicitly overrides the standard discount rate with a different value and provides a rationale (in a cell note or session context), downgrade the severity to **Low/H**.
@@ -145,6 +161,8 @@ Before filing, check whether the mismatch is covered by a declared-intentional d
 **Rationale definition**: A "rationale" that justifies using a non-standard value must be documented in a cell note OR explicitly documented in the session context. A verbal explanation from the researcher without documentation does not count as a rationale for the purposes of severity downgrade or Judgment reclassification.
 
 **Explanation discipline — do not read source documents**: Do not navigate to or read any URL found in a cell note to characterize what the source document says. Your determination of whether a value is wrong is based solely on comparing the stored value to key-parameters.md — not on interpreting the source document's contents. If you need to describe the source, use only the text already present in the cell note (e.g., "cell note cites 'Moral weights [2020, Tool]_New Incentives CEA'"). Do not write "conflating," "misidentifying," or other language that characterizes what a source document contains. The explanation is always: "[cell] = [stored value] but key-parameters.md specifies [expected value]."
+
+**Exception — FN-003 WebFetch required for weighted-average inputs with ≥5% weight**: When the parameter being verified is a weighted-average input (e.g., an age-band moral weight that contributes ≥5% weight to a composite value, or an income-effects component with ≥5% weight), WebFetch the source URL found in the cell note before classifying severity. Without fetching, a wrong subgroup or methodology mismatch appears only as a plausible value deviation; with fetching, it may be confirmed as a High error. The prohibition on URL navigation applies to general source characterization in the Explanation text — it does not override FN-003's explicit requirement to fetch before classifying findings for ≥5% weighted inputs.
 
 **Explanation format**: `[cell] = [stored value] but the GiveWell standard value is [expected value] (key-parameters.md). [One sentence on why this matters — e.g., the update date or the direction of CE impact.]`
 

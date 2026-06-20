@@ -63,6 +63,8 @@ If the value is outside the 0.5x–200x range, file this as a finding before con
 
 **Apply the plausibility guard to EVERY CE output**: when multiple CE outputs exist (per-country, per-scenario, per-program-type), apply the 0.5x–200x check to each one independently. Do not limit the plausibility guard to the first or primary CE output. Record the plausibility check result for each CE output separately before proceeding to Step 2.
 
+COVERAGE | ce-chain-trace | CE plausibility guard | [N] CE outputs checked | issues found: [N] | status: complete
+
 ---
 
 ## Step 2 — Map the chain: units of value per $10,000
@@ -189,7 +191,7 @@ Check procedure:
    c. If a named range resolves to the adjustment cell and that named range appears in a downstream formula, the adjustment IS applied — move on.
 5. Only file "adjustment not applied" after confirming both step 2 (literal address scan) and step 4 (named range scan) found nothing: the cell is not referenced by address or by any named range in any downstream formula in the pre-read cache.
 
-Flag as **High** if a named adjustment (IV, EV, leverage, funging) is absent from the CE chain. Flag as **Medium** if a supplemental or secondary adjustment is absent.
+Flag as **High** if a named adjustment (IV, EV, or leverage) is confirmed absent from the CE chain. Flag as **Medium/Adjustment** if funging is absent from the CE chain — per FN-008, absent funging has a ceiling of Medium/Adjustment because its applicability may be uncertain (comparable programs apply ~24–43% funging reductions; if not applicable, a cell note should document why). Flag as **Medium** if a supplemental or secondary adjustment is absent.
 
 **Exception for novel programs**: if pitfalls.md or program context establishes this is a novel program type (not standard ITN/SMC/vaccine), and the adjustment row is absent rather than present-but-unapplied, file as **Medium/Assumption** rather than High — the researcher may have intentionally omitted it given the different theory of change. For standard programs, High applies regardless.
 
@@ -197,7 +199,7 @@ Flag as **High** if a named adjustment (IV, EV, leverage, funging) is absent fro
 
 **Named adjustment coverage declaration**: After completing Step 3e for all adjustment rows, write this declaration before proceeding to Step 3f:
 
-`Named adjustments verified in chain: IV adjustment [Y/N — cell ref / reason not found], EV adjustment [Y/N — cell ref / reason not found], leverage adjustment [Y/N — cell ref / reason not found], funging adjustment [Y/N — cell ref / reason not found], supplemental adjustment(s) [Y/N — cell ref / reason not found]. Adjustments defined but not found in any downstream formula: [list or 'none']. If any adjustment is 'not found': file as High (for IV/EV/leverage/funging) or Medium (for supplemental) before proceeding — 'Adjustment [name] at [cell] is computed but not referenced in the CE output formula chain. Either add a cell reference or document intentional exclusion in a cell note.'`
+`Named adjustments verified in chain: IV adjustment [Y/N — cell ref / reason not found], EV adjustment [Y/N — cell ref / reason not found], leverage adjustment [Y/N — cell ref / reason not found], funging adjustment [Y/N — cell ref / reason not found], supplemental adjustment(s) [Y/N — cell ref / reason not found]. Adjustments defined but not found in any downstream formula: [list or 'none']. If any adjustment is 'not found': file as High (for IV/EV/leverage) or Medium/Adjustment per FN-008 (for funging) or Medium (for supplemental) before proceeding — 'Adjustment [name] at [cell] is computed but not referenced in the CE output formula chain. Either add a cell reference or document intentional exclusion in a cell note.'`
 
 COVERAGE | ce-chain-trace | named adjustment chain verification | [N] adjustments | issues found: [N] | status: complete
 
@@ -205,17 +207,15 @@ If an adjustment type is not present in this model (e.g., no leverage row exists
 
 ---
 
-### 3e-i — SUMPRODUCT implicit-filter check
+### 3e-i — SUMPRODUCT implicit-filter check (deferred)
 
-For every SUMPRODUCT formula in the CE chain, verify that the boolean-condition array is correctly specified:
+**SUMPRODUCT filter-dimension checks are owned by `formula-check-edge-cases` — do not file findings independently from this agent.** If you observe a SUMPRODUCT formula in the CE chain whose boolean-condition array appears to reference the wrong column or has a narrower row range than the value arrays, note the observation in your reasoning as "SUMPRODUCT dimension check deferred to formula-check-edge-cases" and write a single SC-010 Low/Assumption placeholder only:
 
-1. Identify the identifier column referenced by the boolean condition (e.g., `(A2:A100="Nigeria")`).
-2. Confirm the identifier column is the correct column for the filter — e.g., the column that actually contains country names, program IDs, or the relevant classification label, not a neighboring column that is numerically similar.
-3. Confirm the condition array covers the full data range — check that the row range of the boolean array matches the row range of the value arrays in the same SUMPRODUCT.
-4. If the boolean array references the wrong column (e.g., filters on column B when the identifier is in column A), flag as **Medium/Formula [Wrong reference]**: "SUMPRODUCT in [cell ref] ([row label]) applies boolean filter on [wrong column ref] — this column contains [actual content of that column] rather than [expected filter identifier]. The filter likely excludes rows that should be included, understating the sum."
-5. If the boolean array has a narrower row range than the value arrays (e.g., boolean covers rows 2:50 but value arrays cover 2:100), flag as **Medium/Formula [Wrong reference]**: "SUMPRODUCT in [cell ref] has a boolean filter array ([boolean range]) shorter than the value array ([value range]); rows [start of gap]:[end of range] are never matched and are excluded from the sum."
+SC-010 placeholder (if a SUMPRODUCT concern was observed): file as **Low/Assumption**: "SUMPRODUCT filter-dimension concern noted in CE chain at [cell ref] — deferred to formula-check-edge-cases for full evaluation and filing."
 
-COVERAGE | ce-chain-trace | SUMPRODUCT implicit-filter check | [N] SUMPRODUCT formulas checked | issues found: [N] | status: complete
+Do not enumerate SUMPRODUCT findings or apply the filter-check procedure here. The formula-check-edge-cases agent runs the authoritative check.
+
+COVERAGE | ce-chain-trace | SUMPRODUCT implicit-filter check | deferred to formula-check-edge-cases | issues found: [0 or 1 SC-010 placeholder] | status: complete
 
 ---
 
@@ -266,22 +266,11 @@ COVERAGE | ce-chain-trace | semantic reference verification | [N] references che
 
 ---
 
-### 3g — IFERROR/IF masking check
+### 3g — IFERROR/IF masking check (deferred)
 
-For every cell in the confirmed CE chain, check whether its formula is wrapped in an error-suppressing construct: `IFERROR(...)`, `IFERROR(..., 0)`, `IF(ISERROR(...), ..., ...)`, or any structurally equivalent pattern. These constructs hide formula errors by silently substituting a fallback value (commonly 0 or blank) when the inner formula would return an error.
+**IFERROR/IFNA error-masking checks are owned by `formula-check-edge-cases` — do not file findings independently from this agent.** If you observe a CE chain cell whose formula is wrapped in `IFERROR(...)`, `IF(ISERROR(...), ..., ...)`, or any structurally equivalent error-suppressing construct, note the observation in your reasoning as "IFERROR masking check deferred to formula-check-edge-cases" and do not file a finding here.
 
-Procedure:
-1. For each CE chain cell, read its formula string in FORMULA mode.
-2. If the formula begins with `IFERROR(` or contains `IF(ISERROR(` or `IFERROR(` at the outer level, extract the inner expression.
-3. Mentally evaluate whether the inner expression would produce a valid result: check whether its cell references resolve to non-empty cells and whether its operation is valid for the referenced value types.
-4. If the inner formula would return an error (e.g., division by zero, reference to a blank or deleted cell, type mismatch) or would produce a clearly wrong numeric result, flag as follows:
-   - **High/Formula [Wrong reference]** if the inner formula's error would materially affect the CE output (i.e., the suppressed error propagates through a significant portion of the chain).
-   - **Medium/Formula [Wrong reference]** if the inner formula's error affects a secondary or minor chain cell.
-   - Explanation format: "Error-suppressing IFERROR in CE chain cell [cell ref] ([row label]) masks a broken formula: the inner expression `[inner formula]` would return [error type or wrong value], causing the cell to silently output [fallback value] instead of a valid calculation."
-
-Do not flag IFERROR wrapping where the inner formula is valid and the error-suppression is purely defensive (e.g., preventing divide-by-zero when an upstream parameter could legitimately be zero in some scenarios). Only flag when the inner formula is demonstrably broken in the current state of the model.
-
-COVERAGE | ce-chain-trace | IFERROR masking check | [N] CE chain cells checked | issues found: [N] | status: complete
+COVERAGE | ce-chain-trace | IFERROR masking check | deferred to formula-check-edge-cases | issues found: 0 (deferred) | status: complete
 
 ---
 
@@ -330,6 +319,8 @@ Check for a cell note, adjacent label, or Sources tab entry that identifies wher
 
 `[input cell] ([row label]): source documented? [YES — note/tab/label text | NO]. Severity if no source: [Medium / Low — GW standard default].`
 
+COVERAGE | ce-chain-trace | Step 4a — terminal input source traceability | [N] terminal inputs checked | issues found: [N] | status: complete
+
 ### 4b — Inputs match their claimed source
 
 Where a cell note cites a specific table, figure, or page of a document:
@@ -339,6 +330,10 @@ Where a cell note cites a specific table, figure, or page of a document:
 **Required output for each claimed-source check** — write this line before moving on from any input whose source was found in 4a:
 
 `[input cell] ([row label]): claimed source = '[source description]'. Cell value = [X]. Source description consistent with cell value? [YES / NO — explain discrepancy if NO].`
+
+**SC-021 applies to stale benchmark findings in this step**: If any terminal input is the GiveWell cost-effectiveness benchmark (GiveDirectly cash transfer comparison value) and the value differs from the current canonical value (0.00333), the Recommended Fix must offer both options: either update the benchmark to the current GW value (0.00333) OR add a rationale note documenting why the older value is retained. Do not prescribe only a value update.
+
+COVERAGE | ce-chain-trace | Step 4b — claimed source consistency | [N] claimed-source inputs checked | issues found: [N] | status: complete
 
 ### 4c — Inputs flow from the correct tab
 
@@ -350,7 +345,7 @@ Flag as **High** if a formula that should reference a source data tab instead co
 
 `[input cell] ([row label]): expected source tab = '[tab name]'. Formula references: [tab!cell or 'hardcoded']. Correct tab reference? [YES / NO].`
 
-**Novel program adjustment threshold**: When assessing whether a novel program's adjustment chain deviates materially from the GW standard benchmark (Step 5), define the flag threshold as: total net adjustment greater than 20 percentage points from the benchmark (positive or negative). This threshold is documented in GiveWell's CEA Consistency Guidance. If the total net adjustment is within 20 percentage points, no finding is needed regardless of which individual adjustments differ.
+COVERAGE | ce-chain-trace | Step 4c — source tab reference correctness | [N] tab-referenced inputs checked | issues found: [N] | status: complete
 
 ### 4d — Stale row reference check (cross-tab version drift)
 
@@ -388,6 +383,8 @@ Based on the program context and grant document (if provided):
 **VOI_Priors cross-row column-range consistency** (run when the model contains a VOI tab): When the CE chain passes through a VOI section that references a VOI_Priors tab (or equivalent Bayesian priors tab), identify all rows in the VOI tab whose formulas reference that priors tab. For each pair of rows that compute analogous quantities — e.g., two rows both computing "probability that [outcome] changes CE for [funder type]" or two rows both computing expected CE for different scenarios — compare the column range each formula references from the priors tab. If row A references `VOI_Priors!$B$5` (single column) and row B references `VOI_Priors!$B$5:$C$5` (wider range) for a structurally analogous calculation, flag as **Medium/Formula**: "Row [A ref] and row [B ref] both compute [analogous concept] but reference different column ranges from VOI_Priors (`[formula A]` vs. `[formula B]`). If both rows model the same type of calculation, they should reference the same column range — verify which is correct and apply consistently." Do not flag where a cell note documents why one row has a wider or narrower reference than its analogue.
 
 **Novel program adjustment benchmarking**: Before comparing a model's adjustment chain to the GW standard malaria benchmark, assess whether the program type is structurally analogous to standard GW malaria prevention programs (ITNs, SMC, vaccines) or is a novel program type (case management, supply chain, training, technical assistance). For **novel programs** where the standard malaria benchmark was not designed to apply, do not file the adjustment deviation as an error. Instead file as Medium/Assumption: "Adjustment chain deviates from the GW standard malaria benchmark. Document each adjustment's rationale — note that standard benchmark comparisons may not apply given this program's different theory of change." If the model's total net adjustment is within 20 ppts of the benchmark, no finding is needed.
+
+**Novel program adjustment threshold**: When assessing whether a novel program's adjustment chain deviates materially from the GW standard benchmark, define the flag threshold as: total net adjustment greater than 20 percentage points from the benchmark (positive or negative). This threshold is documented in GiveWell's CEA Consistency Guidance. If the total net adjustment is within 20 percentage points, no finding is needed regardless of which individual adjustments differ.
 
 **Note**: Leverage section UoV reference checks (verifying that leverage scenario rows and intermediate `$ × UoV/$` calculations reference the post-supplemental rate) are handled by the `leverage-uov-check` agent running in parallel. Do not duplicate those checks here.
 

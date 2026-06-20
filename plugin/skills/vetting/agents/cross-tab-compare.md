@@ -77,6 +77,8 @@ File findings as follows:
 - Different decimal precision in displayed values when formulas are structurally equivalent
 - Column arrangement differences that are documented in a cell note
 
+`COVERAGE | cross-tab-compare | Check 1 — Formula divergence on matched quantities | [N row pairs checked] | issues found: [N] | status: complete`
+
 ### Check 2 — Value mismatch on matched quantities
 
 For each row pair that produced the same or equivalent formula structure in Check 1, compare the displayed values (FORMATTED_VALUE). A value mismatch where the formulas look equivalent is evidence of a hidden input divergence — one tab's formula may be pulling from a different source than it appears to.
@@ -84,6 +86,8 @@ For each row pair that produced the same or equivalent formula structure in Chec
 File as **Medium/Inconsistency** when: (a) the label matches, (b) the formula structure appears equivalent, and (c) displayed values differ by more than 1% with no documented reason.
 
 File as **Low/Inconsistency** when values differ by ≤1% (likely rounding) and no other issue is present. **Routing for ≤1% Inconsistency findings**: even at Low severity, cross-tab value mismatches route to Findings (write `Low` in column D), not to Publication Readiness. Do not leave column D blank for these — a Low/Inconsistency finding that routes to PR would be invisible to the researcher reviewing the model's CE logic.
+
+`COVERAGE | cross-tab-compare | Check 2 — Value mismatch on matched quantities | [N row pairs checked] | issues found: [N] | status: complete`
 
 ### Check 3 — Scenario column correspondence
 
@@ -98,7 +102,9 @@ For each scenario column in Simple CEA (typically columns C and D):
 
 File as **Medium/Inconsistency** when: a scenario column pulls from a different scenario in Main CEA than its header claims (e.g., "upper bound" column formula references Main CEA's lower-bound column), **or** when a structural input row in this scenario column references a different scenario than the CE output row references.
 
-File as **Low/Legibility** when: a scenario column header is ambiguous or mislabeled (e.g., says "25th–75th percentile" but the formula pulls lower/upper scenario values rather than a percentile range).
+File as **Low/Legibility** when: a scenario column header is ambiguous or mislabeled (e.g., says "25th–75th percentile" but the formula pulls lower/upper scenario values rather than a percentile range). (write column D blank — per FORM-6, Low+Legibility routes to Publication Readiness)
+
+`COVERAGE | cross-tab-compare | Check 3 — Scenario column correspondence | [N scenario columns checked] | issues found: [N] | status: complete`
 
 ### Check 4 — Column header accuracy
 
@@ -112,24 +118,30 @@ Common failures:
 - Header says "Best guess" but formula references a pessimistic or conservative input
 - Header says "[Year] estimate" but formula references a different year's data
 
-File as **Low/Legibility** when a header misdescribes what the column contains. Include the actual formula fragment in the Explanation.
+File as **Low/Legibility** when a header misdescribes what the column contains. Include the actual formula fragment in the Explanation. (write column D blank — per FORM-6, Low+Legibility routes to Publication Readiness)
+
+`COVERAGE | cross-tab-compare | Check 4 — Column header accuracy | [N column headers checked] | issues found: [N] | status: complete`
 
 ### Check 5 — Benchmark cell consistency
 
 Locate the GiveDirectly benchmark row in both tabs. Verify both reference the same cell or the same hardcoded value. If one is hardcoded and the other references a parameter cell, or if they reference different cells, flag:
-- **Medium/Parameter** if the values differ
+- **Medium/Inconsistency** if the values differ
 - **Low/Inconsistency** if the values match but one is hardcoded while the other references a cell (creates drift risk)
+
+`COVERAGE | cross-tab-compare | Check 5 — Benchmark cell consistency | [N tabs checked] | issues found: [N] | status: complete`
 
 ### Check 5b — Benchmark value against key-parameters.md canonical value
 
-After completing Check 5, perform a second benchmark check that is independent of cross-tab consistency. The canonical GiveDirectly benchmark mortality/effectiveness value is approximately **0.00333** (sourced from `reference/key-parameters.md`). Both tabs may share the same stale benchmark — which makes them internally consistent but both wrong — so cross-tab agreement does not clear this check.
+After completing Check 5, perform a second benchmark check that is independent of cross-tab consistency. The canonical GiveDirectly benchmark mortality/effectiveness value is **0.00333** (exact; sourced from `reference/key-parameters.md`). Both tabs may share the same stale benchmark — which makes them internally consistent but both wrong — so cross-tab agreement does not clear this check.
 
 For each tab that has a GiveDirectly benchmark row:
 1. Read the displayed value and the formula/hardcoded value of the benchmark cell
 2. Compare it against 0.00333 (the key-parameters.md canonical value). **No tolerance zone applies** — any deviation, however small, is a bright-line finding per SC-001 and the GW-standard-parameters bright-line rule in `reference/output-format.md`
-3. If the value deviates beyond that tolerance, file **High/Parameter**: "[Tab name] [cell] contains a GiveDirectly benchmark value of [value], which deviates from the canonical key-parameters.md value of 0.00333. Both tabs may share this stale value, so cross-tab consistency does not resolve this. Update to the current canonical benchmark."
+3. If the value differs from 0.00333 in any way, file **High/Parameter**: "[Tab name] [cell] contains a GiveDirectly benchmark value of [value], which deviates from the canonical key-parameters.md value of 0.00333. Both tabs may share this stale value, so cross-tab consistency does not resolve this. Either update the benchmark to the current GW value (0.00333) OR add a rationale note documenting why the older value is retained."
 
 Note: if both tabs are stale, file two rows — one per tab — not a single combined finding, because each cell needs its own recommended fix.
+
+`COVERAGE | cross-tab-compare | Check 5b — Benchmark value against key-parameters.md canonical value | [N tabs checked] | issues found: [N] | status: complete`
 
 ### Check 5c — Value divergence despite equivalent structure
 
@@ -150,6 +162,8 @@ Do not file if: (a) the difference in source cells is already explained by a cel
 Scan Simple CEA's FORMULA-mode output for formulas that independently recalculate quantities that are available as named results in Main CEA. Indicators: formulas referencing Supplementary_calcs, source tabs, or external data directly instead of pulling Main CEA's computed output.
 
 This is not always an error — Simple CEA sometimes intentionally simplifies. File as **Low/Inconsistency** only when: (a) the independent recalculation diverges from Main CEA's result, or (b) the recalculation is structurally complex enough that drift becomes a real maintenance risk.
+
+`COVERAGE | cross-tab-compare | Check 6 — Independent recalculations | [N formulas scanned] | issues found: [N] | status: complete`
 
 ### Check 7 — CI tab cross-check (run only when CI tab detected)
 
@@ -185,7 +199,7 @@ In GiveWell Simple CEAs, the calculation should flow top-to-bottom: inputs and p
 
 Using the row labels already read in Step 1 and Step 2: identify the row containing the final CE output (labeled with variants of "cost-effectiveness," "CE multiple," "x GiveDirectly," "cost per outcome"). Then identify rows that are clearly inputs or parameters (coverage, mortality rate, effect size, costs, moral weights, discount rate, benchmark). If the CE output row's row number is less than (i.e., appears above) the majority of input rows, the section is ordered backward.
 
-File as **Medium/Legibility** (column D blank — routes to Publication Readiness): "The Simple CEA section displays the cost-effectiveness result ([row label], row [N]) before the input rows that compute it (e.g., [input row label], row [M]). Reordering so that inputs appear above the CE output improves readability — a reviewer reading top-to-bottom can follow the logic to its conclusion rather than seeing the answer first."
+File as **Medium/Legibility** (write `Medium` in column D — routes to Findings): "The Simple CEA section displays the cost-effectiveness result ([row label], row [N]) before the input rows that compute it (e.g., [input row label], row [M]). Reordering so that inputs appear above the CE output improves readability — a reviewer reading top-to-bottom can follow the logic to its conclusion rather than seeing the answer first."
 
 Do not file if: (a) the Simple CEA is a pure lookup summary with no computational rows (all values are direct references to Main CEA with no local inputs), (b) the inverted order is documented as intentional (e.g., an executive-summary style layout with a stated rationale), or (c) fewer than 3 identifiable input rows exist in Simple CEA (insufficient basis for ordering claim).
 

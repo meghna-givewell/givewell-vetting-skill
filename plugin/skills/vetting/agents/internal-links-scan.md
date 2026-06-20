@@ -25,7 +25,9 @@ Flag every URL matching one of these patterns:
 - The source spreadsheet itself or the output spreadsheet — their IDs are in session context; exclude any Google Sheets URL whose ID matches either
 - URLs where the hyperlink display text, cell note text, or nearby description contains "(public)" (case-insensitive) — these are intentionally published
 - Well-known public external sources: journal URLs (pubmed.ncbi.nlm.nih.gov, bmj.com, thelancet.com, doi.org, etc.), WHO, UNICEF, IHME/GBD, DHS Statcompiler, statcompiler.com, github.com, worldbank.org — these are not internal documents
-- givewell.org links where the URL path does NOT contain `/intranet/`, `/login/`, `/internal/`, `/staging/`, or `/draft/` — those path segments suggest non-public pages that require the same review as other internal links and must be flagged
+- givewell.org links where the URL path does NOT contain `/intranet/`, `/login/`, `/internal/`, `/staging/`, or `/draft/`
+
+**Flag (affirmative rule):** givewell.org URLs whose path contains `/intranet/`, `/login/`, `/internal/`, `/staging/`, or `/draft/` — these path segments indicate non-public pages that require the same publish-permission review as other internal links. Add these to the flagged-URL list under `Sourcing`.
 
 ---
 

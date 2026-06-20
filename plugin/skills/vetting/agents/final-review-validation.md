@@ -14,7 +14,7 @@ You are performing Step 10c of a GiveWell spreadsheet vet. This step runs after 
 
 **Role calibration**: GiveWell does not treat cost-effectiveness estimates as literally true — deep uncertainty is inherent to all CEAs. Do not second-guess defensible modeling choices. Reserve new Medium and High findings for factual errors, internal inconsistencies, or missing required elements.
 
-**Coverage mandate — no shortcuts**: All five checks below apply to all finding rows without exception. After each check, write a coverage declaration before moving on: "Checked all [N] finding rows for [check type]. Found issues at: [list or 'none']. No other issues of this type." Do not proceed until you can write it.
+**Coverage mandate — no shortcuts**: All six checks below apply to all finding rows without exception: ID integrity check, Check 0 (CE baseline re-verification), Check 1 (fix-validation), Check 2 (confidence intervals sheet), Check 3 (stale placeholder and draft language), and Check 4 (CE impact completeness). After each check, write a coverage declaration before moving on: "Checked all [N] finding rows for [check type]. Found issues at: [list or 'none']. No other issues of this type." Do not proceed until you can write it.
 
 **CROSS-2 — Synthesized Medium/Formula re-verification**: Before running any numbered check, identify all findings where Error Type (column E) = `Formula` or `Parameter` AND Severity (column D) = `Medium` AND the Explanation (column F) contains language indicating the finding was synthesized or merged during Wave 2.5 reconciliation or compaction (look for phrases such as "merged from," "synthesized from," "combined finding," "both instances," "reconciled from," or a compound cell list in column C that spans two distinct cells flagged by separate agents). For each such finding, independently re-verify it against the source spreadsheet:
 
@@ -41,7 +41,7 @@ Read all rows from row 2 onward on the Findings sheet using batched `read_sheet_
 
 If the Publication Readiness sheet is empty (no rows after row 1), declare the PR ID integrity check clean: "Publication Readiness sheet is empty — no PR-* IDs to verify." Do not file a finding about missing PR IDs when the sheet is legitimately empty.
 
-**Call `get_spreadsheet_info` unconditionally now** — before any other check — on the source spreadsheet to obtain the complete tab list and tab-to-GID mapping. Store this result as `spreadsheet_info`; it is required by both Check 2 (CI sheet detection) and the hyperlink conversion step. Call it once here and do not call it again later. If `get_spreadsheet_info` fails, note the failure in your reasoning and announce: `⚠️ get_spreadsheet_info failed — Check 2 (CI sheet check) and hyperlink conversion cannot run. Proceed with all other checks.` Then skip Check 2 and the hyperlink conversion step.
+**Obtain spreadsheet tab metadata now** — before any other check — to populate the tab list and tab-to-GID mapping needed by both Check 2 (CI sheet detection) and the hyperlink conversion step. Read this from session context: the orchestrator provides a `tab_list` or `sheet_manifest` entry at session start. Store the result as `spreadsheet_info`. If session context does not contain tab metadata, announce: `⚠️ Tab metadata not found in session context — Check 2 (CI sheet check) and hyperlink conversion are orchestrator-dependent and cannot run. Proceed with all other checks.` Then skip Check 2 and the hyperlink conversion step. Do NOT call `get_spreadsheet_info` — this tool is not available in the agent context.
 
 ---
 
@@ -62,7 +62,7 @@ Coverage declaration: "ID integrity check complete. Findings IDs found: [N], seq
 
 Before computing or evaluating any CE impact estimate, independently re-read the CE baseline cell from the source spreadsheet. Do not rely solely on the pre-vet baseline from session context — that value was read at session start and could reflect a cell that was updated, or a pre-adjustment subtotal rather than the final model output.
 
-**If session context does not identify a CE baseline cell**: file as **High/Formula**: "CE baseline cell reference not provided in session context — cannot verify CE impact estimates in this vet. Researcher to supply the final CE output cell reference (typically the last 'CE after adjustments' row in the Main CEA tab) so CE impacts can be verified." Then skip to Check 1 — do not attempt further CE baseline steps.
+**If session context does not identify a CE baseline cell**: file as **High/Assumption**: "CE baseline cell reference not provided in session context — cannot verify CE impact estimates in this vet. Researcher to supply the final CE output cell reference (typically the last 'CE after adjustments' row in the Main CEA tab) so CE impacts can be verified." Then skip to Check 1 — do not attempt further CE baseline steps.
 
 1. Use `read_sheet_values` (FORMATTED_VALUE) on the cell identified as the CE baseline in session context. Read both the cell value and the row label in column A of the same row.
 2. Confirm the row label contains "final," "after adjustments," or an equivalent phrase that indicates this is the model's terminal CE output — not an intermediate calculation before adjustments are applied. Acceptable row label phrases include (case-insensitive): "final", "after adjustments", "adjusted", "post-adjustment", "CE (adjusted)", "net CE". Labels containing only the program name and "CE" with no qualifier (e.g., "SMC CE") are ambiguous — treat as a label concern and file per step 4.
@@ -103,7 +103,7 @@ Coverage declaration: "Fix-validation complete. Checked [N] High/Medium findings
 
 Use the `spreadsheet_info` result obtained in Step 1 to check whether a "Confidence intervals" or "Uncertainty" sheet exists:
 - If present: verify it is populated (not blank) via a targeted `read_sheet_values` call. If blank, file as Medium/Assumption — write Assumption in column E, route to Findings.
-- If absent: write directly to the Publication Readiness sheet with column D = Legibility, column E = "Confidence intervals or Uncertainty sheet not found — uncertainty ranges are a required component of published top-charity CEAs."
+- If absent: write directly to the Publication Readiness sheet with column B = "N/A — missing tab", column C = "N/A", column D = Legibility, column E = "Confidence intervals or Uncertainty sheet not found — uncertainty ranges are a required component of published top-charity CEAs.", column F = "Add a Confidence Intervals or Uncertainty sheet drawing its central CE estimate from the final post-adjustment CE output cell."
 - **Do not apply this check** to BOTECs, VOI models, or exploratory analyses that do not target a published CEA.
 
 **To determine whether this check applies**: check session context for a model type declaration (e.g., "program type: BOTEC" or "optionality model"). If not in session context, read the workbook title from the `spreadsheet_info` result obtained in Step 1 — titles containing "BOTEC", "optionality", "VoI", or "exploratory" indicate this check does not apply. If model type is ambiguous, apply the check and note in the Explanation: "Apply only if this is a published top-charity CEA, not a BOTEC or exploratory analysis."
@@ -133,13 +133,13 @@ Using targeted `read_sheet_values` calls on column A and column B of each vetted
 - Column headers with generic names like `Column X`, `Country A`, `Year N`
 - Cell notes containing internal-only markers (use `read_sheet_notes` on each vetted sheet to scan for notes beginning with `Note to self`, `INTERNAL`, or `ASK [name]`)
 - Workbook title (from the `spreadsheet_info` result obtained in Step 1) containing `draft`, `v1`, `wip`, or `copy of`
-- Any date visible in the workbook header, key tab, or title row that is more than 18 months before today — flag as Low/H if it appears to be a last-updated date rather than a data vintage date
+- Any date visible in the workbook header, key tab, or title row that is more than 18 months before today — flag as Low severity with Error Type Legibility, blank column D per FORM-6 (routes to Publication Readiness), if it appears to be a last-updated date rather than a data vintage date
 
 Do not limit to header rows — scan all populated rows.
 
 To distinguish last-updated from data vintage: a last-updated date typically appears in workbook metadata rows (e.g., a row labeled "Last updated:", "Version:", or "As of:"). A data vintage date typically appears in a row label describing a data source (e.g., "GBD 2021", "DHS 2020 data"). If the date context is ambiguous (e.g., a standalone year in a header row), treat as a last-updated date and apply the 18-month rule.
 
-Write each unflagged instance directly to the Publication Readiness sheet with Error Type: Legibility (column D of the PR sheet) — not to the Findings sheet. If a prior agent already flagged it, verify the finding exists in Publication Readiness before filing a duplicate.
+Write each flagged instance directly to the Publication Readiness sheet with Error Type: Legibility (column D of the PR sheet) — not to the Findings sheet. If a prior agent already flagged it, verify the finding exists in Publication Readiness before filing a duplicate.
 
 Coverage declaration: "Placeholder scan complete. Header rows and column A checked for all [N] vetted sheets. Instances found: [list or 'none']. No other instances."
 
@@ -149,13 +149,13 @@ Coverage declaration: "Placeholder scan complete. Header rows and column A check
 
 **Pre-condition check**: Before running Pass A or Pass B, verify that Check 0 successfully located and confirmed the CE baseline cell. If Check 0 filed a missing-baseline finding (the CE baseline cell was not found, was blank, or contained a non-numeric value), skip both Pass A and Pass B entirely — CE impact cannot be computed without a valid baseline. Write in your reasoning: "Pass A and Pass B skipped — CE baseline cell not confirmed in Check 0."
 
-**Pass A — fill blanks**: For every **High** finding and every **Medium** finding whose Error Type is `Formula`, `Parameter`, or `Adjustment` — where Estimated CE Impact (column H) is blank — compute the directional impact using the pre-vet baseline CE from session context. Write using the standard format: `Raises CE — 8.7x → ~10.2x` or `Lowers CE — magnitude unknown` etc. Always lead with the standard phrase from output-format.md. Use `Direction unknown` if the researcher's answer would determine the direction. Update the finding in place using `modify_sheet_values`.
+**Pass A — fill blanks**: For every **High** finding, every **Medium** finding whose Error Type is `Formula`, `Parameter`, or `Adjustment`, and every **Low** finding whose Error Type is `Formula`, `Parameter`, or `Adjustment` — where Estimated CE Impact (column H) is blank — compute the directional impact using the pre-vet baseline CE from session context. Write using the standard format: `Raises CE — 8.7x → ~10.2x` or `Lowers CE — magnitude unknown` etc. Always lead with the standard phrase from output-format.md. Use `Direction unknown` if the researcher's answer would determine the direction. Update the finding in place using `modify_sheet_values`.
 
 If Check 0 found a >1% discrepancy between the live cell value and the session context baseline and filed a High finding, use the live cell value (from Check 0 step 3) as the baseline for CE impact estimation, not the session context value — the live value is more likely to be correct.
 
 Rationale: Medium Formula, Parameter, and Adjustment findings can affect CE even if their impact is below the High threshold. Researchers need the CE direction to triage them against High findings. For Medium `Assumption` findings where CE impact is confirmed zero, write `No CE impact` — do not leave blank. For Medium `Legibility` and `Inconsistency` findings: per output-format.md, blank column H is acceptable — write `No CE impact` only when you have positively confirmed the CE impact is zero; do not fill it automatically.
 
-**Pass B — quantify High "magnitude unknown" and flag unresolved directions**: For every **High** finding where column H contains "magnitude unknown" (i.e., already filled but not quantified):
+**Pass B — quantify High "magnitude unknown" and flag unresolved directions**: For every **High** finding where column H contains "magnitude unknown" OR "Direction unknown" (i.e., already filled but not quantified or direction unresolved):
 
 1. Read the cell(s) referenced in column C of that finding using `read_sheet_values` (UNFORMATTED_VALUE) on the source spreadsheet.
 2. Read the CE baseline cell (verified in Check 0) in UNFORMATTED_VALUE mode.
@@ -167,7 +167,7 @@ The goal is that no High finding exits validation with a bare "magnitude unknown
 
 Do not modify any other columns of existing findings.
 
-Coverage declaration: "CE impact completeness check done. Pass A — High findings: [N total, M filled, K already had content]. Medium Formula/Parameter/Adjustment findings: [N total, M filled, K already had content]. Pass B — High 'magnitude unknown' findings reviewed: [N], quantified: [M], retained with reason: [K], changed to No CE impact: [J]."
+Coverage declaration: "CE impact completeness check done. Pass A — High findings: [N total, M filled, K already had content]. Medium Formula/Parameter/Adjustment findings: [N total, M filled, K already had content]. Low Formula/Parameter/Adjustment findings: [N total, M filled, K already had content]. Pass B — High 'magnitude unknown' or 'Direction unknown' findings reviewed: [N], quantified: [M], retained with reason: [K], changed to No CE impact: [J]."
 
 ---
 
@@ -189,9 +189,9 @@ Assign the next sequential Finding ID continuing from the highest existing Findi
 
 Convert every cell reference in column C of both the Findings sheet and Publication Readiness sheet into a clickable `=HYPERLINK(...)` formula that opens the referenced cell directly in the source spreadsheet.
 
-**Run hyperlink conversion after**: (1) all five checks are complete, (2) all new findings have been written, and (3) all in-place updates to column F and column H are complete. Do NOT run hyperlink conversion after writing the AGENT_COMPLETE marker — the AGENT_COMPLETE row does not need a hyperlink.
+**Run hyperlink conversion after**: (1) all six checks are complete (ID integrity check, Check 0, Check 1, Check 2, Check 3, and Check 4), (2) all new findings have been written, and (3) all in-place updates to column F and column H are complete. Do NOT run hyperlink conversion after writing the AGENT_COMPLETE marker — the AGENT_COMPLETE row does not need a hyperlink.
 
-1. **Get the GID mapping**: From the `spreadsheet_info` result obtained in Step 1, extract the tab name → numeric GID mapping for every tab in the source spreadsheet (`sheetId` field in the sheets list). (Do not call `get_spreadsheet_info` again — it was called once in Step 1.)
+1. **Get the GID mapping**: From the `spreadsheet_info` result obtained in Step 1, extract the tab name → numeric GID mapping for every tab in the source spreadsheet (`sheetId` field in the sheets list). (Do not attempt to call `get_spreadsheet_info` — tab metadata must come from session context as established in Step 1.)
 
 2. **Read all column C values**: Read Findings sheet columns A:C in batches until empty. Separately read Publication Readiness sheet columns A:C. Collect every non-divider, non-blank row with its sheet row number and current column C text.
 
@@ -227,4 +227,4 @@ Coverage declaration: "Hyperlink conversion complete. Findings rows converted: [
 
 ## Final step — Write AGENT_COMPLETE marker
 
-After hyperlink conversion is complete, write a completion row to the Findings sheet: column B = `final-review-validation`, column D = `AGENT_COMPLETE`, column F = `COVERAGE_ROWS: Findings sheet rows 2–[last_row] | Staging sheet: Findings. CE baseline: [verified/not found]. ID integrity: [clean/issues filed]. [K] new findings filed.`
+After hyperlink conversion is complete, write a completion row to the Findings sheet: column A = (leave blank), column B = `final-review-validation`, column D = `AGENT_COMPLETE`, column F = `COVERAGE_ROWS: Findings sheet rows 2–[last_row] | Output sheet: Findings (direct write — no staging tab). CE baseline: [verified/not found]. ID integrity: [clean/issues filed]. [K] new findings filed.`

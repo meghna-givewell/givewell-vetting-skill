@@ -46,11 +46,9 @@ Common errors that require paper access to catch:
 - Using the full cohort denominator when only survivors-to-date are at risk (e.g., post-neonatal denominators should exclude neonatal deaths)
 - Computing `RR_A / RR_B` when the intended comparison is mortality reductions `(1−RR_A)/(1−RR_B)`
 
-Coverage declaration: COVERAGE | formula-check-data | trial data extraction | [N cells/rows checked] | issues found: [N] | status: complete
-
 **Non-trial study tables (modeling studies and systematic reviews)**: When a formula using `AVERAGE()` or explicit arithmetic embeds 2+ numeric literals and the cell note or adjacent source column cites a specific table in a non-RCT paper (e.g., "Fritz et al. 2021 Table 3," "Table 1, Tanzania row"), apply the same WebFetch verification: retrieve the paper, locate the cited table, and verify each embedded literal against the table row for the relevant country, scenario, and column. File as **High/Parameter** if any value differs by >1% from the cited table: "[cell] embeds [value] for [country/scenario] but [paper] Table [N] shows [paper value] for the same row — [CE impact if traceable]." Common failure mode: transcribing a value from the wrong scenario column or wrong country row of a multi-arm table. If 3+ literals in a single formula are sourced from the same table, list all discrepancies in one grouped finding. Apply the same paywall fallback as trial data above (WebSearch for open-access version before filing the manual-verification placeholder).
 
-Coverage declaration (extend the trial data declaration to include non-trial table checks): write one combined `COVERAGE | formula-check-data | trial + non-trial data extraction | [N cells/rows checked] | issues found: [N] | status: complete`
+Coverage declaration (this is the only declaration for Check 1 — do not write a separate trial-only declaration): write one combined `COVERAGE | formula-check-data | trial + non-trial data extraction | [N cells/rows checked] | issues found: [N] | status: complete`
 
 ---
 
@@ -97,7 +95,9 @@ When a hardcoded cell note cites a specific GiveWell CEA or internal model as th
 - A value labeled "from [model]" that doesn't match the source calculation is **High/D**.
 - Naming the source is not the same as verifying the value was correctly transcribed.
 - This check is especially important for DALY estimates, BOTEC adjustment factors, and structural parameters commonly copied between models.
-- If the referenced GiveWell model is a Google Doc rather than a Sheets workbook, this verification cannot be completed in this agent (get_doc_content is not permitted). File as Medium/H: "Referenced model is a Google Doc — cross-model value verification must be done manually."
+- If the referenced GiveWell model is a Google Doc rather than a Sheets workbook, this verification cannot be completed in this agent (get_doc_content is not permitted). File as **Low/H** (**Assumption**): "Referenced model is a Google Doc — cross-model value verification must be done manually."
+
+**SC-021 — stale GiveDirectly benchmark fix prescription**: If this check surfaces a stale GD benchmark value (e.g., 0.003355 instead of 0.00333), the Recommended Fix must offer EITHER updating to the current GW value (0.00333) OR adding a rationale note documenting why the older value is retained. Do not prescribe only the value update.
 
 Coverage declaration: COVERAGE | formula-check-data | cross-model value verification | [N cells/rows checked] | issues found: [N] | status: complete
 
@@ -113,7 +113,7 @@ When scanning all hardcoded cells across all sheets, flag any row whose label co
 - "crowding in," "crowding out," "leverage rate" — when the value represents a program-specific leverage estimate
 - "attribution factor," "proportion attributable" — when the value was determined in a separate analysis
 
-For each such row with no cross-model source note, file as **Low/H** (`Inconsistency`): "No cross-model source cited for [row label] = [value]. If this value is drawn from another GW model or analysis (e.g., [program] funging analysis, PrEP CEA income weights), add a cross-reference note citing the source model and confirm the value is current. If model-specific, document the basis in the Notes column." Write "Direction unknown" in column H.
+For each such row with no cross-model source note, file as **Low/H** (`Assumption`): "No cross-model source cited for [row label] = [value]. If this value is drawn from another GW model or analysis (e.g., [program] funging analysis, PrEP CEA income weights), add a cross-reference note citing the source model and confirm the value is current. If model-specific, document the basis in the Notes column." Write "Direction unknown" in column H.
 
 **Scope boundary**: Do not flag standard values already checked by key-params-check.md (GD benchmark, neonatal moral weight, death-aversion values, discount rates, standard income effects). Only flag program-specific variants where the derivation would require loading a separate GW model to verify.
 

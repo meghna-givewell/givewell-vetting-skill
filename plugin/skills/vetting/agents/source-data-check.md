@@ -15,7 +15,7 @@ Your job is narrow and concrete: check the raw data extract tabs for transpositi
 
 **Role calibration**: This is a factual correctness check, not a methodology review. Flag ordering violations and transpositions you can actually demonstrate — not values that merely look low or high in isolation. When a value is plausible but unverified, prefer Medium/H over High/D.
 
-**Before running any checks**, read `reference/pitfalls.md` using the Read tool. Apply every relevant entry — specifically FN-003 (WebFetch for weighted-average sources), SC-003 (CE chain confirmation before High), SC-004 (wrong subgroup requires WebFetch), SC-005 (methodology mismatch), SC-007 (intentional subgroup), and SC-009 (missing-source severity threshold).
+**Before running any checks**, read `reference/pitfalls.md` using the Read tool. Apply every relevant entry — specifically FN-003 (WebFetch for weighted-average sources), SC-003 (CE chain confirmation before High), SC-004 (wrong subgroup requires WebFetch), SC-005 (methodology mismatch), SC-007 (intentional subgroup), SC-009 (missing-source severity threshold), SC-019 (geographic transfer without documented justification), and SC-020 (stale cost estimate without inflation adjustment).
 
 **FN-003 carve-out**: FN-003 in pitfalls.md restricts WebFetch for citation verification by `sources.md`. That restriction does not apply to this agent. `source-data-check` may and should fetch source documents to compare data values — that is a data-value comparison, not a citation verification, and serves a different purpose. When Check A or B identifies a plausible transposition and the source tab cites a URL, use WebFetch to confirm the correct column order.
 
@@ -57,7 +57,9 @@ Run all six checks on every in-scope row you locate. No check is skippable becau
 
 ### Check A — Co-vaccine ordering plausibility
 
-**Applies only when the source tab contains vaccine coverage data** (column headers include BCG, OPV, Penta, DPT, PCV, Rota, MCV, or equivalent abbreviations). If the source tab contains non-vaccine data (mortality rates, disease burden, DHS nutrition indicators, WorldPop population), write `COVERAGE | source-data-check | check-A | not applicable (non-vaccine tab) | issues found: 0 | status: complete` and proceed to Check C.
+**Applies only when the source tab contains vaccine coverage data** (column headers include BCG, OPV, Penta, DPT, PCV, Rota, MCV, or equivalent abbreviations). If the source tab contains non-vaccine data (mortality rates, disease burden, DHS nutrition indicators, WorldPop population), write both of the following COVERAGE lines and then proceed to Check C:
+`COVERAGE | source-data-check | check-A | not applicable (non-vaccine tab) | issues found: 0 | status: complete`
+`COVERAGE | source-data-check | check-B | not applicable (non-vaccine tab) | issues found: 0 | status: complete`
 
 From the column headers, identify which columns correspond to which vaccines. Then verify:
 
@@ -88,8 +90,8 @@ If the source tab includes multiple years for the same geography (common in IHME
 
 > **FP calibration (GBD year mismatch)**: Before filing a finding for a GBD year mismatch, verify that the referenced year is actually wrong — not merely different from the current GBD release year. A tab may intentionally use an older GBD vintage as a fixed baseline. Check for a tab header note or changelog entry before filing.
 
-- **Vaccine coverage tabs** (values expressed as percentages 0–100): flag year-over-year changes >30 percentage points as anomalous. Changes of 10–30pp are noteworthy but may be real (e.g., a coverage campaign); flag as Low/H if there is no cell note explaining the jump.
-- **Non-coverage tabs** (mortality rates, incidence rates, burden estimates — values expressed as rates per 1,000 or proportions): flag year-over-year changes >50% relative change (i.e., the new value is less than half or more than double the prior value) as anomalous.
+- **Vaccine coverage tabs** (values expressed as percentages 0–100): flag year-over-year changes >30 percentage points as anomalous — file as **Medium/H** when no note is present. Changes of 10–30pp are noteworthy but may be real (e.g., a coverage campaign); flag as Low/H if there is no cell note explaining the jump.
+- **Non-coverage tabs** (mortality rates, incidence rates, burden estimates — values expressed as rates per 1,000 or proportions): flag year-over-year changes >50% relative change (i.e., the new value is less than half or more than double the prior value) as anomalous — file as **Medium/H** when no note is present.
 
 In both cases, a changelog note or methodology flag on the relevant row reduces the severity to Low/H.
 
@@ -129,8 +131,8 @@ Skip this check for tabs that explicitly carry a fixed historical vintage by des
 
 When a workbook contains both primary data tabs (tabs whose values directly feed CEA parameters — mortality rates, coverage inputs, disease burden) and secondary or reference tabs (lookup tables, regional comparison data, historical baselines), apply differentiated staleness thresholds:
 
-- **Primary data tabs**: flag if the most recent data year lags the current year by **>1 year** and no note explains the vintage choice.
-- **Secondary / reference tabs**: flag if the most recent data year lags the current year by **>3 years** and no note explains the vintage choice.
+- **Primary data tabs**: flag as **Medium/H** if the most recent data year lags the current year by **>1 year** and no note explains the vintage choice.
+- **Secondary / reference tabs**: flag as **Low/H** if the most recent data year lags the current year by **>3 years** and no note explains the vintage choice.
 
 When in doubt about whether a tab is primary or secondary, treat it as primary. Note the classification in your coverage declaration.
 
@@ -160,7 +162,9 @@ After completing Checks A–E, verify that every source data tab in the workbook
 
 3. Flag any source tab where the majority of data rows reference a different country than the program's target geography AND no cell note explains the use of proxy data (e.g., "Using Ghana data as proxy for Mozambique — no country-specific data available").
 
-File as **High/H** if the wrong-country data appears to drive a key CE parameter (mortality rate, disease burden, coverage baseline): "[Tab name] contains primarily [wrong country] data in a model for [correct country]. No note explains the use of proxy data. Verify whether [correct country]-specific data should be used, or add a note documenting the proxy rationale."
+File as **High/D** if the wrong-country data is confirmed to drive a key CE parameter (mortality rate, disease burden, coverage baseline) — i.e., the tab is confirmed to contain data from the wrong country (an objective fact): "[Tab name] contains primarily [wrong country] data in a model for [correct country]. No note explains the use of proxy data. Verify whether [correct country]-specific data should be used, or add a note documenting the proxy rationale."
+
+File as **High/H** (Gap) if the wrong-country concern is suspected but not confirmed (e.g., data values are plausibly consistent with the wrong country but not definitively verified): "[Tab name] may contain [wrong country] data — verify the source and add a note documenting the geography or proxy rationale if appropriate."
 
 File as **Medium/H** if the tab is secondary or supplementary: "[Tab name] contains [wrong country] data — confirm this is appropriate or update with a source note."
 
@@ -180,6 +184,7 @@ COVERAGE | source-data-check | check-B adjacent transposition | [N rows checked]
 COVERAGE | source-data-check | check-C year-over-year anomaly | [N rows checked] | issues found: [N] | status: complete
 COVERAGE | source-data-check | check-D sub-national aggregation | [N rows checked] | issues found: [N] | status: complete
 COVERAGE | source-data-check | check-E cross-tab vintage consistency | [N tabs checked] | issues found: [N] | status: complete
+COVERAGE | source-data-check | check-E-coverage denominator mismatch | [N tabs checked] | issues found: [N] | status: complete
 COVERAGE | source-data-check | check-F geography consistency | [N tabs checked] | issues found: [N] | status: complete
 ```
 

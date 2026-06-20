@@ -45,7 +45,7 @@ Coverage declaration: `COVERAGE | formula-check-voi | template comparison | [N] 
 
 Locate the row for total grant cost — label typically contains "total grant cost," "grant size," "total program cost," "cost of grant," or equivalent. Locate the row for direct benefit cost — label typically contains "grant cost going toward direct benefit," "direct benefit cost," "cost toward direct benefits," or equivalent. Read both cells in UNFORMATTED_VALUE mode.
 
-If direct benefit cost > total grant cost: flag as **High/Formula**: "[direct benefit cell ref] = [value] exceeds [total grant cell ref] = [value] — a direct-benefit sub-component cannot exceed the total grant cost. This is likely a stale template value not updated for this specific grant. The VOI direct-benefit CE calculation is materially overstated. Change [direct benefit cell ref] to a value ≤ [total grant cell ref], updated to reflect the actual grant amount."
+If direct benefit cost > total grant cost: flag as **High/Parameter**: "[direct benefit cell ref] = [value] exceeds [total grant cell ref] = [value] — a direct-benefit sub-component cannot exceed the total grant cost. This is likely a stale template value not updated for this specific grant. The VOI direct-benefit CE calculation is materially overstated. Change [direct benefit cell ref] to a value ≤ [total grant cell ref], updated to reflect the actual grant amount."
 
 If either row is not found: write "not found" in your coverage declaration and continue — do not file a finding for a missing row. Not all VOI models include an explicit direct-benefit cost row.
 
@@ -55,7 +55,13 @@ Coverage declaration: `COVERAGE | formula-check-voi | grant cost consistency | t
 
 ## Check 1 — VOI/Optionality ad hoc adjustment scope
 
-Locate the row(s) where CE-from-optionality and CE-from-direct-benefits are combined into a total. Then find where ad hoc adjustments are applied in the model. Verify adjustments are applied ONLY to the VOI/optionality component — not to the aggregate total that includes direct benefits. If the adjustment formula multiplies the combined total CE rather than the VOI component alone, flag as **Medium/Adjustment**: "[cell] applies [adjustment name] to the combined CE total (direct + optionality). This adjustment should apply only to the VOI/optionality component — applying it to the total double-adjusts the direct-benefits portion."
+Locate the row(s) where CE-from-optionality and CE-from-direct-benefits are combined into a total. Then find where ad hoc adjustments are applied in the model. Adjustments have different required scopes — check each separately:
+
+- **Wrong-risk adjustment** and **influencing-other-funders adjustment**: These must apply to the VOI/optionality component **only**. If either adjustment formula is applied to the combined total CE rather than the VOI component alone, flag as **Medium/Adjustment**: "[cell] applies [adjustment name] to the combined CE total (direct + optionality). This adjustment should apply only to the VOI/optionality component — applying it to the total double-adjusts the direct-benefits portion."
+
+- **Funging adjustment**: This must apply to the **total CE** (direct + optionality combined), not to the VOI component alone. If the funging adjustment is applied only to the VOI sub-calculation rather than the total, flag as **High/Adjustment** per SC-014: "[cell] applies funging only to the VOI component and not to the direct CE component. Funging must be scoped to total CE — restructure to apply funging to the total CE row, not the VOI sub-calculation."
+
+Do not flag funging-on-total as an error — this is the required structure per key-parameters.md (VOI adjustment scope). Only flag funging when it is applied to the VOI component alone (SC-014).
 
 Coverage declaration: `COVERAGE | formula-check-voi | VOI adjustment scope | [cells checked] | issues found: [N] | status: complete`
 
@@ -63,7 +69,7 @@ Coverage declaration: `COVERAGE | formula-check-voi | VOI adjustment scope | [ce
 
 ## Check 2 — VOI probability row column-reference consistency
 
-For every group of rows in a VOI tab that compute scenario probabilities (rows labeled "probability of [outcome]," "P([scenario])," or similar), read each row's formula in FORMULA mode. Compare the set of column references used across all probability rows in the same section. If one row references a superset of columns compared to adjacent probability rows — e.g., row N uses `SUM(B42:C42)` while rows N−1 and N+1 use only a single cell — flag as **Medium/Formula**: "Probability row [ref] uses `[formula]` which references [extra columns] not referenced in adjacent probability rows (`[adjacent refs]`). If the extra column is intended to include an additional scenario, verify that all downstream rows in this section also incorporate that column; if not, the total probability may exceed 1.0 or double-count a scenario." Do not flag if a cell note documents why one probability row has a wider reference range than its neighbors.
+For every group of rows in a VOI tab that compute scenario probabilities (rows labeled "probability of [outcome]," "P([scenario])," or similar), read each row's formula in FORMULA mode. Compare the set of column references used across all probability rows in the same section. If one row references a superset of columns compared to adjacent probability rows — e.g., row N uses `SUM(B42:C42)` while rows N−1 and N+1 use only a single cell — flag as **Medium/Formula**: "[Wrong reference] Probability row [ref] uses `[formula]` which references [extra columns] not referenced in adjacent probability rows (`[adjacent refs]`). If the extra column is intended to include an additional scenario, verify that all downstream rows in this section also incorporate that column; if not, the total probability may exceed 1.0 or double-count a scenario." Do not flag if a cell note documents why one probability row has a wider reference range than its neighbors.
 
 Coverage declaration: `COVERAGE | formula-check-voi | probability row column-reference consistency | [rows checked] | issues found: [N] | status: complete`
 
@@ -97,7 +103,7 @@ Coverage declaration: `COVERAGE | formula-check-voi | cross-actor symmetry | [ce
 
 ## Check 4 — VOI_Priors cross-formula column-scope consistency
 
-For all formulas referencing a VOI_Priors tab (or equivalent Bayesian prior tab), record which columns each formula uses. Flag any case where two structurally analogous formulas — e.g., Scenario 1 and Scenario 2 probability calculations — reference different column ranges from the same source tab. File as **Medium/Formula**: "Rows [X] and [Y] both query VOI_Priors but use different column ranges (`[formula X]` vs. `[formula Y]`). If both rows compute the same type of Bayesian prior update, they should reference the same column range. Verify which is correct and apply consistently."
+For all formulas referencing a VOI_Priors tab (or equivalent Bayesian prior tab), record which columns each formula uses. Flag any case where two structurally analogous formulas — e.g., Scenario 1 and Scenario 2 probability calculations — reference different column ranges from the same source tab. File as **Medium/Formula**: "[Wrong reference] Rows [X] and [Y] both query VOI_Priors but use different column ranges (`[formula X]` vs. `[formula Y]`). If both rows compute the same type of Bayesian prior update, they should reference the same column range. Verify which is correct and apply consistently."
 
 Coverage declaration: `COVERAGE | formula-check-voi | VOI_Priors column-scope consistency | [rows checked] | issues found: [N] | status: complete`
 
@@ -105,7 +111,7 @@ Coverage declaration: `COVERAGE | formula-check-voi | VOI_Priors column-scope co
 
 ## Check 5 — Annuity-due vs. annuity-immediate
 
-For every `PV()` formula in all VOI sections, inspect the `type` argument. `type=0` is annuity-immediate (standard). `type=1` is annuity-due, which overstates PV by approximately `(1 + r)`. For every `PV()` formula where `type=1` and no cell note explains why beginning-of-period is appropriate, file as **Medium/Formula**: "[cell] uses PV() with type=1 (annuity-due), which applies payments at the start of each period and overstates present value by ~(1+r) relative to the standard annuity-immediate (type=0). Add a note if beginning-of-period timing is intentional; otherwise change type to 0."
+For every `PV()` formula in all VOI sections, inspect the `type` argument. `type=0` is annuity-immediate (standard). `type=1` is annuity-due, which overstates PV by approximately `(1 + r)`. For every `PV()` formula where `type=1` and no cell note explains why beginning-of-period is appropriate, file as **Medium/Formula**: "[Wrong operator] [cell] uses PV() with type=1 (annuity-due), which applies payments at the start of each period and overstates present value by ~(1+r) relative to the standard annuity-immediate (type=0). Add a note if beginning-of-period timing is intentional; otherwise change type to 0."
 
 Coverage declaration: `COVERAGE | formula-check-voi | annuity-due check | [PV() formulas checked] | issues found: [N] | status: complete`
 
@@ -115,7 +121,7 @@ Coverage declaration: `COVERAGE | formula-check-voi | annuity-due check | [PV() 
 
 Locate the row that assigns probability weights to CE-bar scenarios — typically labeled "Weight on different scenario," "Scenario probability," "Probability weight," or any label containing "weight" combined with "scenario." Read all non-empty numeric values in data columns (typically columns B–E or B–F) for that row.
 
-Sum the values. If the sum deviates from 1.0 by more than 1%, flag as **High/Formula**: "[weight row ref] scenario weights sum to [X]% rather than 100%. The final weighted-average CE (typically `=SUMPRODUCT(CE_row, weight_row)`) will be scaled to [X]% of the correct value — verify that all scenario columns are included and weights were updated when scenarios were added or removed."
+Sum the values. If the sum deviates from 1.0 by more than 1%, flag as **High/Formula**: "[Wrong operator] [weight row ref] scenario weights sum to [X]% rather than 100%. The final weighted-average CE (typically `=SUMPRODUCT(CE_row, weight_row)`) will be scaled to [X]% of the correct value — verify that all scenario columns are included and weights were updated when scenarios were added or removed."
 
 Also check: if any scenario column in the weight row has a value of 0%, flag as **Low** (column D: Low | column E: Assumption): "Scenario column [ref] has a weight of 0% — its CE calculations do not contribute to the weighted average. Remove the column if inactive, or set the weight to its intended value."
 
@@ -133,8 +139,8 @@ For each of these rows (locate by label: "best guess on CE," "cost-effectiveness
 2. If the formula is a plain hardcoded number: note as hardcoded in your coverage declaration; skip steps 3–5.
 3. If the formula contains a cross-sheet reference (e.g., `='Main CEA'!B48`): extract the referenced cell and read its row label using `read_sheet_values` (FORMATTED_VALUE, column A of the referenced row). Reading the referenced cell in an out-of-scope sheet (e.g., Main CEA) is permitted for formula-tracing purposes — you may call `read_sheet_values` on a specific cell in any sheet when following a cross-sheet formula reference. This is a targeted trace read, not a full sheet audit.
 4. Verify the row label contains "final," "after adjustments," "post-adjustment," or equivalent phrasing indicating this is the terminal CE output.
-5a. If the label contains "before adjustments," "unadjusted," "initial," or similar — or if the referenced row visually precedes the adjustments section — flag as **High/Formula**: "[VOI cell ref] references [source cell] (label: '[label]') — this appears to be a pre-adjustment CE value. The VOI benefit calculation should reference the final post-adjustment CE output."
-5b. If the label is ambiguous (neither clearly final nor clearly pre-adjustment), flag as **Medium/Formula**: "[VOI cell ref] references [source cell] (label: '[label]') — confirm this is the final post-adjustment CE, not a pre-adjustment subtotal."
+5a. If the label contains "before adjustments," "unadjusted," "initial," or similar — or if the referenced row visually precedes the adjustments section — flag as **High/Formula**: "[Wrong reference] [VOI cell ref] references [source cell] (label: '[label]') — this appears to be a pre-adjustment CE value. The VOI benefit calculation should reference the final post-adjustment CE output."
+5b. If the label is ambiguous (neither clearly final nor clearly pre-adjustment), flag as **Medium/Formula**: "[Wrong reference] [VOI cell ref] references [source cell] (label: '[label]') — confirm this is the final post-adjustment CE, not a pre-adjustment subtotal."
 
 Coverage declaration: `COVERAGE | formula-check-voi | CE reference source | [N rows checked] | cross-sheet refs: [N] | hardcoded: [N] | issues found: [N] | status: complete`
 
@@ -146,13 +152,27 @@ Locate the "probability we're wrong" row (row 28 in the standard template; also 
 
 The GiveWell VOI guidance (Section 2.1.8) establishes explicit rules of thumb via Table 2: -10% for very precise/strongly significant (t≈3), -20% for quite precise/significant (t≈2), -30% for imprecise/weakly significant (t≈1.7), -50% for very imprecise/insignificant (t≈1.2). A value at or above 0% eliminates the wrong-risk penalty entirely, which the guidance does not permit for any study.
 
-1. If the value is **0% or positive**: flag as **High/Parameter**: "P(wrong) = [value] — the GiveWell VOI guidance requires a negative downward adjustment for all studies (Table 2 floor: −10% even for a very precise trial). A value of 0% or higher eliminates the wrong-risk penalty entirely. Set to at least −10% and add a cell note if a deviation from the table is intentional."
+1. If the value is **greater than −1%** (i.e., −0.9% through 0% or positive): flag as **High/Parameter**: "P(wrong) = [value] — the GiveWell VOI guidance requires a negative downward adjustment for all studies (Table 2 floor: −10% even for a very precise trial). A value of 0% or higher eliminates the wrong-risk penalty entirely, and values between 0% and −1% are negligibly small. Set to at least −10% and add a cell note if a deviation from the table is intentional."
 
-2. If the value is between **−1% and −9%** (exclusive): flag as **Medium/Parameter**: "P(wrong) = [value], which is smaller in magnitude than the guidance minimum of −10% (the floor for a very precise, strongly significant trial, t≈3). Values less negative than −10% are not supported by the documented rules-of-thumb — set to at least −10% and add a cell note if this deviation is intentional."
+2. If the value is **−1% or more negative, but less negative than −10%** (i.e., between −1% and −9%, inclusive of −1%, exclusive of −10%): flag as **Medium/Parameter**: "P(wrong) = [value], which is smaller in magnitude than the guidance minimum of −10% (the floor for a very precise, strongly significant trial, t≈3). Values less negative than −10% are not supported by the documented rules-of-thumb — set to at least −10% and add a cell note if this deviation is intentional."
 
 Even when a cell note explains the deviation, if the deviation was not pre-declared in session context, file as Medium rather than suppressing the finding entirely. Do not flag if the researcher's Step 0.5 notes (i.e., session context) declare this as an intentional deviation.
 
 Coverage declaration: `COVERAGE | formula-check-voi | P(wrong) floor | [cell ref] | value: [X%] | issues found: [N] | status: complete`
+
+---
+
+## Check 8.5 — p(update) cap
+
+Locate the row for "probability we update our recommendation" (also labeled "p(update)," "probability of updating," "P(we update)," or equivalent). This is the probability that the research will cause GiveWell to update its recommendation — a value above 50% implies the program should simply be funded directly rather than treated as a research-then-decide option. Read its value in FORMATTED_VALUE mode.
+
+If the value **exceeds 50%**: flag as **High/Parameter**: "p(update) = [value], which exceeds the 50% cap established in key-parameters.md. A p(update) above 50% implies the research is more likely than not to change GiveWell's recommendation — in that case, the program should be funded directly rather than through a VOI/optionality model. Set p(update) to ≤ 50% and add a cell note documenting the rationale if this deviation is intentional."
+
+Do not flag if the researcher's Step 0.5 notes (session context) declare this as an intentional deviation.
+
+If the row is not found: write "not found" in your coverage declaration and continue — not all VOI models use this label for the parameter.
+
+Coverage declaration: `COVERAGE | formula-check-voi | p(update) cap | [cell ref or not found] | value: [X% or n/a] | issues found: [N] | status: complete`
 
 ---
 
@@ -164,7 +184,7 @@ The GiveWell VOI guidance (Section 2.1.6) states the conservative default is "1�
 
 1. If **CE of reallocated funding ≤ funding bar**: flag as **High/Parameter**: "CE of reallocated funding ([value]) is at or below the funding bar ([bar value]). The GiveWell VOI guidance (Section 2.1.6) requires this parameter to be above the bar — at or below the bar means expected reallocated CE is no better than the counterfactual, reversing the direction of optionality value. Set this to at least [bar + 1] (guidance conservative default: bar + 1 to bar + 2)."
 
-2. If **CE of reallocated funding > funding bar + 2** (i.e., more than 2× above the bar, the outer edge of the key-parameters.md guidance range of 1–2× above the bar): flag as **Medium** (column D: Medium | column E: Assumption): "CE of reallocated funding ([value]) is more than 2× above the funding bar ([bar value]). The GiveWell VOI guidance conservative default is 1–2× above bar — a larger premium is non-standard and should be documented. Add a cell note if this assumption is intentional."
+2. If **CE of reallocated funding > funding bar + 2 (additive)** (i.e., more than +2 above the bar, the outer edge of the key-parameters.md guidance range of bar+1 to bar+2): flag as **Medium** (column D: Medium | column E: Assumption): "CE of reallocated funding ([value]) is more than +2 (additive) above the funding bar ([bar value]). The GiveWell VOI guidance conservative default is bar+1 to bar+2 — a larger premium is non-standard and should be documented. Add a cell note if this assumption is intentional."
 
 Do not flag either case if a cell note documents the assumption or if it appears in the researcher's Step 0.5 declared deviations.
 
@@ -178,11 +198,11 @@ Coverage declaration: `COVERAGE | formula-check-voi | CE reallocated vs. bar | C
 
 Locate the row computing the final weighted-average CE — typically the last row in the VOI tab, using a formula like `=SUMPRODUCT(CE_row_range, weight_row_range)`. Read the formula in FORMULA mode.
 
-Extract both array arguments. Verify they reference exactly the same column span (e.g., both `B42:E42` and `B10:E10` — not `B42:F42` and `B10:E10`). A mismatch means the SUMPRODUCT operates over different column extents: if one range is wider, the extra column is paired with an implicit 0 from the shorter range, silently scaling the weighted-average CE down. If the ranges are different lengths, Sheets returns a `#VALUE!` error — but if they're the same length but reference different column positions, the error is silent.
+Extract both array arguments. Verify they reference exactly the same column span (e.g., both `B42:E42` and `B10:E10` — not `B42:F42` and `B10:E10`). In Google Sheets, if the two ranges have different lengths, SUMPRODUCT returns a `#VALUE!` error. If the ranges are the same length but reference different column positions, the error is silent — each CE scenario is paired with the wrong weight.
 
-If the two ranges span different columns: flag as **High/Formula**: "SUMPRODUCT final CE formula at [cell] uses `[formula]` — the CE array `[range1]` and the weight array `[range2]` span different column extents. The weighted-average CE is computed over mismatched arrays. Align both ranges to cover the same scenario columns (e.g., both `B[r1]:E[r1]` and `B[r2]:E[r2]`)."
+If the two ranges span different columns: flag as **High/Formula**: "[Wrong reference] SUMPRODUCT final CE formula at [cell] uses `[formula]` — the CE array `[range1]` and the weight array `[range2]` span different column extents. The weighted-average CE is computed over mismatched arrays. Align both ranges to cover the same scenario columns (e.g., both `B[r1]:E[r1]` and `B[r2]:E[r2]`)."
 
-Also check: if the CE row range and the weight row range do not span all active scenario columns (e.g., there are populated scenario columns beyond the range endpoint), flag as **Medium/Formula**: "SUMPRODUCT final CE formula omits scenario column [ref] — that column's CE and weight are excluded from the weighted average."
+Also check: if the CE row range and the weight row range do not span all active scenario columns (e.g., there are populated scenario columns beyond the range endpoint), flag as **Medium/Formula**: "[Wrong reference] SUMPRODUCT final CE formula omits scenario column [ref] — that column's CE and weight are excluded from the weighted average."
 
 Do not flag if the model uses a different aggregation pattern (e.g., an explicit `=B_CE*B_weight + C_CE*C_weight + ...` sum) — apply this check only to SUMPRODUCT formulas.
 
@@ -207,6 +227,7 @@ formula-check-voi check log:
   scenario weight sum verification [___]
   VOI CE reference source verification [___]
   P(wrong) parameter floor [___]
+  p(update) cap [___]
   CE of reallocated funding vs. funding bar + cross-scenario pattern [___]
   SUMPRODUCT final CE range alignment [___]
 ```
