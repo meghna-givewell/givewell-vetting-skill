@@ -63,14 +63,14 @@ When two instances of the same issue are filed at different severities, the high
 ### FN-001 (2026-04) — GBD data vintage: always flag, even without a CE magnitude
 When a tab uses an older GBD vintage (e.g., GBD 2021 or earlier when GBD 2024 is available), always flag it — even if you cannot compute the CE impact from updated data. Write `Direction unknown` in the CE Impact column — GBD burden trends vary by geography and cause and cannot be assumed directional. Do not skip or downgrade the finding because CE impact cannot be quantified. Severity Medium is acceptable and counts as a full catch.
 
-**Applies to**: formula-check-data, formula-check-arithmetic
+**Applies to**: formula-check-data, formula-check-arithmetic, heads-up-epi
 
 ---
 
 ### FN-002 (2026-04) — Stale year in cell note: verify the value, not just the note
 When a cell note cites a data vintage more than 2 years before the model's grant period start year AND the row is a key epidemiological or cost parameter (mortality rate, incidence, coverage, unit cost, or any parameter in `reference/key-parameters.md`), treat this as a trigger to verify the underlying value itself — not just the documentation. Run a WebSearch for the current value. If drift is <5%, file as **Medium/H** (Defect + Immaterial — the Defect floor applies; confirmed drift, even small, is not Low) and include the current value in the Explanation. If drift is ≥5%, file as **High/D** (Defect + Material) and include the current value (e.g., "Cell B14 note cites GBD 2019 — current GBD 2024 value is 0.42 vs. model's 0.38 (11% difference)"). If no updated value is found after searching, file as **Medium/H**.
 
-**Applies to**: formula-check-arithmetic
+**Applies to**: formula-check-arithmetic, formula-check-parameters
 
 ---
 
@@ -100,7 +100,7 @@ When checking multi-geography models, compare FORMULA-mode values across all par
 ### SC-001 (2026-04) — Benchmark parameter findings are valid regardless of vet timing
 Never downgrade a benchmark finding because the spreadsheet was built before the parameter update. `reference/key-parameters.md` is authoritative at the time of vetting, not at the time the spreadsheet was built. Example: a spreadsheet using benchmark = 335 when `key-parameters.md` says 333 is wrong and should be flagged, even if the spreadsheet predates the November 2025 benchmark update. A post-vet decision not to fix it also does not make the original finding wrong.
 
-**Applies to**: All agents that check against key-parameters.md
+**Applies to**: all agents that verify GiveWell standard parameters (key-params-check, cross-tab-compare, ce-chain-trace, formula-check-arithmetic, formula-check-data)
 
 ---
 
@@ -120,7 +120,7 @@ Example: Mengstie et al 2025 C20 = 33.1% per 100 person-years used as a cumulati
 
 **SC-003 High escalation requires demonstrated wrongness, not just chain membership.** Being in the CE chain is necessary but not sufficient for High. SC-003 escalates to High when ALL of the following hold: (1) the cell is confirmed in the direct CE chain via FORMULA mode; AND (2) the value is demonstrably wrong — it contradicts a GiveWell standard, is arithmetically incorrect, or has been confirmed (via WebFetch or FORMULA inspection) to be a transcription error, wrong subgroup, or wrong methodology. When condition (2) cannot be met — because the finding is a documentation gap, a plausibility concern, or a researcher approach that is debatable but possibly defensible — file at **Medium**, even when the cell is confirmed in the CE chain. Examples where CE-chain membership alone does NOT justify High: a discount rate choice where the correct rate is debated, GBD vintage staleness where only chain membership is confirmed (no value contradiction proven), a funging scope choice that may be intentional, a formula that deviates from a template but has a plausible alternative justification. The threshold for High is: a researcher presented with this finding would agree it is wrong without needing to make a new judgment call — the error is self-evident from the data, formula, or standard.
 
-**Applies to**: all formula-check agents and source-data-check, source-citation-verify, sources, heads-up-epi, heads-up-evidence, heads-up-intervention
+**Applies to**: all formula-check agents, ce-chain-trace, consistency-check, and source-data-check, source-citation-verify, sources, heads-up-epi, heads-up-evidence, heads-up-intervention
 
 ---
 
@@ -167,7 +167,7 @@ FN-001 sets the floor (always flag GBD vintage staleness, Medium minimum). SC-00
 
 Do not cite FN-001 ("Medium is acceptable") to justify filing a CE-chain GBD vintage finding as Medium. FN-001 ensures you always file; SC-003 + this entry determine whether to file High or Medium. The key step is the FORMULA trace — without it, use Medium.
 
-**Applies to**: formula-check-data, formula-check-arithmetic, heads-up-epi
+**Applies to**: formula-check-data, formula-check-arithmetic, heads-up-epi, formula-check-parameters (SC-008 escalation owner — see Cross-Agent Scope Reference)
 
 ---
 
@@ -179,7 +179,7 @@ Medium severity rule #3 ("key input in the direct CE calculation chain lacks an 
 
 Do not upgrade to Medium because a row "looks important" or "is probably in the CE chain" without FORMULA-mode confirmation. Both conditions (chain confirmed OR key-parameters.md match) must be checked before claiming Medium.
 
-**Applies to**: formula-check-data, formula-check-arithmetic, notes-scan, source-data-check, source-citation-verify, sources
+**Applies to**: formula-check-data, formula-check-arithmetic, notes-scan, source-data-check, source-citation-verify, sources, heads-up-evidence, heads-up-intervention
 
 ---
 
@@ -190,12 +190,12 @@ This section identifies which agent **owns** each check category. When a non-own
 | Check category | Owner agent | Non-owner behavior |
 |---|---|---|
 | Discount rate value | `key-params-check` | Other agents (formula-check-arithmetic, ce-chain-trace, heads-up-intervention) may read the discount rate cell as part of chain verification but must not file a Parameter finding for it. Note "discount rate check deferred to key-params-check" in AGENT_COMPLETE column F. |
-| GBD/IHME vintage staleness | `formula-check-arithmetic` (primary); `formula-check-parameters` (stale-year cell note variant) | Heads-up-epi SHOULD run the full GBD vintage check internally (per its agent file) and file findings — it has context to assess epi-specific vintage issues. Ce-chain-trace should not independently file GBD vintage findings; if encountered, note "GBD vintage staleness deferred to formula-check-arithmetic" in reasoning. The Wave 2.5 reconciliation agent deduplicates if both heads-up-epi and formula-check-arithmetic accidentally file the same finding. |
+| GBD/IHME vintage staleness | `formula-check-arithmetic` (primary, files at Medium/H); `formula-check-parameters` (SC-008 escalation owner — promotes to High/D when ≥2 FORMULA hops to CE output confirmed) | Heads-up-epi SHOULD run the full GBD vintage check internally (per its agent file) and file findings — it has context to assess epi-specific vintage issues. Ce-chain-trace should not independently file GBD vintage findings; if encountered, note "GBD vintage staleness deferred to formula-check-arithmetic" in reasoning. The Wave 2.5 reconciliation agent deduplicates if both heads-up-epi and formula-check-arithmetic accidentally file the same finding. |
 | Cross-sheet reference concept mismatch (wrong-row reference) | `formula-check-arithmetic` (general case across all rows); `ce-chain-trace` (CE-chain-specific, Steps 3f and 4d) | Heads-up-epi, heads-up-intervention, and formula-check-data should not file wrong-row-reference findings — these belong to formula-check-arithmetic's cross-sheet inventory pass. If a suspicious reference is observed, note it in reasoning for the researcher but do not file a finding unless no formula-check-arithmetic agent is running for those rows (e.g., row scope explicitly excludes that section). |
 | Cross-Cutting CEA Parameters doc value comparison (all parameter rows) | `consistency-check` | formula-check-structure Part B reads the same doc (spreadsheet ID `1ru1SNtgj0D9-vLAHEdTM27GEq_P17ySzG-aTxKD6Fzg`) and checks a named subset of parameters (SMC deaths-averted rates, Pryce et al., PMI Nigeria, VAS income ratio, NI income ratio). In a standard vet where both agents run, formula-check-structure should note any deviation it observes in reasoning ("parameter deviation observed; deferred to consistency-check") but must NOT file a finding — consistency-check's "enumerate every parameter row" mandate already covers all rows formula-check-structure would catch. Filing from formula-check-structure would produce duplicates with potentially divergent severity classifications that compaction may not cleanly deduplicate. |
 | Simple CEA section ordering (correct calculation sequence: delivery parameters → effect size → costs → CE multiple) | `readability` (mandatory first check — runs a full sequence verification at Medium/H) | `formula-check-structure` includes Simple CEA ordering in its structural completeness checklist. When both agents run, formula-check-structure should record the checklist result (✓ or ✗) in its coverage declaration but **must NOT file a finding** — readability's more thorough sequence check already covers this at the correct severity. If readability is not running (formula-only scope), formula-check-structure should file the Low finding normally. |
 | Staff first-name source citations in cell notes or source columns (e.g., "per Jack's model," "Bea's analysis," "from Meghna's spreadsheet") | `readability` (dedicated check — files as Publication Readiness Sourcing) | `notes-scan` Category H also catches these in the addressed-to-person and informal-citation scan. When both agents run, notes-scan should note instances in reasoning ("first-name citation observed at [ref]; deferred to readability") but must NOT file a separate finding — readability's exhaustive source-column scan already covers this. If readability is not running, notes-scan should file as normal under Category H. |
-| Terminology ("x cash," "GiveDirectly" → "benchmark") | `readability` (primary — dedicated "Terminology" section with full sheet scan mandate) | `notes-scan` also catches these via SC-002, which explicitly applies to both agents. Both may file — the Wave 2.5 reconcile agent deduplicates overlapping PR findings. However: when readability is running, notes-scan should prefer noting the observation in reasoning and omitting a separate Legibility filing (the finding will already be filed at the correct grouped form by readability). If readability is not running, notes-scan should file normally. |
+| Terminology ("x cash," "GiveDirectly" → "benchmark") | `readability` (primary — dedicated "Terminology" section with full sheet scan mandate) | `notes-scan` also catches these via SC-002. When readability is running, notes-scan should note the observation in reasoning and omit a separate finding — readability files the correctly grouped form. If readability is not running, notes-scan should file normally. |
 | IFERROR/IFNA error-masking checks in CE chain; array-formula SUMPRODUCT filter dimension checks | `formula-check-edge-cases` | Other agents (formula-check-arithmetic, ce-chain-trace) may observe IFERROR masking or SUMPRODUCT dimension mismatches but must not independently file — note "IFERROR/SUMPRODUCT dimension check deferred to formula-check-edge-cases" in reasoning. |
 | SC-008 escalation for GBD vintage findings (High when CE chain confirmed) | `formula-check-parameters` | formula-check-arithmetic and heads-up-epi file GBD vintage findings at the correct base severity; formula-check-parameters owns the SC-008 escalation decision. Non-owning agents should not escalate a GBD vintage finding to High — note "SC-008 escalation deferred to formula-check-parameters" if the chain appears confirmed. |
 | Enumeration of standalone hardcoded cells (non-formula) | `hardcoded-values` | Other agents may encounter hardcoded values during formula traversal but must not duplicate-enumerate them as standalone findings. Note the cell reference in reasoning and mark "hardcoded-values agent will enumerate" — do not file a separate Hardcoded finding. |
@@ -305,7 +305,7 @@ When a model contains both a direct CE component and a VoI/optionality component
 
 When a GBD/IHME permalink in the spreadsheet returns HTTP 403 (expired session link), do not immediately default to Medium. Run a targeted WebFetch or WebSearch to confirm the latest available GBD vintage — e.g., search "GBD 2024 released" or fetch the IHME website directly. If a newer vintage is confirmed available (published before the model's grant period), escalate to High per SC-008 when the CE chain is confirmed via FORMULA-mode trace (≥2 hops). Use Medium only when (a) the IHME fetch also fails and no newer vintage can be confirmed, or (b) the CE chain cannot be confirmed in FORMULA mode. Document in the finding: "Permalink returned 403; IHME website confirmed GBD [year] released [date], making the model's GBD [year-1] data stale."
 
-**Applies to**: formula-check-arithmetic, formula-check-data, heads-up-epi
+**Applies to**: formula-check-arithmetic, formula-check-data, heads-up-epi. **Note**: formula-check-parameters owns SC-008 escalation but lacks WebFetch permission — SC-015 verification must be completed by one of the listed agents; their column F note should include the WebFetch result for formula-check-parameters to use when making the escalation decision.
 
 ---
 

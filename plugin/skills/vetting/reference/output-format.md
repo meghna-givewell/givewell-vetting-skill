@@ -22,7 +22,7 @@ Columns (A–H): Finding # | Sheet | Cell/Row | Severity | Error Type / Issue | 
 - **Cell/Row** (C): Exact location (e.g., `B14`). For grouped findings, list all affected cells (e.g., `B14, B18, B22`).
 - **Severity** (D): `High`, `Medium`, or `Low`. Color-coded — see Severity Rules below.
 - **Error Type / Issue** (E): Use exactly one of the six standard categories below:
-  - `Formula` — wrong cell reference, wrong range, broken logic, incorrect operator. When filing a Formula, include a bracketed sub-type at the start of the Explanation: `[Copy-paste]`, `[Wrong reference]`, `[Year range]`, `[Sign error]`, `[Wrong operator]`, or `[Off-by-one]`.
+  - `Formula` — wrong cell reference, wrong range, broken logic, incorrect operator. When filing a Formula, include a bracketed sub-type at the start of the Explanation: `[Copy-paste]`, `[Wrong reference]`, `[Year range]`, `[Sign error]`, `[Wrong operator]`, `[Off-by-one]`, `[Range mismatch]`, or `[Edge case]`. (Full definitions in `reference/column-reference.md` — that file is the canonical source.)
   - `Parameter` — hardcoded value is stale/outdated, or conflicts with a GW cross-cutting standard (moral weight, benchmark, discount rate)
   - `Adjustment` — an adjustment (IV, EV, leverage, funging, supplemental) is absent, has the wrong sign, wrong base, or is multiplicative vs. additive incorrectly
   - `Assumption` — key assumption lacks a source, explanation, or is an unacknowledged edge case; also covers structural model issues (missing required tab, inverted section structure that affects CE interpretation)
@@ -86,7 +86,7 @@ Every finding has a **Nature** and a **Materiality**. Determine both, then read 
 
 **Nature**
 - **Defect** — objectively wrong: there is a correct answer and the sheet has it wrong. Includes formula errors (wrong reference, wrong logic, sign error, broken range), confirmed value mismatches against a cited source, GW standard parameter violations with no documented rationale, logical impossibilities.
-  **FORM-7 — IFERROR Nature classification**: An active IFERROR that suppresses an underlying broken formula is a **Defect**, not a Gap. The IFERROR masks an objective error — the model has the wrong answer (a hidden error) rather than merely lacking something. Classify as Defect and apply the Defect floor (never below Medium). Contrast: a *missing* IFERROR guard on a formula that currently works correctly is a Gap (formula robustness — the absence of a protective guard, not an active suppression of an error). File the missing-guard case as Low per the formula-robustness Low category.
+  **FORM-7 — IFERROR Nature classification**: An active IFERROR that suppresses an underlying broken formula is a **Defect**, not a Gap. The IFERROR masks an objective error — the model has the wrong answer (a hidden error) rather than merely lacking something. Classify as Defect and apply the Defect floor (never below Medium). **Exception: if CE impact is confirmed zero, FORM-9 applies and the finding is Low — see FORM-9 below.** Contrast: a *missing* IFERROR guard on a formula that currently works correctly is a Gap (formula robustness — the absence of a protective guard, not an active suppression of an error). File the missing-guard case as Low per the formula-robustness Low category.
 - **Gap** — something required is absent: a source citation on a key input, a required adjustment, a link that should exist.
 - **Judgment** — a defensible modeling choice you would question, not an error: a parameter at the optimistic end of a plausible range, a discount rate choice, a structural modeling decision.
 
@@ -100,9 +100,11 @@ Every finding has a **Nature** and a **Materiality**. Determine both, then read 
 
 |  | Decision-changing | Material (≥5%) | Immaterial (<5%) | Zero |
 |---|---|---|---|---|
-| **Defect** (incl. formula errors) | High | High | Medium | Medium |
+| **Defect** (incl. formula errors) | High | High | Medium | Medium* |
 | **Gap** | High | High | Medium | Low |
 | **Judgment** | High | Medium | Low | — |
+
+\* Defect + Zero: Medium by default; **Low** when CE impact is confirmed zero per FORM-9 (see below).
 
 **Judgment severity — explicit rows** (read from the matrix above; spelled out here to prevent under-severity):
 - **Judgment + Decision-changing → High**: A Judgment finding that would flip whether the program clears the funding bar is High, not automatically Low. Example: a model uses an unusual assumption about X that materially affects CE — if that assumption could change the funding decision, it is High.
@@ -118,7 +120,7 @@ Every finding has a **Nature** and a **Materiality**. Determine both, then read 
 1. **Defect floor**: A confirmed objective error is never below Medium when CE impact is unknown or unconfirmed. An orphaned formula error, a confirmed value mismatch in a non-CE tab — both remain Medium when CE impact is not confirmed zero. Errors may become material if inputs change; they also undermine confidence in adjacent calculations. **Exception: when CE impact is confirmed zero, FORM-9 applies and the finding is Low** — the Defect floor does not override FORM-9.
 2. **Unknown materiality rounds up**: If CE impact cannot be estimated, treat materiality as one tier higher. A Defect or Gap with unknown materiality → High. A Judgment with unknown materiality → Medium. Write `Raises/Lowers CE — magnitude unknown` or `Direction unknown` in column H accordingly.
 3. **Decision-changing always wins**: Any finding that could flip whether the program clears the bar is High regardless of category.
-4. **GW standard parameters always High**: Any deviation from a benchmark or moral weight in `key-parameters.md` is always High regardless of deviation size or whether a cell note is present — these parameters are cross-cutting and a miscalibration in one CEA propagates to others. Discount rate deviations are always Medium/H — key-parameters.md governs parameter-specific severity overrides.
+4. **Benchmark and moral weight deviations always High**: Any deviation from a benchmark or moral weight in `key-parameters.md` is always High regardless of deviation size or whether a cell note is present — these parameters are cross-cutting and a miscalibration in one CEA propagates to others. Discount rate deviations are always Medium/H — key-parameters.md governs parameter-specific severity overrides.
 
 **Nature disambiguation when ambiguous**:
 - Defect vs. Gap: default to Defect — treat as objectively wrong until the researcher confirms the absence was intentional.

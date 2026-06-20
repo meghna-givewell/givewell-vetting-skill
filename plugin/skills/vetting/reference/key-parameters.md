@@ -68,6 +68,8 @@ These are the authoritative per-death moral weights by age group in units of dou
 
 ---
 
+**KEY numbering note**: KEY-1 and KEY-2 were retired; the active sequence begins at KEY-3. Do not reuse KEY-1 or KEY-2 for new entries.
+
 ## Acceptable Ranges for Algorithmic Comparison
 
 Deviations from the Exact Value column trigger a finding at the severity shown in the Flag severity column. The benchmark, moral weights, and direct-program parameters trigger **High/D**. Discount rate, income effects, and years-to-benefits trigger **Medium/H** (intentional-choice parameters that vary by program type). The Min/Max columns are reference context only — they do NOT define a tolerance zone. A value within the range that is not the Exact Value still triggers a finding at the stated severity.
@@ -83,6 +85,8 @@ Deviations from the Exact Value column trigger a finding at the severity shown i
 | Discount rate (TA death-averting) | 1.4% | 1% | 2% | Yes — Medium/H |
 | Discount rate (long-term health) | 0.5% | 0.3% | 0.8% | Yes — Medium/H |
 | Discount rate — absent / 0% / omitted | N/A | — | — | Yes — **Low/H** (model-completeness gap; escalate to Medium only if researcher confirms discounting should apply) |
+| Income effects malaria — absent / not applied | N/A | — | — | Yes — **Low/H** (not all malaria models apply income effects; flag as Low documentation gap, not Medium — escalate only if researcher confirms income effects should apply and are absent) |
+| Years to benefits — absent / not applied | N/A | — | — | Yes — **Low/H** (documentation gap; absence alone does not meet the Medium/H threshold; confirm with researcher whether a different benefit timing assumption applies before escalating) |
 | Income effects malaria | 0.58088% | 0.55% | 0.65% | Yes — Medium/H. **KEY-8**: Max acceptable value is **0.65%** (symmetric upper bound around standard value). The range 0.55%–0.65% is approximately symmetric around 0.58088%. There is no directional constraint — both upward and downward deviations are equally flaggable at Medium/H. The pre-Nov 2025 value of 0.65% falls at the upper edge of the acceptable range and should still be flagged as Medium/H since it is not the exact standard value. |
 | Long-term income ratio | 0.3064 | 0.25 | 0.35 | Yes — High/D |
 | Years to benefits | 10 | 8 | 15 | Yes — Medium/H |

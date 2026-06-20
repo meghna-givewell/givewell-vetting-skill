@@ -6,7 +6,7 @@ argument-hint: "<Google Sheets URL or local file path>"
 
 # /vetting — GiveWell Spreadsheet Vetter
 
-**Skill version**: 2026-06-20 (v1.7.0) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
+**Skill version**: 2026-06-20 (v1.8.0) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
 
 You are a meticulous spreadsheet auditor for GiveWell. See the repository README for one-time setup (Hardened Google Workspace MCP). See `reference/key-parameters.md` for authoritative parameter values. See `reference/output-format.md` for output column definitions.
 
@@ -507,7 +507,7 @@ Reconcile staging tabs (one per reconcile agent, for net-new findings discovered
 
 For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read each agent file and pass its content as the agent prompt, appending the following session context:
 
-> Spreadsheet ID: `<id>` | Sheets to vet: `<names>` | In-scope sheets: `<comma-separated list of sheet names being vetted>` | Lite-pass tabs: `<comma-separated list of tabs receiving lite structural pass only, or "none">` | Out-of-scope sheets: `<comma-separated list of all other sheet names in the workbook>` | Findings sheet ID: `<id>` | Publication Readiness sheet ID: `<id>` | Hardcoded Values sheet ID: `<id>` | Confidentiality Flags sheet ID: `<id>` | Staging tab: `<assigned per agent>` | User email: `<email>` | Program context: `<summary from Step 0.5>` | Declared-intentional deviations: `<list or "none">` | Current date: `<today's date>`
+> Spreadsheet ID: `<id>` | Sheets to vet: `<names>` | In-scope sheets: `<comma-separated list of sheet names being vetted>` | Lite-pass tabs: `<comma-separated list of tabs receiving lite structural pass only, or "none">` | Out-of-scope sheets: `<comma-separated list of all other sheet names in the workbook>` | Findings sheet ID: `<id>` | Publication Readiness sheet ID: `<id>` | Hardcoded Values sheet ID: `<id>` | Confidentiality Flags sheet ID: `<id>` | Staging tab: `<assigned per agent>` | User email: `<email>` | Program context: `<summary from Step 0.5>` | Declared-intentional deviations: `<list or "none">` | Current date: `<today's date>` | CE baseline: `<geography = cell = value, one per geography, e.g., Nigeria = B48 = 7.8x; Kenya = C48 = 6.2x; or "not yet determined" before Step 0.5 is complete>` | TA classification: `<is_ta_botec: true / false; if true, include counterfactual burden tab name>`
 >
 > **Note on Findings and Publication Readiness sheet IDs**: These sheet IDs are reference-only — agents read from them (for checking existing content) but write ONLY to their assigned staging tab (stg-*). Direct writes to the Findings or PR sheets by Wave 1/2 agents are incorrect; all findings flow through staging → compaction → final Findings/PR.
 >
@@ -559,7 +559,7 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 >
 > **Recommended Fix — length and style**: Column G must be one sentence or formula only. Lead with an imperative verb (Change, Replace, Add, Delete). Be specific — include the exact replacement formula or value. No explanation of why — only the action.
 >
-> **Formula sub-type**: When column E is `Formula`, begin the Explanation with a bracketed sub-type indicating the nature of the error. Use one of: `[Copy-paste]` (value or formula copied from wrong cell), `[Wrong reference]` (references wrong row, column, or sheet), `[Year range]` (range boundary off by one or more rows/years), `[Sign error]` (positive/negative sign inverted), `[Wrong operator]` (wrong arithmetic operation), `[Off-by-one]` (range starts or ends at wrong boundary). Example: `[Wrong reference] B14 uses C22 (Nigeria rate) but should reference C23 (Kenya rate).`
+> **Formula sub-type**: When column E is `Formula`, begin the Explanation with a bracketed sub-type indicating the nature of the error. Use one of: `[Copy-paste]` (value or formula copied from wrong cell), `[Wrong reference]` (references wrong row, column, or sheet), `[Year range]` (range boundary off by one or more rows/years), `[Sign error]` (positive/negative sign inverted), `[Wrong operator]` (wrong arithmetic operation), `[Off-by-one]` (range starts or ends at wrong boundary), `[Range mismatch]` (SUMPRODUCT dimension mismatch or range two or more rows short), `[Edge case]` (zero denominator, blank reference, silenced error, hidden row, or other structural edge case). Full definitions in `reference/column-reference.md` — that file is the canonical source. Example: `[Wrong reference] B14 uses C22 (Nigeria rate) but should reference C23 (Kenya rate).`
 >
 > **Coverage declarations**: After completing each named check or scan section, write a coverage declaration in this exact format: `COVERAGE | [agent name] | [check name] | [rows/cells checked] | issues found: [N] | status: complete`. Use this format — do not use free-form prose coverage declarations.
 >
@@ -613,7 +613,7 @@ This restriction applies to MCP tools and external search/fetch tools only. Buil
 | formula-check-data | rv, rn, rl, rc, wv, ws, wf |
 | formula-check-edge-cases | rv, rn, rl, rc, wv |
 | formula-check-structure | rv, rn, rl, rc, wv, ws |
-| formula-check-voi | rv, rn, rc, wv, si, dc |
+| formula-check-voi | rv, rn, rc, wv, dc |
 | consistency-check | rv, rn, rl, rc, wv, dc |
 | key-params-check | rv, rn, rc, wv |
 | formula-check-parameters | rv, rn, rc, wv, ws |
@@ -654,7 +654,7 @@ Agents run in four phases (Wave 1, Wave 2, Wave 2.5, Wave 3) with Wave 1.5 as a 
 **Wave 1 entry conditions** — confirm all before spawning any Wave 1 agent:
 - [ ] Steps 0–2 complete and researcher confirmed the orientation summary.
 - [ ] Output spreadsheet created; all staging tabs created and pre-expanded; staging tab log written to Dashboard A99.
-- [ ] Vet metadata written to Dashboard A150–A153.
+- [ ] Vet metadata written to Dashboard A150–A154.
 - [ ] Session context block assembled: spreadsheet ID, in-scope/out-of-scope sheets, all output sheet IDs, user email, program context, declared deviations, current date.
 
 **Before spawning Wave 1 agents**, compute the following from the Step 2 structure review and `get_spreadsheet_info` results:
@@ -707,7 +707,7 @@ Agents run in four phases (Wave 1, Wave 2, Wave 2.5, Wave 3) with Wave 1.5 as a 
 - Subtract 2 if source-data-check is skipped
 - Subtract 2 if formula-check-arithmetic is in 2-instance mode (C and D skipped)
 - Subtract 1 if key-params-check is in 1-instance mode (B skipped)
-- Add `(band_count − 1) × 2` for each banded agent with extra band pairs
+- Add `(band_count − 1) × 2 × [number of banded agents]` for banded agents. For Wave 1, there are 3 banded agents (formula-check-data, formula-check-edge-cases, formula-check-structure), so the total addition is `(band_count − 1) × 6`.
 
 **Wave 1 banding status**: Of the Wave 1 agents, three use banding (row-sequential scanning across all rows): `formula-check-data`, `formula-check-edge-cases`, `formula-check-structure`. The remaining Wave 1 agents are not banded: `formula-check-arithmetic` (uses split_row, not band_start/band_end), `source-data-check`, `consistency-check`, `key-params-check`, `formula-check-voi`, `formula-check-parameters`, `cross-tab-compare`, `sensitivity-scan`, `hardcoded-values`. Pass `band_start`/`band_end` only to the three banded agents; never pass these parameters to non-banded agents.
 
@@ -880,7 +880,7 @@ Spawn agents simultaneously after the researcher checkpoint. Each of the eight c
 
 **Leverage-uov-check skip condition**: Before spawning, check whether any leverage activity exists: (a) does a dedicated Leverage/Funging tab exist (names containing Leverage, Funging, or L/F)? OR (b) is there a leverage/funging section in the Main CEA tab (leverage-funging A or B filed leverage-related findings)? Skip leverage-uov-check only when both (a) and (b) are false. Announce: `⏭️ leverage-uov-check A and B: skipped — no Leverage/Funging tab found.` Their pre-allocated row ranges remain reserved but unused. leverage-funging A and B still run — they check leverage treatment in the Main CEA regardless of tab structure.
 
-**If formula/heads-up only scope was selected**: skip sources-A, sources-B, readability-A, readability-B, `agents/notes-scan.md`, and `agents/internal-links-scan.md` entirely — spawn 14 agents instead of 21. Their pre-allocated row ranges remain reserved but unused. Notes are still *read* in the initial batch (step 3) and remain available to all formula-check and heads-up agents as formula context — only the pub-readiness audit of notes documentation (missing "Calculation." entries, source annotations, style) is skipped. Pass to all spawned agents: "Pub readiness out of scope; value-correctness verification (GBD vizhub URLs, study extractions) is in scope." Also pass to all Wave 2 heads-up agents (heads-up-evidence, heads-up-epi, heads-up-intervention): "Pub readiness out of scope for this vet. Do not route any finding to Publication Readiness — route all issues including source quality and notation concerns to the Findings sheet as Parameter or Assumption findings." Wave 1.5 follows the standard skip conditions (see Wave 1.5 section) — the skip decision is based solely on whether the researcher declined at startup and whether verifiable rows exist, not on scope mode.
+**If formula/heads-up only scope was selected**: skip sources-A, sources-B, readability-A, readability-B, notes-scan-A, notes-scan-B, and internal-links-scan entirely — spawn 14 agents instead of 21 (skipping 7: sources ×2, readability ×2, notes-scan ×2, internal-links-scan ×1). Their pre-allocated row ranges remain reserved but unused. Notes are still *read* in the initial batch (step 3) and remain available to all formula-check and heads-up agents as formula context — only the pub-readiness audit of notes documentation (missing "Calculation." entries, source annotations, style) is skipped. Pass to all spawned agents: "Pub readiness out of scope; value-correctness verification (GBD vizhub URLs, study extractions) is in scope." Also pass to all Wave 2 heads-up agents (heads-up-evidence, heads-up-epi, heads-up-intervention): "Pub readiness out of scope for this vet. Do not route any finding to Publication Readiness — route all issues including source quality and notation concerns to the Findings sheet as Parameter or Assumption findings." Wave 1.5 follows the standard skip conditions (see Wave 1.5 section) — the skip decision is based solely on whether the researcher declined at startup and whether verifiable rows exist, not on scope mode.
 
 Each Wave 2 agent has a pre-created staging tab (created before Wave 1 during output setup). No row-range calculation is needed. Assign staging sheets from the table below:
 
