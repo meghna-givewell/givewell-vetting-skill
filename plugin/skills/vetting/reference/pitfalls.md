@@ -394,6 +394,90 @@ When a stale GiveDirectly benchmark is identified (e.g., 0.00335 when the curren
 
 ---
 
+### SC-022 (2026-06) — Assumption documentation gaps: one grouped PR/Legibility item, not per-parameter findings
+
+All Low/Assumption findings whose fix is solely "add a cell note," "add an external anchor," or "document the rationale" — and that carry no directional CE impact — must be merged into a single Publication Readiness Legibility item listing all affected parameters. Do not file separate Low findings per cell. Exception: retain a finding separately if column H contains a directional CE impact phrase ("Raises CE — magnitude unknown" or "Lowers CE — magnitude unknown"), because that finding has a model-correctness dimension.
+
+**Why**: JS vet (#34) produced 12 separate Low/Assumption findings for "this parameter lacks documentation." These buried real errors and made the output unusable. At most one assumption-documentation PR item should appear in the final output.
+
+**Applies to**: all agents (pre-filing gate), final-review-compaction (pass 4 of Step 3)
+
+---
+
+### SC-023 (2026-06) — Source citation quality gaps: one grouped PR/Sourcing item, not per-cell findings
+
+All findings where the issue is a vague source note, missing row number, first-name citation, or "confirm DHIS without row numbers" — and the value itself was not verified wrong — must be merged into a single Publication Readiness Sourcing item. Exception: if the source was fetched and contradicted the cell value, retain separately as a Findings row with appropriate severity.
+
+**Applies to**: all agents (pre-filing gate), final-review-compaction (pass 5 of Step 3)
+
+---
+
+### SC-024 (2026-06) — Structural formula quality: one grouped PR/Legibility item for cosmetic issues
+
+Findings about daisy-chain copy-paste patterns, hardcoded inline literals, or inconsistent `$`-locks — where the current output value is not wrong — must be merged into a single PR/Legibility item. Do not file per cell. Exception: any finding with a directional CE impact stays in Findings.
+
+**Applies to**: all agents (pre-filing gate), final-review-compaction (pass 6 of Step 3)
+
+---
+
+### SC-025 (2026-06) — Triangulation requests without confirmed divergence: discard entirely
+
+Do not file any finding that recommends the researcher triangulate a parameter against additional sources unless the agent actually performed a cross-check and found a material divergence. Speculative triangulation suggestions ("consider checking against WHO estimates") are not actionable findings. Only file triangulation-based findings when a specific numerical divergence is cited with source.
+
+**Applies to**: all agents (pre-filing gate), final-review-compaction (pass 7 of Step 3)
+
+---
+
+### SC-026 (2026-06) — Sensitivity/scenario gap observations: at most one grouped Low per workbook
+
+Observations that a parameter is not varied in scenario columns are not per-parameter findings. All such observations for a workbook must be merged into at most one grouped Low finding listing all affected parameters. If the affected parameters are not in the CE chain, downgrade to PR/Legibility.
+
+**Applies to**: all agents (pre-filing gate), final-review-compaction (pass 8 of Step 3)
+
+---
+
+### SC-027 (2026-06) — Interpretive commentary: discard or one PR/Legibility note maximum
+
+Do not file findings whose content is solely "this CE is not directly comparable to top-charity estimates" or "a reader might misinterpret this." These are not model errors. If a publication note is genuinely warranted, add it as a single PR/Legibility row. Never file interpretive commentary as a Findings row.
+
+**Applies to**: all agents (pre-filing gate), final-review-compaction (pass 9 of Step 3)
+
+---
+
+### SC-028 (2026-06) — Inconsistency findings where both values are documented intentional: downgrade to Low/Legibility
+
+When an inconsistency finding describes two differing values where both are internally consistent with their respective tabs or acknowledged in a comment, downgrade from Medium/Inconsistency to Low/Legibility. The finding is still surfaced — it just reflects a documentation gap rather than a modeling error.
+
+**Applies to**: all agents (pre-filing gate), final-review-compaction (pass 10 of Step 3), final-review-validation (Check 5, Invariant 8)
+
+---
+
+## Pre-filing mandatory checklist — run before filing any Low or Medium finding
+
+**Before filing any Low or Medium finding, run through this checklist.** For each category below, do not file a separate finding — instead accumulate instances into one grouped finding filed at the end of your agent run.
+
+| # | Question | If yes → action |
+|---|---|---|
+| 1 | Is this about a missing IFERROR guard, unguarded division, or formula that breaks under extreme inputs but is currently correct? **(SC-006)** | Don't file. Add cell to your formula-robustness list. |
+| 2 | Is the fix solely "add a cell note" or "document the rationale," and the value doesn't deviate from any GW standard? **(SC-022)** | Don't file. Add to assumption-documentation list. Exception: keep separate if column H has a directional CE impact. |
+| 3 | Is the source note vague but the value itself not verified wrong? **(SC-023)** | Don't file. Add to source-citation-quality list. |
+| 4 | Is this about hardcoded literals in a formula, a daisy-chain copy-paste, or inconsistent `$`-locks where the current output is still correct? **(SC-024)** | Don't file. Add to structural-formula-quality list. |
+| 5 | Are you recommending triangulation without having actually performed a cross-check that found a material divergence? **(SC-025)** | Don't file at all. |
+| 6 | Are you observing that a specific parameter isn't varied in scenario columns? **(SC-026)** | Don't file per parameter. Add to sensitivity-gap list. |
+| 7 | Are you noting that the CE is "not directly comparable," or that a reader might misinterpret the result? **(SC-027)** | Don't file as a finding. |
+| 8 | Is this an inconsistency where both values are documented and internally consistent within their respective tabs? **(SC-028)** | File as Low/Legibility, not Medium/Inconsistency. |
+
+**At the end of your agent run**, file one grouped finding per non-empty list:
+- **Formula robustness** → one Low/Formula listing all affected cells
+- **Assumption documentation** → one PR/Legibility listing all affected cells/parameters
+- **Source citation quality** → one PR/Sourcing listing all affected cells
+- **Structural formula quality** → one PR/Legibility listing all affected cells
+- **Sensitivity gaps** → one Low/Assumption listing all affected parameters (or omit if CE-chain parameters are already varied)
+
+If no instances were found for a category, do not file anything for that category.
+
+---
+
 ## Entry template
 
 ```

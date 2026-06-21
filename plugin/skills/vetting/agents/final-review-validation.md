@@ -171,6 +171,42 @@ Coverage declaration: "CE impact completeness check done. Pass A — High findin
 
 ---
 
+## Check 5 — Grouping rule compliance (SC invariants)
+
+This check verifies that the consolidation rules from pitfalls.md (SC-006, SC-022–SC-028) were correctly applied by the compaction agent. Run this check on the combined finding list (Findings + Publication Readiness) already collected in Step 1.
+
+For each invariant below: (a) count matching rows, (b) if the count exceeds the allowed maximum, apply the inline remediation described, and (c) note the count in the coverage declaration.
+
+**Invariant 1 — Formula robustness (SC-006): at most 1 Low finding**
+Identify all rows where Severity = `Low` AND (Error Type = `Formula` OR the Explanation describes IFERROR guards, unguarded divisions, zero-guard, or formula-break-under-extreme-inputs). If count > 1: merge all into the first such row — append all additional affected cells to column C and all additional explanations to column F of the first row — then delete (or blank) the duplicate rows and re-verify column A IDs are still gapless.
+
+**Invariant 2 — Assumption documentation (SC-022): at most 1 PR/Legibility item**
+Identify all rows on either the Findings sheet (Low severity) or the Publication Readiness sheet where the fix is solely "add a cell note," "add a rationale," or "document the assumption," AND column H (if in Findings) has no directional CE impact. If count > 1: merge all into one PR/Legibility row on the Publication Readiness sheet. Exception: any row that has a directional CE impact in column H stays in Findings — do not merge it.
+
+**Invariant 3 — Source citation quality (SC-023): at most 1 PR/Sourcing item**
+Identify all Publication Readiness rows where column D = `Sourcing` AND the Explanation describes a vague source note, a missing row number, a first-name citation, or a "check DHIS" instruction — but the value itself is not confirmed wrong. If count > 1: merge all into one PR/Sourcing row.
+
+**Invariant 4 — Structural formula quality (SC-024): at most 1 PR/Legibility item**
+Identify all rows (Findings Low or Publication Readiness) where the Explanation describes daisy-chain copy-paste patterns, hardcoded inline literals, or missing `$`-locks — AND the current output value is not wrong. If count > 1: merge all into one PR/Legibility row.
+
+**Invariant 5 — Triangulation requests (SC-025): 0 findings**
+Identify all rows where the Explanation recommends triangulating against additional sources but does NOT cite a specific divergence found by this vet. If any exist: delete them outright — do not retain as Low or PR. Note the deletion in the coverage declaration.
+
+**Invariant 6 — Sensitivity/scenario gaps (SC-026): at most 1 Low finding**
+Identify all Low findings whose Explanation observes that a parameter is not varied in scenario columns (without asserting that any value is wrong). If count > 1: merge all into one Low finding, listing all affected parameters in column C and column F.
+
+**Invariant 7 — Interpretive commentary (SC-027): 0 findings**
+Identify all rows where the Explanation primarily notes that the CE result is "not directly comparable" to another program's CE, or that a reader might misinterpret the result — where no actual error is described. If any exist: delete them. If a brief publication note is genuinely warranted, keep at most one as a PR/Legibility row (not in Findings).
+
+**Invariant 8 — Documented inconsistencies (SC-028): 0 Medium/Inconsistency rows where both values are intentional**
+Identify all rows where Severity = `Medium` AND Error Type = `Inconsistency` AND the Explanation indicates that both differing values are documented and internally correct (look for phrases like "both are correct," "intentional difference," "different assumptions for different scenarios," or "both values are documented"). For each such row: downgrade Severity to `Low` and change Error Type to `Legibility` using `modify_sheet_values`.
+
+**After applying all remediations**: re-read the affected rows from both sheets to confirm the fixes were written. If any row deletion caused an ID gap in the F-NNN sequence, re-check ID integrity and file a note per the ID integrity check rules.
+
+Coverage declaration: "Grouping rule compliance check complete. [Inv 1] formula-robustness Lows found: [N], merged to 1 (or '1 — no action'). [Inv 2] assumption-doc items found: [N], merged to 1 PR/Legibility (or 'none'). [Inv 3] source-citation-quality PR items found: [N], merged to 1 (or '1 — no action'). [Inv 4] structural-formula-quality items found: [N], merged to 1 (or '1 — no action'). [Inv 5] triangulation-only findings deleted: [N]. [Inv 6] sensitivity-gap Lows found: [N], merged to 1 (or '1 — no action'). [Inv 7] interpretive-commentary findings deleted: [N]. [Inv 8] documented-inconsistency Mediums downgraded: [N]. Status: [clean / remediations applied]."
+
+---
+
 ## Writing new findings
 
 If this pass surfaces genuinely new findings not already covered, add them to the appropriate sheet before completing.
