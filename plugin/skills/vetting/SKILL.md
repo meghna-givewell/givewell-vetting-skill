@@ -505,7 +505,7 @@ Pass B and merge staging tabs (always create these in the same batch as the tabl
 
 | Staging tab name | Agent |
 |---|---|
-| `stg-pass-b` | Pass B — all 11 CE-focus agents write here sequentially |
+| `stg-pass-b` | Pass B — all 13 CE-focus agents write here sequentially |
 | `stg-merge` | final-review-premerge — net-new Pass B findings; read by Wave 3 compaction |
 
 **Band-split extra staging tabs**: `band_count` is computable from `populated_rows`, which is known from the Step 2 structure review — before output setup runs. When `band_count > 1`, create all extra band staging tabs in the **same parallel batch** as the main staging tabs above. Do not defer this to just before spawning banded agents. Create the following extra tabs for each extra band (k=2 gives C/D; k=3 gives E/F; k=4 gives G/H):
@@ -907,11 +907,11 @@ Wait for this agent to complete before announcing Wave 2. After it completes, if
 
 Do not use a hardcoded count. Count the rows in the staging tab table that will actually spawn (each row = one agent). **CE chain TA (ce-chain-trace-ta) always launches** — never skip at spawn time. The agent self-detects TA signals and exits cleanly if none are found.
 
-Spawn agents simultaneously after the researcher checkpoint. Each of the ten core analysis agents (sources, heads-up-evidence, heads-up-epi, heads-up-intervention, readability, leverage-funging, ce-chain-trace, leverage-uov-check, ce-replication, suspicion-first [single instance]) runs as two independent instances (A and B) — except suspicion-first which runs as a single instance with separate context windows and no knowledge of each other. notes-scan now also runs as two independent instances (A and B) — both write to their dedicated staging sheets (stg-nscn-A and stg-nscn-B); the compaction agent routes their findings to Publication Readiness based on Error Type and deduplicates overlapping findings in its standard PR dedup pass. sensitivity-scan and hardcoded-values have moved to Wave 1 and do not run here.
+Spawn agents simultaneously after the researcher checkpoint. Each of the ten core analysis agents (sources, heads-up-evidence, heads-up-epi, heads-up-intervention, readability, leverage-funging, ce-chain-trace, leverage-uov-check, ce-replication, suspicion-first) runs as two independent instances (A and B), each in a separate context window with no knowledge of the other — except suspicion-first, which runs as a single instance only. notes-scan now also runs as two independent instances (A and B) — both write to their dedicated staging sheets (stg-nscn-A and stg-nscn-B); the compaction agent routes their findings to Publication Readiness based on Error Type and deduplicates overlapping findings in its standard PR dedup pass. sensitivity-scan and hardcoded-values have moved to Wave 1 and do not run here.
 
 **Leverage-uov-check skip condition**: Before spawning, check whether any leverage activity exists: (a) does a dedicated Leverage/Funging tab exist (names containing Leverage, Funging, or L/F)? OR (b) is there a leverage/funging section in the Main CEA tab (leverage-funging A or B filed leverage-related findings)? Skip leverage-uov-check only when both (a) and (b) are false. Announce: `⏭️ leverage-uov-check A and B: skipped — no Leverage/Funging tab found.` Their pre-allocated row ranges remain reserved but unused. leverage-funging A and B still run — they check leverage treatment in the Main CEA regardless of tab structure.
 
-**If formula/heads-up only scope was selected**: skip sources-A, sources-B, readability-A, readability-B, notes-scan-A, notes-scan-B, and internal-links-scan entirely — spawn 14 agents instead of 21 (skipping 7: sources ×2, readability ×2, notes-scan ×2, internal-links-scan ×1). Their pre-allocated row ranges remain reserved but unused. Notes are still *read* in the initial batch (step 3) and remain available to all formula-check and heads-up agents as formula context — only the pub-readiness audit of notes documentation (missing "Calculation." entries, source annotations, style) is skipped. Pass to all spawned agents: "Pub readiness out of scope; value-correctness verification (GBD vizhub URLs, study extractions) is in scope." Also pass to all Wave 2 heads-up agents (heads-up-evidence, heads-up-epi, heads-up-intervention): "Pub readiness out of scope for this vet. Do not route any finding to Publication Readiness — route all issues including source quality and notation concerns to the Findings sheet as Parameter or Assumption findings." Wave 1.5 follows the standard skip conditions (see Wave 1.5 section) — the skip decision is based solely on whether the researcher declined at startup and whether verifiable rows exist, not on scope mode.
+**If formula/heads-up only scope was selected**: skip sources-A, sources-B, readability-A, readability-B, notes-scan-A, notes-scan-B, and internal-links-scan entirely — spawn 17 agents instead of 24 (skipping 7: sources ×2, readability ×2, notes-scan ×2, internal-links-scan ×1). Their pre-allocated row ranges remain reserved but unused. Notes are still *read* in the initial batch (step 3) and remain available to all formula-check and heads-up agents as formula context — only the pub-readiness audit of notes documentation (missing "Calculation." entries, source annotations, style) is skipped. Pass to all spawned agents: "Pub readiness out of scope; value-correctness verification (GBD vizhub URLs, study extractions) is in scope." Also pass to all Wave 2 heads-up agents (heads-up-evidence, heads-up-epi, heads-up-intervention): "Pub readiness out of scope for this vet. Do not route any finding to Publication Readiness — route all issues including source quality and notation concerns to the Findings sheet as Parameter or Assumption findings." Wave 1.5 follows the standard skip conditions (see Wave 1.5 section) — the skip decision is based solely on whether the researcher declined at startup and whether verifiable rows exist, not on scope mode.
 
 Each Wave 2 agent has a pre-created staging tab (created before Wave 1 during output setup). No row-range calculation is needed. Assign staging sheets from the table below:
 
@@ -989,7 +989,7 @@ For agents where 0-findings is plausible (readability when formula-only scope, l
 
 Announce before spawning: `[Phase 2/4 done → Phase 3/4] Wave 2 complete — starting reconciliation ([computed_count] agents: [list active pairs]; [list skipped pairs if any] skipped in pre-flight check).`
 
-After all Wave 2.5 reconciliation agents complete and before the Wave 2.5 exit conditions check, announce: `[Phase 3/4 done] Reconciliation complete — all [N] reconcile agents have finished. Proceeding to Wave 3 final review.` This announcement lets researchers confirm reconciliation is fully done before Wave 3 compaction begins. Compute the count before announcing: start with 18 standard pairs (or 19 if a TA BOTEC adds the heads-up-epi TA counterfactual burden pair — heads-up-epi TA-A/TA-B), subtract skipped pairs (arith C/D if 2-instance mode; source-data-check if no source tabs), add `(band_count − 1) × 8` band-split reconcile pairs when banding is active (3 Wave 1 banded agents: formula-check-data, formula-check-edge-cases, formula-check-structure; 5 Wave 2 banded agents: sources, heads-up-evidence, heads-up-intervention, readability, heads-up-epi = 8 per extra band; for band_count=2: add 8 extra pairs). Note: ce-chain-trace-ta is always a standard pair (included in the 17); the TA-added pair is heads-up-epi (counterfactual-burden A/B), not ce-chain-trace-ta.
+After all Wave 2.5 reconciliation agents complete and before the Wave 2.5 exit conditions check, announce: `[Phase 3/4 done] Reconciliation complete — all [N] reconcile agents have finished. Proceeding to Wave 3 final review.` This announcement lets researchers confirm reconciliation is fully done before Wave 3 compaction begins. Compute the count before announcing: start with 18 standard pairs (or 19 if a TA BOTEC adds the heads-up-epi TA counterfactual burden pair — heads-up-epi TA-A/TA-B), subtract skipped pairs (arith C/D if 2-instance mode; source-data-check if no source tabs), add `(band_count − 1) × 8` band-split reconcile pairs when banding is active (3 Wave 1 banded agents: formula-check-data, formula-check-edge-cases, formula-check-structure; 5 Wave 2 banded agents: sources, heads-up-evidence, heads-up-intervention, readability, heads-up-epi = 8 per extra band; for band_count=2: add 8 extra pairs). Note: ce-chain-trace-ta is always a standard pair (included in the 18); the TA-added pair is heads-up-epi (counterfactual-burden A/B), not ce-chain-trace-ta.
 
 **Staging sheet name recovery — do this first if names are not in context**: If the staging sheet names are not available in the current session context (e.g., context was compacted between Wave 2 and Wave 2.5), read Dashboard cells A99 onward of the output spreadsheet to recover the full staging sheet log written during output setup.
 
@@ -1097,7 +1097,7 @@ Issue each warning independently — a clean `stg-nscn-A` does not suppress a `s
 
 ### Pass B — Second-Opinion CE-Focus Pass
 
-**Purpose**: Pass B is an independent re-run of 11 CE-critical agents with a CE-focus filter applied. Agents only file findings that would materially change the bottom-line CE estimate (Medium or High severity only). This catches decision-relevant findings that Pass A may have missed due to stochastic variation in a single run.
+**Purpose**: Pass B is an independent re-run of 13 CE-critical agents with a CE-focus filter applied. Agents only file findings that would materially change the bottom-line CE estimate (Medium or High severity only). This catches decision-relevant findings that Pass A may have missed due to stochastic variation in a single run.
 
 **Pass B entry conditions** — confirm all before spawning any Pass B agent:
 - [ ] Wave 2.5 exit conditions satisfied.
@@ -1149,7 +1149,7 @@ Announce: `[Pass B] Second-opinion CE-focus pass starting — 13 agents running 
 
 **Pass B completion check**: After each agent completes, confirm its AGENT_COMPLETE row in `stg-pass-b` by reading in batches (`stg-pass-b!A1:B50`, `A51:B100`, …) looking for a row where column A = `AGENT_COMPLETE` and column B ends with `-pass-b` and matches this agent's label. If no AGENT_COMPLETE row appears within 3 minutes, re-spawn the agent once. After a second failure, proceed and note the gap in session context.
 
-Announce after all 11 agents complete: `[Pass B complete] Second-opinion pass done — [N] total findings written to stg-pass-b. Proceeding to pre-merge.`
+Announce after all 13 agents complete: `[Pass B complete] Second-opinion pass done — [N] total findings written to stg-pass-b. Proceeding to pre-merge.`
 
 ---
 
@@ -1176,7 +1176,7 @@ Announce after merge: `[Pre-merge complete] [Z] net-new Pass B findings written 
 
 **Wave 3 entry conditions** — confirm all before running the self-verification pre-pass:
 - [ ] Wave 2.5 exit conditions satisfied (all reconcile agents complete, TA cross-check run).
-- [ ] Pass B complete (all 11 CE-focus agents wrote AGENT_COMPLETE to `stg-pass-b`).
+- [ ] Pass B complete (all 13 CE-focus agents wrote AGENT_COMPLETE to `stg-pass-b`).
 - [ ] Pre-merge complete (`final-review-premerge` wrote AGENT_COMPLETE to `stg-merge`).
 - [ ] Session context has output spreadsheet ID, source spreadsheet ID, staging tab list **including `stg-merge`** (from context or Dashboard A99).
 

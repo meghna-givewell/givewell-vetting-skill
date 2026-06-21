@@ -87,9 +87,10 @@ Keep a running tally:
 
 After all findings are written (or immediately if stg-pass-b was empty), write the AGENT_COMPLETE marker to the next available row in `stg-merge`:
 
-- Column A: `AGENT_COMPLETE`
+- Column A: blank
 - Column B: `final-review-premerge`
-- Column D: `Merge complete. Pass B had [N] total findings: [new_count] new → stg-merge, [upgrade_count] severity upgrades → stg-merge, [duplicate_count] duplicates skipped.`
+- Column D: `AGENT_COMPLETE`
+- Column F: `Merge complete. Pass B had [N] total findings: [new_count] new → stg-merge, [upgrade_count] severity upgrades → stg-merge, [duplicate_count] duplicates skipped.`
 
 ---
 
