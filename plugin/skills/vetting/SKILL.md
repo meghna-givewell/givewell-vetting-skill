@@ -6,7 +6,7 @@ argument-hint: "<Google Sheets URL or local file path>"
 
 # /vetting — GiveWell Spreadsheet Vetter
 
-**Skill version**: 2026-06-21 (v1.12.0) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
+**Skill version**: 2026-06-21 (v1.13.0) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
 
 You are a meticulous spreadsheet auditor for GiveWell. See the repository README for one-time setup (Hardened Google Workspace MCP). See `reference/key-parameters.md` for authoritative parameter values. See `reference/output-format.md` for output column definitions.
 
@@ -472,6 +472,9 @@ Wave 2 staging tabs (always create these; skipped agents' tabs remain empty):
 | `stg-ilinks` | internal-links-scan |
 | `stg-ceta-A` | ce-chain-trace-ta A |
 | `stg-ceta-B` | ce-chain-trace-ta B |
+| `stg-cerep-A` | ce-replication A |
+| `stg-cerep-B` | ce-replication B |
+| `stg-susp` | suspicion-first |
 
 Reconcile staging tabs (one per reconcile agent, for net-new findings discovered during reconciliation):
 
@@ -496,6 +499,7 @@ Reconcile staging tabs (one per reconcile agent, for net-new findings discovered
 | `stg-rec-ce` | ce-chain-trace |
 | `stg-rec-uov` | leverage-uov-check |
 | `stg-rec-ceta` | ce-chain-trace-ta |
+| `stg-rec-cerep` | ce-replication |
 
 Pass B and merge staging tabs (always create these in the same batch as the tables above):
 
@@ -660,6 +664,8 @@ This restriction applies to MCP tools and external search/fetch tools only. Buil
 | final-review-validation | rv, rn, wv, si |
 | final-review-dashboard | rv, wv, si, ds |
 | final-review-premerge | rv, wv, si |
+| ce-replication | rv, rn, rc, wv |
+| suspicion-first | rv, rn, rc, wv, dc |
 | source-citation-verify | rv, wv, dc, wf |
 | internal-links-scan | rv, rn, rl, rc, wv |
 
@@ -901,7 +907,7 @@ Wait for this agent to complete before announcing Wave 2. After it completes, if
 
 Do not use a hardcoded count. Count the rows in the staging tab table that will actually spawn (each row = one agent). **CE chain TA (ce-chain-trace-ta) always launches** — never skip at spawn time. The agent self-detects TA signals and exits cleanly if none are found.
 
-Spawn agents simultaneously after the researcher checkpoint. Each of the eight core analysis agents (sources, heads-up-evidence, heads-up-epi, heads-up-intervention, readability, leverage-funging, ce-chain-trace, leverage-uov-check) runs as two independent instances (A and B) with separate context windows and no knowledge of each other. notes-scan now also runs as two independent instances (A and B) — both write to their dedicated staging sheets (stg-nscn-A and stg-nscn-B); the compaction agent routes their findings to Publication Readiness based on Error Type and deduplicates overlapping findings in its standard PR dedup pass. sensitivity-scan and hardcoded-values have moved to Wave 1 and do not run here.
+Spawn agents simultaneously after the researcher checkpoint. Each of the ten core analysis agents (sources, heads-up-evidence, heads-up-epi, heads-up-intervention, readability, leverage-funging, ce-chain-trace, leverage-uov-check, ce-replication, suspicion-first [single instance]) runs as two independent instances (A and B) — except suspicion-first which runs as a single instance with separate context windows and no knowledge of each other. notes-scan now also runs as two independent instances (A and B) — both write to their dedicated staging sheets (stg-nscn-A and stg-nscn-B); the compaction agent routes their findings to Publication Readiness based on Error Type and deduplicates overlapping findings in its standard PR dedup pass. sensitivity-scan and hardcoded-values have moved to Wave 1 and do not run here.
 
 **Leverage-uov-check skip condition**: Before spawning, check whether any leverage activity exists: (a) does a dedicated Leverage/Funging tab exist (names containing Leverage, Funging, or L/F)? OR (b) is there a leverage/funging section in the Main CEA tab (leverage-funging A or B filed leverage-related findings)? Skip leverage-uov-check only when both (a) and (b) are false. Announce: `⏭️ leverage-uov-check A and B: skipped — no Leverage/Funging tab found.` Their pre-allocated row ranges remain reserved but unused. leverage-funging A and B still run — they check leverage treatment in the Main CEA regardless of tab structure.
 
@@ -949,6 +955,9 @@ For A instances, pass the standard session context only. The only difference bet
 | 7c | `agents/notes-scan.md` | A | `stg-nscn-A` |
 | 7c | `agents/notes-scan.md` | B | `stg-nscn-B` |
 | 7d | `agents/internal-links-scan.md` | — | `stg-ilinks` |
+| 6g | `agents/ce-replication.md` | A | `stg-cerep-A` |
+| 6g | `agents/ce-replication.md` | B | `stg-cerep-B` |
+| 6h | `agents/suspicion-first.md` | — | `stg-susp` |
 
 ---
 
@@ -980,7 +989,7 @@ For agents where 0-findings is plausible (readability when formula-only scope, l
 
 Announce before spawning: `[Phase 2/4 done → Phase 3/4] Wave 2 complete — starting reconciliation ([computed_count] agents: [list active pairs]; [list skipped pairs if any] skipped in pre-flight check).`
 
-After all Wave 2.5 reconciliation agents complete and before the Wave 2.5 exit conditions check, announce: `[Phase 3/4 done] Reconciliation complete — all [N] reconcile agents have finished. Proceeding to Wave 3 final review.` This announcement lets researchers confirm reconciliation is fully done before Wave 3 compaction begins. Compute the count before announcing: start with 17 standard pairs (or 18 if a TA BOTEC adds the heads-up-epi TA counterfactual burden pair — heads-up-epi TA-A/TA-B), subtract skipped pairs (arith C/D if 2-instance mode; source-data-check if no source tabs), add `(band_count − 1) × 8` band-split reconcile pairs when banding is active (3 Wave 1 banded agents: formula-check-data, formula-check-edge-cases, formula-check-structure; 5 Wave 2 banded agents: sources, heads-up-evidence, heads-up-intervention, readability, heads-up-epi = 8 per extra band; for band_count=2: add 8 extra pairs). Note: ce-chain-trace-ta is always a standard pair (included in the 17); the TA-added pair is heads-up-epi (counterfactual-burden A/B), not ce-chain-trace-ta.
+After all Wave 2.5 reconciliation agents complete and before the Wave 2.5 exit conditions check, announce: `[Phase 3/4 done] Reconciliation complete — all [N] reconcile agents have finished. Proceeding to Wave 3 final review.` This announcement lets researchers confirm reconciliation is fully done before Wave 3 compaction begins. Compute the count before announcing: start with 18 standard pairs (or 19 if a TA BOTEC adds the heads-up-epi TA counterfactual burden pair — heads-up-epi TA-A/TA-B), subtract skipped pairs (arith C/D if 2-instance mode; source-data-check if no source tabs), add `(band_count − 1) × 8` band-split reconcile pairs when banding is active (3 Wave 1 banded agents: formula-check-data, formula-check-edge-cases, formula-check-structure; 5 Wave 2 banded agents: sources, heads-up-evidence, heads-up-intervention, readability, heads-up-epi = 8 per extra band; for band_count=2: add 8 extra pairs). Note: ce-chain-trace-ta is always a standard pair (included in the 17); the TA-added pair is heads-up-epi (counterfactual-burden A/B), not ce-chain-trace-ta.
 
 **Staging sheet name recovery — do this first if names are not in context**: If the staging sheet names are not available in the current session context (e.g., context was compacted between Wave 2 and Wave 2.5), read Dashboard cells A99 onward of the output spreadsheet to recover the full staging sheet log written during output setup.
 
@@ -1025,6 +1034,7 @@ If key-params-check ran in 1-instance mode (populated_rows ≤ 80), also append:
 | leverage-uov-check | `stg-uov-A` | `stg-uov-B` | `stg-rec-uov` |
 | **heads-up-epi (TA counterfactual burden)** *(TA BOTEC only)* | `stg-epi-ta-A` | `stg-epi-ta-B` | `stg-rec-epi-ta` |
 | ce-chain-trace-ta *(self-detecting TA check)* | `stg-ceta-A` | `stg-ceta-B` | `stg-rec-ceta` |
+| ce-replication | `stg-cerep-A` | `stg-cerep-B` | `stg-rec-cerep` |
 
 **Band-split extra reconcile pairs** — add these rows for each extra band k=2, 3, 4 when `band_count > 1` (use letter pairs C/D for k=2, E/F for k=3, G/H for k=4):
 
@@ -1041,7 +1051,7 @@ If key-params-check ran in 1-instance mode (populated_rows ≤ 80), also append:
 
 For band_count=2 only create k=2 rows; for band_count=3 create k=2 and k=3 rows; etc.
 
-Note: notes-scan (Step 7c) has no reconciliation pair — it runs as A/B, each writing to its own staging tab (`stg-nscn-A`, `stg-nscn-B`); the Wave 3 compaction agent deduplicates their overlapping findings in its standard Step 3 dedup pass. No reconcile agent is needed. formula-check-parameters (Step 3f) also has no reconciliation pair — it runs as a single instance writing to `stg-params`. cross-tab-compare (Step 3c) also has no reconciliation pair — it runs as a single self-detecting instance writing to `stg-xcomp`; if Simple CEA or Main CEA tabs are absent it writes only its completion marker. internal-links-scan (Step 7d) also has no reconciliation pair — it runs as a single instance writing to `stg-ilinks`; it is a deterministic URL pattern scan with no judgment component that does not benefit from adversarial duplication. The final-review compaction step reads all three alongside all other staging tabs. The heads-up-epi TA counterfactual burden pair has no reconciliation agent for non-TA models — skip that row entirely when program context is not a TA BOTEC.
+Note: suspicion-first (Step 6h) has no reconciliation pair — it runs as a single open-ended instance; adversarial duplication would undermine its value (both instances would anchor on different suspicions, not complement each other). notes-scan (Step 7c) has no reconciliation pair — it runs as A/B, each writing to its own staging tab (`stg-nscn-A`, `stg-nscn-B`); the Wave 3 compaction agent deduplicates their overlapping findings in its standard Step 3 dedup pass. No reconcile agent is needed. formula-check-parameters (Step 3f) also has no reconciliation pair — it runs as a single instance writing to `stg-params`. cross-tab-compare (Step 3c) also has no reconciliation pair — it runs as a single self-detecting instance writing to `stg-xcomp`; if Simple CEA or Main CEA tabs are absent it writes only its completion marker. internal-links-scan (Step 7d) also has no reconciliation pair — it runs as a single instance writing to `stg-ilinks`; it is a deterministic URL pattern scan with no judgment component that does not benefit from adversarial duplication. The final-review compaction step reads all three alongside all other staging tabs. The heads-up-epi TA counterfactual burden pair has no reconciliation agent for non-TA models — skip that row entirely when program context is not a TA BOTEC.
 
 **Silent failure check after Wave 2.5 — do this before Wave 3**: After all reconciliation agents complete, check each reconcile staging sheet (stg-rec-*) and check whether each reconcile agent wrote its coverage declaration to chat. (Pairs confirmed empty in the pre-flight check are exempt — their skipped status was already logged.) A reconcile agent is a silent failure risk if its reconcile staging sheet contains only the header row (no AGENT_COMPLETE, no findings) OR if no coverage declaration for this pair appears in the current session context. Report any pair where either condition holds:
 
@@ -1095,7 +1105,7 @@ Issue each warning independently — a clean `stg-nscn-A` does not suppress a `s
 
 **Skip condition**: Pass B runs regardless of vet scope (formula-only or full). It is entirely CE-focused by design and does not run pub-readiness agents.
 
-Announce: `[Pass B] Second-opinion CE-focus pass starting — 11 agents running sequentially. Agents file only Medium/High findings that would affect bottom-line CE.`
+Announce: `[Pass B] Second-opinion CE-focus pass starting — 13 agents running sequentially. Agents file only Medium/High findings that would affect bottom-line CE.`
 
 **CE-focus context block**: Prepend the following block to every Pass B agent's session context, BEFORE the standard session context block and BEFORE the agent's own prompt. This overrides the agent's normal filing rules:
 
@@ -1128,6 +1138,8 @@ Announce: `[Pass B] Second-opinion CE-focus pass starting — 11 agents running 
 | 9 | `agents/heads-up-intervention.md` | int-pb | All rows |
 | 10 | `agents/leverage-funging.md` | lev-pb | All rows |
 | 11 | `agents/leverage-uov-check.md` | uov-pb | All rows |
+| 12 | `agents/ce-replication.md` | cerep-pb | All rows; no adversarial preamble |
+| 13 | `agents/suspicion-first.md` | susp-pb | All rows; no adversarial preamble |
 
 **Notes on Pass B agents**:
 - Do NOT append the standard adversarial B preamble to any Pass B agent — each runs as a single independent instance.
@@ -1219,6 +1231,9 @@ Announce after merge: `[Pre-merge complete] [Z] net-new Pass B findings written 
 | ce-chain-trace-ta A | `stg-ceta-A` | Yes (self-detecting — check AGENT_COMPLETE text) |
 | ce-chain-trace-ta B | `stg-ceta-B` | Yes (self-detecting — check AGENT_COMPLETE text) |
 | internal-links-scan | `stg-ilinks` | Yes (check AGENT_COMPLETE text — 0 findings valid when no Box or internal Drive links exist) |
+| ce-replication A | `stg-cerep-A` | Yes (0 findings valid when CE arithmetic checks out — verify AGENT_COMPLETE text shows delta < 2%) |
+| ce-replication B | `stg-cerep-B` | Yes (0 findings valid when CE arithmetic checks out — verify AGENT_COMPLETE text shows delta < 2%) |
+| suspicion-first | `stg-susp` | Yes (0 findings valid when all suspicions are ruled out — check AGENT_COMPLETE text for suspicion count and verdicts) |
 | final-review-premerge | `stg-merge` | Yes (if Pass B found no net-new findings — check AGENT_COMPLETE text for count) |
 
 **Checking reconcile staging tabs**: Each stg-rec-* tab must contain an AGENT_COMPLETE row (column D = `AGENT_COMPLETE`) before Wave 3 can read clean reconcile output. For each stg-rec-* tab in the staging tab list: read in batches (`{tab}!A1:I50`, `{tab}!A51:I100`, …) until the AGENT_COMPLETE row is found or two consecutive batches return no non-empty rows. If any stg-rec-* tab lacks an AGENT_COMPLETE marker, announce: `⚠️ Pre-Wave-3 self-verification failed: reconcile agent for [pair] did not complete — stg-rec-[pair] has no AGENT_COMPLETE row. B-instance-only findings for this pair may be missing. Consider re-running the reconcile agent or proceeding with explicit researcher approval.` Do not silently skip this check. This check is in addition to the per-agent checks in the table above.
