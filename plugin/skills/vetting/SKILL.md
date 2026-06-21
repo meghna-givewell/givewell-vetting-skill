@@ -1260,7 +1260,7 @@ Announce after merge: `[Pre-merge complete] [Z] net-new Pass B findings written 
 
 **COVERAGE_ROWS verification — run after the AGENT_COMPLETE table check**: For each formula-check agent staging tab whose AGENT_COMPLETE row was confirmed present, extract the `COVERAGE_ROWS:` field from column F of that AGENT_COMPLETE row. The field format is: `COVERAGE_ROWS: [row ranges, e.g., 1-49,76-150] | Staging sheet: ...`. Parse the highest row number mentioned in the row ranges. Compare it against the `populated_rows` value recorded in session context for each vetted sheet (recorded during Step 2 structure review).
 
-Apply this check for: `stg-arith-A`, `stg-arith-B`, `stg-data-A`, `stg-data-B`, `stg-edge-A`, `stg-edge-B`, `stg-struct-A`, `stg-struct-B`.
+Apply this check for: `stg-arith-A`, `stg-arith-B`, `stg-data-A`, `stg-data-B`, `stg-edge-A`, `stg-edge-B`, `stg-struct-A`, `stg-struct-B`, `stg-params-A`, `stg-params-B`.
 
 If the highest row number in COVERAGE_ROWS is more than 15 rows less than the sheet's `populated_rows`, flag in chat: `⚠️ COVERAGE GAP: [agent] COVERAGE_ROWS max row = [N] but sheet has [M] populated rows — [agent] may not have read rows [N+1]–[M]. Consider re-running [agent] or manually reviewing rows [N+1]–[M].` Do not block Wave 3 for coverage gaps — announce and proceed.
 

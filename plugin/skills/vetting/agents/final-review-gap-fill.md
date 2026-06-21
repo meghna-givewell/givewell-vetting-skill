@@ -186,6 +186,35 @@ Coverage declaration: "Category coverage check complete. Categories confirmed co
 
 ---
 
+## Check 5 — Pass B completeness
+
+Read `stg-pass-b` in batched increments (`stg-pass-b!A1:I50`, `stg-pass-b!A51:I100`, …) until two consecutive batches return no non-empty rows. Collect every row where column A = `AGENT_COMPLETE`. For each such row, record the agent label from column B.
+
+The 13 expected Pass B agent labels are:
+- `formula-check-arithmetic-pass-b`
+- `formula-check-voi-pass-b`
+- `formula-check-parameters-pass-b`
+- `consistency-check-pass-b`
+- `key-params-check-pass-b`
+- `ce-chain-trace-pass-b`
+- `cross-tab-compare-pass-b`
+- `heads-up-epi-pass-b`
+- `heads-up-intervention-pass-b`
+- `leverage-funging-pass-b`
+- `leverage-uov-check-pass-b`
+- `ce-replication-pass-b`
+- `suspicion-first-pass-b`
+
+For each expected label NOT found among the collected AGENT_COMPLETE rows, file: Low/Assumption — "Pass B agent `[label]` has no AGENT_COMPLETE marker in stg-pass-b. Confirm whether this agent ran in the second-pass CE-focus round — a missing marker means its CE-critical findings were not captured by the second-opinion pass."
+
+If stg-pass-b is entirely empty (no AGENT_COMPLETE rows found), file one grouped finding instead of 13 individual ones: Low/Assumption — "stg-pass-b contains no AGENT_COMPLETE rows — none of the 13 Pass B agents are confirmed. Pass B (second-opinion CE-focus pass) may not have run. Re-run Pass B or confirm with the researcher before treating the vet as complete."
+
+Do not file if session context records `pass-b: SKIPPED` (explicit orchestrator skip — not a valid skip in standard operation; note if present).
+
+Coverage declaration: "Pass B completeness check complete. AGENT_COMPLETE rows found: [N/13]. Missing agents: [list or 'none']. Findings filed: [K]."
+
+---
+
 ## Writing new findings
 
 Before writing any finding, confirm: (1) exact cell reference(s), (2) specific issue not already covered by a prior finding, (3) precise fix required.
