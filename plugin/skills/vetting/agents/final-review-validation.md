@@ -14,7 +14,7 @@ You are performing Step 10c of a GiveWell spreadsheet vet. This step runs after 
 
 **Role calibration**: GiveWell does not treat cost-effectiveness estimates as literally true — deep uncertainty is inherent to all CEAs. Do not second-guess defensible modeling choices. Reserve new Medium and High findings for factual errors, internal inconsistencies, or missing required elements.
 
-**Coverage mandate — no shortcuts**: All six checks below apply to all finding rows without exception: ID integrity check, Check 0 (CE baseline re-verification), Check 1 (fix-validation), Check 2 (confidence intervals sheet), Check 3 (stale placeholder and draft language), and Check 4 (CE impact completeness). After each check, write a coverage declaration before moving on: "Checked all [N] finding rows for [check type]. Found issues at: [list or 'none']. No other issues of this type." Do not proceed until you can write it.
+**Coverage mandate — no shortcuts**: All seven checks below apply to all finding rows without exception: ID integrity check, Check 0 (CE baseline re-verification), Check 1 (fix-validation), Check 2 (confidence intervals sheet), Check 3 (stale placeholder and draft language), Check 4 (CE impact completeness), and Check 5 (grouping rule compliance). After each check, write a coverage declaration before moving on: "Checked all [N] finding rows for [check type]. Found issues at: [list or 'none']. No other issues of this type." Do not proceed until you can write it.
 
 **CROSS-2 — Synthesized Medium/Formula re-verification**: Before running any numbered check, identify all findings where Error Type (column E) = `Formula` or `Parameter` AND Severity (column D) = `Medium` AND the Explanation (column F) contains language indicating the finding was synthesized or merged during Wave 2.5 reconciliation or compaction (look for phrases such as "merged from," "synthesized from," "combined finding," "both instances," "reconciled from," or a compound cell list in column C that spans two distinct cells flagged by separate agents). For each such finding, independently re-verify it against the source spreadsheet:
 
@@ -31,13 +31,16 @@ Coverage declaration: "Synthesized Medium/Formula re-verification complete. Cand
 
 ## Before starting any check
 
+**SEQ-3 — Verify gap-fill has completed before proceeding**
+Read the Findings sheet in batched 50-row increments (same pattern as Step 1 below). Scan for a row where column B = 'final-review-gap-fill' AND column D = 'AGENT_COMPLETE'. If this marker is NOT found: halt immediately with: '⛔ SEQ-3: final-review-gap-fill AGENT_COMPLETE marker not found in the Findings sheet. The validation agent must not run before gap-fill completes. Re-run after gap-fill writes its completion marker.' Do not proceed with any check until the gap-fill marker is confirmed present.
+
 Read `reference/pitfalls.md` using the Read tool. Apply every entry relevant to CE impact estimation, fix validation, and completeness checks.
 
 ---
 
 ## Step 1 — Read all findings and obtain spreadsheet info
 
-Read all rows from row 2 onward on the Findings sheet using batched `read_sheet_values` calls: `A2:H51`, then `A52:H101`, `A102:H151`, continuing in 50-row increments until two consecutive batches return no non-empty rows. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Skip divider rows (column D empty, column B contains `───`). Before filtering, scan for any row where column D = `AGENT_COMPLETE`. When found, extract the value from column F of that row and parse it for a `COVERAGE_ROWS:` or compaction maximum marker — store the highest F-NNN ID referenced as `compaction_max` (this is needed by the ID sequence check to distinguish post-compaction gaps from gap-fill IDs). After extracting `compaction_max`, skip all AGENT_COMPLETE rows — these are pipeline completion markers written by gap-fill; they are not findings and must not be processed by any check below. Collect all finding rows. Also read all rows from row 2 onward on the Publication Readiness sheet using the same 50-row batched pattern (A2:F51, A52:F101, etc.). Collect all PR column A values (PR-* IDs) for the ID integrity check. Do not skip this read — the ID uniqueness and sequence checks require both the Findings sheet AND Publication Readiness sheet IDs.
+Read all rows from row 2 onward on the Findings sheet using batched `read_sheet_values` calls: `A2:H51`, then `A52:H101`, `A102:H151`, continuing in 50-row increments until two consecutive batches return no non-empty rows. **The MCP tool returns at most 50 rows per call — larger ranges silently truncate.** Skip divider rows (column D empty, column B contains `───`). Before filtering, scan for any row where column D = `AGENT_COMPLETE`. When found, extract the value from column F of that row and parse it for a `COVERAGE_ROWS:` or compaction maximum marker — store the highest F-NNN ID referenced as `compaction_max` (this is needed by the ID sequence check to distinguish post-compaction gaps from gap-fill IDs). After extracting `compaction_max`, skip all AGENT_COMPLETE rows — these are pipeline completion markers written by the prior final-review agents (compaction and gap-fill); they are not findings and must not be processed by any check below. The compaction marker (column B = 'final-review-compaction') is the one that contains the F-001 through F-NNN range for compaction_max parsing; the gap-fill marker (column B = 'final-review-gap-fill') is the other. Collect all finding rows. Also read all rows from row 2 onward on the Publication Readiness sheet using the same 50-row batched pattern (A2:F51, A52:F101, etc.). Collect all PR column A values (PR-* IDs) for the ID integrity check. Do not skip this read — the ID uniqueness and sequence checks require both the Findings sheet AND Publication Readiness sheet IDs.
 
 If the Publication Readiness sheet is empty (no rows after row 1), declare the PR ID integrity check clean: "Publication Readiness sheet is empty — no PR-* IDs to verify." Do not file a finding about missing PR IDs when the sheet is legitimately empty.
 
@@ -128,10 +131,10 @@ Coverage declaration: "Confidence intervals check complete. Sheet present: [yes/
 
 ## Check 3 — Stale placeholder and draft language
 
-Using targeted `read_sheet_values` calls on column A and column B of each vetted sheet (do not read full sheets), scan for:
+Using targeted `read_sheet_values` calls on columns A through H of each vetted sheet (do not read full sheets), scan for:
 - Cells containing any of these terms (exact match, case-insensitive): `TBD`, `TODO`, `DRAFT`, `Placeholder`, `Update this`, `to be confirmed`, `fill in`, `[fill in]`, `provisional`, `preliminary`, `working estimate`, `confirm before`, `update before`, `ASK`, `FIXME`, `TEMP`
 - Column headers with generic names like `Column X`, `Country A`, `Year N`
-- Cell notes containing internal-only markers (use `read_sheet_notes` on each vetted sheet to scan for notes beginning with `Note to self`, `INTERNAL`, or `ASK [name]`)
+- Cell notes containing internal-only markers (use `read_sheet_notes` on each vetted sheet to scan for notes beginning with `Note to self`, `INTERNAL`, or `ASK [name]`) (read_sheet_notes is explicitly permitted in this check as an exception to the targeted-read restriction — it reads notes metadata, not full cell value data, and is necessary for the internal-marker scan. This is the only full-sheet read permitted in this agent.)
 - Workbook title (from the `spreadsheet_info` result obtained in Step 1) containing `draft`, `v1`, `wip`, or `copy of`
 - Any date visible in the workbook header, key tab, or title row that is more than 18 months before today — flag as Low severity with Error Type Legibility, blank column D per FORM-6 (routes to Publication Readiness), if it appears to be a last-updated date rather than a data vintage date
 
@@ -225,7 +228,7 @@ Assign the next sequential Finding ID continuing from the highest existing Findi
 
 Convert every cell reference in column C of both the Findings sheet and Publication Readiness sheet into a clickable `=HYPERLINK(...)` formula that opens the referenced cell directly in the source spreadsheet.
 
-**Run hyperlink conversion after**: (1) all six checks are complete (ID integrity check, Check 0, Check 1, Check 2, Check 3, and Check 4), (2) all new findings have been written, and (3) all in-place updates to column F and column H are complete. Do NOT run hyperlink conversion after writing the AGENT_COMPLETE marker — the AGENT_COMPLETE row does not need a hyperlink.
+**Run hyperlink conversion after**: (1) all seven checks are complete (ID integrity check, Check 0, Check 1, Check 2, Check 3, Check 4, and Check 5), (2) all new findings have been written, and (3) all in-place updates to column F and column H are complete. Do NOT run hyperlink conversion after writing the AGENT_COMPLETE marker — the AGENT_COMPLETE row does not need a hyperlink.
 
 1. **Get the GID mapping**: From the `spreadsheet_info` result obtained in Step 1, extract the tab name → numeric GID mapping for every tab in the source spreadsheet (`sheetId` field in the sheets list). (Do not attempt to call `get_spreadsheet_info` — tab metadata must come from session context as established in Step 1.)
 

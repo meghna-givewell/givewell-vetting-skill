@@ -73,6 +73,8 @@ Check 0b: Funging scope (runs only when Check 0 finds funging present).
   SC-014 applicable: [YES / NO — rationale]
 ```
 
+Note: leverage-funging is the authoritative owner of this SC-014 check. leverage-uov-check defers SC-014 to this agent — do not expect a duplicate finding from leverage-uov-check.
+
 If Check 0 found no funging, write: "Check 0b: skipped — no funging found in Check 0."
 
 ---
@@ -139,6 +141,8 @@ Leverage and funging adjustments can be applied multiplicatively (scaling the wh
 - If the model or cell notes describe a "X% funging discount," verify this is implemented as multiplication (e.g., `× (1 - funge_rate)`), not as subtraction of a fixed amount.
 - If the model describes a "leverage ratio of Y:1," verify the formula compounds correctly and does not also apply a separate coverage or funging adjustment that double-adjusts the same effect.
 - If leverage is applied in both a numerator scaling and a denominator adjustment simultaneously, flag as Medium severity (column D) — this is a common double-adjustment pattern.
+
+(This Adjustment type applies to the multiplicative/additive consistency check in Check 2 only. Check 2a uses Error Type: Formula [Wrong reference] as specified in its filing steps. The Preliminary step uses Error Type: Adjustment for the missing formula cell case.)
 
 **Required Error Type**: Adjustment
 
@@ -289,6 +293,8 @@ This check does not apply when the ad hoc adjustment is clearly labeled as cover
 ## Writing findings
 
 **Two-axis notation note**: Two-axis notation (e.g., /D, /H) in check instructions describes Nature — write only 'High', 'Medium', or 'Low' in column D.
+
+Before writing Low findings: group by the 7 standard categories (Documentation gaps | Formula robustness | Stale annotations | Optimistic assumptions | Minor rounding | Structural completeness | Minor inconsistencies) — one row per category per sheet. Exception: multiple distinct issues for the same cell at any severity are grouped into one finding row.
 
 **Finding grouping (SKILL-12)**: If multiple leverage findings apply to the same source cell (e.g., a single parameter cell that is both undocumented and referenced incorrectly), group them under one finding row rather than creating duplicate rows for the same cell. Combine the distinct issues into a single Explanation sentence and a single Recommended Fix.
 

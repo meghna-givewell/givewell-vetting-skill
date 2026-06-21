@@ -316,6 +316,24 @@ If a single-row write fails (MCP error), retry once. If retry also fails, record
 
 ---
 
+## Step 5b — Promote confirmed contradictions to Findings staging sheet
+
+After writing all column G/H verdicts to the Hardcoded Values sheet: scan column G for any rows where the verdict is `Contradicted ✗` (the source confirmed a different value). For each such row where: (a) the Category is Study-Derived or Org-Reported AND (b) the parameter is plausibly in the CE chain (based on the row description):
+
+Write a finding to a Findings staging tab named `stg-srcverify-A` (create it if it does not exist, same 9-column format as all other staging tabs):
+- Column B: sheet name from HV column A
+- Column C: cell reference from HV column B
+- Column D: Medium (or High if the parameter is directly in the CE chain and the discrepancy is >5%)
+- Column E: Parameter
+- Column F: `Source citation verify: cell value [current value] contradicted by source — source says [source value]. See Hardcoded Values sheet row [N] for full citation.`
+- Column G: `Verify source and correct cell value if source is authoritative.`
+- Column H: Direction unknown (or compute if possible)
+- Column I: (leave blank)
+
+If no Contradicted rows meet criteria (a) and (b), skip this step. Write AGENT_COMPLETE to the staging tab after writing any findings (or immediately if no findings were written).
+
+---
+
 ## Step 6 — Coverage declaration
 
 Write to chat:

@@ -21,6 +21,8 @@ You are performing Step 3v of a GiveWell spreadsheet vet, focused exclusively on
 
 ---
 
+Before starting checks, read reference/pitfalls.md using the Read tool. Apply every entry relevant to this agent's scope.
+
 ## Check 0 — VOI structural comparison vs. Optionality/VoI BOTEC Template
 
 Before running formula checks, read the VOI BOTEC Template's canonical structural tab directly. The tab name is 'Structure' (or the first tab if 'Structure' is not present — use `read_sheet_values` in FORMATTED_VALUE mode, batched in 50-row increments: `A1:A50`, `A51:A100`, continuing until two consecutive batches return no non-empty rows — **the MCP tool returns at most 50 rows per call; a single `A1:A100` call would be silently truncated**). Do not call `get_spreadsheet_info` — 'si' is not in your permitted tools. The Optionality/VoI BOTEC Template spreadsheet ID is `1wYsQZGsavXJQFSGF6Ea1k-p55C6dMbLPHhb0LKgNDZc`. Extract all non-empty row labels from column A.
@@ -59,7 +61,7 @@ Locate the row(s) where CE-from-optionality and CE-from-direct-benefits are comb
 
 - **Wrong-risk adjustment** and **influencing-other-funders adjustment**: These must apply to the VOI/optionality component **only**. If either adjustment formula is applied to the combined total CE rather than the VOI component alone, flag as **Medium/Adjustment**: "[cell] applies [adjustment name] to the combined CE total (direct + optionality). This adjustment should apply only to the VOI/optionality component — applying it to the total double-adjusts the direct-benefits portion."
 
-- **Funging adjustment**: This must apply to the **total CE** (direct + optionality combined), not to the VOI component alone. If the funging adjustment is applied only to the VOI sub-calculation rather than the total, flag as **High/Adjustment** per SC-014: "[cell] applies funging only to the VOI component and not to the direct CE component. Funging must be scoped to total CE — restructure to apply funging to the total CE row, not the VOI sub-calculation."
+- **Funging adjustment**: This must apply to the **total CE** (direct + optionality combined), not to the VOI component alone. If the funging adjustment is applied only to the VOI sub-calculation rather than the total, flag as **High/Adjustment** per SC-014: "[cell] applies funging only to the VOI component and not to the direct CE component. Funging must be scoped to total CE — restructure to apply funging to the total CE row, not the VOI sub-calculation." Exception: if the model's stated approach explicitly justifies VoI-only scoping with a documented rationale (e.g., a cell note explaining why funging does not apply to the direct CE component), file at Medium and ask the researcher to confirm. If uncertain whether the scoping is intentional, also file at Medium.
 
 Do not flag funging-on-total as an error — this is the required structure per key-parameters.md (VOI adjustment scope). Only flag funging when it is applied to the VOI component alone (SC-014).
 
@@ -234,6 +236,8 @@ formula-check-voi check log:
 
 ---
 
+Before filing any Low or Medium finding, apply the pre-filing mandatory checklist in reference/pitfalls.md (SC-022 through SC-028). Accumulate assumption-documentation instances into one grouped PR/Legibility item, source-citation-quality instances into one grouped PR/Sourcing item, structural-formula-quality instances into one grouped PR/Legibility item, and formula-robustness instances into one grouped Low/Formula item per SC-006. Do not file separate per-cell findings for these categories.
+
 ## Writing Findings
 
 Before writing any finding, confirm: (1) exact cell reference(s), (2) specific formula or value issue, (3) precise fix.
@@ -242,7 +246,7 @@ When column E is Formula, begin column F with one of: [Copy-paste] | [Wrong refe
 
 **Your staging sheet name is provided in session context** — write all findings to that staging tab starting at row 2. Append findings using `modify_sheet_values`. See `reference/column-reference.md` for full column specifications.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity (write just 'High', 'Medium', or 'Low' — exception: leave column D blank for Low+Legibility findings, which route to Publication Readiness per output-format.md routing rule; the /D or /H notation appears only in filing instructions as guidance, not as a literal cell value) | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency) | **F** Explanation (3 sentences max, aim for 2; write for a researcher who may not have the spreadsheet open; include the row label (plain-English name from column A) alongside every cell address; Parameter/Inconsistency: "currently X; correct value is Y"; Formula: functional effect first then technical fix; High findings: include a brief consequence clause; no chain traces; do not hedge) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include exact replacement formula or value) | **H** Estimated CE Impact (write exactly one of these standard phrases: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown) | **I** Status (leave blank — reconcile agent writes WONT_FIX here; compaction strips column I when writing to the final Findings sheet)
+Column reference: **A** Finding # (leave blank) | **B** Sheet | **C** Cell/Row | **D** Severity (write just 'High', 'Medium', or 'Low' — exception: leave column D blank for Low+Legibility findings, which route to Publication Readiness per output-format.md routing rule; the /D or /H notation appears only in filing instructions as guidance, not as a literal cell value) | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency | Sourcing | Box Link) (For Sourcing and Box Link findings (publication-readiness), leave column D blank.) | **F** Explanation (3 sentences max, aim for 2; write for a researcher who may not have the spreadsheet open; include the row label (plain-English name from column A) alongside every cell address; Parameter/Inconsistency: "currently X; correct value is Y"; Formula: functional effect first then technical fix; High findings: include a brief consequence clause; no chain traces; do not hedge) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include exact replacement formula or value) | **H** Estimated CE Impact (write exactly one of these standard phrases: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown) | **I** Status (leave blank — reconcile agent writes WONT_FIX here; compaction strips column I when writing to the final Findings sheet)
 
 **No row budget**: Write all findings to your staging sheet. There is no row limit.
 

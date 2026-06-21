@@ -95,6 +95,16 @@ When checking multi-geography models, compare FORMULA-mode values across all par
 
 ---
 
+### FN-006 (2026-06) — Cross-tab reference row-label mismatch (PIT-6)
+
+When a formula references another tab and the referenced row produces a numerically plausible value, verify that the row **label** in the referenced tab also matches the expected parameter — not just the row number. Cross-tab references can point to the correct row number but the wrong logical row if rows have been inserted or deleted since the formula was written. Example: `='Inputs'!B14` may have been written when B14 = "Malaria mortality rate" but now B14 = "ITN usage rate" after a row insertion — the value might still be in a plausible range, masking the mismatch. Verify row labels whenever tracing cross-tab references.
+
+**VoI parameter corollary**: When tracing VoI cells, do not assume cell addresses based on template position. Always read the cell label (FORMATTED_VALUE, column A/B of the same row) before describing what the cell contains — VoI models frequently deviate from standard template row order. Mislabeling a cell in a finding's Recommended Fix can corrupt the model if the researcher applies the fix without verifying.
+
+**Applies to**: formula-check-arithmetic, ce-chain-trace, formula-check-data
+
+---
+
 ## Severity and Scope Calibrations
 
 ### SC-001 (2026-04) — Benchmark parameter findings are valid regardless of vet timing
@@ -149,7 +159,7 @@ Formula robustness findings (missing IFERROR guards, unguarded divisions, formul
 
 Example: =1-B12/B11 goes negative only if treatment mortality exceeds counterfactual mortality. Current values (8.1% treatment, 9.38%–20% counterfactual) prevent this. File one grouped Low: "Formulas B13, C13, D13, B25, B26 have no IFERROR guard — safe at current values but will break if inputs are zeroed during editing." Not five separate Low findings.
 
-**Applies to**: formula-check-arithmetic, formula-check-edge-cases
+**Applies to**: formula-check-arithmetic, formula-check-edge-cases, final-review-compaction (pass 3 of Step 3)
 
 ---
 
@@ -191,7 +201,7 @@ This section identifies which agent **owns** each check category. When a non-own
 
 | Check category | Owner agent | Non-owner behavior |
 |---|---|---|
-| Discount rate value | `key-params-check` | Other agents (formula-check-arithmetic, ce-chain-trace, heads-up-intervention) may read the discount rate cell as part of chain verification but must not file a Parameter finding for it. Note "discount rate check deferred to key-params-check" in AGENT_COMPLETE column F. |
+| Discount rate value | `key-params-check` (non-TA grants); `heads-up-intervention` (TA BOTECs) | Other agents (formula-check-arithmetic, ce-chain-trace, heads-up-intervention) may read the discount rate cell as part of chain verification but must not file a Parameter finding for it. Note "discount rate check deferred to key-params-check" in AGENT_COMPLETE column F. **Exception**: when the model is a TA BOTEC, `heads-up-intervention` is owner (1.4% vs 4% per benefit stream); key-params-check defers to heads-up-intervention for TA grants and should note "TA BOTEC — discount rate check deferred to heads-up-intervention" in column F. |
 | GBD/IHME vintage staleness | `formula-check-arithmetic` (primary, files at Medium/H); `formula-check-parameters` (SC-008 escalation owner — promotes to High/D when ≥2 FORMULA hops to CE output confirmed) | Heads-up-epi SHOULD run the full GBD vintage check internally (per its agent file) and file findings — it has context to assess epi-specific vintage issues. Ce-chain-trace should not independently file GBD vintage findings; if encountered, note "GBD vintage staleness deferred to formula-check-arithmetic" in reasoning. The Wave 2.5 reconciliation agent deduplicates if both heads-up-epi and formula-check-arithmetic accidentally file the same finding. |
 | Cross-sheet reference concept mismatch (wrong-row reference) | `formula-check-arithmetic` (general case across all rows); `ce-chain-trace` (CE-chain-specific, Steps 3f and 4d) | Heads-up-epi, heads-up-intervention, and formula-check-data should not file wrong-row-reference findings — these belong to formula-check-arithmetic's cross-sheet inventory pass. If a suspicious reference is observed, note it in reasoning for the researcher but do not file a finding unless no formula-check-arithmetic agent is running for those rows (e.g., row scope explicitly excludes that section). |
 | Cross-Cutting CEA Parameters doc value comparison (all parameter rows) | `consistency-check` | formula-check-structure Part B reads the same doc (spreadsheet ID `1ru1SNtgj0D9-vLAHEdTM27GEq_P17ySzG-aTxKD6Fzg`) and checks a named subset of parameters (SMC deaths-averted rates, Pryce et al., PMI Nigeria, VAS income ratio, NI income ratio). In a standard vet where both agents run, formula-check-structure should note any deviation it observes in reasoning ("parameter deviation observed; deferred to consistency-check") but must NOT file a finding — consistency-check's "enumerate every parameter row" mandate already covers all rows formula-check-structure would catch. Filing from formula-check-structure would produce duplicates with potentially divergent severity classifications that compaction may not cleanly deduplicate. |
@@ -253,16 +263,6 @@ File as **High/Formula [Wrong reference]** if a wrong-cascade-stage timing refer
 
 ---
 
-### FN-006 (2026-06) — Cross-tab reference row-label mismatch (PIT-6)
-
-When a formula references another tab and the referenced row produces a numerically plausible value, verify that the row **label** in the referenced tab also matches the expected parameter — not just the row number. Cross-tab references can point to the correct row number but the wrong logical row if rows have been inserted or deleted since the formula was written. Example: `='Inputs'!B14` may have been written when B14 = "Malaria mortality rate" but now B14 = "ITN usage rate" after a row insertion — the value might still be in a plausible range, masking the mismatch. Verify row labels whenever tracing cross-tab references.
-
-**VoI parameter corollary**: When tracing VoI cells, do not assume cell addresses based on template position. Always read the cell label (FORMATTED_VALUE, column A/B of the same row) before describing what the cell contains — VoI models frequently deviate from standard template row order. Mislabeling a cell in a finding's Recommended Fix can corrupt the model if the researcher applies the fix without verifying.
-
-**Applies to**: formula-check-arithmetic, ce-chain-trace, formula-check-data
-
----
-
 ### SC-010 (2026-06) — Non-owner-runs deferral rule (PIT-7)
 
 When an agent encounters a check that belongs to a different agent's scope (see Cross-Agent Scope Reference table above), do not silently skip it and do not file a full finding. Instead, file a **Low/Assumption** placeholder: "Possible issue — deferred to [owning agent]: [brief description of what was observed]. See Cross-Agent Scope Reference in pitfalls.md." This ensures the observation is on record if the owning agent does not run, while preventing duplicate findings when it does. The reconcile agent will promote placeholder findings to full findings if the owning agent did not cover them.
@@ -301,7 +301,9 @@ When the CE denominator is a subset of the total grant budget (e.g., programmati
 
 When a model contains both a direct CE component and a VoI/optionality component, and a funging or downside adjustment exists but is applied only to the VoI sub-calculation (not to total CE), this is a structural misapplication — file as **High/Adjustment**: "Funging adjustment at [cell] is applied only to the VoI component ([VoI cell]) and not to the direct CE component ([direct CE cell]). Total CE ([total CE cell] = [X]×) therefore omits the funging penalty on the direct component. Restructure to apply funging to total CE, not only the VoI sub-calculation." If the model's stated approach explicitly justifies VoI-only scoping with a documented rationale, file at Medium and ask the researcher to confirm. If uncertain whether scoping is intentional, file at Medium.
 
-**Applies to**: leverage-funging, ce-chain-trace
+**Applies to**: leverage-funging (Check 0b — owner), ce-chain-trace, formula-check-voi (Check 1). leverage-uov-check defers SC-014 to leverage-funging via SC-010 placeholder.
+
+**SC-014 filing owner**: leverage-funging Check 0b. Non-owners (ce-chain-trace, formula-check-voi) file SC-010 placeholders only when they observe a funging-applied-to-VoI-only pattern; leverage-funging owns the full finding and final severity determination.
 
 ---
 
@@ -318,6 +320,24 @@ When a GBD/IHME permalink in the spreadsheet returns HTTP 403 (expired session l
 When a cell note explicitly labels a value as a "placeholder," "pending update," "to be confirmed," "TBC," or "TBD" — AND the cell is confirmed in the direct CE chain (≥1 hop to CE output per SC-012) — file as **High** regardless of whether the current value seems numerically reasonable. The explicit placeholder label signals the researcher has not yet committed to this value; any CE estimate depending on it is provisional. Sensitivity coefficient is not required to justify High: the label alone is sufficient. Required Explanation language: "[Param] ([cell]) = [value] is explicitly marked as a placeholder in the cell note; as the highest-sensitivity parameter in the direct CE chain, do not publish CE until this is replaced with an empirically grounded value." Apply jointly with SC-003 — SC-016 adds only the "explicit placeholder label" trigger; CE chain confirmation is still required.
 
 **Applies to**: all formula-check agents, heads-up-evidence, ce-chain-trace
+
+---
+
+### SC-017 (2026-06) — High finding calibration: 3–8 Highs per vet is typical; review if more
+
+A well-calibrated GiveWell vet of a standard BOTEC produces **3–8 High findings**. If an agent has filed more than 8 Highs before writing AGENT_COMPLETE, it must pause and review each High for downgrade to Medium using the following gate:
+
+1. Does this finding identify a value that is **demonstrably wrong** — i.e., contradicts a GiveWell standard, is arithmetically incorrect, or has been confirmed via source-fetching to be a wrong subgroup or transcription error?
+2. **If no**: downgrade to Medium. A CE-chain cell with a debatable or potentially-defensible value is a Medium, not a High.
+3. **If yes**: keep at High.
+
+Bright-line High exceptions that always stay High regardless of count (do not downgrade these): moral weight violations, benchmark value violations, explicitly labeled placeholders in the CE chain (SC-016), demonstrated arithmetic errors with confirmed CE impact, clearly broken formulas with bad output.
+
+This calibration target is per-agent. If multiple agents run in parallel and the reconciled total exceeds ~10 Highs, Wave 2.5 reconciliation should consolidate findings that cover the same root issue before promoting to the final Findings sheet.
+
+**Why this matters**: Over-elevation to High creates review fatigue and obscures the findings that genuinely require immediate researcher action. When every CE-chain concern is High, the signal of "this is broken now" is lost.
+
+**Applies to**: all formula-check agents, ce-chain-trace, heads-up-epi, heads-up-evidence, heads-up-intervention, final-review-compaction
 
 ---
 
@@ -343,24 +363,6 @@ A finding at any severity — but especially Low — must describe something the
 **The test before filing any Low:** "If a researcher reads this finding, will they take a specific action — look something up, change a value, fix a formula — or will they read it and move on?" If the answer is "move on," don't file. A well-calibrated vet has very few Lows in the main Findings sheet; most low-severity observations belong in Publication Readiness or should not be filed at all.
 
 **Applies to**: all agents
-
----
-
-### SC-017 (2026-06) — High finding calibration: 3–8 Highs per vet is typical; review if more
-
-A well-calibrated GiveWell vet of a standard BOTEC produces **3–8 High findings**. If an agent has filed more than 8 Highs before writing AGENT_COMPLETE, it must pause and review each High for downgrade to Medium using the following gate:
-
-1. Does this finding identify a value that is **demonstrably wrong** — i.e., contradicts a GiveWell standard, is arithmetically incorrect, or has been confirmed via source-fetching to be a wrong subgroup or transcription error?
-2. **If no**: downgrade to Medium. A CE-chain cell with a debatable or potentially-defensible value is a Medium, not a High.
-3. **If yes**: keep at High.
-
-Bright-line High exceptions that always stay High regardless of count (do not downgrade these): moral weight violations, benchmark value violations, explicitly labeled placeholders in the CE chain (SC-016), demonstrated arithmetic errors with confirmed CE impact, clearly broken formulas with bad output.
-
-This calibration target is per-agent. If multiple agents run in parallel and the reconciled total exceeds ~10 Highs, Wave 2.5 reconciliation should consolidate findings that cover the same root issue before promoting to the final Findings sheet.
-
-**Why this matters**: Over-elevation to High creates review fatigue and obscures the findings that genuinely require immediate researcher action. When every CE-chain concern is High, the signal of "this is broken now" is lost.
-
-**Applies to**: all formula-check agents, ce-chain-trace, heads-up-epi, heads-up-evidence, heads-up-intervention, final-review-compaction
 
 ---
 

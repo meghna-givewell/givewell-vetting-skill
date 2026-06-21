@@ -84,7 +84,9 @@ A row absent from this table has not been checked. "POST" requires that the refe
 
 ## Step 6c — VOI adjustment scope
 
-**Check 6c — VOI adjustment scope**: When the model uses a leverage/funging adjustment row, verify that the funging formula references the total-CE row rather than a VOI-adjusted subtotal. If the funging formula references a VOI-only UoV rate or a VOI-adjusted subtotal instead of the total-CE row, the funging discount is applied to only part of the CE chain rather than the full CE, misstating the total CE adjustment. File as **High severity (column D), Error Type: Adjustment (column E)** if confirmed.
+**Check 6c — VOI adjustment scope**: When the model uses a leverage/funging adjustment row, verify that the funging formula references the total-CE row rather than a VOI-adjusted subtotal. If the funging formula references a VOI-only UoV rate or a VOI-adjusted subtotal instead of the total-CE row, the funging discount is applied to only part of the CE chain rather than the full CE, misstating the total CE adjustment.
+
+SC-014 (funging applied to VOI component only) is owned by leverage-funging Check 0b. If a VOI-only funging scope issue is observed here, file a Low/Assumption SC-010 placeholder only: "SC-014 VOI-only funging scope observation — deferred to leverage-funging Check 0b." Do not file an independent High/Adjustment finding for this pattern.
 
 For every funging or leverage adjustment row in the model:
 1. **Identify funging-scope cells**: locate all rows whose label or formula indicates a funging or leverage adjustment (e.g., "Funging adjustment," "Leverage discount," "Counterfactual adjustment").
@@ -124,6 +126,8 @@ A column absent from this table has not been checked.
 
 **Two-axis notation note**: Two-axis notation (e.g., /D, /H) in check instructions describes Nature — write only 'High', 'Medium', or 'Low' in column D.
 
+Before writing Low findings: group by the 7 standard categories (Documentation gaps | Formula robustness | Stale annotations | Optimistic assumptions | Minor rounding | Structural completeness | Minor inconsistencies) — one row per category per sheet.
+
 Before writing any finding, confirm: (1) exact cell reference(s) for both the error and the correct source, (2) specific issue (which formula references the wrong cell, which UoV row is pre- vs. post-supplemental), (3) precise fix (e.g., "Change C47 formula from `=B82*D23` to `=B91*D23`").
 
 **Before filing any Assumption or Inconsistency finding**: ask: "What would a researcher who trusts this value point to as their evidence?" Write it as a single sentence in your reasoning before deciding whether to file. Only after writing that sentence, test it against the available evidence. If the defense holds up even partially, downgrade severity. If it fails, file with confidence.
@@ -143,7 +147,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `leverage-uov-check`
 - Column D: `AGENT_COMPLETE`
-- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]. Steps run: [list e.g., Step 6 / Step 6b / Step 6c / Step 6d — or note which were skipped and why]. Steps not run: [list or 'none'].`
 - All other columns: blank
 
 **Skipped vs. aborted distinction (UOV-ABORT-DISTINCTION)**: Use the term **skipped** when the agent ran to completion but found nothing applicable (e.g., "No UoV adjustments found — check skipped"; "No leverage section found — Steps 6 and 6b skipped"). Use the term **aborted** when the agent encountered an error and could not complete a check (e.g., an MCP read failure, a missing required input, a context limit hit mid-check). Write the appropriate term consistently in Column F of the `AGENT_COMPLETE` row so the reconciliation agent can distinguish a clean no-op from an incomplete run.

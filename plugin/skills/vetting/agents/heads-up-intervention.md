@@ -139,6 +139,9 @@ Check the benefit row structure for both a row labeled (or equivalent to) "early
 
 Do not file if a row exists but is hardcoded at zero with an explanatory note — that is a documented exclusion, not a missing stream.
 
+**FN-009 — Cascade timing (staged disease models)**
+When the intervention type is HIV, TB, or hepatitis: check whether cross-sheet timing parameter references use the correct cascade stage. Note any observations in reasoning. Do not file Formula [Wrong reference] directly — defer to formula-check-arithmetic per pitfalls.md scope rules. File a Low/Assumption SC-010 placeholder: 'FN-009 cascade timing observation at [cell ref] — deferred to formula-check-arithmetic for FORMULA-mode confirmation.'
+
 ---
 
 ### Section B — TA Grant Checks *(heads-up-intervention-B only)*
@@ -153,7 +156,7 @@ Flag as Medium/H if the model structure is inconsistent with the intervention ty
 
 **TA grants — discount rate by benefit stream** *(Parameter — discount rate by benefit type)*: TA models should use **1.4%** for death-averting benefit streams (the temporal uncertainty component of GiveWell's discount rate) and **4%** for income/consumption benefit streams. Programs with mixed benefits (e.g., IFA with both morbidity and cognitive/income effects) should apply different rates to each stream. Flag as Medium/H if: (a) a death-averting TA model uses 4% (overstates discounting); (b) an income stream uses 1.4% (understates discounting); (c) a mixed model applies a single blended rate without documentation.
 
-**Scope note — TA discount rate ownership**: This check (1.4% vs. 4% for TA grants) is **owned by heads-up-intervention** when running on a TA grant. The discount-rate ownership assigned to key-params-check in pitfalls.md applies only to **non-TA grants**. Do not defer this check to key-params-check when the model is a TA BOTEC.
+**Scope note — TA discount rate ownership**: The pitfalls.md Cross-Agent Scope Reference table has a TA exception for discount rate: heads-up-intervention owns this check when the model is a TA BOTEC (1.4% vs 4% per benefit stream); key-params-check defers to heads-up-intervention for TA grants only. For non-TA grants, key-params-check remains the owner.
 
 **TA grants — probability of failure** *(Parameter — probability of TA failure)*: The TA BOTEC should include an explicit "probability of failure" parameter — the probability that the TA engagement fails to shift the status quo (government doesn't adopt or doesn't change coverage trajectory). The default is ~30%. Flag as Medium/H if: (a) no p(failure) parameter exists — CE will be overstated without it; (b) p(failure) is below 15% without documented rationale (e.g., government has already publicly committed to the program and co-funded it); (c) p(failure) is above 50% — at this level the grant's expected value may be too low to clear the bar, and the researcher should document why it remains fundable.
 
@@ -238,6 +241,7 @@ Heads-up intervention-B check log:
     counterfactual coverage trajectory [___]
     rollout lag (Model 2 only) [___]
     supplemental adjustments additive vs. compounding [___]
+    FN-009 cascade timing — staged disease model wrong-stage reference [___]
 ```
 
 Do not write your AGENT_COMPLETE marker until this log is complete and all entries are filled in.
@@ -251,6 +255,9 @@ Before writing any finding, confirm you can answer all three of these: (1) the e
 **Before filing any finding**: For each finding you are about to file, ask: "What would a researcher who trusts this value point to as their evidence?" Write it as a single sentence in your reasoning before deciding whether to file (e.g., "Strongest defense: the expiry rate of 3% is labeled 'Guess' but is within the low end of published SSA supply chain literature"). Only after writing that sentence, test it against the available evidence. If the defense fails, file with confidence. If it holds up even partially, downgrade severity. Do not skip this step — it separates a finding grounded in evidence from one based on pattern-matching.
 
 Append findings using `modify_sheet_values` to your staging sheet. Start at row 2 and append sequentially. Your staging sheet name is provided in session context. Column reference: **A** Finding # (leave blank — assigned by final-review) | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type/Issue (write the exact label only — no additional text, description, dashes, or punctuation after it; choose one of: Formula | Parameter | Adjustment | Assumption | Legibility | Inconsistency | Sourcing | Box Link (Sourcing and Box Link are for publication-readiness findings only — leave column D blank; the compaction agent routes them to Publication Readiness)) | **F** Explanation (3 sentences max, aim for 2; write for a researcher who may not have the spreadsheet open; include the row label (plain-English name from column A) alongside every cell address; Parameter/Inconsistency: "currently X; correct value is Y", e.g., "malaria mortality rate (B14) = 0.87; GW parameter is 0.79, overstating CE"; Formula: functional effect first then technical fix, e.g., "[Wrong reference] program costs (E14) sums through a non-program row, inflating costs by ~12%; range should be B14:B21 not B14:B22"; High findings: include a brief consequence clause; no chain traces; do not hedge what you can confirm) | **G** Recommended Fix (one sentence or formula only; lead with an imperative verb; include the exact replacement formula or value; no explanation of why) | **H** Estimated CE Impact (write exactly one of these standard phrases — no other wording: Raises CE — [estimate] | Lowers CE — [estimate] | Raises CE — magnitude unknown | Lowers CE — magnitude unknown | No CE impact | Direction unknown; for Raises CE and Lowers CE, replace [estimate] with the actual CE multiple, e.g., Raises CE — 8.7x → ~10.2x) | **I** Status (leave blank — reconcile agent writes WONT_FIX here; compaction strips column I when writing to the final Findings sheet)
+
+Use an em-dash ( — ) with one space on each side — do not use a hyphen or en-dash. Column H must never be blank for Medium or High Formula, Parameter, or Adjustment findings. If direction is clear but magnitude is unknown, write 'Raises CE — magnitude unknown' or 'Lowers CE — magnitude unknown'. If direction depends on researcher input, write 'Direction unknown'.
+
 See `reference/output-format.md` for full column definitions. **Group findings by issue type**: when the same issue applies to multiple cells or parameters, file one finding listing all affected cells in column C, not one row per cell. Exhaustive checking is still required — find every instance — but write one consolidated row per issue type.
 
 ---

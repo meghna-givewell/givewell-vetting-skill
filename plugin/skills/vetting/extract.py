@@ -473,11 +473,11 @@ def main():
         sys.exit(1)
 
     try:
-        # ZIP-1: open ZipFile inside a with block so the file handle is always closed,
-        # even if an exception fires before any explicit close.
+        # ZIP-1: open ZipFile then use as a context manager — __exit__ ensures the handle
+        # is closed even if an exception fires.
         zf_handle = zipfile.ZipFile(path)
-    except zipfile.BadZipFile:
-        sys.exit(f"Error: '{path}' is not a valid ZIP/XLSX file.")
+    except (zipfile.BadZipFile, OSError) as e:
+        sys.exit(f"Error: cannot open '{path}' as a zip/xlsx file: {e}")
 
     os.makedirs('output', exist_ok=True)
     base = os.path.splitext(os.path.basename(path))[0]
