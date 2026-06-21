@@ -41,7 +41,7 @@ For each Pass B finding, check whether a substantially similar finding already e
 |---|---|
 | formula-check-arithmetic | `stg-arith-A`, `stg-arith-B`, `stg-arith-C`, `stg-arith-D`, `stg-rec-arith1`, `stg-rec-arith2` |
 | formula-check-voi | `stg-voi-A`, `stg-voi-B`, `stg-rec-voi` |
-| formula-check-parameters | `stg-params` |
+| formula-check-parameters | `stg-params-A`, `stg-params-B`, `stg-rec-params` |
 | consistency-check | `stg-consist-A`, `stg-consist-B`, `stg-rec-con` |
 | key-params-check | `stg-kp-A`, `stg-kp-B`, `stg-rec-kp` |
 | ce-chain-trace | `stg-ce-A`, `stg-ce-B`, `stg-rec-ce` |

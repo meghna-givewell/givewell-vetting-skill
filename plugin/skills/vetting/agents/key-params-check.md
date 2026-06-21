@@ -75,6 +75,8 @@ For each parameter in the table above, scan the collected labels for a match. A 
 
 For each match: call `read_sheet_values` (UNFORMATTED_VALUE) on that specific cell AND all populated cells in the same row (columns B through the last non-empty column) to get the raw stored numbers. Flag any cell in the row that deviates from the canonical value — this catches stale benchmarks in secondary columns (e.g., Simple CEA column C) that would be missed if only column B is read.
 
+**Numeric parsing note**: Google Sheets stores percentages as decimals — `95%` displayed = `0.95` stored, `4%` discount rate = `0.04`, `0.58088%` income effects = `0.0058088`. When comparing a stored UNFORMATTED_VALUE to the expected values in the parameters table above, compare as raw decimals. The expected values in this agent's parameter table are already in decimal form (e.g., benchmark = `0.00333`, income effects = `0.58088%` means stored as `0.0058088`). A stored value of `0.04` for the discount rate is correct; a stored value of `4` would be wrong.
+
 **Write the coverage log before filing any findings** (required — do not skip):
 
 ```

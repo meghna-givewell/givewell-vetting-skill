@@ -442,7 +442,8 @@ Wave 1 staging tabs:
 | `stg-kp-B` | key-params-check B |
 | `stg-voi-A` | formula-check-voi A |
 | `stg-voi-B` | formula-check-voi B |
-| `stg-params` | formula-check-parameters |
+| `stg-params-A` | formula-check-parameters A |
+| `stg-params-B` | formula-check-parameters B |
 | `stg-xcomp` | cross-tab-compare |
 
 Wave 2 staging tabs (always create these; skipped agents' tabs remain empty):
@@ -500,6 +501,7 @@ Reconcile staging tabs (one per reconcile agent, for net-new findings discovered
 | `stg-rec-uov` | leverage-uov-check |
 | `stg-rec-ceta` | ce-chain-trace-ta |
 | `stg-rec-cerep` | ce-replication |
+| `stg-rec-params` | formula-check-parameters |
 
 Pass B and merge staging tabs (always create these in the same batch as the tables above):
 
@@ -744,7 +746,7 @@ If fewer than 3 notes match the keyword list, skip the list and note: "Flagged-n
    Add all band reconcile pairs after the standard Wave 2.5 pairs in the reconcile spawn batch. Announce: `Wave 2.5 reconciliation: [N] standard pairs + [M] band-split pairs ([band_count−1] extra bands × 8 banded agents (3 Wave 1: formula-check-data, formula-check-edge-cases, formula-check-structure; 5 Wave 2: sources, heads-up-evidence, heads-up-intervention, readability, heads-up-epi) = [M] extra pairs).`
 
 **After completing steps 1–4 above**, compute the actual Wave 1 agent count:
-- Start with base count 22
+- Start with base count 23
 - Subtract 2 if source-data-check is skipped
 - Subtract 2 if formula-check-arithmetic is in 2-instance mode (C and D skipped)
 - Subtract 1 if key-params-check is in 1-instance mode (B skipped)
@@ -778,7 +780,8 @@ Assign staging sheets before spawning:
 | 3e | `agents/key-params-check.md` | B | All rows | `stg-kp-B` |
 | 3v | `agents/formula-check-voi.md` | A | All rows | `stg-voi-A` |
 | 3v | `agents/formula-check-voi.md` | B | All rows | `stg-voi-B` |
-| 3f | `agents/formula-check-parameters.md` | — | All rows | `stg-params` |
+| 3f | `agents/formula-check-parameters.md` | A | All rows | `stg-params-A` |
+| 3f | `agents/formula-check-parameters.md` | B | All rows | `stg-params-B` |
 | 3c | `agents/cross-tab-compare.md` | — | All rows | `stg-xcomp` |
 | 8 | `agents/sensitivity-scan.md` | — | All sheets | Confidentiality Flags sheet only |
 | 9 | `agents/hardcoded-values.md` | — | All sheets | Hardcoded Values sheet only |
@@ -815,8 +818,8 @@ Append to formula-check-voi A and B session contexts (A/B share the same prompt 
 > **Staging sheet**: `{stg-voi-A / stg-voi-B}`. Write all findings to this staging tab starting at row 2.
 > **Sheet row scope**: All rows across all vetted sheets. Self-detect VOI content before running checks — if no VOI content is found, write your completion marker and stop.
 
-Append to formula-check-parameters session context:
-> **Staging sheet**: `stg-params`. Write all findings to this staging tab starting at row 2.
+Append to formula-check-parameters A and B session contexts (A/B share the same prompt — do not tell either instance that a second instance is running):
+> **Staging sheet**: `{stg-params-A / stg-params-B}`. Write all findings to this staging tab starting at row 2.
 > **Sheet row scope**: All rows across all vetted sheets.
 
 Append to cross-tab-compare session context:
@@ -828,7 +831,7 @@ Append to source-data-check A and B session contexts (identical content except s
 > **Source data tabs**: `{comma-separated list from step above}`
 > **In-scope geographies**: `{list of countries and states from program context}`
 
-Do **not** tell A instances that B instances are running. For **B instances only** (formula-check-arithmetic B, formula-check-data B, formula-check-edge-cases B, source-data-check B, formula-check-structure B, consistency-check B, key-params-check B, formula-check-voi B), append the following adversarial preamble to the session context **before** the row allocation note:
+Do **not** tell A instances that B instances are running. For **B instances only** (formula-check-arithmetic B, formula-check-data B, formula-check-edge-cases B, source-data-check B, formula-check-structure B, consistency-check B, key-params-check B, formula-check-voi B, formula-check-parameters B), append the following adversarial preamble to the session context **before** the row allocation note:
 
 > **Reviewer framing — B instance**: You are a skeptical second reviewer. A separate first reviewer has independently audited this same spreadsheet. Your job is to find what a thorough but reasonable reviewer would have rationalized away. Specifically: (a) assume the first reviewer accepted well-labeled rows as correct without verifying the referenced cells — challenge that instinct by reading the referenced cells themselves, not just their labels; (b) give extra attention to checks requiring you to read multiple tabs together, since cross-tab checks are harder and more likely to be shortcut; (c) when a formula looks correct at first glance, ask "am I pattern-matching on the label rather than actually reading the formula?" — then read the formula; (d) for every section where you find no issues, write one specific reason the section is clean before moving on; (e) **your scanning strategy is bottom-up** — begin at the last row of your assigned scope and work backward to the first, tracing each formula's inputs upstream before moving to the row above. This is the opposite of the A instance's top-down approach and ensures that input rows at the start of sections — which top-down reviewers reach last, after reading fatigue sets in — receive full attention. Do not read the Findings sheet. Do not tell the researcher you are a B instance.
 
@@ -1000,7 +1003,7 @@ For agents where 0-findings is plausible (readability when formula-only scope, l
 
 Announce before spawning: `[Phase 2/4 done → Phase 3/4] Wave 2 complete — starting reconciliation ([computed_count] agents: [list active pairs]; [list skipped pairs if any] skipped in pre-flight check).`
 
-After all Wave 2.5 reconciliation agents complete and before the Wave 2.5 exit conditions check, announce: `[Phase 3/4 done] Reconciliation complete — all [N] reconcile agents have finished. Proceeding to Wave 3 final review.` This announcement lets researchers confirm reconciliation is fully done before Wave 3 compaction begins. Compute the count before announcing: start with 18 standard pairs (or 19 if a TA BOTEC adds the heads-up-epi TA counterfactual burden pair — heads-up-epi TA-A/TA-B), subtract skipped pairs (arith C/D if 2-instance mode; source-data-check if no source tabs), add `(band_count − 1) × 8` band-split reconcile pairs when banding is active (3 Wave 1 banded agents: formula-check-data, formula-check-edge-cases, formula-check-structure; 5 Wave 2 banded agents: sources, heads-up-evidence, heads-up-intervention, readability, heads-up-epi = 8 per extra band; for band_count=2: add 8 extra pairs). Note: ce-chain-trace-ta is always a standard pair (included in the 18); the TA-added pair is heads-up-epi (counterfactual-burden A/B), not ce-chain-trace-ta.
+After all Wave 2.5 reconciliation agents complete and before the Wave 2.5 exit conditions check, announce: `[Phase 3/4 done] Reconciliation complete — all [N] reconcile agents have finished. Proceeding to Wave 3 final review.` This announcement lets researchers confirm reconciliation is fully done before Wave 3 compaction begins. Compute the count before announcing: start with 19 standard pairs (or 20 if a TA BOTEC adds the heads-up-epi TA counterfactual burden pair — heads-up-epi TA-A/TA-B), subtract skipped pairs (arith C/D if 2-instance mode; source-data-check if no source tabs), add `(band_count − 1) × 8` band-split reconcile pairs when banding is active (3 Wave 1 banded agents: formula-check-data, formula-check-edge-cases, formula-check-structure; 5 Wave 2 banded agents: sources, heads-up-evidence, heads-up-intervention, readability, heads-up-epi = 8 per extra band; for band_count=2: add 8 extra pairs). Note: ce-chain-trace-ta is always a standard pair (included in the 19); the TA-added pair is heads-up-epi (counterfactual-burden A/B), not ce-chain-trace-ta.
 
 **Staging sheet name recovery — do this first if names are not in context**: If the staging sheet names are not available in the current session context (e.g., context was compacted between Wave 2 and Wave 2.5), read Dashboard cells A99 onward of the output spreadsheet to recover the full staging sheet log written during output setup.
 
@@ -1008,7 +1011,7 @@ After all Wave 2.5 reconciliation agents complete and before the Wave 2.5 exit c
 
 For the combined consistency-check + key-params-check agent, evaluate the two pairs independently. Skip the combined agent only if BOTH the consistency pair (stg-consist-A and stg-consist-B both empty) AND the key-params pair (stg-kp-A and stg-kp-B both empty) are confirmed empty. If either pair has any non-header row, spawn the combined agent as normal.
 
-Spawn reconciliation agents simultaneously (up to 17 standard agents, or 18 if a TA BOTEC is present; consistency-check and key-params-check share one combined agent; fewer if empty pairs are skipped), using `agents/reconcile.md`. Each agent receives the standard session context plus its specific pair assignment. Do not tell any reconcile agent about the other pairs being processed.
+Spawn reconciliation agents simultaneously (up to 18 standard agents, or 19 if a TA BOTEC is present; consistency-check and key-params-check share one combined agent; fewer if empty pairs are skipped), using `agents/reconcile.md`. Each agent receives the standard session context plus its specific pair assignment. Do not tell any reconcile agent about the other pairs being processed.
 
 For each instance, append to session context:
 > **Pair to reconcile**: [pair name]
@@ -1046,6 +1049,7 @@ If key-params-check ran in 1-instance mode (populated_rows ≤ 80), also append:
 | **heads-up-epi (TA counterfactual burden)** *(TA BOTEC only)* | `stg-epi-ta-A` | `stg-epi-ta-B` | `stg-rec-epi-ta` |
 | ce-chain-trace-ta *(self-detecting TA check)* | `stg-ceta-A` | `stg-ceta-B` | `stg-rec-ceta` |
 | ce-replication | `stg-cerep-A` | `stg-cerep-B` | `stg-rec-cerep` |
+| formula-check-parameters | `stg-params-A` | `stg-params-B` | `stg-rec-params` |
 
 **Band-split extra reconcile pairs** — add these rows for each extra band k=2, 3, 4 when `band_count > 1` (use letter pairs C/D for k=2, E/F for k=3, G/H for k=4):
 
@@ -1062,7 +1066,7 @@ If key-params-check ran in 1-instance mode (populated_rows ≤ 80), also append:
 
 For band_count=2 only create k=2 rows; for band_count=3 create k=2 and k=3 rows; etc.
 
-Note: suspicion-first (Step 6h) has no reconciliation pair — it runs as a single open-ended instance; adversarial duplication would undermine its value (both instances would anchor on different suspicions, not complement each other). notes-scan (Step 7c) has no reconciliation pair — it runs as A/B, each writing to its own staging tab (`stg-nscn-A`, `stg-nscn-B`); the Wave 3 compaction agent deduplicates their overlapping findings in its standard Step 3 dedup pass. No reconcile agent is needed. formula-check-parameters (Step 3f) also has no reconciliation pair — it runs as a single instance writing to `stg-params`. cross-tab-compare (Step 3c) also has no reconciliation pair — it runs as a single self-detecting instance writing to `stg-xcomp`; if Simple CEA or Main CEA tabs are absent it writes only its completion marker. internal-links-scan (Step 7d) also has no reconciliation pair — it runs as a single instance writing to `stg-ilinks`; it is a deterministic URL pattern scan with no judgment component that does not benefit from adversarial duplication. The final-review compaction step reads all three alongside all other staging tabs. The heads-up-epi TA counterfactual burden pair has no reconciliation agent for non-TA models — skip that row entirely when program context is not a TA BOTEC.
+Note: suspicion-first (Step 6h) has no reconciliation pair — it runs as a single open-ended instance; adversarial duplication would undermine its value (both instances would anchor on different suspicions, not complement each other). notes-scan (Step 7c) has no reconciliation pair — it runs as A/B, each writing to its own staging tab (`stg-nscn-A`, `stg-nscn-B`); the Wave 3 compaction agent deduplicates their overlapping findings in its standard Step 3 dedup pass. No reconcile agent is needed. cross-tab-compare (Step 3c) also has no reconciliation pair — it runs as a single self-detecting instance writing to `stg-xcomp`; if Simple CEA or Main CEA tabs are absent it writes only its completion marker. internal-links-scan (Step 7d) also has no reconciliation pair — it runs as a single instance writing to `stg-ilinks`; it is a deterministic URL pattern scan with no judgment component that does not benefit from adversarial duplication. The final-review compaction step reads all three alongside all other staging tabs. The heads-up-epi TA counterfactual burden pair has no reconciliation agent for non-TA models — skip that row entirely when program context is not a TA BOTEC.
 
 **Silent failure check after Wave 2.5 — do this before Wave 3**: After all reconciliation agents complete, check each reconcile staging sheet (stg-rec-*) and check whether each reconcile agent wrote its coverage declaration to chat. (Pairs confirmed empty in the pre-flight check are exempt — their skipped status was already logged.) A reconcile agent is a silent failure risk if its reconcile staging sheet contains only the header row (no AGENT_COMPLETE, no findings) OR if no coverage declaration for this pair appears in the current session context. Report any pair where either condition holds:
 
@@ -1171,7 +1175,7 @@ Announce after all 13 agents complete: `[Pass B complete] Second-opinion pass do
 Spawn one `agents/final-review-premerge.md` agent. Include in session context:
 - Source spreadsheet ID and all vetted sheet names
 - Output spreadsheet ID (for reading all Pass A staging tabs and writing to `stg-merge`)
-- Full Pass A staging tab list (all `stg-arith-*`, `stg-voi-*`, `stg-kp-*`, `stg-consist-*`, `stg-params`, `stg-xcomp`, `stg-ce-*`, `stg-epi-*`, `stg-int-*`, `stg-lev-*`, `stg-uov-*`, `stg-rec-*` tabs — read from Dashboard A99 or session context)
+- Full Pass A staging tab list (all `stg-arith-*`, `stg-voi-*`, `stg-kp-*`, `stg-consist-*`, `stg-params-A`, `stg-params-B`, `stg-xcomp`, `stg-ce-*`, `stg-epi-*`, `stg-int-*`, `stg-lev-*`, `stg-uov-*`, `stg-rec-*` tabs — read from Dashboard A99 or session context)
 - `stg-pass-b` as the Pass B source tab name
 - `stg-merge` as the output tab name for net-new findings
 
@@ -1213,7 +1217,8 @@ Announce after merge: `[Pre-merge complete] [Z] net-new Pass B findings written 
 | key-params-check B | `stg-kp-B` | Yes |
 | formula-check-voi A | `stg-voi-A` | Yes (self-detecting) |
 | formula-check-voi B | `stg-voi-B` | Yes (self-detecting) |
-| formula-check-parameters | `stg-params` | Yes |
+| formula-check-parameters A | `stg-params-A` | Yes |
+| formula-check-parameters B | `stg-params-B` | Yes |
 | cross-tab-compare | `stg-xcomp` | Yes (self-detecting — check AGENT_COMPLETE text) |
 | hardcoded-values | `'Hardcoded Values'!A:H` | No — check for AGENT_COMPLETE row in any column |
 | sensitivity-scan | `'Confidentiality Flags'!A:D` | No — check for AGENT_COMPLETE row in any column |

@@ -64,6 +64,8 @@ Map each identified leaf input to one of these three categories. Note any inputs
 
 ## Step 5 — Independently compute CE
 
+**Numeric parsing — mandatory before computing**: All arithmetic in this step must use raw stored numbers, not formatted display values. When a cell was read in FORMATTED_VALUE mode and its displayed value contains non-numeric characters (%, $, x, commas — e.g., "95%", "$1,234", "17.4x"), strip the suffix and reinterpret as follows: values ending in `%` are stored as decimals by Google Sheets (`95%` displayed = `0.95` stored); values ending in `x` are multipliers (`17.4x` = `17.4`); values containing `,` are thousands-formatted numbers (`1,234` = `1234`). Always prefer reading key computation cells in UNFORMATTED_VALUE mode to get the raw stored decimal directly. If any leaf value was read only in FORMATTED_VALUE mode, re-read it in UNFORMATTED_VALUE mode before computing.
+
 Using the leaf values identified in Step 4, compute CE from scratch:
 
 ```
