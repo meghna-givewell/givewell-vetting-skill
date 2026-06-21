@@ -231,6 +231,35 @@ Do not file if: (a) the row label or a nearby cell note explicitly documents tha
 
 `COVERAGE | cross-tab-compare | Check 12 — Worldview/scenario weight sum-to-one | [N candidate rows found, N checked] | issues found: [N] | status: complete (or: n/a — no weight rows identified)`
 
+### Check 13 — Geography/scenario scope delta CE impact
+
+When the Main CEA and any VOI tab (or multiple CEA tabs) include different sets of active geographies or scenarios, identify the scope difference and compute its CE impact before filing.
+
+**Detection — column structure**: Read the column header row(s) of the Main CEA and any VOI tab already read in Step 1. Map geography/scenario column headers to named lists. Flag any geography or scenario that:
+- Appears in one tab's column structure but is absent from the other, OR
+- Is present as a column in both but assigned a scenario weight of 0% in one tab and a positive weight in the other.
+
+**Detection — row-level exclusions**: Scan row labels (column A, FORMATTED_VALUE) across all tabs for labels containing "excluding," "without," "not included," "excl.," or any country name paired with a restriction phrase (e.g., "Nigeria excluded from VOI," "excluding Laos"). These indicate scope restrictions not visible in column headers.
+
+**CE impact computation — required before filing**: For each geography or scenario that is active in one tab but excluded from another:
+1. Read the CE value assigned to that geography/scenario from the tab where it is active (FORMATTED_VALUE, CE output row, that geography's column).
+2. Read the scenario weight assigned to that geography/scenario (0 in the excluding tab; positive in the including tab).
+3. Estimate the CE impact of the exclusion: compute the weighted-average CE with vs. without the geography. A simple approximation: `delta_CE ≈ |CE_full_scope − CE_restricted_scope|`. When the geography's CE column is available, compute directly; otherwise use the scenario weight and CE value: `contribution ≈ weight × CE_geography`.
+4. Record the estimate in column H.
+
+File at severity determined by computed CE impact:
+- **High/Parameter** when CE delta ≥ 10%: "[Geography/scenario] is active in [tab A] but excluded (absent or 0-weighted) from [tab B]. Including it changes the composite CE estimate by approximately [computed delta] ([CE_without] → [CE_with]). If the exclusion is intentional, add a cell note documenting the rationale and align scope consistently across tabs."
+- **Medium/Parameter** when CE delta ≥ 5% but < 10%: same language, Medium severity.
+- **Low/Assumption** when CE delta < 5%: "[Geography/scenario] is present in [tab A] but absent or 0-weighted in [tab B]. CE impact is small ([delta]) — confirm the scope difference is intentional and document in a cell note."
+
+**Do not file** when:
+- A cell note in either tab already documents why the scope differs.
+- Session context (program context from Step 0.5) explains the scope difference.
+- The geography/scenario has a 0% weight in ALL tabs (inactive everywhere — no scope divergence).
+- Fewer than 2 active geographies/scenarios exist in any tab (no meaningful scope comparison).
+
+`COVERAGE | cross-tab-compare | Check 13 — Geography/scenario scope delta | [N scope differences detected] | [N with CE delta ≥5%] | issues found: [N] | status: complete (or: n/a — no scope differences detected)`
+
 ---
 
 ## Writing Findings
