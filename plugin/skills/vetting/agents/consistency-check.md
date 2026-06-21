@@ -46,6 +46,20 @@ Flag as **Medium/H** if the unit inconsistency would affect the CE calculation. 
 
 Coverage declaration: `COVERAGE | consistency-check | unit consistency check | [all rows across all vetted sheets] | issues found: [N] | status: complete`
 
+**Cross-geography outlier check — single-column zero or extreme deviation in multi-geography rows**: For any row with values across 3+ geography columns (i.e., columns representing different countries or regions), scan for a single column that is either (a) zero when all other columns are non-zero, or (b) deviates from the median of all geography-column values by more than 2× in either direction. Single-column outliers in rows whose labels indicate a shared parameter (e.g., "downside scenario," "coverage rate," "mortality reduction," "program effect") commonly indicate a 0% placeholder left unfilled, a copy-paste error, or a geography-specific assumption that is undocumented.
+
+For each row with 3+ populated geography columns:
+1. Read all non-empty numeric values across those columns in FORMATTED_VALUE mode.
+2. Compute the median.
+3. Flag any single column where the value is 0 (when all others are non-zero) OR deviates from the median by more than 2× in either direction.
+4. Read the cell note (`read_sheet_notes`) for the flagged cell. If the note explicitly documents a geographic-specific reason for the deviation, downgrade to **Low/Assumption** (column D: Low). If no note exists or the note does not explain the outlier:
+   - Zero when all others are non-zero → **High/Parameter** (column D: High, column E: Parameter): "[cell] = 0 in row '[row label]' while all other geographies ([list each: geography = value]) are non-zero. A single-country zero in a shared-parameter row is likely an unfilled placeholder or copy-paste error. Confirm whether 0% is intentionally correct for [geography] — if so, add a cell note explaining why — or update to the appropriate value." Before filing, estimate CE impact: read the scenario weights row and compute the CE difference between the model as-is (zero) vs. with the zero replaced by the median of the other columns. If CE impact <1%, downgrade to Medium. Include the estimate in column H.
+   - Deviates from median by >2× but not zero → **Medium/Parameter** (column D: Medium, column E: Parameter): "[cell] = [value] in row '[row label]', which is [N×] the median value ([median]) across other geographies ([list values]). An undocumented single-column outlier in a shared-parameter row may indicate a geography-specific assumption not reflected elsewhere. Add a cell note if the deviation is intentional."
+
+**Skip** rows whose column A label explicitly indicates geography-specific values are expected — "Population size," "GDP per capita," "Incidence rate by country," "Background mortality rate," or any label containing "by country," "per region," "national," or "subnational." Also skip rows with only one non-zero column by design (e.g., "Nigeria-specific adjustment").
+
+Coverage declaration: `COVERAGE | consistency-check | cross-geography outlier check | [N rows with 3+ geography columns checked] | outliers flagged: [N] | issues filed: [N] | status: complete`
+
 **Declared-intentional deviation verification — do this before other parameter checks**: For each item in the session context "Declared-intentional deviations" list, verify the deviation is actually present in the spreadsheet before skipping that cell in the parameter consistency check:
 
 1. Identify the cell or row the deviation applies to.
@@ -131,6 +145,7 @@ Consistency-check log:
 Cross-parameter:
   study-derived parameter row consistency [___]
   unit consistency check [___]
+  cross-geography outlier check [___]
 
 GiveWell parameters:
   declared-intentional deviation verification [___]

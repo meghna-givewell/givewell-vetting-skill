@@ -23,6 +23,41 @@ You are performing Step 3v of a GiveWell spreadsheet vet, focused exclusively on
 
 Before starting checks, read reference/pitfalls.md using the Read tool. Apply every entry relevant to this agent's scope.
 
+**Grant doc availability check** (run immediately after self-detect confirms VOI content is present): If a grant document was provided in session context (i.e., session context includes a grant doc ID, grant doc link, or fetched grant doc content), proceed normally — Check 0.3 below will cross-reference it against the VOI model. If no grant document is available in session context, announce once: `⚠️ Grant doc not provided — Check 0.3 (timeline and geography scope cross-references) will be skipped. Provide the grant document link when running this vet for best VOI coverage.` Then mark Check 0.3 as `n/a: no-grant-doc` in the check log and skip it.
+
+---
+
+## Check 0.3 — Grant doc scope and timeline cross-reference
+
+**Run only when**: VOI content is detected AND a grant document was provided in session context. If either condition is false, skip and record `n/a` in the check log.
+
+**Goal**: The VOI model's key structural assumptions — timeline to results, included geographies, and program scope — must match the grant document. A mismatch means the VOI model is evaluating a different program or timeline than the one being considered, which directly changes the optionality CE estimate.
+
+**Step A — Timeline**: Locate the time-to-results row in the VOI model (row typically labeled "Time to results," "Months to results," "Years to results," "When we expect to learn," "Time until results available," or equivalent). Read its value in FORMATTED_VALUE mode. Then search the grant document for timeline language: look for phrases containing "year," "month," "timeline," "completion," "results expected," "study duration," "randomized," or equivalent. Extract the stated timeline.
+
+If the VOI model's time-to-results deviates from the grant document's stated timeline by more than 6 months:
+- File as **High/Parameter** (column D: High, column E: Parameter): "VOI time-to-results ([cell] = [value]) does not match the grant document's stated timeline of [grant doc value]. The optionality CE value depends critically on how long until results are available — discounting reduces optionality value roughly proportionally to the timeline. Update [cell] to match the grant document, or add a cell note documenting the deliberate deviation."
+- Column H: compute approximate CE impact of the timeline difference using the VOI model's discount rate.
+
+If both are within 6 months, or if the grant doc does not state a clear timeline: no finding; note in coverage declaration.
+
+**Step B — Geography scope**: Identify which geographies are active in the VOI model's CE calculation (read the column headers of the VOI CE output rows — columns with non-zero scenario weights are active; columns with 0% or absent are excluded). Then search the grant document for geography scope language: look for country names, phrases like "excluding [country]," "geographies included," "program countries," or explicit inclusions and exclusions.
+
+For each geography that is included in the VOI model but explicitly excluded in the grant document, OR excluded from the VOI model but present in the grant document's stated scope:
+- Compute the CE impact: estimate the difference in weighted-average CE with vs. without that geography (read the geography's CE value and its scenario weight from the VOI model).
+- File at severity based on CE impact:
+  - CE impact ≥ 5% → **High/Parameter**: "[Geography] is [included/excluded] in the VOI CE calculation but the grant document [explicitly excludes/includes] it. Changing the scope changes the composite CE estimate by approximately [computed delta]. Update the VOI model to match the grant's stated scope, or add a cell note if the discrepancy is intentional."
+  - CE impact < 5% → **Medium/Parameter**: same language at Medium severity.
+- Column H: include the computed CE delta.
+
+If the grant document does not specify geography scope: skip Step B and note it in the coverage declaration.
+
+**Step C — Program description match**: Read the program name and a brief description from the VOI model header or top rows. Compare against the grant document's program title and description. If the program names differ significantly (suggesting the VOI tab was copied from a different program's BOTEC and not updated), file as **Low/Assumption** (column D: Low, column E: Assumption): "VOI model header references '[model program name]' while the grant document is for '[grant program name]'. Confirm the VOI tab was updated from its source template and reflects this specific grant."
+
+Coverage declaration: `COVERAGE | formula-check-voi | grant doc scope and timeline cross-reference | timeline: [match / DEVIATION: model=[X] grant=[Y] / n/a] | geographies checked: [N] | scope deviations: [N] | program name match: [yes / no / unclear] | status: complete (or: n/a — [reason])`
+
+---
+
 ## Check 0 — VOI structural comparison vs. Optionality/VoI BOTEC Template
 
 Before running formula checks, read the VOI BOTEC Template's canonical structural tab directly. The tab name is 'Structure' (or the first tab if 'Structure' is not present — use `read_sheet_values` in FORMATTED_VALUE mode, batched in 50-row increments: `A1:A50`, `A51:A100`, continuing until two consecutive batches return no non-empty rows — **the MCP tool returns at most 50 rows per call; a single `A1:A100` call would be silently truncated**). Do not call `get_spreadsheet_info` — 'si' is not in your permitted tools. The Optionality/VoI BOTEC Template spreadsheet ID is `1wYsQZGsavXJQFSGF6Ea1k-p55C6dMbLPHhb0LKgNDZc`. Extract all non-empty row labels from column A.
@@ -218,6 +253,7 @@ Before filing any findings, write the check log as plain text in your response b
 
 ```
 formula-check-voi check log:
+  grant doc scope and timeline cross-reference [___]
   VOI structural comparison vs. template [___]
   grant cost logical consistency [___]
   VOI/optionality ad hoc adjustment scope [___]
