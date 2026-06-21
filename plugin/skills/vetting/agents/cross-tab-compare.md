@@ -128,6 +128,8 @@ Locate the GiveDirectly benchmark row in both tabs. Verify both reference the sa
 - **Medium/Inconsistency** if the values differ
 - **Low/Inconsistency** if the values match but one is hardcoded while the other references a cell (creates drift risk)
 
+When filing this finding, cross-reference `reference/key-parameters.md` to determine which tab holds the canonical benchmark value. State in the Explanation which tab is authoritative and which is stale — do not ask the researcher to confirm something the agent can determine itself.
+
 `COVERAGE | cross-tab-compare | Check 5 — Benchmark cell consistency | [N tabs checked] | issues found: [N] | status: complete`
 
 ### Check 5b — Benchmark value against key-parameters.md canonical value

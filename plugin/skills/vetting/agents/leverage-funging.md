@@ -92,12 +92,14 @@ Funging adjustments should *reduce* expected impact (or equivalently, increase c
 When a leverage/funging adjustment appears to *increase* CE, do not immediately file — follow the "Before flagging" procedure below first. After that procedure, determine filing severity as follows:
 
 - **Do NOT file** when all three conditions confirm a legitimate mechanism: (a) a note IS present, AND (b) the note explicitly uses displacement/funging language (e.g., 'displacement,' 'funging,' 'counterfactual reduction'), AND (c) the formula structure matches that mechanism.
-- **File High severity (column D), Error Type: Formula (column E)** only when the formula is demonstrably wrong with no ambiguity — for example, an inverted sign (e.g., `1 + funge_rate` where `1 - funge_rate` is required) that cannot be reconciled with any reasonable interpretation of the row label or cell note.
+- **File High severity (column D), Error Type: Adjustment (column E)** only when the formula is demonstrably wrong with no ambiguity — for example, an inverted sign (e.g., `1 + funge_rate` where `1 - funge_rate` is required) that cannot be reconciled with any reasonable interpretation of the row label or cell note.
 - **File Medium severity (column D)** when any of the three conditions fail but the formula is not demonstrably wrong: (a) no note is present, OR (b) the note lacks displacement or funging language, OR (c) the formula diverges from what the note describes — use Medium to ask the researcher to confirm the sign convention.
 
 For certainty guidance: condition (a) is never uncertain — a note either exists or it does not; condition (b) is **definitively met** (not uncertain) when the note explicitly uses the words "leverage" or "uplift," since these confirm a legitimate >1 mechanism; condition (b) is **definitively failed** (not uncertain) when the note explicitly uses "displacement," "funging," or "counterfactual reduction"; 'Additionality' describes absence of displacement, not presence of leverage — notes using only 'additionality' are uncertain in condition (b) and require the Before flagging procedure; uncertainty in condition (b) applies only when the note's language could describe either an increasing or decreasing effect without specifying which.
 
 **Before flagging**: First, write in your reasoning the mechanically correct formula structure that would justify a >1 multiplier for this row type — for example: "If this is a leverage benefit multiplier, the correct form would be `=CE_without_leverage × (1 + leverage_ratio)`, which produces a value >1 when leverage_ratio > 0." Then explicitly read the cell note (via `read_sheet_notes` if not already in the pre-read cache) and the row labels immediately above and below the flagged row. Only if the note's stated mechanism AND the formula structure both match the form you wrote down is the >1 multiplier justified — a note mentioning "leverage" without specifying the formula convention is not sufficient; the formula structure must also match. If formula and note are both consistent with your written form, this is not an error. If no note is present, or the note's mechanism or formula structure diverges from your written form, file as **Medium severity (column D)** asking the researcher to confirm the sign convention.
+
+**Raw-value exception**: If the formula is a raw numeric value (e.g., `+0.15` on a funging row labeled "−15%") rather than a multiplier expression, the correct form for a funging deduction is a negative value. A positive raw value is mechanically equivalent to an inverted sign without the >1 multiplier framing. Apply conditions (a)–(c) directly — a note that says the adjustment should be a 15% reduction when the cell holds +0.15 fails condition (c) and should be filed per the severity guidance above.
 
 **Coverage declaration for Check 1**: After completing all direction and program-type checks, write:
 `COVERAGE | leverage-funging | Check 1 — Direction of funging adjustment | [rows/cells checked] | issues found: [N] | status: complete`
@@ -118,6 +120,20 @@ If the document loaded successfully, for the program type identified in session 
 
 Only after confirming each described adjustment has a formula cell proceed to the consistency checks below.
 
+## Check 2a — Funging adjustment lookup verification
+
+For each funging adjustment cell identified in the preliminary step above, read the cell formula in FORMULA mode. If the formula contains a lookup function (VLOOKUP, INDEX-MATCH, XLOOKUP, or equivalent) that references a separate tab:
+
+1. Read the lookup key used in the formula and the first column of the referenced lookup range.
+2. Confirm the key exists as an exact match in the lookup column (case-sensitive for text keys; exact numeric match for numeric keys).
+3. Read the cell value in UNFORMATTED_VALUE mode. If the returned value is 0 and the funging row label describes a non-zero adjustment (e.g., "−15% funging deduction"), flag as **High severity (column D), Error Type: Formula [Wrong reference]**: "Funging adjustment at [cell] uses a lookup key that does not match any entry in [tab]![range]. The lookup silently returns 0, causing this adjustment to have no effect on the CE calculation. Correct the lookup key or restructure the formula to reference the intended parameter."
+4. If the key matches but the returned value appears implausible for the stated adjustment type (e.g., a funging rate of 5000%), flag as **High severity (column D), Error Type: Formula [Wrong reference]**: "Funging adjustment at [cell] returns [value], which is inconsistent with the stated adjustment type. Verify the lookup is pointing to the correct column."
+
+**Coverage declaration**: After completing this check, write:
+`COVERAGE | leverage-funging | Check 2a — Funging adjustment lookup verification | [cells checked] | issues found: [N] | status: complete`
+
+---
+
 Leverage and funging adjustments can be applied multiplicatively (scaling the whole benefit or cost) or additively (shifting the numerator or denominator by a fixed amount). Both can be correct; what matters is internal consistency with the model's stated approach.
 
 - If the model or cell notes describe a "X% funging discount," verify this is implemented as multiplication (e.g., `× (1 - funge_rate)`), not as subtraction of a fixed amount.
@@ -133,15 +149,20 @@ Leverage and funging adjustments can be applied multiplicatively (scaling the wh
 
 ## Check 3 — Government co-financing double-count
 
+**Scope note — benefit/cost scope misallocation (DEDUP-4)**: Benefit/cost scope misallocation in the leverage calculation is owned by leverage-funging. When ce-chain-trace encounters a Main CEA benefit row summing both grant and non-grant benefits from a leverage formula, it should note the observation and defer to leverage-funging per SC-010, filing a Low/Assumption placeholder only. See Cross-Agent Scope Reference in pitfalls.md.
+
 When government co-financing is present:
 
 - Government costs should not appear in *both* the cost denominator **and** the benefit numerator simultaneously. If government funding is included in the cost base (denominator), the corresponding government-funded benefit should be excluded from the benefit numerator — or the full benefit is counted but only GiveWell's share of cost is in the denominator. Either approach is valid; having both full cost and full benefit without adjustment is a double-count.
 - If GiveWell funding "unlocks" or "leverages" government funding, the treatment of the government's contribution must be consistent throughout the model. Read cell notes and adjacent labels for the stated approach; flag if the formula diverges from what the note describes.
 - Check that the leverage ratio denominator (the GiveWell funding base) matches what is actually counted in the cost column — not a different definition of "GiveWell spending."
+- **Also check that the benefit multiplier is applied to the correct cost base**: If the benefit formula multiplies total program cost (grant + government) by a per-unit benefit factor, but the CE denominator uses only grant cost, the benefit numerator includes government-funded activity benefits attributed to GW-only cost — inflating CE. This is a misallocated benefit scope error, distinguishable from the valid leverage pattern by asking: does GW spending causally unlock the full program benefit (valid), or is the formula applied to a larger cost base than the denominator without a causal rationale (error)? Verify that either (a) the benefit formula is applied to GW-funded activities only, or (b) a documented additionality/leverage rationale explains why GW gets full credit. **When the benefit formula applies the multiplier to a broader cost base than the CE denominator uses, this is a Defect — file High/Adjustment.** When the scope cannot be confirmed wrong from the formula alone, file **Medium/Assumption**. Do not file Low when a benefit-scope mismatch in the leverage calculation is confirmed in the direct CE chain.
+
+**Recommended Fix for benefit-scope misallocation findings**: When filing a benefit-scope misallocation finding, the Recommended Fix must offer both valid resolution paths: "Restrict the leverage benefit formula to GW-funded activities only (e.g., change the multiplier base from total_program_cost to gw_grant_cost at [cell]), OR expand the CE cost denominator to include total program cost (e.g., change the denominator from gw_grant_cost to total_program_cost at [cell])."
 
 **Multi-year leverage denominators (GAP-3)**: When the leverage ratio denominator spans multiple years (e.g., a 3-year average of GiveWell funding), verify the denominator formula correctly references each year's values. If the denominator hardcodes a year count (e.g., `/3`) that does not match the number of cells actually referenced in the formula's numerator range, flag as **Medium severity (column D), Error Type: Formula**: "Leverage denominator at [cell] divides by the hardcoded year count [N] but the numerator references [M] years of data. If the grant period changed, the hardcoded divisor must be updated to match."
 
-**Required Error Type**: Formula (if the formula is wrong) or Assumption (if the assumption is undocumented)
+**Required Error Type**: Formula (if the formula is wrong) or Assumption (if the assumption is undocumented); Adjustment for benefit-scope misallocation errors
 
 **Coverage declaration**: After completing this check, write:
 `COVERAGE | leverage-funging | Check 3 — Government co-financing double-count | [rows/cells checked] | issues found: [N] | status: complete`
@@ -248,7 +269,7 @@ Flag undocumented leverage parameters as Low severity, Error Type: Assumption (c
 
 **Scope note — VOI overlap with leverage-uov-check (DEDUP-2)**: This agent covers ad hoc double-counting at the conceptual level (e.g., whether a VOI adjustment is being counted twice in the narrative framing). The leverage-uov-check agent covers formula-level correctness of the VOI rate application (e.g., whether funging formulas reference the wrong subtotal row). When both agents flag the same cell, this agent's finding takes precedence for conceptual scope issues; leverage-uov-check's finding takes precedence for formula-level issues. Retain both findings only when the underlying issues are genuinely distinct.
 
-**Scope note — CE reference row overlap with ce-chain-trace (DEDUP-3)**: This agent traces how the leverage adjustment affects the CE output row. The ce-chain-trace agent traces the CE chain itself from top to bottom. If both agents flag the same CE output cell, prefer ce-chain-trace's finding (it has deeper chain analysis); this agent's finding should note "see CE chain trace finding" in the Explanation column.
+**Scope note — CE reference row overlap with ce-chain-trace (DEDUP-3)**: This agent traces how the leverage adjustment affects the CE output row. The ce-chain-trace agent traces the CE chain itself from top to bottom. If both agents flag the same cell anywhere in the CE chain (including intermediate funging/leverage adjustment rows), apply the following precedence: (a) for chain-level formula errors (wrong reference, wrong range, broken arithmetic) in non-adjustment cells, prefer ce-chain-trace's finding; (b) for leverage/funging-specific logic errors in adjustment cells — broken lookup keys, sign direction errors, benefit-scope misallocation — this agent's finding takes precedence regardless of where in the chain the cell appears. When ce-chain-trace files a Low/Assumption SC-010 placeholder for a funging formula issue and leverage-funging files the full finding, the SC-010 placeholder is superseded by this agent's finding at compaction — final-review-compaction should retain this agent's finding and discard the SC-010 placeholder. If both agents flag the same CE output cell for a chain-level error with no leverage-specific component, prefer ce-chain-trace's finding (it has deeper chain analysis); this agent's finding should note "see CE chain trace finding" in the Explanation column.
 
 When a VOI model contains both (a) a dedicated "Optionality/information value to [funder type]" section that explicitly models probability × funding change × CE for a category of funder, and (b) an "Adjustments to VoI" section with a labeled upward adjustment for the same funder category, these may double-count the same benefit.
 
