@@ -62,7 +62,7 @@ If the researcher types `CONFIRM` after a block: proceed and announce in chat: `
 > I'll analyze your workbook from a local file and write findings to CSV files you can import into a Google Sheet. Most checks run at full quality — but the following are skipped or limited in this mode:
 >
 > - **Cell notes** — not available from `.xlsx`; any check that relies on a source note will be flagged for manual review
-> - **Hyperlinks** — link metadata is not extractable; source URL checks will flag cells for manual confirmation
+> - **Hyperlinks** — Hyperlinks added via Insert > Hyperlink — available in the pre-read cache as '--- Hyperlinks: SheetName ---' sections. Hyperlinks embedded in HYPERLINK() formulas — URL visible in the formula text field only.
 > - **GiveWell reference docs** — vetting guides and CEA guidance documents require MCP to load; key-params-check still runs from its local reference file
 > - **Notes-scan** — skipped entirely (requires cell notes)
 > - **Output written to CSVs**, not directly to Google Sheets — you'll import them after the vet
@@ -180,7 +180,7 @@ no MCP — local output: /path/to/file.xlsx
 
 1. Record the output sheet URL (if provided) in session context; display it prominently in the final summary
 2. Run `python extract.py <path>` and read `output/extracted_<filename>.txt` in full — this is the pre-read cache for all agents
-3. Announce once: "Local output mode — cell notes and hyperlinks are not available from .xlsx extraction; checks requiring them will be skipped or flagged for manual review"
+3. Announce once: "Local output mode — cell notes are not available from .xlsx extraction; hyperlinks ARE available in the pre-read cache hyperlinks sections. Checks requiring cell notes will be skipped or flagged for manual review."
 4. Ask the Step 0.5 program context questions (grant doc fetch skipped — reference docs require MCP)
 5. Run Steps 0–2 inline (CE baseline, structure review) from the extracted text
 
@@ -192,7 +192,7 @@ Append the following block to every sub-agent's session context, after the stand
 >
 > **Cell lookup**: When instructions say "read cell X in FORMULA mode," find that cell reference in the pre-read cache. Format: `B14=[formula](value)` for formula cells, `B14='value'` for hardcoded cells.
 >
-> **Notes unavailable**: Skip any check that requires verifying a cell note. For hardcoded-values: write "Note unavailable (xlsx)" in the Description field. For sources: flag any cell value or formula containing a URL string, noting that hyperlink metadata is unavailable.
+> **Notes unavailable**: Skip any check that requires verifying a cell note. For hardcoded-values: write "Note unavailable (xlsx)" in the Description field. For sources: check the hyperlinks section of the pre-read cache for this cell's URL; if not present there and not in a HYPERLINK() formula, note it for manual confirmation.
 >
 > **Output format**: Run your full analysis normally. At the END of your response, output all findings as a block of prefixed pipe-delimited lines. Every finding must appear in this structured block — do not omit any finding from it even if you discussed it in prose:
 > - `FINDING|Sheet|Cell/Row|Severity|Error Type|Explanation|Recommended Fix|CE Impact`
@@ -207,7 +207,7 @@ Append the following block to every sub-agent's session context, after the stand
 >
 > **Row allocation**: Ignore all row allocation and budget instructions — there is no Google Sheet to write to. Output all findings sequentially with no limit.
 >
-> **Pre-read cache** (values and formulas from .xlsx extraction — cell notes and hyperlinks not available):
+> **Pre-read cache** (values and formulas from .xlsx extraction — cell notes are not available; hyperlinks ARE available in the pre-read cache hyperlinks sections):
 > [EXTRACTED TEXT]
 
 **Step 3 — Waves 1 and 2: run same wave tables as standard mode**
@@ -215,7 +215,7 @@ Append the following block to every sub-agent's session context, after the stand
 Spawn agents using the same wave tables from the Analysis Steps section. Skip or adjust:
 
 - **notes-scan**: Skip entirely — notes not available from .xlsx extraction
-- **sources A/B**: Run, but skip hyperlink verification. For any row whose value or formula contains a URL string, output: `PUBREADY|<sheet>|<cell>|Sourcing|URL present in formula/value but hyperlink metadata unavailable in .xlsx extraction — verify manually|Confirm source hyperlink is correctly attached to this cell`
+- **sources A/B**: Run. Check the hyperlinks section in the pre-read cache before flagging any hyperlink as unverifiable. For any row whose value or formula contains a URL string that is not found in the pre-read cache hyperlinks section and is not in a HYPERLINK() formula, output: `PUBREADY|<sheet>|<cell>|Sourcing|URL present in formula/value but not found in pre-read cache hyperlinks section — verify manually|Confirm source hyperlink is correctly attached to this cell`
 - **Reference doc lookups**: Skip fetching Google Docs/Sheets reference documents (requires MCP). key-params-check runs from `reference/key-parameters.md` already in its context; consistency-check moral weights check runs from values declared in session context
 
 Wait for all Wave 1 agents to complete before spawning Wave 1.5. Wait for Wave 1.5 to complete before spawning Wave 2. Wait for all Wave 2 agents to complete before Wave 2.5.
@@ -263,7 +263,7 @@ The compaction agent de-duplicates, sorts, and assigns Finding IDs in the prefix
 
 After Wave 3, write four local files using the Write tool, using `|` as the column separator:
 
-- `output/findings.csv` — all final `FINDING|` lines, header: `Finding #|Sheet|Cell/Row|Severity|Error Type/Issue|Explanation|Recommended Fix|Estimated CE Impact|Status`
+- `output/findings.csv` — all final `FINDING|` lines, header: `Finding #|Sheet|Cell/Row|Severity|Error Type/Issue|Explanation|Recommended Fix|Estimated CE Impact`
 - `output/publication_readiness.csv` — all `PUBREADY|` lines, header: `Finding #|Sheet|Cell/Row|Error Type/Issue|Explanation|Recommended Fix`
 - `output/hardcoded_values.csv` — all `HARDCODED|` lines, header: `Sheet|Cell|Category|Current Value|Description|Source to Verify|Verified?|Auto-check evidence` (the SourceURL field maps to "Source to Verify"; leave the Verified? column blank for researcher follow-up)
 - `output/confidentiality_flags.csv` — all `CONFLAG|` lines, header: `Cell/Row|Content Found|Sensitivity Type|Recommended Action`
@@ -278,7 +278,7 @@ After Wave 3, write four local files using the Write tool, using `|` as the colu
 > 3. **Hardcoded Values tab**: repeat with `output/hardcoded_values.csv`
 > 4. **Confidentiality Flags tab**: repeat with `output/confidentiality_flags.csv`
 >
-> Scope note: notes-scan and source hyperlink verification skipped (not available in .xlsx). All other checks — formula, CE chain, leverage, readability, key params, consistency, hardcoded values, sensitivity scan, heads-up — ran at full quality with independent A/B verification. To run a complete vet including notes and hyperlinks, configure the Hardened Google Workspace MCP (see setup instructions above).
+> Scope note: notes-scan skipped (cell notes not available in .xlsx); source hyperlink verification: check the pre-read cache hyperlinks section; only cell notes are unavailable. All other checks — formula, CE chain, leverage, readability, key params, consistency, hardcoded values, sensitivity scan, heads-up — ran at full quality with independent A/B verification. To run a complete vet including notes, configure the Hardened Google Workspace MCP (see setup instructions above).
 
 **Step 8 — Feedback collection in local mode**
 
@@ -551,11 +551,11 @@ For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read ea
 >
 > **Materiality — estimate using FORMULA mode before assigning**: Trace the affected cell through the CE formula chain and apply in order — stop at first match: (1) CE impact computable and ≥5% → **Material**; write `Raises CE — [estimate]` or `Lowers CE — [estimate]`. (2) CE impact computable and <5% → **Immaterial**; write `Raises CE — [estimate]` or `Lowers CE — [estimate]` (direction and magnitude are both known — do not write 'magnitude unknown' when magnitude is computable). Write `No CE impact` when confirmed zero. (3) Direction clear but magnitude not traceable → **unknown (round up)**; write `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown`. (4) Direction requires researcher input → **unknown (round up)**; write `Direction unknown`. (5) No CE chain connection → **Zero**.
 >
-> **Severity from Nature × Materiality**: High = any Defect/Gap that is Material, Decision-changing, or unknown materiality; any benchmark or moral weight deviation from key-parameters.md with no documented cell note rationale; Judgment + Decision-changing. Medium = Defect + Immaterial or Zero (Defect floor — formula errors never below Medium; **exception per FORM-9**: when CE impact is confirmed zero, Defect + Zero → Low — see output-format.md FORM-9); Gap + Immaterial; Judgment + Material. Low = Gap + Zero; Judgment + Immaterial or Zero. (For the full Nature × Materiality matrix including all Judgment rows, see `reference/output-format.md`.)
+> **Severity from Nature × Materiality**: High = any Defect/Gap that is Material, Decision-changing, or unknown materiality; any benchmark or moral weight deviation from key-parameters.md (always High regardless of cell note or CE impact — see bright-line rule 4 in output-format.md and SC-021 in pitfalls.md); Judgment + Decision-changing. Medium = Defect + Immaterial or Zero (Defect floor — formula errors never below Medium; **exception per FORM-9**: when CE impact is confirmed zero, Defect + Zero → Low — see output-format.md FORM-9); Gap + Immaterial; Judgment + Material. Low = Gap + Zero; Judgment + Immaterial or Zero. (For the full Nature × Materiality matrix including all Judgment rows, see `reference/output-format.md`.) (Exception: GW-standard parameter deviations — benchmark, moral weights — are always High regardless of current CE impact, per FORM-9 and bright-line rule 4.)
 >
 > **Discount rate exception**: When a discount rate IS present but deviates from 4%, file as **Medium/H** — not High — even without a documented cell note rationale. **Exception: if no discount rate row exists at all (absent/omitted), file as Low/H** per the Acceptable Ranges table in key-parameters.md. Do not apply Medium/H to absent discount rates — the "absent / 0% / omitted" entry in that table explicitly specifies Low/H.
 >
-> **Do not file High without at least one of**: (a) CE impact computed ≥5%; (b) GW standard parameter violation with no documented cell note; (c) FORMULA-mode ≥2 hops confirming cell is in direct CE chain (unknown materiality → round-up rule applies). Filing High based on "this looks important" without computation or FORMULA-mode confirmation is the primary source of cross-run severity inconsistency — use Medium.
+> **Do not file High without at least one of**: (a) CE impact computed ≥5%; (b) GW standard parameter violation with no documented cell note; (c) FORMULA-mode ≥1 hop confirming cell is in direct CE chain (unknown materiality → round-up rule applies). (Note: SC-008 GBD vintage escalation requires 2 or more hops — this higher threshold applies only to GBD staleness findings, not general SC-003 parameter findings.) Filing High based on "this looks important" without computation or FORMULA-mode confirmation is the primary source of cross-run severity inconsistency — use Medium.
 >
 > **Column H — before writing any Estimated CE Impact value**: apply the `Direction unknown` decision tree from `reference/output-format.md` (5-step tree in the Estimated CE Impact section). This determines whether to write `Direction unknown` vs. a directional phrase. Use exact em-dash punctuation (` — `) with spaces — en-dash or hyphen variants cause sort failures in the compaction agent. All six valid phrases: `Raises CE — [estimate]` | `Lowers CE — [estimate]` | `Raises CE — magnitude unknown` | `Lowers CE — magnitude unknown` | `No CE impact` | `Direction unknown`. **Before writing `Raises CE` or `Lowers CE`**, write one sentence in your reasoning tracing the causal mechanism: e.g., "Fixing this lowers [intermediate value X], which lowers [benefit/cost term Y], which lowers CE — therefore Lowers CE." Complete the causal trace before committing to a direction. Direction inversions (writing `Raises CE` when the fix actually lowers CE, or vice versa) are a documented cross-run calibration failure — the one-sentence trace is what prevents them.
 >

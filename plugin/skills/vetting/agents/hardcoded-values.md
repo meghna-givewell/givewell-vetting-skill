@@ -39,6 +39,8 @@ Exclude:
 
 > **Routing note — formula-embedded literals**: A literal inside a formula expression (e.g., `=2.47%*C43`) is **not captured by this agent and does not appear in the Hardcoded Values output sheet.** It belongs to `formula-check-arithmetic`, which should file it in Publication Readiness under Sourcing. If the embedded literal appears to be an incorrect parameter value — not merely an uncited one — `formula-check-arithmetic` should file it as a **Parameter** finding in the Findings sheet instead.
 
+> **Embedded-literal exception**: When a cell note references a specific formula-embedded literal and the note itself supplies the source — e.g., "Mortality rate: 0.023 — GBD 2022" or "Coverage estimate: 0.87 — from 2023 DHS survey Table 4.3" — this constitutes a valid inline source citation. Do not flag such notes as missing-source issues in this agent. The note must: (a) name the specific value it is sourcing, (b) identify the source document or dataset, and (c) be attached to or immediately adjacent to the cell containing that literal. A note that cites a source generally (e.g., "GBD 2022" with no value specified) without naming the embedded literal does not qualify for this exception.
+
 ---
 
 ## Writing to the Hardcoded Values sheet

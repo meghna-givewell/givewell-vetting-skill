@@ -17,6 +17,8 @@ Also check for a **CI tab** (names containing `CI`, `Confidence`, or `Confidence
 
 **Coverage mandate**: Read both tabs in full (FORMATTED_VALUE and FORMULA). Complete the label-mapping step before writing any findings. After completing each check, write a coverage declaration before proceeding to the next.
 
+Before running any check, read reference/pitfalls.md using the Read tool. Apply every entry relevant to cross-tab consistency, benchmark validation, and inconsistency findings — especially SC-001, SC-021, SC-028, and the pre-filing mandatory checklist (SC-022 through SC-028).
+
 ---
 
 ## Step 1 — Read both tabs
@@ -31,7 +33,7 @@ Fire a parallel batch:
 
 Use 50-row batches (`A1:ZZ50`, `A51:ZZ100`, etc.) until two consecutive batches return no non-empty rows — **the MCP tool returns at most 50 rows per call; larger ranges silently truncate.** Do **not** read the existing Findings sheet — your staging tab name is `stg-xcomp`.
 
-**Cell notes — intentional divergence**: Before filing any cross-tab discrepancy finding, check the `read_sheet_notes` results for both the Simple CEA cell and the Main CEA cell. If a researcher note on either cell explicitly documents why the two tabs differ (e.g., "Simple CEA uses a rounded figure for readability," "intentional: simplified structure for summary tab"), do not file the finding. Record the suppressed finding and its rationale in your reasoning as "suppressed — cell note documents intentional divergence at [cell ref]: [note text]." A note that merely cites a source (without addressing the divergence) does not suppress the finding.
+**Cell notes — intentional divergence**: Before filing any cross-tab discrepancy finding, check the `read_sheet_notes` results for both the Simple CEA cell and the Main CEA cell. If a researcher note on either cell explicitly documents why the two tabs differ (e.g., "Simple CEA uses a rounded figure for readability," "intentional: simplified structure for summary tab"), downgrade to Low/Legibility (leave column D blank — routes to Publication Readiness) rather than suppressing entirely. Record the note text in the Explanation. A note that merely cites a source without addressing the divergence does not trigger this downgrade — file at the original severity. (SC-028)
 
 ---
 
@@ -197,6 +199,8 @@ Do not file if: (a) the denominator difference is explained by a cell note, (b) 
 
 ### Check 10 — Simple CEA section ordering
 
+**Deferral note**: When readability is in scope for this vet, do not file this finding independently — write a SC-010 Low/Assumption placeholder only ('Simple CEA section ordering — deferred to readability agent per pitfalls.md Cross-Agent Scope Reference'). Readability owns Simple CEA section ordering.
+
 In GiveWell Simple CEAs, the calculation should flow top-to-bottom: inputs and parameters appear first, then adjustments, then the final CE output (cost-effectiveness multiple or cost-per-outcome row). When the CE output row appears near the top of the Simple CEA — before the input rows that feed into it — the math flows backward and misleads readers who expect to follow the logic from assumptions down to conclusion.
 
 Using the row labels already read in Step 1 and Step 2: identify the row containing the final CE output (labeled with variants of "cost-effectiveness," "CE multiple," "x GiveDirectly," "cost per outcome"). Then identify rows that are clearly inputs or parameters (coverage, mortality rate, effect size, costs, moral weights, discount rate, benchmark). If the CE output row's row number is less than (i.e., appears above) the majority of input rows, the section is ordered backward.
@@ -237,7 +241,9 @@ Append findings using `modify_sheet_values` to your staging tab `stg-xcomp`, sta
 
 **Before writing Low findings**: group by the 7 standard categories (Documentation gaps | Formula robustness | Stale annotations | Optimistic assumptions | Minor rounding | Structural completeness | Minor inconsistencies) — one row per category per sheet. Most cross-tab Low findings fall under **Minor inconsistencies**. Do not file one row per cell. Lead the Explanation with the category name and count.
 
-Column reference: **A** Finding # (leave blank) | **B** Sheet (use `Multiple` — findings span two tabs) | **C** Cell/Row (list both cells, e.g., `Simple CEA B14, CEA B22`) | **D** Severity | **E** Error Type/Issue (one of: `Formula` | `Parameter` | `Adjustment` | `Assumption` | `Inconsistency` | `Legibility`) | **F** Explanation (3 sentences max, aim for 2; write for a researcher who may not have the spreadsheet open; include row labels alongside all cell references; state the discrepancy and which value is correct, or ask the researcher to confirm; High findings: include a brief consequence clause; no chain traces) | **G** Recommended Fix (imperative verb; say which cell should reference the other, or which should be updated to match) | **H** Estimated CE Impact (use exactly one of these six phrases with an em-dash " — " — that is a space, then U+2014 em-dash, then a space — do not use en-dash (–), hyphen (-), or pipe (|): `Raises CE — [estimate]` \| `Lowers CE — [estimate]` \| `Raises CE — magnitude unknown` \| `Lowers CE — magnitude unknown` \| `No CE impact` \| `Direction unknown`; punctuation variants cause sort failures in the compaction agent; always verify the dash character before writing) | **I** Status (leave blank — reconcile agent writes WONT_FIX here; compaction strips column I when writing to the final Findings sheet)
+Column reference: **A** Finding # (leave blank) | **B** Sheet (use `Multiple` — findings span two tabs) | **C** Cell/Row (list both cells, e.g., `Simple CEA B14, CEA B22`) | **D** Severity | **E** Error Type/Issue (one of: `Formula` | `Parameter` | `Adjustment` | `Assumption` | `Inconsistency` | `Legibility` | `Sourcing` | `Box Link`) | **F** Explanation (3 sentences max, aim for 2; write for a researcher who may not have the spreadsheet open; include row labels alongside all cell references; state the discrepancy and which value is correct, or ask the researcher to confirm; High findings: include a brief consequence clause; no chain traces) | **G** Recommended Fix (imperative verb; say which cell should reference the other, or which should be updated to match) | **H** Estimated CE Impact (use exactly one of these six phrases with an em-dash " — " — that is a space, then U+2014 em-dash, then a space — do not use en-dash (–), hyphen (-), or pipe (|): `Raises CE — [estimate]` \| `Lowers CE — [estimate]` \| `Raises CE — magnitude unknown` \| `Lowers CE — magnitude unknown` \| `No CE impact` \| `Direction unknown`; punctuation variants cause sort failures in the compaction agent; always verify the dash character before writing) | **I** Status (leave blank — reconcile agent writes WONT_FIX here; compaction strips column I when writing to the final Findings sheet)
+
+**Publication-readiness findings**: For Sourcing and Box Link findings: leave column D blank — these route to Publication Readiness. For Legibility findings: leave column D blank ONLY when Severity is Low; write Medium or High in column D when the issue is material. Do not write directly to the output sheets.
 
 See `reference/output-format.md` for full column definitions.
 

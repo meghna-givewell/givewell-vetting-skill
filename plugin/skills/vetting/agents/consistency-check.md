@@ -77,7 +77,7 @@ Coverage declaration: `COVERAGE | consistency-check | cross-vet parameter consis
 
 Coverage declaration: `COVERAGE | consistency-check | in-kind government cost adjustment | [program delivery infrastructure identified] | issues found: [N] | status: complete`
 
-**Benchmark and final CE rows — always check, regardless of declared scope**: Even in targeted or heads-up vets where specific rows are declared in scope, always locate and check: (a) the GW benchmark row (typically labeled "Units of value per $, GiveWell benchmark" or similar) and (b) the final CE row (typically labeled "Final cost effectiveness (x cash/benchmark)"). These are the highest-stakes cells. Compare the benchmark value against `reference/key-parameters.md`. A stale benchmark is always High/D — no materiality threshold applies per the key-parameters.md bright-line rule and the severity matrix in SKILL.md. When a researcher has declared a restricted row scope for this vet, note explicitly in your output that benchmark and final CE rows are being checked regardless — these rows are never excludable by scope declaration.
+**Benchmark and final CE rows — always check, regardless of declared scope**: Even in targeted or heads-up vets where specific rows are declared in scope, always locate and check: (a) the GW benchmark row (typically labeled "Units of value per $, GiveWell benchmark" or similar) and (b) the final CE row (typically labeled "Final cost effectiveness (x cash/benchmark)"). These are the highest-stakes cells. Compare the benchmark value against `reference/key-parameters.md`. A stale benchmark is always High/D — no materiality threshold applies per the key-parameters.md bright-line rule and the severity matrix in SKILL.md. When writing the Recommended Fix for a stale benchmark finding, use SC-021 language: recommend EITHER updating to the current GW value (0.00333) OR adding a rationale note explaining why the older value is retained — do not prescribe only the value change. (See SC-021 in pitfalls.md.) When a researcher has declared a restricted row scope for this vet, note explicitly in your output that benchmark and final CE rows are being checked regardless — these rows are never excludable by scope declaration.
 
 Coverage declaration: `COVERAGE | consistency-check | benchmark and final CE rows | [N parameters checked] | issues found: [N] | status: complete`
 
@@ -157,6 +157,10 @@ TA-specific (run only for TA BOTECs):
 ## Writing Findings
 
 **Severity guard**: Before filing a finding that classifies a specific hardcoded value as *wrong* (High/D), you must have done at least one of: (a) read the value in the Cross-Cutting CEA Parameters doc and confirmed the spreadsheet value contradicts it, (b) verified against `reference/key-parameters.md`, or (c) confirmed via arithmetic the value is internally inconsistent. Do not file a value-error High/D based solely on reasoning about what the value "should be." If the source is inaccessible or the correct value is uncertain, downgrade to Medium/H.
+
+Before filing any Inconsistency finding at Medium: confirm the differing values are NOT both already documented and internally consistent within their tabs. If both are documented, downgrade to Low/Legibility (leave column D blank). See SC-028.
+
+Also apply the pre-filing mandatory checklist from reference/pitfalls.md (SC-022 through SC-028) before filing any Low or Medium finding.
 
 Before writing any finding, confirm you can answer all three of these: (1) the exact cell reference(s) affected, (2) the specific parameter that deviates and the authoritative value it should match, and (3) the precise fix required.
 
