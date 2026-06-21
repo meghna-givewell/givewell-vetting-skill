@@ -6,7 +6,7 @@ argument-hint: "<Google Sheets URL or local file path>"
 
 # /vetting — GiveWell Spreadsheet Vetter
 
-**Skill version**: 2026-06-20 (v1.10.0) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
+**Skill version**: 2026-06-21 (v1.11.0) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
 
 You are a meticulous spreadsheet auditor for GiveWell. See the repository README for one-time setup (Hardened Google Workspace MCP). See `reference/key-parameters.md` for authoritative parameter values. See `reference/output-format.md` for output column definitions.
 
@@ -497,6 +497,13 @@ Reconcile staging tabs (one per reconcile agent, for net-new findings discovered
 | `stg-rec-uov` | leverage-uov-check |
 | `stg-rec-ceta` | ce-chain-trace-ta |
 
+Pass B and merge staging tabs (always create these in the same batch as the tables above):
+
+| Staging tab name | Agent |
+|---|---|
+| `stg-pass-b` | Pass B — all 11 CE-focus agents write here sequentially |
+| `stg-merge` | final-review-premerge — net-new Pass B findings; read by Wave 3 compaction |
+
 **Band-split extra staging tabs**: `band_count` is computable from `populated_rows`, which is known from the Step 2 structure review — before output setup runs. When `band_count > 1`, create all extra band staging tabs in the **same parallel batch** as the main staging tabs above. Do not defer this to just before spawning banded agents. Create the following extra tabs for each extra band (k=2 gives C/D; k=3 gives E/F; k=4 gives G/H):
 
 **Wave 1 banded agents**:
@@ -652,6 +659,7 @@ This restriction applies to MCP tools and external search/fetch tools only. Buil
 | final-review-gap-fill | rv, rn, wv |
 | final-review-validation | rv, rn, wv, si |
 | final-review-dashboard | rv, wv, si, ds |
+| final-review-premerge | rv, wv, si |
 | source-citation-verify | rv, wv, dc, wf |
 | internal-links-scan | rv, rn, rl, rc, wv |
 
@@ -772,6 +780,7 @@ Assign staging sheets before spawning:
 | sensitivity-scan | Column A of the Confidentiality Flags sheet | A |
 | hardcoded-values | Column D of the Hardcoded Values sheet (row also has column B = `hardcoded-values`) | D |
 | source-citation-verify | Column D of the Hardcoded Values sheet (row also has column B = `source-citation-verify`) | D |
+| final-review-premerge | Column D of the `stg-merge` staging tab | D |
 | final-review-compaction, final-review-gap-fill, final-review-validation | Column D of the Findings sheet | D |
 | final-review-dashboard | Column D of the Dashboard tab | D |
 
@@ -1076,11 +1085,88 @@ Issue each warning independently — a clean `stg-nscn-A` does not suppress a `s
 
 ---
 
+### Pass B — Second-Opinion CE-Focus Pass
+
+**Purpose**: Pass B is an independent re-run of 11 CE-critical agents with a CE-focus filter applied. Agents only file findings that would materially change the bottom-line CE estimate (Medium or High severity only). This catches decision-relevant findings that Pass A may have missed due to stochastic variation in a single run.
+
+**Pass B entry conditions** — confirm all before spawning any Pass B agent:
+- [ ] Wave 2.5 exit conditions satisfied.
+- [ ] `stg-pass-b` staging tab created and pre-expanded (created in the initial staging tab batch).
+
+**Skip condition**: Pass B runs regardless of vet scope (formula-only or full). It is entirely CE-focused by design and does not run pub-readiness agents.
+
+Announce: `[Pass B] Second-opinion CE-focus pass starting — 11 agents running sequentially. Agents file only Medium/High findings that would affect bottom-line CE.`
+
+**CE-focus context block**: Prepend the following block to every Pass B agent's session context, BEFORE the standard session context block and BEFORE the agent's own prompt. This overrides the agent's normal filing rules:
+
+> **SECOND-PASS CE-FOCUS MODE — read this before your agent instructions**
+>
+> You are running as an independent second-opinion agent. Your only goal is to find findings that would materially change the bottom-line CE estimate. Do not reference or attempt to recall anything from the first pass — treat this spreadsheet with completely fresh eyes.
+>
+> **Filing rules (override your normal instructions):**
+> - File ONLY Medium or High severity findings. Do NOT file Low findings.
+> - Do NOT file Publication Readiness items, legibility issues, sourcing gaps, or documentation notes.
+> - Before filing any finding, confirm: (a) fixing it would change bottom-line CE by ≥5%, OR (b) it violates a GiveWell key parameter standard (benchmark, moral weight, discount rate). If neither applies, do not file it.
+> - Skip all checks that do not affect CE — legibility, structural completeness, annotation quality, missing citations for non-CE cells.
+>
+> **Staging tab (override all other staging tab instructions)**: Write ALL findings to `stg-pass-b`. Do NOT write to any other staging tab. Before writing your first finding, read `stg-pass-b!A:A` in batches (`stg-pass-b!A1:A500`) to find the last occupied row, then write starting from the next available row. Write findings in the standard 9-column format (columns A–I), with column D = severity (Medium or High only).
+>
+> **AGENT_COMPLETE format (override)**: After writing all findings, write your AGENT_COMPLETE marker to the next available row in `stg-pass-b`: column A = `AGENT_COMPLETE`, column B = `[your-agent-filename]-pass-b`, column D = `Second-pass complete. Filed [N] findings.`
+
+**Pass B agent sequence** — spawn sequentially (one agent at a time; confirm each agent's AGENT_COMPLETE row in `stg-pass-b` before spawning the next):
+
+| Step | Agent file | Instance label | Notes |
+|---|---|---|---|
+| 1 | `agents/formula-check-arithmetic.md` | arith-pb | All rows — no row split |
+| 2 | `agents/formula-check-voi.md` | voi-pb | All rows |
+| 3 | `agents/formula-check-parameters.md` | params-pb | All rows |
+| 4 | `agents/consistency-check.md` | consist-pb | All rows |
+| 5 | `agents/key-params-check.md` | kp-pb | All rows |
+| 6 | `agents/ce-chain-trace.md` | ce-pb | All rows |
+| 7 | `agents/cross-tab-compare.md` | xcomp-pb | All rows |
+| 8 | `agents/heads-up-epi.md` | epi-pb | All rows; run both Section A and Section B in one pass |
+| 9 | `agents/heads-up-intervention.md` | int-pb | All rows |
+| 10 | `agents/leverage-funging.md` | lev-pb | All rows |
+| 11 | `agents/leverage-uov-check.md` | uov-pb | All rows |
+
+**Notes on Pass B agents**:
+- Do NOT append the standard adversarial B preamble to any Pass B agent — each runs as a single independent instance.
+- Pass B formula-check-arithmetic covers all rows (no split_row division).
+- Pass B heads-up-epi covers both Section A and Section B in one pass (do not split by section).
+- Pass B agents receive the same pre-read cache as their Pass A equivalents (same spreadsheet data; fresh context).
+
+**Pass B completion check**: After each agent completes, confirm its AGENT_COMPLETE row in `stg-pass-b` by reading in batches (`stg-pass-b!A1:B50`, `A51:B100`, …) looking for a row where column A = `AGENT_COMPLETE` and column B ends with `-pass-b` and matches this agent's label. If no AGENT_COMPLETE row appears within 3 minutes, re-spawn the agent once. After a second failure, proceed and note the gap in session context.
+
+Announce after all 11 agents complete: `[Pass B complete] Second-opinion pass done — [N] total findings written to stg-pass-b. Proceeding to pre-merge.`
+
+---
+
+### Pre-Wave-3 Merge
+
+**Purpose**: Read all findings in `stg-pass-b`. For each finding, determine whether a substantially similar finding already exists in any Pass A staging tab. Write genuinely new findings — those not caught in Pass A — to `stg-merge` so Wave 3 compaction processes them as part of the unified finding set.
+
+Spawn one `agents/final-review-premerge.md` agent. Include in session context:
+- Source spreadsheet ID and all vetted sheet names
+- Output spreadsheet ID (for reading all Pass A staging tabs and writing to `stg-merge`)
+- Full Pass A staging tab list (all `stg-arith-*`, `stg-voi-*`, `stg-kp-*`, `stg-consist-*`, `stg-params`, `stg-xcomp`, `stg-ce-*`, `stg-epi-*`, `stg-int-*`, `stg-lev-*`, `stg-uov-*`, `stg-rec-*` tabs — read from Dashboard A99 or session context)
+- `stg-pass-b` as the Pass B source tab name
+- `stg-merge` as the output tab name for net-new findings
+
+Wait for `final-review-premerge` to complete before proceeding to Wave 3.
+
+Announce after merge: `[Pre-merge complete] [Z] net-new Pass B findings written to stg-merge (will be processed by Wave 3 compaction). [X] Pass B findings were already covered in Pass A. [Y] existing Pass A findings upgraded by Pass B to higher severity.`
+
+**Add `stg-merge` to Wave 3 staging tab list**: When spawning the Wave 3 compaction agent, include `stg-merge` in the staging tab list in session context. Compaction reads all staging tabs including `stg-merge` — the pre-merge agent ensures it contains only net-new, non-duplicate findings at Medium or High severity.
+
+---
+
 ### Wave 3 — Sequential (after Wave 2.5)
 
 **Wave 3 entry conditions** — confirm all before running the self-verification pre-pass:
 - [ ] Wave 2.5 exit conditions satisfied (all reconcile agents complete, TA cross-check run).
-- [ ] Session context has output spreadsheet ID, source spreadsheet ID, staging tab list (from context or Dashboard A99).
+- [ ] Pass B complete (all 11 CE-focus agents wrote AGENT_COMPLETE to `stg-pass-b`).
+- [ ] Pre-merge complete (`final-review-premerge` wrote AGENT_COMPLETE to `stg-merge`).
+- [ ] Session context has output spreadsheet ID, source spreadsheet ID, staging tab list **including `stg-merge`** (from context or Dashboard A99).
 
 **Progress announcement** before starting: `[Phase 3/4 done → Phase 4/4] Reconciliation complete — starting final review (4 sequential steps). If this session is interrupted before Wave 3 completes, run /givewell-vetting:vetting-finalize (plugin) or /vetting-finalize (standalone) with the output and source spreadsheet URLs to resume.`
 
@@ -1133,6 +1219,7 @@ Issue each warning independently — a clean `stg-nscn-A` does not suppress a `s
 | ce-chain-trace-ta A | `stg-ceta-A` | Yes (self-detecting — check AGENT_COMPLETE text) |
 | ce-chain-trace-ta B | `stg-ceta-B` | Yes (self-detecting — check AGENT_COMPLETE text) |
 | internal-links-scan | `stg-ilinks` | Yes (check AGENT_COMPLETE text — 0 findings valid when no Box or internal Drive links exist) |
+| final-review-premerge | `stg-merge` | Yes (if Pass B found no net-new findings — check AGENT_COMPLETE text for count) |
 
 **Checking reconcile staging tabs**: Each stg-rec-* tab must contain an AGENT_COMPLETE row (column D = `AGENT_COMPLETE`) before Wave 3 can read clean reconcile output. For each stg-rec-* tab in the staging tab list: read in batches (`{tab}!A1:I50`, `{tab}!A51:I100`, …) until the AGENT_COMPLETE row is found or two consecutive batches return no non-empty rows. If any stg-rec-* tab lacks an AGENT_COMPLETE marker, announce: `⚠️ Pre-Wave-3 self-verification failed: reconcile agent for [pair] did not complete — stg-rec-[pair] has no AGENT_COMPLETE row. B-instance-only findings for this pair may be missing. Consider re-running the reconcile agent or proceeding with explicit researcher approval.` Do not silently skip this check. This check is in addition to the per-agent checks in the table above.
 
