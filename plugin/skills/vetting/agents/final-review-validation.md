@@ -61,6 +61,38 @@ Coverage declaration: "ID integrity check complete. Findings IDs found: [N], seq
 
 ---
 
+## Check CROSS-3 — Compaction finding count consistency
+
+Find the AGENT_COMPLETE row written by `final-review-compaction` in the Findings sheet. Scan the rows collected in Step 1 for a row where column B = `final-review-compaction` AND column D = `AGENT_COMPLETE`. From column F of that row, extract the number of Findings IDs assigned (the text reads: `[N] Findings IDs assigned (F-001–F-[NNN])`).
+
+1. **Compaction marker present**: If no compaction marker row is found, file as **High/Legibility**: "final-review-compaction AGENT_COMPLETE marker not found in the Findings sheet. Compaction may have failed or written its marker to the wrong location. Do not publish findings until compaction is confirmed complete."
+
+2. **Finding count match**: Compare the N from the compaction marker against the actual count of non-divider, non-AGENT_COMPLETE finding rows you read in Step 1 (count rows with an F-* ID in column A). If the two counts differ by more than 2, file as **Medium/Legibility**: "Compaction marker states [N] findings were written (F-001–F-[NNN]), but the Findings sheet currently contains [actual] F-* rows — a discrepancy of [|N − actual|]. Verify no findings were added, deleted, or duplicated post-compaction. Expected count: [N]. Actual count: [actual]."
+
+3. **Publication Readiness count match**: From the compaction marker column F, also extract the number of Publication Readiness IDs assigned (`[M] Publication Readiness IDs assigned`). Compare to the actual PR row count from Step 1. If they differ by more than 2, file as **Medium/Legibility** with the same reasoning pattern (PR sheet instead of Findings sheet).
+
+If the compaction marker column F does not contain parseable counts (e.g., the format was not followed), skip steps 2 and 3 and note: "Compaction marker present but count data not parseable — skipping count consistency check."
+
+Coverage declaration: "CROSS-3 compaction count check complete. Compaction marker: [present/absent]. Stated findings count: [N]. Actual findings count: [actual]. Delta: [|diff| or 'within tolerance']. Stated PR count: [M]. Actual PR count: [actual PR]. Status: [clean / issues filed]."
+
+---
+
+## Check CROSS-4 — Contradictory severity for same cell reference
+
+Using the finding rows collected in Step 1 (both Findings sheet and Publication Readiness sheet), group findings by their Sheet (column B) + Cell/Row (column C) key. A key is formed by concatenating the normalized Sheet name and normalized Cell reference separated by `|`. Normalize by stripping leading/trailing whitespace and uppercasing the cell reference portion (e.g., `b14` → `B14`).
+
+For each group with 2 or more findings sharing the same Sheet+Cell key:
+
+1. **Check for severity contradiction**: if any two findings in the group have different non-blank values in column D (Severity), this is a potential contradiction. Contradictions to flag: one finding is `High` and another is `Medium` or `Low`; one is `Medium` and another is `Low`. Findings with blank column D (PR-routed) do not count as a severity contradiction — it is normal to have one Findings-routed finding and one PR-routed finding for the same cell.
+
+2. **Verify the findings describe distinct issues**: read column E (Error Type) for each finding in the group. If column E values are different (e.g., `Formula` and `Legibility`), the findings likely describe distinct issues for the same cell — this is expected. Do NOT file a finding for the same-cell pair if Error Types differ. Only flag when the same cell has two findings with the same or closely related Error Type AND different non-blank severities.
+
+3. **File if contradictory**: if two findings for the same cell have the same Error Type (or Error Types that could describe the same underlying issue, e.g., `Formula` and `Parameter` for the same cell) AND different non-blank severities, file as **Medium/Legibility**: "Cell [ref] has two findings with conflicting severities: [F-ID] at [severity1] ([Error Type1]) and [F-ID2] at [severity2] ([Error Type2]). Both findings appear to describe the same issue at different confidence levels. Review and merge or resolve the severity disagreement before publishing."
+
+Coverage declaration: "CROSS-4 contradictory severity check complete. Cell groups with multiple findings: [N]. Groups flagged for severity contradiction: [M] (filed [M] findings). No other contradictions found."
+
+---
+
 ## Check 0 — CE baseline re-verification
 
 Before computing or evaluating any CE impact estimate, independently re-read the CE baseline cell from the source spreadsheet. Do not rely solely on the pre-vet baseline from session context — that value was read at session start and could reflect a cell that was updated, or a pre-adjustment subtotal rather than the final model output.
@@ -158,7 +190,7 @@ If Check 0 found a >1% discrepancy between the live cell value and the session c
 
 Rationale: Medium Formula, Parameter, and Adjustment findings can affect CE even if their impact is below the High threshold. Researchers need the CE direction to triage them against High findings. For Medium `Assumption` findings where CE impact is confirmed zero, write `No CE impact` — do not leave blank. For Medium `Legibility` and `Inconsistency` findings: per output-format.md, blank column H is acceptable — write `No CE impact` only when you have positively confirmed the CE impact is zero; do not fill it automatically.
 
-**Pass B — quantify High "magnitude unknown" and flag unresolved directions**: For every **High** finding where column H contains "magnitude unknown" OR "Direction unknown" (i.e., already filled but not quantified or direction unresolved):
+**Pass B — quantify "magnitude unknown" and flag unresolved directions**: For every **High or Medium** finding where column H contains "magnitude unknown" OR "Direction unknown" (i.e., already filled but not quantified or direction unresolved):
 
 1. Read the cell(s) referenced in column C of that finding using `read_sheet_values` (UNFORMATTED_VALUE) on the source spreadsheet.
 2. Read the CE baseline cell (verified in Check 0) in UNFORMATTED_VALUE mode.
@@ -170,7 +202,7 @@ The goal is that no High finding exits validation with a bare "magnitude unknown
 
 Do not modify any other columns of existing findings.
 
-Coverage declaration: "CE impact completeness check done. Pass A — High findings: [N total, M filled, K already had content]. Medium Formula/Parameter/Adjustment findings: [N total, M filled, K already had content]. Low Formula/Parameter/Adjustment findings: [N total, M filled, K already had content]. Pass B — High 'magnitude unknown' or 'Direction unknown' findings reviewed: [N], quantified: [M], retained with reason: [K], changed to No CE impact: [J]."
+Coverage declaration: "CE impact completeness check done. Pass A — High findings: [N total, M filled, K already had content]. Medium Formula/Parameter/Adjustment findings: [N total, M filled, K already had content]. Low Formula/Parameter/Adjustment findings: [N total, M filled, K already had content]. Pass B — High or Medium 'magnitude unknown' or 'Direction unknown' findings reviewed: [N], quantified: [M], retained with reason: [K], changed to No CE impact: [J]."
 
 ---
 

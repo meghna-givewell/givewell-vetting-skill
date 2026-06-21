@@ -687,6 +687,17 @@ Agents run in four phases (Wave 1, Wave 2, Wave 2.5, Wave 3) with Wave 1.5 as a 
 - [ ] Vet metadata written to Dashboard A150–A154.
 - [ ] Session context block assembled: spreadsheet ID, in-scope/out-of-scope sheets, all output sheet IDs, user email, program context, declared deviations, current date.
 
+**Flagged-notes compilation — run before spawning Wave 1 agents**: Using the cell notes data from the initial parallel read batch (already in session context), scan every note across all vetted sheets for the following keywords (case-insensitive): `TODO`, `TBD`, `update`, `verify`, `check this`, `confirm`, `placeholder`, `estimate`, `assume`, `assumption`, `provisional`, `FIXME`, `outdated`, `stale`, `need to`, `to be`. For each match, record: sheet name, cell reference, and the first 80 characters of the note text.
+
+Compile a **high-attention cells list** — a concise bullet list of up to 15 flagged cells (prioritize cells on sheets with the most total findings expected, e.g., Main CEA). Format each entry as: `[Sheet]![Cell] — "[note excerpt]"`.
+
+Pass this list in the session context for all Wave 1 formula-check agents using this addition to the session context block:
+
+> **Flagged cells from notes scan (pay extra attention):** The following cells have notes containing keywords suggesting uncertainty, incompleteness, or pending updates. Formula-check agents should audit these cells with heightened scrutiny and explicitly confirm or deny that each one represents an error.
+> [bullet list]
+
+If fewer than 3 notes match the keyword list, skip the list and note: "Flagged-notes scan: fewer than 3 matches — no high-attention list compiled."
+
 **Before spawning Wave 1 agents**, compute the following from the Step 2 structure review and `get_spreadsheet_info` results:
 
 1. **`split_row`**: `ceil(populated_rows / 2)` for the primary vetted sheet. Formula-check A and B audit spreadsheet rows 1–`split_row`; C and D audit rows `split_row+1` through the last populated row. This halves the per-agent context load while keeping independent verification on each half. For workbooks with multiple vetted sheets, use the largest sheet's populated row count to compute `split_row`. Pass the row range in each agent's session context.
@@ -1241,6 +1252,14 @@ Announce after merge: `[Pre-merge complete] [Z] net-new Pass B findings written 
 **Checking hardcoded-values and sensitivity-scan**: These agents write directly to their output sheets, not to staging tabs. Read **all rows** of `'Hardcoded Values'!A:H` in batches (A1:H50, A51:H100, …, until two consecutive batches return no non-empty rows) — search every row for any column containing `AGENT_COMPLETE`. Verify **both** markers are present by agent name: a row where column B = `hardcoded-values` and column D = `AGENT_COMPLETE` (required always); and, if Wave 1.5 ran, a row where column B = `source-citation-verify` and column D = `AGENT_COMPLETE`. Do not stop at the last non-empty row — source-citation-verify writes its AGENT_COMPLETE after hardcoded-values' marker, so the last row only confirms source-citation-verify, not hardcoded-values. If the hardcoded-values marker is absent (and 0-findings is not plausible), treat as a silent failure. Similarly, read all rows of `'Confidentiality Flags'!A:D` in batches — look for a row where column A = `AGENT_COMPLETE` (sensitivity-scan writes its marker to column A, not column D).
 
 **Checking skipped agents**: For any agent that was explicitly skipped (source-data-check when no source tabs exist, leverage-uov-check when no leverage tab exists, notes-scan when formula-only scope, readability when formula-only scope): confirm the skip was recorded in session context before the tab was created. If the tab is empty but the skip was NOT recorded, treat as a potential silent failure rather than a legitimate skip.
+
+**COVERAGE_ROWS verification — run after the AGENT_COMPLETE table check**: For each formula-check agent staging tab whose AGENT_COMPLETE row was confirmed present, extract the `COVERAGE_ROWS:` field from column F of that AGENT_COMPLETE row. The field format is: `COVERAGE_ROWS: [row ranges, e.g., 1-49,76-150] | Staging sheet: ...`. Parse the highest row number mentioned in the row ranges. Compare it against the `populated_rows` value recorded in session context for each vetted sheet (recorded during Step 2 structure review).
+
+Apply this check for: `stg-arith-A`, `stg-arith-B`, `stg-data-A`, `stg-data-B`, `stg-edge-A`, `stg-edge-B`, `stg-struct-A`, `stg-struct-B`.
+
+If the highest row number in COVERAGE_ROWS is more than 15 rows less than the sheet's `populated_rows`, flag in chat: `⚠️ COVERAGE GAP: [agent] COVERAGE_ROWS max row = [N] but sheet has [M] populated rows — [agent] may not have read rows [N+1]–[M]. Consider re-running [agent] or manually reviewing rows [N+1]–[M].` Do not block Wave 3 for coverage gaps — announce and proceed.
+
+If the AGENT_COMPLETE column F does not contain a `COVERAGE_ROWS:` field, note in chat: `⚠️ [agent] AGENT_COMPLETE missing COVERAGE_ROWS field — cannot verify row coverage.` Do not file a finding; record in Wave 3 session context for researcher awareness.
 
 For any required agent whose staging tab is empty and where 0-findings is **not** a plausible clean pass: this is a **hard halt** — do not spawn compaction:
 
