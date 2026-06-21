@@ -73,7 +73,7 @@ For each parameter in the table above, scan the collected labels for a match. A 
 - "VAS moral weight," "avert death 6-59m," "avert death 6–59m," "avert 6–59 month death," "6-59 month," "6 to 59 month" + moral weight → Avert death 6–59m VAS
 - "p(update)," "probability of update," "VOI p(update)," "probability update cap," "p(trial updates belief)" → VOI p(update) cap
 
-For each match: call `read_sheet_values` (UNFORMATTED_VALUE) on that specific cell to get the raw stored number.
+For each match: call `read_sheet_values` (UNFORMATTED_VALUE) on that specific cell AND all populated cells in the same row (columns B through the last non-empty column) to get the raw stored numbers. Flag any cell in the row that deviates from the canonical value — this catches stale benchmarks in secondary columns (e.g., Simple CEA column C) that would be missed if only column B is read.
 
 **Write the coverage log before filing any findings** (required — do not skip):
 

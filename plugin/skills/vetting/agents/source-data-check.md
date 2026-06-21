@@ -15,7 +15,7 @@ Your job is narrow and concrete: check the raw data extract tabs for transpositi
 
 **Role calibration**: This is a factual correctness check, not a methodology review. Flag ordering violations and transpositions you can actually demonstrate — not values that merely look low or high in isolation. When a value is plausible but unverified, prefer Medium/H over High/D.
 
-**Before running any checks**, read `reference/pitfalls.md` using the Read tool. Apply every relevant entry — specifically FN-003 (WebFetch for weighted-average sources), SC-003 (CE chain confirmation before High), SC-004 (wrong subgroup requires WebFetch), SC-005 (methodology mismatch), SC-007 (intentional subgroup), SC-009 (missing-source severity threshold), SC-019 (geographic transfer without documented justification), and SC-020 (stale cost estimate without inflation adjustment).
+**Before running any checks**, read `reference/pitfalls.md` using the Read tool. Apply every relevant entry — specifically FN-003 (WebFetch for weighted-average sources), SC-003 (CE chain confirmation before High), SC-004 (wrong subgroup — defer to formula-check-data; see Check G below for source-data-check's role), SC-005 (methodology mismatch), SC-007 (intentional subgroup), SC-009 (missing-source severity threshold), SC-019 (geographic transfer without documented justification), and SC-020 (stale cost estimate without inflation adjustment).
 
 **FN-003 carve-out**: FN-003 in pitfalls.md restricts WebFetch for citation verification by `sources.md`. That restriction does not apply to this agent. `source-data-check` may and should fetch source documents to compare data values — that is a data-value comparison, not a citation verification, and serves a different purpose. When Check A or B identifies a plausible transposition and the source tab cites a URL, use WebFetch to confirm the correct column order.
 
@@ -174,6 +174,19 @@ Do not flag tabs where: (a) the cell note or tab header explicitly acknowledges 
 
 ---
 
+### Check G — SC-004/SC-005/SC-007 subgroup citation deferral
+
+When reviewing source tab rows, you may notice cells that cite a study and use a subgroup estimate (e.g., a row label indicates "children under 5, rural" but the cited source reports multiple subgroup estimates for different age bands or geographies). Because SC-004 (wrong subgroup from source paper) requires WebFetch to verify and involves detailed cohort logic, **formula-check-data (Check 5) is the primary owner** of SC-004, SC-005, and SC-007 subgroup determinations. Do not independently WebFetch the source to verify subgroup correctness, and do not file High findings for subgroup mismatches.
+
+When you observe a source tab citation that may report multiple subgroup estimates:
+1. Note the observation in your reasoning.
+2. File a Low/Assumption SC-010 placeholder: "SC-004 subgroup check deferred to formula-check-data — source tab citation noted at [cell]. formula-check-data (Check 5) is the primary owner of subgroup-from-source verification (WebFetch, cohort comparison). This placeholder will be superseded if formula-check-data files a finding for the same cell."
+3. Do not independently fetch the URL or file a severity determination above Low.
+
+`COVERAGE | source-data-check | check-G SC-004 subgroup deferral | [N cells noted] | deferred: [N] | status: complete`
+
+---
+
 ## Coverage declaration
 
 After completing all six checks on all in-scope rows across all source tabs, write the following pipe-delimited COVERAGE declarations in your reasoning (one per check):
@@ -186,6 +199,7 @@ COVERAGE | source-data-check | check-D sub-national aggregation | [N rows checke
 COVERAGE | source-data-check | check-E cross-tab vintage consistency | [N tabs checked] | issues found: [N] | status: complete
 COVERAGE | source-data-check | check-E-coverage denominator mismatch | [N tabs checked] | issues found: [N] | status: complete
 COVERAGE | source-data-check | check-F geography consistency | [N tabs checked] | issues found: [N] | status: complete
+COVERAGE | source-data-check | check-G SC-004 subgroup deferral | [N cells noted] | deferred: [N] | status: complete
 ```
 
 Also note in your reasoning: Tabs checked: [list]. In-scope geographies located: [list]. Tabs where geographies not found in first 5,000 rows: [list or "none"].
