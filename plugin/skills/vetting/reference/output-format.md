@@ -203,3 +203,5 @@ Columns: Cell/Row | Content Found | Sensitivity Type | Recommended Action
 - **Recommended Action**: Specific instruction (e.g., "Remove name — replace with role title", "Delete row before publication")
 
 Confidentiality Flags findings go on this sheet only — do not duplicate in the Findings sheet.
+
+**AGENT_COMPLETE placement (non-standard)**: `sensitivity-scan` writes its AGENT_COMPLETE marker to **column A** of the Confidentiality Flags sheet (not column D as in all other agents). This is because column D of this sheet is "Recommended Action" — occupied by structured output. The AGENT_COMPLETE row has: column A = `AGENT_COMPLETE`, column D = completion summary. The self-verification pre-pass in SKILL.md accounts for this by checking column A specifically for this sheet.

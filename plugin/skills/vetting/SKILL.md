@@ -507,7 +507,7 @@ Pass B and merge staging tabs (always create these in the same batch as the tabl
 
 | Staging tab name | Agent |
 |---|---|
-| `stg-pass-b` | Pass B — all 13 CE-focus agents write here sequentially |
+| `stg-pass-b` | Pass B — all 14 CE-focus agents write here sequentially |
 | `stg-merge` | final-review-premerge — net-new Pass B findings; read by Wave 3 compaction |
 
 **Band-split extra staging tabs**: `band_count` is computable from `populated_rows`, which is known from the Step 2 structure review — before output setup runs. When `band_count > 1`, create all extra band staging tabs in the **same parallel batch** as the main staging tabs above. Do not defer this to just before spawning banded agents. Create the following extra tabs for each extra band (k=2 gives C/D; k=3 gives E/F; k=4 gives G/H):
@@ -529,6 +529,8 @@ Create only the extra tabs for the bands that actually exist (band_count=2 → o
 **Staging tab pre-expand**: Immediately after writing all header rows, write a single blank value to row 500 of each staging tab (e.g., `stg-arith-A!A500`, `stg-data-A!A500`, etc.) using `modify_sheet_values`. This forces Google Sheets to allocate at least 500 rows per staging tab and prevents silent row-drop failures for agents with large output sets. Fire all pre-expand writes in a single parallel batch.
 
 **Persist staging tab log to Dashboard at A99**: Write "Staging Sheet Log" in A99, then one row per staging tab (agent name | staging tab name) — including all extra band tabs created above. This log survives context compaction and lets Wave 3 compaction recover the full staging tab list if the session is interrupted before Wave 3 begins. The log must be complete at the time of writing; do not append to it later. **Prerequisite**: confirm that Step 2 (structure review) has completed and `band_count` is known before writing this log — `band_count` determines whether extra band staging tabs exist, and writing the log before band_count is resolved creates a circular dependency where the log is incomplete but already marked done.
+
+**CE baseline recovery cell**: After writing staging tab names to A99, also write the CE baseline values to the output spreadsheet Dashboard: write `CE_BASELINE_RECOVERY` as a label to cell A155, then write each geography baseline as `<geography> = <cell> = <value>` to cells A156, A157, … (one geography per row). This is the recovery location for Wave 3 agents if session context is compacted. Format: `{geography} = {cell} = {value}`, e.g., "Nigeria = B48 = 7.8x".
 
 ---
 
@@ -1087,7 +1089,7 @@ Issue each warning independently — a clean `stg-nscn-A` does not suppress a `s
 **TA misclassification cross-check**: After all Wave 2.5 reconciliation agents complete and before starting Wave 3, verify that heads-up-intervention-B and ce-chain-trace-ta reached consistent TA/non-TA classifications. Run this check unconditionally — the dangerous case is a TA grant classified as non-TA (not the reverse), so gating on `is_ta_botec` would miss exactly the failures this check is designed to catch.
 
 1. Read staging sheet `stg-int-B` in batched increments (`A1:I50`, `A51:I100`, continuing until two consecutive empty batches) — **the MCP tool returns at most 50 rows per call; AGENT_COMPLETE appears after all findings and may be beyond row 50.** Find the AGENT_COMPLETE row and extract the `Routing decision:` field from column F. **The `Routing decision:` field must appear as the first element in column F** — parse it as a prefix match: the field is present if column F starts with `Routing decision:`. If column F does not start with this prefix, treat the routing decision as missing and announce: `⚠️ TA cross-check: stg-int-B AGENT_COMPLETE row has no Routing decision prefix in column F — cannot determine TA classification for heads-up-intervention-B. Skipping mismatch check.`
-2. Read staging sheet `stg-ceta-A` in batched increments (`A1:I50`, `A51:I100`, continuing until two consecutive empty batches) — find the AGENT_COMPLETE row. First check whether an AGENT_COMPLETE row exists at all — if no AGENT_COMPLETE row is found, announce: `⚠️ TA cross-check: stg-ceta-A has no AGENT_COMPLETE marker — ce-chain-trace-ta-A may have failed silently. Skipping TA mismatch check; consider re-running ce-chain-trace-ta before Wave 3.` Then proceed to Step 4 (silent agree). Do not evaluate Steps 3a or 3b when stg-ceta-A has no AGENT_COMPLETE. If an AGENT_COMPLETE row is found, check whether column F contains `No TA grant signals found` (non-TA) or `TA grant signals confirmed:` (TA-positive canonical phrase).
+2. Read staging sheets `stg-ceta-A` and `stg-ceta-B` in batched increments (`A1:I50`, `A51:I100`, continuing until two consecutive empty batches) — find the AGENT_COMPLETE row in each. For each tab, check whether an AGENT_COMPLETE row exists. If neither tab has an AGENT_COMPLETE row, announce: `⚠️ TA cross-check: neither stg-ceta-A nor stg-ceta-B has an AGENT_COMPLETE marker — ce-chain-trace-ta may have failed silently. Skipping TA mismatch check; consider re-running ce-chain-trace-ta before Wave 3.` Then proceed to Step 4 (silent agree). If at least one tab has an AGENT_COMPLETE row, check column F of each present AGENT_COMPLETE: look for `No TA grant signals found` (non-TA) or `TA grant signals confirmed:` (TA-positive canonical phrase). If either instance finds `TA grant signals confirmed:`, treat the vet as TA-positive (either instance confirming TA signals is sufficient). If both present instances say `No TA grant signals found`, treat as non-TA. If only one instance is present and its result is inconclusive, treat as inconclusive and apply Step 3c.
 3a. If heads-up-intervention-B declared `Routing decision: A — non-TA` but ce-chain-trace-ta-A column F contains `TA grant signals confirmed:` (its AGENT_COMPLETE does **not** contain `No TA grant signals found`), announce:
 
 > ⚠️ TA classification mismatch: heads-up-intervention-B identified this as non-TA (ran Section A intervention checks only) but ce-chain-trace-ta found TA signals. If this is a TA grant, Section B TA grant checks were skipped by heads-up-intervention-B. Consider re-running heads-up-intervention with `is_ta_botec = true` in session context before Wave 3.
@@ -1120,7 +1122,7 @@ Issue each warning independently — a clean `stg-nscn-A` does not suppress a `s
 
 **Skip condition**: Pass B runs regardless of vet scope (formula-only or full). It is entirely CE-focused by design and does not run pub-readiness agents.
 
-Announce: `[Pass B] Second-opinion CE-focus pass starting — 13 agents running sequentially. Agents file only Medium/High findings that would affect bottom-line CE.`
+Announce: `[Pass B] Second-opinion CE-focus pass starting — 14 agents running sequentially. Agents file only Medium/High findings that would affect bottom-line CE.`
 
 **CE-focus context block**: Prepend the following block to every Pass B agent's session context, BEFORE the standard session context block and BEFORE the agent's own prompt. This overrides the agent's normal filing rules:
 
@@ -1136,7 +1138,7 @@ Announce: `[Pass B] Second-opinion CE-focus pass starting — 13 agents running 
 >
 > **Staging tab (override all other staging tab instructions)**: Write ALL findings to `stg-pass-b`. Do NOT write to any other staging tab. Before writing your first finding, read `stg-pass-b!A:A` in batches (`stg-pass-b!A1:A500`) to find the last occupied row, then write starting from the next available row. Write findings in the standard 9-column format (columns A–I), with column D = severity (Medium or High only).
 >
-> **AGENT_COMPLETE format (override)**: After writing all findings, write your AGENT_COMPLETE marker to the next available row in `stg-pass-b`: column A = `AGENT_COMPLETE`, column B = `[your-agent-filename]-pass-b`, column D = `Second-pass complete. Filed [N] findings.`
+> **AGENT_COMPLETE format (override)**: After writing all findings, write your AGENT_COMPLETE marker to the next available row in `stg-pass-b`: column B = `[your-agent-filename]-pass-b`, column D = `AGENT_COMPLETE`, column F = `Second-pass complete. Filed [N] findings.`
 
 **Pass B agent sequence** — spawn sequentially (one agent at a time; confirm each agent's AGENT_COMPLETE row in `stg-pass-b` before spawning the next):
 
@@ -1155,6 +1157,7 @@ Announce: `[Pass B] Second-opinion CE-focus pass starting — 13 agents running 
 | 11 | `agents/leverage-uov-check.md` | uov-pb | All rows |
 | 12 | `agents/ce-replication.md` | cerep-pb | All rows; no adversarial preamble |
 | 13 | `agents/suspicion-first.md` | susp-pb | All rows; no adversarial preamble |
+| 14 | `agents/heads-up-evidence.md` | evid-pb | All rows; no adversarial preamble |
 
 **Notes on Pass B agents**:
 - Do NOT append the standard adversarial B preamble to any Pass B agent — each runs as a single independent instance.
@@ -1162,9 +1165,9 @@ Announce: `[Pass B] Second-opinion CE-focus pass starting — 13 agents running 
 - Pass B heads-up-epi covers both Section A and Section B in one pass (do not split by section).
 - Pass B agents receive the same pre-read cache as their Pass A equivalents (same spreadsheet data; fresh context).
 
-**Pass B completion check**: After each agent completes, confirm its AGENT_COMPLETE row in `stg-pass-b` by reading in batches (`stg-pass-b!A1:B50`, `A51:B100`, …) looking for a row where column A = `AGENT_COMPLETE` and column B ends with `-pass-b` and matches this agent's label. If no AGENT_COMPLETE row appears within 3 minutes, re-spawn the agent once. After a second failure, proceed and note the gap in session context.
+**Pass B completion check**: After each agent completes, confirm its AGENT_COMPLETE row in `stg-pass-b` by reading in batches (`stg-pass-b!A1:F50`, `A51:F100`, …) looking for a row where column D = `AGENT_COMPLETE` and column B ends with `-pass-b` and matches this agent's label. If no AGENT_COMPLETE row appears within 3 minutes, re-spawn the agent once. After a second failure, proceed and note the gap in session context.
 
-Announce after all 13 agents complete: `[Pass B complete] Second-opinion pass done — [N] total findings written to stg-pass-b. Proceeding to pre-merge.`
+Announce after all 14 agents complete: `[Pass B complete] Second-opinion pass done — [N] total findings written to stg-pass-b. Proceeding to pre-merge.`
 
 ---
 
@@ -1191,7 +1194,7 @@ Announce after merge: `[Pre-merge complete] [Z] net-new Pass B findings written 
 
 **Wave 3 entry conditions** — confirm all before running the self-verification pre-pass:
 - [ ] Wave 2.5 exit conditions satisfied (all reconcile agents complete, TA cross-check run).
-- [ ] Pass B complete (all 13 CE-focus agents wrote AGENT_COMPLETE to `stg-pass-b`).
+- [ ] Pass B complete (all 14 CE-focus agents wrote AGENT_COMPLETE to `stg-pass-b`).
 - [ ] Pre-merge complete (`final-review-premerge` wrote AGENT_COMPLETE to `stg-merge`).
 - [ ] Session context has output spreadsheet ID, source spreadsheet ID, staging tab list **including `stg-merge`** (from context or Dashboard A99).
 
@@ -1220,8 +1223,8 @@ Announce after merge: `[Pre-merge complete] [Z] net-new Pass B findings written 
 | formula-check-parameters A | `stg-params-A` | Yes |
 | formula-check-parameters B | `stg-params-B` | Yes |
 | cross-tab-compare | `stg-xcomp` | Yes (self-detecting — check AGENT_COMPLETE text) |
-| hardcoded-values | `'Hardcoded Values'!A:H` | No — check for AGENT_COMPLETE row in any column |
-| sensitivity-scan | `'Confidentiality Flags'!A:D` | No — check for AGENT_COMPLETE row in any column |
+| hardcoded-values | `'Hardcoded Values'!A:H` | No — check for AGENT_COMPLETE in **column D** (column B = `hardcoded-values`; standard placement) |
+| sensitivity-scan | `'Confidentiality Flags'!A:D` | No — check for AGENT_COMPLETE in **column A** (non-standard; sensitivity-scan writes marker to column A, not column D — see line 1257 for details) |
 | source-data-check A | `stg-srcdt-A` | Yes (skip if no source data tabs) |
 | source-data-check B | `stg-srcdt-B` | Yes (skip if no source data tabs) |
 | sources A | `stg-src-A` | Yes (check AGENT_COMPLETE text) |
@@ -1260,7 +1263,9 @@ Announce after merge: `[Pre-merge complete] [Z] net-new Pass B findings written 
 
 **COVERAGE_ROWS verification — run after the AGENT_COMPLETE table check**: For each formula-check agent staging tab whose AGENT_COMPLETE row was confirmed present, extract the `COVERAGE_ROWS:` field from column F of that AGENT_COMPLETE row. The field format is: `COVERAGE_ROWS: [row ranges, e.g., 1-49,76-150] | Staging sheet: ...`. Parse the highest row number mentioned in the row ranges. Compare it against the `populated_rows` value recorded in session context for each vetted sheet (recorded during Step 2 structure review).
 
-Apply this check for: `stg-arith-A`, `stg-arith-B`, `stg-data-A`, `stg-data-B`, `stg-edge-A`, `stg-edge-B`, `stg-struct-A`, `stg-struct-B`, `stg-params-A`, `stg-params-B`.
+Apply this check for: `stg-arith-A`, `stg-arith-B`, `stg-data-A`, `stg-data-B`, `stg-edge-A`, `stg-edge-B`, `stg-struct-A`, `stg-struct-B`, `stg-params-A`, `stg-params-B`, `stg-consist-A`, `stg-consist-B`, `stg-evid-A`, `stg-evid-B`, `stg-epi-A`, `stg-epi-B`, `stg-lev-A`, `stg-lev-B`, `stg-kp-A`, `stg-kp-B`.
+
+Note: `stg-ce-A` and `stg-ce-B` (ce-chain-trace) declare `COVERAGE_ROWS: full chain trace (not row-sequential)` — this agent traces the CE chain rather than scanning rows sequentially. For these two tabs, the COVERAGE_ROWS check verifies the field is present (confirming the agent completed chain tracing) but does not apply the row-gap comparison against `populated_rows`.
 
 If the highest row number in COVERAGE_ROWS is more than 15 rows less than the sheet's `populated_rows`, flag in chat: `⚠️ COVERAGE GAP: [agent] COVERAGE_ROWS max row = [N] but sheet has [M] populated rows — [agent] may not have read rows [N+1]–[M]. Consider re-running [agent] or manually reviewing rows [N+1]–[M].` Do not block Wave 3 for coverage gaps — announce and proceed.
 
@@ -1274,7 +1279,7 @@ Proceed only after either (a) the missing agent successfully completes, or (b) e
 
 **Wave 3 session context** — pass to each Wave 3 agent:
 
-> `Output spreadsheet ID: <id>` | `Source spreadsheet ID: <id>` | `Source spreadsheet URL: <url>` | `Vet scope: <full or formula-only>` | `CE baseline: <geography = cell = value, one per geography>` | `All staging tabs: [read from Dashboard A99 if not in context]` | `User email: <email>` | `Current date: <today>`
+> `Output spreadsheet ID: <id>` | `Source spreadsheet ID: <id>` | `Source spreadsheet URL: <url>` | `Vet scope: <full or formula-only>` | `CE baseline: <geography = cell = value, one per geography> [recovery: read Dashboard A156 onward if not in context — label row is A155 = CE_BASELINE_RECOVERY]` | `All staging tabs: [read from Dashboard A99 if not in context]` | `User email: <email>` | `Current date: <today>`
 >
 > **Staging tab recovery**: If the full staging tab list is not in current context (context may have been compacted since Wave 1), read Dashboard cells A99 onward of the output spreadsheet to recover the complete list before proceeding.
 

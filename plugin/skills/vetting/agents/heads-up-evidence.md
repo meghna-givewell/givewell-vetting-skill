@@ -62,18 +62,9 @@ For each top-5 parameter that fails check 2 (internal/judgment-based source with
 
 **Correlated discrepancy check**: when 2 or more findings you have filed in this session share a directional pattern (e.g., all values reading high, all values referencing the same year), consider whether a single structural explanation accounts for all of them. If so, consolidate into one High/D finding describing the structural issue. Note: this check applies only to findings you file yourself — you cannot access other agents' findings during Wave 2 parallel execution.
 
-**Cross-program CE sanity check ("sideways check")**: Compare the model's bottom-line CE against GiveWell's established benchmarks for the nearest comparable intervention type. Reference ranges from current live top-charity CEAs (April 2026):
+**Cross-program CE sanity check ("sideways check")**: Compare the model's bottom-line CE against GiveWell's established benchmarks for the nearest comparable intervention type. Read `reference/key-parameters.md` using the Read tool and locate the "Cross-Program CE Benchmarks" section — use those ranges for the comparison. Do not hardcode benchmark ranges in your reasoning; always read from key-parameters.md so that updates to GiveWell's estimates are automatically picked up.
 
-| Program | Typical SSA range | Notes |
-|---|---|---|
-| SMC (Malaria Consortium) | 8–17x West Africa; 14–42x Nigeria | DRC/East Africa 4–9x; South Sudan ~5x |
-| AMF ITN distributions | 7–20x most countries; 12–24x Nigeria | Ghana ~6x (low outlier: high cost, lower burden) |
-| VAS (HKI/Nutrition International) | 5–20x most SSA | Niger country ~95x (legitimate: extreme burden + very low cost); Bangladesh ~1x (low outlier) |
-| New Incentives CCT | 7–44x Northern Nigeria; 1–5x Southern Nigeria | High-burden north states are legitimately highest |
-| Deworming | ~5–10x SSA | |
-| Cash transfers (GiveDirectly) | 1x | Definition of benchmark |
-
-**Staleness note**: The benchmark ranges above were compiled in April 2026. These ranges are maintained by the skill maintainer; do not independently reload live CEA data during the vet (that would introduce per-run variability). If today's date is more than 3 months after April 2026, note in your sideways check coverage declaration: "Sideways benchmark ranges compiled April 2026 — may be stale. Skill maintainer should update `agents/heads-up-evidence.md` if GiveWell has revised top-charity CE estimates since then." Use the table as-is regardless of today's date.
+**Staleness note**: The benchmark table in key-parameters.md includes a "Last updated" date. If today's date is more than 3 months after that date, note in your sideways check coverage declaration: "Sideways benchmark ranges may be stale — check key-parameters.md Last updated date and confirm with the skill maintainer that the table reflects current GiveWell estimates."
 
 GiveWell's approach to uncertainty holds that stranger conclusions require stronger supporting evidence — a single high-magnitude but uncertain parameter should not be allowed to dominate the conclusion unchecked. If the model's CE is more than 2–3x above the upper bound of the typical range for the nearest comparable program (e.g., a malaria intervention showing 50x when comparable programs top out at ~20x), explicitly identify the specific model element(s) that account for the premium: e.g., higher burden geography, stronger trial evidence, lower delivery cost, broader benefit streams. Flag as Medium/H if no element clearly explains the premium at the claimed magnitude, or if the explanation rests on a single uncertain parameter (common pattern: a high-magnitude internal validity adjustment or an unusually optimistic coverage rate). Note: this check does not require the model to conform to benchmarks — genuinely exceptional programs exist — but it does require the model to be able to explain the deviation. Known legitimate outliers: Niger VAS (~95x) and certain Nigeria SMC states (~42x) are real; flag CE >50x in most other contexts unless geography/cost clearly justifies it.
 

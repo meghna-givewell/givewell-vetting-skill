@@ -50,6 +50,8 @@ For each Pass B finding, check whether a substantially similar finding already e
 | heads-up-intervention | `stg-int-A`, `stg-int-B`, `stg-rec-int` |
 | leverage-funging | `stg-lev-A`, `stg-lev-B`, `stg-rec-lev` |
 | leverage-uov-check | `stg-uov-A`, `stg-uov-B`, `stg-rec-uov` |
+| ce-replication | `stg-cerep-A`, `stg-cerep-B`, `stg-rec-cerep` |
+| suspicion-first | `stg-susp` |
 
 Read each candidate tab in batched 50-row increments. You can batch multiple tab reads in a single parallel call if needed. Cache the results — you will check multiple Pass B findings against the same Pass A tabs.
 

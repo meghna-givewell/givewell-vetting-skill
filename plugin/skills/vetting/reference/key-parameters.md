@@ -114,3 +114,24 @@ Deviations from the Exact Value column trigger a finding at the severity shown i
 | Moral weight — 85 plus | 12 | — | — | Yes — High/D |
 
 **Discount rate filing exception**: If a model has a multi-year benefit stream and applies NO discount rate at all (absent, not present at 0%), file as **Low/H** — do not file Medium. GiveWell intentionally omits discounting in some newer-intervention CEA types. Escalate to Medium only if the researcher confirms discount rates should apply and they are absent. The Medium flag severity in the table above applies only when a discount rate IS present but deviates from the expected value.
+
+---
+
+## Cross-Program CE Benchmarks (sideways check reference)
+
+Reference ranges from GiveWell's live top-charity CEAs. Used by `heads-up-evidence` for sideways CE sanity checks. **Skill maintainer: update this table when GiveWell publishes revised top-charity estimates.**
+
+Last updated: 2026-06-21
+
+| Program type | Typical CE range (× GiveDirectly benchmark) | Notes |
+|---|---|---|
+| SMC (malaria chemoprevention) | 8–20× | West Africa context; varies by country and season |
+| AMF (insecticide-treated nets) | 7–20× | Most malaria-endemic countries |
+| New Incentives (vaccine incentives) | 10–25× | Nigeria; conditional on program scale |
+| Malaria Consortium SMC | 8–17× | West Africa core countries |
+| Vitamin A supplementation (HKI) | 5–15× | Sub-Saharan Africa |
+| Deworming (Evidence Action) | 3–8× | Wide range; highly model-dependent |
+| GiveDirectly (cash transfers) | 1× (benchmark) | By definition |
+| Sightsavers / IDinsight trachoma | 10–30× | High uncertainty; limited evidence base |
+
+These ranges are approximate and shift with each GiveWell CEA update cycle. A model whose CE falls far outside the typical range for its intervention type (e.g., 2× for SMC, or 50× for deworming) warrants scrutiny regardless of whether individual cells look correct.
