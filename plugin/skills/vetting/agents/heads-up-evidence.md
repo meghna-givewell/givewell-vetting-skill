@@ -124,6 +124,25 @@ When this check fires and a proxy pathway is suspected, run a targeted WebSearch
 
 **SMC seasonal overlap boundary check (FORM-32)**: When vetting an SMC (Seasonal Malaria Chemoprevention) model that includes seasonal boundary parameters (e.g., start month, end month, or peak transmission window), verify the boundary months against the expected high-transmission season for the target geography. Apply ±1 month tolerance before filing — a one-month difference between the model and a reference source does not constitute a finding, because seasonal boundaries vary by country and year. Only file if the discrepancy exceeds ±1 month. If a boundary mismatch is filed, note in the explanation that seasonal boundaries vary by country and year, and that the researcher should verify against the most current seasonal calendar for the specific target geography.
 
+**Systematic geographic transfer pre-scan — required before the tier-based classification below**: Before applying tier-based benefit transfer rules, build an explicit inventory of all sourced parameters and their study populations. This ensures geographic transfer checks apply to ALL sourced parameters proactively, not only ones noticed incidentally.
+
+**Step 1 — Build the transfer inventory**: From the pre-read cache, identify all parameters that cite a study, report, or estimate — any cell with a URL or study name in its cell note, or whose HV sheet row has a source in column F. For each such parameter, record:
+- Parameter name and cell reference
+- Study population or geography extracted from the citation text (country, region, age group such as "children under 5", or health condition such as "severely malnourished") — if not determinable from the citation, record as `[population unclear]`
+- Model's target geography and population from session context
+
+**Step 2 — Write the inventory log before any tier classification**:
+```
+Geographic transfer inventory:
+  [cell ref] [param name]: study=[country/region/population] | target=[model geography] | match=[same / within-LMIC-region / cross-tier / unclear]
+  ...
+  Total: [N] parameters scanned, [M] with apparent geographic mismatch, [K] with unclear study population
+```
+
+A blank or all-unclear inventory is acceptable when source URLs are not accessible — write it anyway as evidence the scan was performed.
+
+**Step 3 — Apply tier-based classification to all mismatches**: For each parameter where study geography ≠ model target geography (i.e., not `same`), apply the tier-based rules in the "Benefit transfer documentation" section immediately below. This ensures every mismatch is evaluated systematically. Do not file a finding for parameters where study and target geography are the same, or where the mismatch is already documented with an IV/EV adjustment, cell note, or GiveWell cross-cutting standard.
+
 **Benefit transfer documentation — geographic tier classification**: When a key effect size (mortality reduction %, disease burden multiplier, prevalence change, coverage-to-outcome ratio) is sourced from a study conducted in a different country or region than the target geography, apply this tier-based rule to determine whether documentation is required and what finding severity is appropriate.
 
 **Geographic tier definitions**:

@@ -334,6 +334,44 @@ If no Contradicted rows meet criteria (a) and (b), skip this step.
 
 ---
 
+## Step 5c — Population and geographic context match check
+
+After completing Step 5b, check whether any Matched ✓ rows cite a study population or geography that is materially different from the model's target. A source that confirms a stated numeric value may still be drawn from a population poorly suited to the model's context — this check surfaces those external validity gaps.
+
+This check requires program context from session context. If no program context (target geography, target population) is available in session context, write:
+```
+Step 5c: Population and geographic context match check — no program context in session context; check skipped.
+```
+and proceed to Step 6.
+
+For each row where column G = `Matched ✓`:
+
+1. Read the evidence text from column H. Extract any explicit geographic or population identifiers: country names, WHO regions, age groups (e.g., "children under 5", "pregnant women", "school-age children"), health conditions (e.g., "severely malnourished", "malaria-endemic area"), or delivery context (e.g., "clinical trial", "community health worker delivery").
+
+2. Compare against the model's target geography and target population from session context.
+
+3. If the evidence text explicitly names a population or geography that appears materially different from the model's target — e.g., evidence text names a South Asian country while the model targets West Africa, or evidence text describes a clinical trial on adults while the model targets children under 5 — this is a potential external validity gap.
+
+4. For each identified mismatch, write a finding to `stg-srcverify-A` (same staging tab as Step 5b):
+   - Column B: sheet name from HV column A
+   - Column C: cell reference from HV column B
+   - Column D: `Low` (for most geographic mismatches); `Medium` only if the mismatch is severe and well-documented, e.g., a high-income OECD study applied to a low-income sub-Saharan Africa target with no EV adjustment noted
+   - Column E: `Parameter`
+   - Column F: "Source citation context: the evidence for [parameter description from column E] at [cell ref] is drawn from [study context — population/geography extracted from column H] but the model targets [target from session context]. If no external validity adjustment is applied, this limits transferability. Consider adding a cell note or EV adjustment documenting why this source is appropriate."
+   - Column G: "Add a cell note documenting the contextual difference between the source study and the model's target population, or apply an external validity adjustment."
+   - Column H: `Direction unknown`
+
+**Threshold**: Only file if the evidence text in column H explicitly names a different geography or population group — do not infer from source URLs alone. Skip the row if column H does not contain identifiable geographic or population language.
+
+**Cap**: File at most 3 context-mismatch findings from this step. If more than 3 rows show apparent mismatches, file the 3 most material ones (prioritize parameters whose Description in column E suggests CE-chain proximity) and note the remaining count in the coverage declaration.
+
+If no Matched ✓ rows have context mismatches, write:
+```
+Step 5c: No population/context mismatches found among [N] Matched ✓ rows.
+```
+
+---
+
 ## Step 6 — Coverage declaration
 
 Write to chat:

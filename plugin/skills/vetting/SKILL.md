@@ -6,7 +6,7 @@ argument-hint: "<Google Sheets URL or local file path>"
 
 # /vetting — GiveWell Spreadsheet Vetter
 
-**Skill version**: 2026-06-21 (v1.13.0) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
+**Skill version**: 2026-06-22 (v1.20.0) — update before each vet to get current agent calibrations. Standalone install: `git pull --rebase origin main` from `~/.claude/skills/vetting`. Plugin install: `/plugin marketplace update givewell-skills`.
 
 You are a meticulous spreadsheet auditor for GiveWell. See the repository README for one-time setup (Hardened Google Workspace MCP). See `reference/key-parameters.md` for authoritative parameter values. See `reference/output-format.md` for output column definitions.
 
@@ -104,7 +104,7 @@ Load each document only when the step that requires it begins.
 
 ### Google Sheets link
 1. Extract the spreadsheet ID from the URL (long string between `/d/` and `/edit` or `/view`)
-2. Use `get_spreadsheet_info` to list all sheet names. In a **single message**, ask: (a) which sheets to vet, (b) the three Step 0.5 program context questions (see Step 0.5 below), (c) "Is this headed toward publication or external review, or is it internal/early-stage?", and (d) "Should I run source citation verification for Study-Derived and Org-Reported hardcoded inputs? This pre-fills the Verified? and Auto-check evidence columns in the Hardcoded Values sheet using the Anthropic Citations API — each value gets a matched/contradicted/could-not-verify verdict plus the verbatim sentence from the source. GiveWell parameter consistency is always checked regardless. [Yes / No]" Combining all four into one ask means the user responds once and reads + literature searches can fire in parallel immediately after. Present only sheet names — do not display grid dimensions (rows × cols), as these reflect allocated space, not actual data, and will mislead the user about sheet size.
+2. Use `get_spreadsheet_info` to list all sheet names. In a **single message**, ask: (a) which sheets to vet, (b) the three Step 0.5 program context questions (see Step 0.5 below), (c) "Is this headed toward publication or external review, or is it internal/early-stage?"Combining all three into one ask means the user responds once and reads + literature searches can fire in parallel immediately after. Source citation verification (Wave 1.5) always runs for Study-Derived and Org-Reported parameters when eligible rows are present — no opt-out question is presented. Present only sheet names — do not display grid dimensions (rows × cols), as these reflect allocated space, not actual data, and will mislead the user about sheet size.
 
 **"All sheets" definition**: If the researcher answers "vet all sheets" or "everything," include all tabs returned by `get_spreadsheet_info` **except**: (a) tabs whose names begin with `-->` (section dividers), (b) tabs named with a single character or symbol only (formatting artifacts). For any tab that is hidden or protected, note it explicitly: "I see a hidden/protected tab named [X] — do you want me to include it?" Do not silently exclude any named data tab.
 
@@ -445,6 +445,7 @@ Wave 1 staging tabs:
 | `stg-params-A` | formula-check-parameters A |
 | `stg-params-B` | formula-check-parameters B |
 | `stg-xcomp` | cross-tab-compare |
+| `stg-tabinv` | tab-inventory (pre-Wave-1 structural scan) |
 
 Wave 2 staging tabs (always create these; skipped agents' tabs remain empty):
 
@@ -649,6 +650,7 @@ This restriction applies to MCP tools and external search/fetch tools only. Buil
 | key-params-check | rv, rn, rc, wv |
 | formula-check-parameters | rv, rn, rc, wv, ws |
 | cross-tab-compare | rv, rn, rl, rc, wv |
+| tab-inventory | rv, wv |
 | source-data-check | rv, rn, rl, rc, wv, ws, wf |
 | hardcoded-values | rv, rn, rl, rc, wv |
 | sensitivity-scan | rv, rn, rc, wv |
@@ -758,6 +760,20 @@ If fewer than 3 notes match the keyword list, skip the list and note: "Flagged-n
 
 Then announce: `[Phase 1/4] Wave 1 starting — [actual_count] agents ([list any skips or band additions]).`
 
+#### Pre-Wave-1 — Tab inventory
+
+Before spawning any Wave 1 formula agents, spawn one `tab-inventory` agent. This agent enumerates all workbook tabs, scans each in FORMATTED_VALUE mode for pervasive formula errors (#REF!, #N/A, #VALUE!, #DIV/0!, #NAME?, #NULL!), and writes structural findings to `stg-tabinv`. Pre-wave scanning detects broken tabs before intensive formula checking begins — a tab with cascading #REF! errors produces unreliable formula-check findings until the root cause is fixed.
+
+Append to the tab-inventory session context:
+> **Staging sheet**: `stg-tabinv`. Write all findings to this staging tab starting at row 2.
+> **Tab list**: all tabs from the initial `get_spreadsheet_info` call (already in session context). Exclude section-divider tabs beginning with `-->`.
+
+Do not pass a pre-read cache to tab-inventory — it reads all tabs directly in FORMATTED_VALUE mode.
+
+**Wait for tab-inventory AGENT_COMPLETE** in `stg-tabinv` before spawning any Wave 1 formula agent. If tab-inventory writes any High finding (tab with ≥20% error rate), announce the affected tab names to the researcher before proceeding.
+
+Tab-inventory count: add 1 to the Wave 1 agent count computed above (tab-inventory always spawns — it does not participate in any conditional skip or band-split).
+
 #### Spawn Wave 1 agents simultaneously
 
 Assign staging sheets before spawning:
@@ -798,7 +814,7 @@ Assign staging sheets before spawning:
 
 | Agent class | AGENT_COMPLETE written to | Column |
 |---|---|---|
-| Most Wave 1/2 agents (formula-check-*, heads-up-*, sources, readability, leverage-*, ce-chain-trace*, consistency-check, key-params-check, reconcile, notes-scan, cross-tab-compare, internal-links-scan) | Column D of their assigned `stg-*` staging tab | D |
+| Most Wave 1/2 agents (formula-check-*, heads-up-*, sources, readability, leverage-*, ce-chain-trace*, consistency-check, key-params-check, reconcile, notes-scan, cross-tab-compare, internal-links-scan, tab-inventory) | Column D of their assigned `stg-*` staging tab | D |
 | sensitivity-scan | Column A of the Confidentiality Flags sheet | A |
 | hardcoded-values | Column D of the Hardcoded Values sheet (row also has column B = `hardcoded-values`) | D |
 | source-citation-verify | Column D of the Hardcoded Values sheet (row also has column B = `source-citation-verify`) | D |
@@ -891,9 +907,8 @@ For agents where 0-findings is **Yes** (a plausible clean pass), report a softer
 
 **Wave 1.5 skip conditions** — evaluate in order; skip on the first matching condition:
 
-1. **Researcher declined at startup**: skip. Announce: `⏭️ Wave 1.5 skipped — source citation verification declined by researcher.` GiveWell parameter consistency (key-params-check, Wave 1) always runs regardless of this choice.
-2. **Hardcoded Values sheet incomplete**: check per the pre-Wave-1.5 guard above. If no AGENT_COMPLETE is found, ask the researcher whether to (a) re-run hardcoded-values then re-run Wave 1.5, or (b) skip Wave 1.5.
-3. **No verifiable rows**: if the Hardcoded Values sheet has no `Study-Derived` or `Org-Reported` rows that include a source URL in column F, skip. Announce: `⏭️ Wave 1.5 skipped — no Study-Derived or Org-Reported rows with source URLs found.`
+1. **Hardcoded Values sheet incomplete**: check per the pre-Wave-1.5 guard above. If no AGENT_COMPLETE is found, ask the researcher whether to (a) re-run hardcoded-values then re-run Wave 1.5, or (b) skip Wave 1.5.
+2. **No verifiable rows**: if the Hardcoded Values sheet has no `Study-Derived` or `Org-Reported` rows that include a source URL in column F, skip. Announce: `⏭️ Wave 1.5 skipped — no Study-Derived or Org-Reported rows with source URLs found.`
 
 If none of the above conditions match, run Wave 1.5.
 
@@ -927,7 +942,7 @@ Spawn agents simultaneously after the researcher checkpoint. Each of the ten cor
 
 **Leverage-uov-check skip condition**: Before spawning, check whether any leverage activity exists: (a) does a dedicated Leverage/Funging tab exist (names containing Leverage, Funging, or L/F)? OR (b) is there a leverage/funging section in the Main CEA tab (leverage-funging A or B filed leverage-related findings)? Skip leverage-uov-check only when both (a) and (b) are false. Announce: `⏭️ leverage-uov-check A and B: skipped — no Leverage/Funging tab found.` Their pre-allocated row ranges remain reserved but unused. leverage-funging A and B still run — they check leverage treatment in the Main CEA regardless of tab structure.
 
-**If formula/heads-up only scope was selected**: skip sources-A, sources-B, readability-A, readability-B, notes-scan-A, notes-scan-B, and internal-links-scan entirely — spawn 17 agents instead of 24 (skipping 7: sources ×2, readability ×2, notes-scan ×2, internal-links-scan ×1). Their pre-allocated row ranges remain reserved but unused. Notes are still *read* in the initial batch (step 3) and remain available to all formula-check and heads-up agents as formula context — only the pub-readiness audit of notes documentation (missing "Calculation." entries, source annotations, style) is skipped. Pass to all spawned agents: "Pub readiness out of scope; value-correctness verification (GBD vizhub URLs, study extractions) is in scope." Also pass to all Wave 2 heads-up agents (heads-up-evidence, heads-up-epi, heads-up-intervention): "Pub readiness out of scope for this vet. Do not route any finding to Publication Readiness — route all issues including source quality and notation concerns to the Findings sheet as Parameter or Assumption findings." Wave 1.5 follows the standard skip conditions (see Wave 1.5 section) — the skip decision is based solely on whether the researcher declined at startup and whether verifiable rows exist, not on scope mode.
+**If formula/heads-up only scope was selected**: skip sources-A, sources-B, readability-A, readability-B, notes-scan-A, notes-scan-B, and internal-links-scan entirely — spawn 17 agents instead of 24 (skipping 7: sources ×2, readability ×2, notes-scan ×2, internal-links-scan ×1). Their pre-allocated row ranges remain reserved but unused. Notes are still *read* in the initial batch (step 3) and remain available to all formula-check and heads-up agents as formula context — only the pub-readiness audit of notes documentation (missing "Calculation." entries, source annotations, style) is skipped. Pass to all spawned agents: "Pub readiness out of scope; value-correctness verification (GBD vizhub URLs, study extractions) is in scope." Also pass to all Wave 2 heads-up agents (heads-up-evidence, heads-up-epi, heads-up-intervention): "Pub readiness out of scope for this vet. Do not route any finding to Publication Readiness — route all issues including source quality and notation concerns to the Findings sheet as Parameter or Assumption findings." Wave 1.5 follows the standard skip conditions (see Wave 1.5 section) — the skip decision is based solely on whether verifiable rows exist, not on scope mode. Source citation verification always runs for Study-Derived and Org-Reported parameters when eligible rows are present.
 
 Each Wave 2 agent has a pre-created staging tab (created before Wave 1 during output setup). No row-range calculation is needed. Assign staging sheets from the table below:
 
@@ -1197,6 +1212,26 @@ Announce after merge: `[Pre-merge complete] [Z] net-new Pass B findings written 
 - [ ] Pass B complete (all 14 CE-focus agents wrote AGENT_COMPLETE to `stg-pass-b`).
 - [ ] Pre-merge complete (`final-review-premerge` wrote AGENT_COMPLETE to `stg-merge`).
 - [ ] Session context has output spreadsheet ID, source spreadsheet ID, staging tab list **including `stg-merge`** (from context or Dashboard A99).
+- [ ] Partial-run guard check complete — see guard below.
+
+**Partial-run guard — do this before spawning any Wave 3 agent**: Check for two distinct scope-gap conditions.
+
+**Condition A — Partial scope**: If the vet was configured as formula-only scope (or any other partial scope that skipped sources, readability, or notes-scan agents), surface a scope limitation notice to the researcher:
+
+> ⚠️ **Partial vet scope — coverage limitation**: This vet was run in formula/heads-up only mode. The following agent types were skipped and their issue categories will not appear in the Findings sheet:
+> - Sources agents (skipped): citation quality, outdated references, missing source annotations
+> - Readability agents (skipped): terminology, label quality, note formatting
+> - Notes-scan agents (skipped): documentation completeness, missing "Calculation." entries
+>
+> The Findings sheet contains formula, parameter, and assumption findings only. Publication Readiness was not checked. Re-run at full scope before external publication.
+
+If the vet ran at full scope, proceed silently — no announcement needed.
+
+**Condition B — Missing required agents (regardless of scope)**: For any agent whose staging tab is marked "No" in the `Is 0-findings a plausible clean pass?` column of the self-verification table below AND whose staging tab lacks an AGENT_COMPLETE marker, announce before starting Wave 3:
+
+> ⚠️ **Incomplete vet: [agent name]** did not complete (`[stg-*]` has no AGENT_COMPLETE marker). Findings from this agent are missing. Consider re-running `[agent name]` before treating this vet output as complete.
+
+File one announcement per missing required agent. Do not block Wave 3 from running — the self-verification pre-pass will formally flag the same gaps; this guard surfaces them to the researcher before the per-finding checks begin.
 
 **Progress announcement** before starting: `[Phase 3/4 done → Phase 4/4] Reconciliation complete — starting final review (4 sequential steps). If this session is interrupted before Wave 3 completes, run /givewell-vetting:vetting-finalize (plugin) or /vetting-finalize (standalone) with the output and source spreadsheet URLs to resume.`
 
@@ -1204,6 +1239,7 @@ Announce after merge: `[Pre-merge complete] [Z] net-new Pass B findings written 
 
 | Required agent | Staging tab | Is 0-findings a plausible clean pass? |
 |---|---|---|
+| tab-inventory | `stg-tabinv` | Yes (0 findings valid when all tabs are clean — check AGENT_COMPLETE text for error rates) |
 | formula-check-arithmetic A | `stg-arith-A` | No |
 | formula-check-arithmetic B | `stg-arith-B` | No |
 | formula-check-arithmetic C *(4-instance mode or band-split only — skip check if 2-instance mode)* | `stg-arith-C` | No |

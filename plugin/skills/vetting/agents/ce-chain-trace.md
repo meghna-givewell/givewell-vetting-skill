@@ -141,6 +141,30 @@ Discounting inventory:
 
 If any stream is NOT discounted while other streams ARE, file **Medium/Assumption** unless a cell note explicitly documents the asymmetric treatment: "[Stream] benefit ([cell]) is not discounted while [other streams] apply a [X]% discount rate. Adding discounting would reduce the undiscounted stream's relative weight, lowering CE. Either apply consistent discounting across all streams, or add a cell note documenting the rationale for asymmetric treatment." CE impact: `Lowers CE — magnitude unknown`. Do not file if the entire model is consistently undiscounted — only file when there is a within-model inconsistency across streams. Note: mortality/YLL and morbidity/YLD streams are often left undiscounted by default in GiveWell models — always check all streams, not only SWB. Before filing, apply the SC-022 pre-filing gate: if column H would be Direction unknown and the fix is solely to add a cell note, accumulate this to the assumption-documentation list rather than filing as a separate finding.
 
+**Discount rate per stream verification** (run for each stream where `discounted? = YES`): For each discounted stream, read the discount factor formula in FORMULA mode and extract the actual rate `r`. Look for expressions of the form `1/(1+r)^n`, `(1+r)^-n`, `POWER(1+r,-n)`, or equivalent. If `r` is a cell reference rather than a literal value, read the referenced cell's UNFORMATTED_VALUE to get the numeric rate.
+
+Extend the discounting inventory template to include the rate:
+```
+Discounting inventory (with rates):
+  [stream]: discounted? [YES — cell ref] | rate applied: [X.X%] | expected rate per key-params.md: [Y.Y%]
+  ...
+```
+
+Compare each discounted stream's rate against GiveWell declared rates from `reference/key-parameters.md`:
+- **Death-averting / YLL / mortality streams**: 1.4%/year for TA grants; for direct delivery programs check the model's declared rate parameter row
+- **Income / consumption / ln-welfare streams**: 4%/year (GW standard)
+- **Long-term developmental health / nutrition streams**: 0.5%/year (GW standard)
+- **SWB streams**: same rate as mortality unless the model explicitly declares otherwise
+
+**Filing rule**: If the rate applied to a stream deviates from the GW standard for that stream type by more than 0.5 percentage points AND no cell note or parameter label documents the rationale for the deviation:
+- File **Medium/Parameter**: "Discount rate for [stream] benefit stream at [cell] uses [r%] but the GW standard for [stream type] is [expected%] per key-parameters.md. If the deviation is intentional (e.g., sensitivity scenario, program-specific rate), add a cell note documenting the rationale."
+- CE impact: `Raises CE — magnitude unknown` (if r < expected — lower rate → higher present value) or `Lowers CE — magnitude unknown` (if r > expected).
+
+**Exceptions — do not file under these conditions**:
+1. **Uniform model discount**: If all streams share one rate, this is a model-level parameter already owned by key-params-check. Apply SC-010 deferral: write a Low/Assumption SC-010 note only. Only file stream-specific rate findings when different streams use materially different rates and at least one appears incorrect.
+2. **Declared program-specific rate**: If the model's parameters section includes a labeled "discount rate" row with a cell note documenting the deviation from GW standard, file Low/Assumption asking the researcher to confirm the note is still current.
+3. **Key-params-check in scope**: If `key-params-check: in-scope` is confirmed in session context, defer stream-specific rate findings to SC-010 to avoid duplicating key-params-check findings.
+
 **Discount exponent year-offset check**: For each row in the CE chain that applies a discount factor of the form `1/(1+r)^n` (or equivalent, e.g., `(1+r)^-n`, `POWER(1+r, -n)`, `1/POWER(1+r, n)`):
 1. Read the year label for that row — typically found in column A or B of the same row, or in a column header if the model is column-oriented by year.
 2. Identify the base year used in the model (commonly labeled "Year 0," "Base year," or the first year of the program; read from a parameter cell or tab header if not immediately adjacent).

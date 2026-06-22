@@ -75,6 +75,19 @@ Coverage declaration: "Structural completeness checklist complete. Items: levera
 
 Flag as Medium/H for confirmed misalignments. Flag as Low/H if the formula is internally consistent but year-label mapping is undocumented or unclear.
 
+**Cross-tab benefit horizon consistency**: When the workbook contains two or more active CEA calculation tabs (distinct from sensitivity tabs, confidence interval tabs, and staging tabs — look for tabs named Main CEA, Simple CEA, and any variant-named CEA tabs such as `CEA_CHAIv`, `CEA_scenario_X`, `CEA_alt`, `CEA2`), locate the benefit horizon parameter (typically labeled "years to benefits", "benefit horizon", "time horizon", "years of benefits", or "program years") in each active CEA tab. Read the parameter value using `read_sheet_values` (UNFORMATTED_VALUE) from each tab.
+
+If two or more active CEA tabs have different benefit horizon values:
+1. Check the grant document (if provided in session context) for any statement of intended benefit horizon.
+2. Read the cell note (if any) for the diverging parameter cell to check for a documented rationale.
+3. If neither a grant document explanation nor a cell note explains the difference: file **Medium/Assumption**: "Benefit horizon parameter differs across active CEA tabs: [tab A] uses [X] years at [cell ref] while [tab B] uses [Y] years at [cell ref]. Unless the two tabs intentionally model different program durations, they should use the same horizon. Standardize to a single value, or add a cell note to the diverging tab documenting the rationale for the different assumption." CE impact: `Raises CE — magnitude unknown` or `Lowers CE — magnitude unknown` depending on which tab has the higher value.
+4. If a cell note or grant document explanation exists: file **Low/Assumption**: "Benefit horizon differs across active CEA tabs: [tab A]=[X] years, [tab B]=[Y] years. A note or grant doc explanation exists — confirm the rationale is still current."
+
+Do not file if: (a) the diverging tabs represent genuinely different program durations by design and this is clearly documented; (b) there is only one active CEA tab; (c) the difference is ≤1 year and a cell note explains it is a rounding or presentation difference; (d) one tab is clearly a historical scenario labeled for a prior period.
+
+**Coverage declaration**: After completing this check, write:
+`COVERAGE | formula-check-structure | Cross-tab benefit horizon | [N] CEA tabs found, [M] compared | issues found: [N] | status: complete`
+
 ## Cross-Column Value Consistency
 
 **Before running any checks in this section**: Complete the AVERAGE/SUMPRODUCT formula pre-scan described below (the section beginning "AVERAGE/SUMPRODUCT formula pre-scan — required before the parallel symmetry check below"). Sub-checks (a) and (b) in the parallel scenario formula symmetry block depend on that pre-scan log. Do not begin the cross-column checks until the log exists.

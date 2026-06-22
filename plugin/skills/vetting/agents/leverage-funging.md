@@ -79,6 +79,39 @@ If Check 0 found no funging, write: "Check 0b: skipped — no funging found in C
 
 ---
 
+## Check 0c — Co-funder leverage verification
+
+**When to run**: Always — even when Check 0 found no funging. If co-funders are active but no displacement adjustment exists, this check flags that gap independently of Check 0's FN-008 finding.
+
+**Scan program context and grant document**: Check the program context summary in session context for mentions of major co-funders: PEPFAR, Global Fund (GFATM), GAVI, bilateral donors (FCDO/DFID, USAID, AFD, JICA, GIZ, Netherlands, Norway, Sweden), domestic government health ministries funding the same disease area, or World Bank IDA health programs. If a grant document was provided in session context, call `get_doc_content` on it and scan for the same terms.
+
+If no co-funder names are identified in either source, write:
+```
+Check 0c: Co-funder leverage verification — no major co-funder names found in program context or grant document. Check skipped.
+```
+and proceed to Check 1.
+
+If co-funder names ARE identified:
+
+1. Record which co-funders are named: `[list]`
+2. Check whether the model contains a row or cell explicitly addressing co-funder displacement or additionality — look for labels: `leverage`, `displacement`, `additionality`, `co-funder`, `GiveWell's counterfactual share`, `PEPFAR displacement`, `government co-financing`, or analogous labels that adjust for other funders' contributions.
+3. **If such a row/cell exists and feeds the CE chain**: write "Check 0c: Co-funder leverage row found at [ref] — addressing [co-funder names]. No gap." and proceed to Check 1.
+4. **If no such row/cell exists**: file **Medium/Adjustment**: "Grant document or program context names [co-funder names] as active co-funders in [disease area / geography]. The model does not contain an explicit adjustment for co-funder displacement or additionality. If GiveWell's funding is fully additional to these co-funders' contributions (i.e., co-funders would not substitute for GiveWell's grant), add a cell note documenting this assumption. If partial displacement is possible, add a leverage or additionality row quantifying the adjustment." CE impact: `Raises CE — magnitude unknown` (missing displacement means CE is overstated if any funging is real).
+5. **Exception — subsumed by Check 0**: If Check 0 already filed a Medium/Adjustment for general funging absence (FN-008) that already covers co-funder displacement in scope, write "Check 0c finding subsumed by Check 0 FN-008 finding." and do not file a duplicate.
+
+**Required output for Check 0c**:
+```
+Check 0c: Co-funder leverage verification.
+  Co-funders named in program context / grant doc: [list, or 'none']
+  Explicit co-funder leverage/additionality row: [YES — cell ref / NO]
+  Finding filed: [YES — Medium/Adjustment / NO / Subsumed by Check 0]
+```
+
+**Coverage declaration**: After completing this check, write:
+`COVERAGE | leverage-funging | Check 0c — Co-funder leverage verification | [sources searched: program context / grant doc] | issues found: [N] | status: complete`
+
+---
+
 ## Check 1 — Direction of funging adjustment
 
 Funging adjustments should *reduce* expected impact (or equivalently, increase cost per outcome) when government programs are fungible with GiveWell-funded activities. Verify the sign convention:
@@ -289,6 +322,45 @@ This check does not apply when the ad hoc adjustment is clearly labeled as cover
 
 **Coverage declaration**: After completing this check, write:
 `COVERAGE | leverage-funging | Check 7 — VOI ad hoc double-count | [rows/cells checked] | issues found: [N] | status: complete`
+
+---
+
+## Check 7b — Double-application of funging across the CE chain and VOI section
+
+**Background**: When a model applies a funging/displacement adjustment in the main CE chain AND a separate displacement adjustment in the VOI section — both acting on the same underlying gross benefit base — the combined effect double-counts the same displacement. This is distinct from Check 7 (conceptual labeling overlap); this check looks for formula-level double-application.
+
+**Scope**: Run only when both conditions hold: (a) the main CE chain contains a funging/displacement row (identified in Checks 0–0b) AND (b) a VOI section exists with its own displacement or probability-weighted adjustment. If either condition is absent, write:
+```
+Check 7b: Double-application detection — not applicable ([reason: no funging in main chain / no VOI section / neither]).
+```
+and proceed.
+
+**Check procedure**:
+
+1. **Identify main chain funging cells**: From Checks 0–0b, list all funging/displacement cells in the main CE chain — record their addresses, formulas, and what base they act on (e.g., "B47 multiplies total benefits B43 by (1 − funge_rate)").
+
+2. **Identify VOI section funging cells**: Scan the VOI section rows for displacement or funging adjustments — look for cells labeled `funging`, `displacement`, `additionality`, `P(replacement)`, `probability of displacement`, or any row that scales a VOI sub-total by a factor labeled as displacement. Record each cell address and the base it acts on.
+
+3. **Test for double-application**: For each VOI-level funging cell, read its formula in FORMULA mode and determine whether its input references:
+   - **Post-funging CE**: a cell that is already downstream of the main chain funging adjustment → NOT double-counting (the two adjustments act at different levels of the calculation).
+   - **Pre-funging CE or gross benefits**: a cell that is upstream of or independent from the main chain funging adjustment → POSSIBLE double-counting (the same gross benefit is reduced by a funging factor twice).
+
+4. **File or clear**:
+   - **Post-funging input confirmed**: write "Check 7b: no double-application — VOI funging inputs reference post-funging CE [ref]." and proceed.
+   - **Pre-funging input confirmed**: file **High/Adjustment**: "Funging adjustment at [main chain cell] reduces the direct CE component from gross benefits [upstream ref]. The VOI section at [VOI cell] then applies an additional [X]% displacement to the same pre-funging benefit base [ref], double-counting the displacement. Remove one of the two adjustments or redirect the VOI section's funging input to reference the post-funging CE [cell ref]." CE impact: `Lowers CE — magnitude unknown` (applied adjustment is larger than intended).
+   - **Relationship unclear from formulas**: file **Medium/Adjustment**: "The VOI section at [VOI cell] applies a [X]% displacement adjustment. The main CE chain at [main cell] also applies a funging adjustment. Confirm these act on distinct bases — if both reduce the same gross benefit, this double-counts displacement. Provide the formulas for both cells [quote both] and clarify which base each acts on." Include formula text from both cells in column F.
+
+**Required output for Check 7b**:
+```
+Check 7b: Double-application detection.
+  Main chain funging cells: [list with refs, or 'none / check not applicable']
+  VOI section funging cells: [list with refs, or 'none / no VOI section']
+  VOI funging input base: [post-funging CE / pre-funging CE / unclear / n/a]
+  Result: [confirmed High / possible Medium / not found / not applicable]
+```
+
+**Coverage declaration**: After completing this check, write:
+`COVERAGE | leverage-funging | Check 7b — Double-application detection | [cells checked] | issues found: [N] | status: complete`
 
 ---
 
