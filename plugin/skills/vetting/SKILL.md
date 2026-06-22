@@ -538,7 +538,7 @@ Create only the extra tabs for the bands that actually exist (band_count=2 → o
 
 For Steps 3–10, use the Agent tool to spawn a sub-agent for each step. Read each agent file and pass its content as the agent prompt, appending the following session context:
 
-> Spreadsheet ID: `<id>` | Sheets to vet: `<names>` | In-scope sheets: `<comma-separated list of sheet names being vetted>` | Lite-pass tabs: `<comma-separated list of tabs receiving lite structural pass only, or "none">` | Out-of-scope sheets: `<comma-separated list of all other sheet names in the workbook>` | Findings sheet ID: `<id>` | Publication Readiness sheet ID: `<id>` | Hardcoded Values sheet ID: `<id>` | Confidentiality Flags sheet ID: `<id>` | Staging tab: `<assigned per agent>` | User email: `<email>` | Program context: `<summary from Step 0.5>` | Declared-intentional deviations: `<list or "none">` | Current date: `<today's date>` | CE baseline: `<geography = cell = value, one per geography, e.g., Nigeria = B48 = 7.8x; Kenya = C48 = 6.2x; or "not yet determined" before Step 0.5 is complete>` | TA classification: `<is_ta_botec: true / false; if true, include counterfactual burden tab name>`
+> Spreadsheet ID: `<id>` | Sheets to vet: `<names>` | In-scope sheets: `<comma-separated list of sheet names being vetted>` | Lite-pass tabs: `<comma-separated list of tabs receiving lite structural pass only, or "none">` | Out-of-scope sheets: `<comma-separated list of all other sheet names in the workbook>` | Findings sheet ID: `<id>` | Publication Readiness sheet ID: `<id>` | Hardcoded Values sheet ID: `<id>` | Confidentiality Flags sheet ID: `<id>` | Staging tab: `<assigned per agent>` | User email: `<email>` | Program context: `<summary from Step 0.5>` | Declared-intentional deviations: `<list or "none">` | Current date: `<today's date>` | CE baseline: `<geography = cell = value, one per geography, e.g., Nigeria = B48 = 7.8x; Kenya = C48 = 6.2x; or "not yet determined" before Step 0.5 is complete>` | TA classification: `<is_ta_botec: true / false; if true, include counterfactual burden tab name>` | TA Modeling Guidance doc ID: `12onXe086vgvSBSVCbIwvWwWft7JYIpPpJ--CK80Ez6M` (pass when is_ta_botec: true; ce-chain-trace-ta uses this for `get_doc_content`)>
 >
 > **Note on Findings and Publication Readiness sheet IDs**: These sheet IDs are reference-only — agents read from them (for checking existing content) but write ONLY to their assigned staging tab (stg-*). Direct writes to the Findings or PR sheets by Wave 1/2 agents are incorrect; all findings flow through staging → compaction → final Findings/PR.
 >
@@ -1277,6 +1277,13 @@ For any required agent whose staging tab is empty and where 0-findings is **not*
 
 Proceed only after either (a) the missing agent successfully completes, or (b) explicit researcher approval: the researcher types PROCEED and you note in the Dashboard: "⚠️ Vet proceeded with incomplete coverage — [agent name] did not complete."
 
+**WONT_FIX pre-compaction announcement** — After self-verification passes and before spawning any Wave 3 agent: read all stg-rec-* staging tabs (from the staging tab list in session context or Dashboard A99) in batched increments (A1:I50, A51:I100, …). Collect every row where column I = `WONT_FIX`. If any are found, announce in chat:
+
+> ⚠️ **WONT_FIX rows found ([N] total) — these reconcile-dismissed findings will be excluded from the final Findings sheet:**
+> [For each row: "• [Sheet] [Cell/Row] ([Severity]/[Error Type]) — [first 100 chars of Explanation]"]
+
+If no WONT_FIX rows exist, proceed silently. This gives the researcher a last chance to un-suppress any entry before compaction discards it: they can remove `WONT_FIX` from column I of the relevant staging tab row before responding.
+
 **Wave 3 session context** — pass to each Wave 3 agent:
 
 > `Output spreadsheet ID: <id>` | `Source spreadsheet ID: <id>` | `Source spreadsheet URL: <url>` | `Vet scope: <full or formula-only>` | `CE baseline: <geography = cell = value, one per geography> [recovery: read Dashboard A156 onward if not in context — label row is A155 = CE_BASELINE_RECOVERY]` | `All staging tabs: [read from Dashboard A99 if not in context]` | `User email: <email>` | `Current date: <today>`
@@ -1311,8 +1318,23 @@ After all agents complete, announce `[Vet complete — Phase 4/4 done]`, then:
 **Step 1 — Present results to the user**:
 
 **Findings Sheet (Google Sheet):** [link]
+**Publication Readiness Sheet (same spreadsheet):** [link to same spreadsheet]
 
-One-line count: e.g., "13 findings: 2 High, 6 Medium, 5 Low — 4 require researcher input"
+Deliver the following structured briefing immediately after the links. Read the counts and High findings from the Key Findings block already written by Step 10d (dashboard agent) in this session — do not re-read the spreadsheet:
+
+```
+Vet complete — [source spreadsheet name]
+
+Findings: [H] High, [M] Medium, [L] Low ([total] total) | CE direction: [CE estimate direction from B22]
+Affected sheets: [comma-separated list of sheets with at least 1 finding]
+Publication readiness: [P] items
+
+Top findings:
+[List up to 3 High findings with ID, sheet, brief description and CE direction]
+[If no High findings: "No High findings."]
+
+Full detail in the Findings Sheet above. The Key Findings block above (from Step 10d) has complete High finding descriptions.
+```
 
 **Step 2 — Collect pilot feedback**
 

@@ -37,6 +37,9 @@ Fire all formatting in a single parallel batch immediately after writing headers
 
 - `add_conditional_formatting`: Severity D2:D2000 on Findings — High → `#FFB3B3`, Medium → `#FFE5B3`, Low → `#B3D9B3`
 - `add_conditional_formatting`: Section dividers A2:H2000 on Findings — CUSTOM_FORMULA `=ISNUMBER(SEARCH("───",$B2))`, background `#D9D9D9`
+- `add_conditional_formatting`: Findings A2:H2000 — CUSTOM_FORMULA `=EXACT($D2,"High")`, background `#FFCDD2` (light red). Apply this rule AFTER the divider rule so dividers (which have blank column D) are unaffected.
+- `add_conditional_formatting`: Findings A2:H2000 — CUSTOM_FORMULA `=EXACT($D2,"Medium")`, background `#FFF3E0` (light amber).
+- `add_conditional_formatting`: Findings A2:H2000 — CUSTOM_FORMULA `=EXACT($D2,"Low")`, background `#FFFDE7` (light yellow).
 - `format_sheet_range`: header row 1 on Findings (A1:H1) — dark blue `#1F4E79`, white text, bold; freeze row 1 and columns A–C
 - `format_sheet_range`: header row 1 on Publication Readiness (A1:F1) — dark blue `#1F4E79`, white text, bold; freeze row 1 and columns A–C
 - `format_sheet_range`: header row 1 on Hardcoded Values (A1:H1) — dark blue `#1F4E79`, white text, bold

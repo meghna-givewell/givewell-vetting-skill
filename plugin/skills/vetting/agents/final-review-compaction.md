@@ -170,24 +170,31 @@ Rewrite both sheets sequentially from row 2. The Findings sheet and Publication 
 
 **Strip column I when writing to the Findings sheet**: Staging tabs carry a 9th column (column I) used internally for WONT_FIX markers. When writing rows to the final Findings sheet, write only columns A–H. Do not write column I to the Findings sheet — the Findings sheet has no Status column.
 
-Sort all Findings rows in memory using three sort keys:
-1. **Primary**: Severity (High → Medium → Low)
-2. **Secondary**: Estimated CE Impact (column H) — within each severity tier, apply this order: numeric magnitude findings first (rows where column H contains a specific estimate, e.g., "Raises CE — 2.5x" or "Lowers CE — 1.3x"), then magnitude-unknown findings ("Raises CE — magnitude unknown", "Lowers CE — magnitude unknown"), then "Direction unknown", then "No CE impact", then blank. Within the numeric magnitude tier, sort "Raises CE" entries before "Lowers CE" entries (findings that overstate CE are higher priority for correction). Within the magnitude-unknown tier, similarly sort "Raises CE — magnitude unknown" before "Lowers CE — magnitude unknown."
+Sort all Findings rows in memory using a tier-aware sort:
 
-   **Sort key extraction for column H**: Parse the numeric magnitude from column H as follows — strip the leading phrase ("Raises CE — " or "Lowers CE — "), then parse the remaining text as a decimal (e.g., "5%" → 0.05; "2.5x" → 2.5; "1.3x → ~1.5x" → use the first number, 1.3). Use the absolute value of this number as the sort key so that "Raises CE — 5%" and "Lowers CE — 5%" sort at the same level. When column H contains "Direction unknown", "No CE impact", or is blank, the sort key is 0. When column H contains a magnitude-unknown phrase ("Raises CE — magnitude unknown" or "Lowers CE — magnitude unknown"), treat the sort key as positive infinity within its direction tier (i.e., sort magnitude-unknown after all numeric entries but before "Direction unknown"). Do not attempt further arithmetic on the extracted value — use it only for relative ordering.
-3. **Tertiary**: Error Type/Issue (column E, alphabetical)
+**High findings** sort by:
+1. Estimated CE Impact (column H) — numeric magnitude findings first, then magnitude-unknown, then "Direction unknown", then "No CE impact", then blank. Within numeric tier: "Raises CE" before "Lowers CE". (Full sort-key extraction rules for column H: same as described below.)
+2. Error Type/Issue (column E, alphabetical)
 
-Then rewrite the Findings sheet from row 2 with section dividers. **If no findings exist at a given severity level, skip that divider entirely — do not write an empty `─── High (0 findings) ───` row.** Only write a divider when at least one finding of that severity is present.
+**Medium and Low findings** sort by:
+1. Sheet name (column B, alphabetical) — group all findings from the same source sheet together
+2. Estimated CE Impact (column H) — same order and sort-key extraction as for High findings
+3. Error Type/Issue (column E, alphabetical)
+
+**Sort key extraction for column H**: Parse the numeric magnitude from column H as follows — strip the leading phrase ("Raises CE — " or "Lowers CE — "), then parse the remaining text as a decimal (e.g., "5%" → 0.05; "2.5x" → 2.5; "1.3x → ~1.5x" → use the first number, 1.3). Use the absolute value of this number as the sort key so that "Raises CE — 5%" and "Lowers CE — 5%" sort at the same level. When column H contains "Direction unknown", "No CE impact", or is blank, the sort key is 0. When column H contains a magnitude-unknown phrase ("Raises CE — magnitude unknown" or "Lowers CE — magnitude unknown"), treat the sort key as positive infinity within its direction tier (i.e., sort magnitude-unknown after all numeric entries but before "Direction unknown"). Do not attempt further arithmetic on the extracted value — use it only for relative ordering.
+
+Then rewrite the Findings sheet from row 2 with section dividers and per-sheet sub-dividers. **If no findings exist at a given severity level, skip that divider entirely — do not write an empty `─── High (0 findings) ───` row.** Only write a divider when at least one finding of that severity is present.
 
 - Before the first High finding (if any): divider row with column B = `─── High (N findings) ───`, all other columns blank.
-- All High findings follow.
+- All High findings follow (no per-sheet sub-dividers within High — High findings are few enough that reviewers scan them all).
 - Before the first Medium finding (if any): `─── Medium (N findings) ───`.
-- All Medium findings follow.
+- Within Medium findings, insert a per-sheet sub-divider before the first finding from each new sheet: column B = `─── Medium — [Sheet name] ([K] findings) ───`, where K = number of Medium findings for that sheet. All Medium findings for that sheet follow immediately.
 - Before the first Low finding (if any): `─── Low (N findings) ───`.
+- Within Low findings, apply the same per-sheet sub-divider pattern: `─── Low — [Sheet name] ([K] findings) ───` before each sheet's group.
 
-Divider rows are auto-styled by conditional formatting (gray background — triggered when column B contains `───`). Divider rows are not finding rows — skip them when counting for the N values above.
+Divider rows (both tier-level and per-sheet sub-dividers) are identified by column B containing `───`. They are auto-styled by conditional formatting (gray background — triggered when column B contains `───`). Divider rows are not finding rows — skip them when counting for the N and K values above. When computing K per-sheet counts, count only non-divider finding rows for that sheet within that tier.
 
-Sort the Publication Readiness sheet by Error Type/Issue (column D, alphabetical) and rewrite without dividers.
+Sort the Publication Readiness sheet first by Sheet (column B, alphabetical), then by Error Type/Issue (column D, alphabetical), and rewrite without dividers.
 
 Coverage declaration: "Sort and rewrite complete. Findings: [N] High, [M] Medium, [L] Low, [D] divider rows. Publication Readiness: [N] rows."
 

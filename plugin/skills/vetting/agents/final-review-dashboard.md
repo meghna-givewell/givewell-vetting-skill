@@ -69,6 +69,14 @@ After writing all Dashboard content with `modify_sheet_values`, make a single `f
 
 If session context indicates a formula/heads-up only scope mode: add a `Partially vetted (heads-up only):` row below the Sheets not vetted list, listing any tabs where only heads-up agents ran. Do not list these tabs under Sheets not vetted — they were checked, just not at full depth.
 
+**Top High Findings block**: After the Sheets not vetted list, skip two blank rows, then write a `TOP HIGH FINDINGS` summary block to the Dashboard. This gives reviewers the most actionable items without opening the Findings sheet.
+
+- Write `TOP HIGH FINDINGS` in column A (bold — include in the `format_sheet_range` bold call below or make a separate call if needed).
+- For each High finding (up to 3; use the first 3 from the sorted Findings sheet): write one row with column A = Finding ID (e.g., F-001), column B = Sheet name, column C = Cell/Row, column D = one-sentence description (first ~80 chars of column F from the Findings sheet).
+- If there are no High findings, write `No High findings` in column A of this block.
+
+Place this block starting at the row immediately after the last "Sheets not vetted" or "Partially vetted" entry + 2 blank rows. The block must not extend past row 148 — if the per-sheet table is large, skip the block and note `TOP HIGH FINDINGS: skipped — per-sheet table extends past row 145`.
+
 The per-sheet table starts at row 25 per the reserved layout in output-setup.md. Do not write above row 24 under any circumstances — rows 1–23 contain static setup content written during output initialization. If the per-sheet table plus unvetted tabs list would extend past row 148, warn the researcher before writing.
 
 **Scope declaration recovery** — if session context was compacted and the vetted/lite-passed tab lists are not available: read Dashboard cells B151:B153 of the output spreadsheet (written by the orchestrator before Wave 1). Cell B151 = comma-separated fully vetted tabs, cell B152 = comma-separated lite-pass tabs, cell B153 = vet scope ('full' or 'formula-only'). Do not read column A values — those are row labels, not data. Use B151–B153 as the scope declaration. If B151 is also blank or unreadable, announce: "Scope declaration unavailable — vet metadata at Dashboard B151:B153 is missing. Ask the researcher which tabs were fully vetted vs. lite-passed before finalizing the unvetted list." Then proceed with the tab list from `get_spreadsheet_info` and leave the vetted/lite-passed categorization blank.
