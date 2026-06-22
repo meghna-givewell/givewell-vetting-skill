@@ -75,7 +75,7 @@ If session context indicates a formula/heads-up only scope mode: add a `Partiall
 - For each High finding (up to 3; use the first 3 from the sorted Findings sheet): write one row with column A = Finding ID (e.g., F-001), column B = Sheet name, column C = Cell/Row, column D = one-sentence description (first ~80 chars of column F from the Findings sheet).
 - If there are no High findings, write `No High findings` in column A of this block.
 
-Place this block starting at the row immediately after the last "Sheets not vetted" or "Partially vetted" entry + 2 blank rows. The block must not extend past row 148 — if the per-sheet table is large, skip the block and note `TOP HIGH FINDINGS: skipped — per-sheet table extends past row 145`.
+Place this block starting at the row immediately after the last "Sheets not vetted" or "Partially vetted" entry + 2 blank rows. **Do not start this block at row 97 or later** — rows 99–148 are reserved for the Staging Sheet Log written during output setup and must not be overwritten. If the per-sheet table plus unvetted tabs list ends at row 94 or later (leaving insufficient space before row 97), skip the block entirely and note `TOP HIGH FINDINGS: skipped — unvetted tab list extends past row 93; Staging Sheet Log occupies rows 99–148`.
 
 The per-sheet table starts at row 25 per the reserved layout in output-setup.md. Do not write above row 24 under any circumstances — rows 1–23 contain static setup content written during output initialization. If the per-sheet table plus unvetted tabs list would extend past row 148, warn the researcher before writing.
 

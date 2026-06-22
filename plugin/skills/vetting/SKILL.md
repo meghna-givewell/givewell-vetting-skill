@@ -1277,7 +1277,7 @@ For any required agent whose staging tab is empty and where 0-findings is **not*
 
 Proceed only after either (a) the missing agent successfully completes, or (b) explicit researcher approval: the researcher types PROCEED and you note in the Dashboard: "⚠️ Vet proceeded with incomplete coverage — [agent name] did not complete."
 
-**WONT_FIX pre-compaction announcement** — After self-verification passes and before spawning any Wave 3 agent: read all stg-rec-* staging tabs (from the staging tab list in session context or Dashboard A99) in batched increments (A1:I50, A51:I100, …). Collect every row where column I = `WONT_FIX`. If any are found, announce in chat:
+**WONT_FIX pre-compaction announcement** — After self-verification passes and before spawning any Wave 3 agent: read all original stg-A and stg-B staging tabs (NOT the stg-rec-* tabs — WONT_FIX markers are written by reconcile agents back to the original A/B tabs, not to the reconcile staging tabs). Iterate over every stg-* tab in the staging tab list (from session context or Dashboard A99), skipping stg-rec-* tabs, in batched increments (A1:I50, A51:I100, …). Collect every row where column I = `WONT_FIX`. If any are found, announce in chat:
 
 > ⚠️ **WONT_FIX rows found ([N] total) — these reconcile-dismissed findings will be excluded from the final Findings sheet:**
 > [For each row: "• [Sheet] [Cell/Row] ([Severity]/[Error Type]) — [first 100 chars of Explanation]"]
@@ -1320,7 +1320,7 @@ After all agents complete, announce `[Vet complete — Phase 4/4 done]`, then:
 **Findings Sheet (Google Sheet):** [link]
 **Publication Readiness Sheet (same spreadsheet):** [link to same spreadsheet]
 
-Deliver the following structured briefing immediately after the links. Read the counts and High findings from the Key Findings block already written by Step 10d (dashboard agent) in this session — do not re-read the spreadsheet:
+Deliver the following structured briefing immediately after the links. Read the counts and High findings from the Key Findings block already written by Step 10d (dashboard agent) in this session. **Context-compaction fallback**: if the Step 10d Key Findings output is no longer in context (context may have been compacted), read Dashboard cells B7:B10 for finding counts (High/Medium/Low/Total), B22 for CE direction, and Findings sheet column B rows 2 onward for the list of affected sheets; read the first 3 rows where column D = `High` in the Findings sheet for top findings.
 
 ```
 Vet complete — [source spreadsheet name]

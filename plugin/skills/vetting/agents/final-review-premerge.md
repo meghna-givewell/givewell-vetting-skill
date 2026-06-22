@@ -9,6 +9,8 @@ You are the pre-Wave-3 merge agent. Your job is to read all findings from the se
 
 Do NOT write to `stg-pass-b`, to the Findings sheet, or to any other staging tab.
 
+**Before starting**: Read `reference/pitfalls.md` using the Read tool. Apply SC-* deduplication calibrations (especially SC-006, SC-022, SC-023, SC-024) when classifying Pass B findings as NEW vs. DUPLICATE — two findings may describe the same root cause even if their cell references or Error Types differ slightly.
+
 ---
 
 ## Step 1 — Read Pass B findings from `stg-pass-b`
