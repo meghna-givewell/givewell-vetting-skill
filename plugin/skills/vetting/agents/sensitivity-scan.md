@@ -7,6 +7,12 @@ You are performing Step 8 of a GiveWell spreadsheet vet. You have been provided:
 
 **Scope**: This agent handles sensitive data detection only. Hardcoded values enumeration is handled by a separate agent (Step 9) running in parallel — do not duplicate that work here.
 
+## Before starting: read pitfalls.md
+
+Before executing any check, read `reference/pitfalls.md` using the Read tool (if local) or `get_doc_content` (if remote). The pitfalls file documents cross-agent scope boundaries and filing calibrations. Do not proceed until pitfalls.md is loaded.
+
+---
+
 **Pre-read cache**: If a pre-read cache is provided in session context (sheet ≤150 populated rows), use it as your primary data source for FORMATTED_VALUE, FORMULA, and Notes data — do not re-read full sheet ranges in these modes. The read_spreadsheet_comments call is unconditional (comments are not in the cache). Proceed with batch reads only if no pre-read cache was provided (sheet >150 rows): use `read_sheet_values` in 50-row increments (`A1:ZZ50`, `A51:ZZ100`, `A101:ZZ150`, continuing in 50-row increments until two consecutive batches return no non-empty rows) — the MCP tool silently truncates at 50 rows per call.
 
 **Write target**: This agent writes all findings directly to the Confidentiality Flags sheet (ID provided in session context). This agent has no staging tab. The standard 'write to your staging tab' instruction in the SKILL.md session context block does not apply to this agent. Do not write to any staging tab or Findings sheet.
@@ -25,7 +31,7 @@ Read the spreadsheet in FORMATTED_VALUE mode and FORMULA mode across all vetted 
 
 **Role calibration**: Flag what you find. Do not speculate about whether exposure is likely — if the data is present and non-public, flag it. Err on the side of flagging. This sheet is reviewed by staff before publication, so a false positive is low-cost; a miss is not.
 
-**Coverage mandate**: Read every row, every cell note, and every column of every vetted sheet. Do not sample. After completing each sheet, write: "Sensitivity scan complete for [sheet]. Rows checked: [N]. Flags found: [list or 'none']." Do not proceed to the next sheet until you can write this declaration.
+**Coverage mandate**: Read every row, every cell note, and every column of every vetted sheet. Do not sample. After completing each sheet, write: "Sensitivity scan complete for [sheet]. Rows checked: [N]. Flags found: [list or 'none']." Do not proceed to the next sheet until you can write this declaration. If a sheet has zero populated rows after reading, write: "Sensitivity scan complete for [sheet]. Rows checked: 0. Flags found: none. Sheet appears empty." and proceed to the next sheet.
 
 ---
 

@@ -34,7 +34,7 @@ Coverage declaration: "Synthesized Medium/Formula re-verification complete. Cand
 **SEQ-3 — Verify gap-fill has completed before proceeding**
 Read the Findings sheet in batched 50-row increments (same pattern as Step 1 below). Scan for a row where column B = 'final-review-gap-fill' AND column D = 'AGENT_COMPLETE'. If this marker is NOT found: halt immediately with: '⛔ SEQ-3: final-review-gap-fill AGENT_COMPLETE marker not found in the Findings sheet. The validation agent must not run before gap-fill completes. Re-run after gap-fill writes its completion marker.' Do not proceed with any check until the gap-fill marker is confirmed present.
 
-Read `reference/pitfalls.md` using the Read tool. Apply every entry relevant to CE impact estimation, fix validation, and completeness checks.
+Read `reference/pitfalls.md` using the Read tool. Apply all entries — including FP-007 (high-severity protection does not override confirmed no-CE-impact), SC-017 (High finding calibration: >8 Highs requires review), and SC-028 (documented inconsistencies) — before running any check.
 
 ---
 
@@ -44,7 +44,7 @@ Read all rows from row 2 onward on the Findings sheet using batched `read_sheet_
 
 If the Publication Readiness sheet is empty (no rows after row 1), declare the PR ID integrity check clean: "Publication Readiness sheet is empty — no PR-* IDs to verify." Do not file a finding about missing PR IDs when the sheet is legitimately empty.
 
-**Obtain spreadsheet tab metadata now** — before any other check — to populate the tab list and tab-to-GID mapping needed by both Check 2 (CI sheet detection) and the hyperlink conversion step. Read this from session context: the orchestrator provides a `tab_list` or `sheet_manifest` entry at session start. Store the result as `spreadsheet_info`. If session context does not contain tab metadata, announce: `⚠️ Tab metadata not found in session context — Check 2 (CI sheet check) and hyperlink conversion are orchestrator-dependent and cannot run. Proceed with all other checks.` Then skip Check 2 and the hyperlink conversion step. Do NOT call `get_spreadsheet_info` — this tool is not available in the agent context.
+**Obtain spreadsheet tab metadata now** — before any other check — to populate the tab list and tab-to-GID mapping needed by both Check 2 (CI sheet detection) and the hyperlink conversion step. Read this from session context: the orchestrator provides a `tab_list` or `sheet_manifest` entry at session start. Store the result as `spreadsheet_info`. If session context does not contain tab metadata, announce: `⚠️ Tab metadata not found in session context — Check 2 (CI sheet check) and hyperlink conversion are orchestrator-dependent and cannot run. Proceed with all other checks.` Then skip Check 2 and the hyperlink conversion step. Do NOT call `get_spreadsheet_info` — validation relies on session context tab metadata instead. (The dashboard agent calls get_spreadsheet_info directly; validation does not. This is intentional: validation runs before the dashboard agent.)
 
 ---
 
@@ -165,7 +165,7 @@ Coverage declaration: "Confidence intervals check complete. Sheet present: [yes/
 
 ## Check 3 — Stale placeholder and draft language
 
-Using targeted `read_sheet_values` calls on columns A through H of each vetted sheet (do not read full sheets), scan for:
+Read each vetted sheet in batched 50-row increments (A:H batches) until two consecutive empty batches — the same pattern as Step 1. Scan all populated rows for:
 - Cells containing any of these terms (exact match, case-insensitive): `TBD`, `TODO`, `DRAFT`, `Placeholder`, `Update this`, `to be confirmed`, `fill in`, `[fill in]`, `provisional`, `preliminary`, `working estimate`, `confirm before`, `update before`, `ASK`, `FIXME`, `TEMP`
 - Column headers with generic names like `Column X`, `Country A`, `Year N`
 - Cell notes containing internal-only markers (use `read_sheet_notes` on each vetted sheet to scan for notes beginning with `Note to self`, `INTERNAL`, or `ASK [name]`) (read_sheet_notes is explicitly permitted in this check as an exception to the targeted-read restriction — it reads notes metadata, not full cell value data, and is necessary for the internal-marker scan. This is the only full-sheet read permitted in this agent.)
@@ -300,4 +300,4 @@ Coverage declaration: "Hyperlink conversion complete. Findings rows converted: [
 
 ## Final step — Write AGENT_COMPLETE marker
 
-After hyperlink conversion is complete, write a completion row to the Findings sheet: column A = (leave blank), column B = `final-review-validation`, column D = `AGENT_COMPLETE`, column F = `COVERAGE_ROWS: Findings sheet rows 2–[last_row] | Output sheet: Findings (direct write — no staging tab). CE baseline: [verified/not found]. ID integrity: [clean/issues filed]. [K] new findings filed.`
+After hyperlink conversion is complete, write a completion row to the Findings sheet: column A = (leave blank), column B = `final-review-validation`, column D = `AGENT_COMPLETE`, column F = `COVERAGE_ROWS: Findings sheet rows 2–[last_row] | CE baseline: [verified/not found]. ID integrity: [clean/issues filed]. [K] new findings filed. Output: Findings sheet (direct write).`

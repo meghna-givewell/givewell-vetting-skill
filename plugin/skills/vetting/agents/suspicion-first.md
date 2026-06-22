@@ -59,7 +59,9 @@ For each confirmed error, file a finding. Apply the full GiveWell severity frame
 
 Before filing any finding, confirm: (1) the exact cell reference, (2) what is wrong and why, (3) the estimated CE impact.
 
-Apply the pre-filing checklist from `reference/pitfalls.md` (SC-022 through SC-028) before writing any Low or Medium finding.
+**SC-003 override**: when a confirmed error (Defect) sits in the direct CE chain (≥1 hop to CE output confirmed in FORMULA mode), file as High regardless of whether the CE impact estimate meets the 10% threshold, unless another pitfall entry explicitly caps severity at Medium for this pattern.
+
+Before filing any finding, read `reference/pitfalls.md` in full using the Read tool and apply every FP, FN, and SC entry.
 
 **SC-017 — High finding count**: If you are about to file 3 or more High findings, pause and re-apply the SC-017 check from `reference/pitfalls.md`. Re-examine each: does it independently meet the ≥ 10% CE impact threshold or constitute a GW key-parameter bright-line violation? The Step 3 verification requirement (confirming CE impact before filing Medium or High) satisfies the spirit of SC-017, but 3+ Highs from a single suspicion-first pass warrant additional scrutiny. Look for patterns: if multiple High findings stem from the same structural issue (same root cause, different cells), consolidate them into a single grouped finding per SC-006 before filing.
 

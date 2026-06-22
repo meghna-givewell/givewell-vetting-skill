@@ -131,7 +131,7 @@ Skip this check for tabs that explicitly carry a fixed historical vintage by des
 
 When a workbook contains both primary data tabs (tabs whose values directly feed CEA parameters — mortality rates, coverage inputs, disease burden) and secondary or reference tabs (lookup tables, regional comparison data, historical baselines), apply differentiated staleness thresholds:
 
-- **Primary data tabs**: flag as **Medium/H** if the most recent data year lags the current year by **>1 year** and no note explains the vintage choice.
+- **Primary data tabs**: flag as **Medium/H** if the most recent data year lags the current year by **>1 year**, no note explains the vintage choice, AND a more current vintage is confirmed available via WebSearch. Do not file if the used year is the most recently published vintage for that data source.
 - **Secondary / reference tabs**: flag as **Low/H** if the most recent data year lags the current year by **>3 years** and no note explains the vintage choice.
 
 When in doubt about whether a tab is primary or secondary, treat it as primary. Note the classification in your coverage declaration.
@@ -182,7 +182,7 @@ SC-005 (methodology mismatch) and SC-007 (value matching a study subgroup) are c
 
 When you observe a source tab citation that may report multiple subgroup estimates:
 1. Note the observation in your reasoning.
-2. For SC-004 cases: file a Low/Assumption SC-010 placeholder using the correct SC ID. Use the correct SC ID in the placeholder: SC-004 for subgroup-from-source cases; "SC-005 methodology mismatch noted at [cell] — deferred to formula-check-data for WebFetch confirmation" for methodology mismatch cases; "SC-007 intentional-subgroup case noted at [cell] — deferred to formula-check-data for full cohort analysis" for value-matches-study-arm cases.
+2. For SC-004 cases only: file a Low/Assumption SC-010 placeholder with SC ID SC-004. Use the SC-010 placeholder wording from pitfalls.md: "Possible issue — deferred to formula-check-data: [brief description]. See Cross-Agent Scope Reference in pitfalls.md." Do not invent alternative placeholder wording. Do not file SC-010 placeholders for SC-005 or SC-007 — those are co-owned and must be filed directly (see steps 1 and 4).
 3. For SC-004: do not independently fetch the URL or file a severity determination above Low.
 4. For SC-005 and SC-007: file directly per the co-ownership instructions above; do not defer.
 
@@ -228,7 +228,7 @@ After all findings are written and all other steps are complete, write ONE final
 Write the row with:
 - Column B: `source-data-check`
 - Column D: `AGENT_COMPLETE`
-- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]. Excluded tabs: [list or "none"]. Reason: [lookup/reference/output for each, or "n/a"].`
+- Column F: `COVERAGE_ROWS: [source spreadsheet row ranges scanned, e.g., 1-150] | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]. SC-004 deferred: [N]. Excluded tabs: [list or "none"]. Reason: [lookup/reference/output for each, or "n/a"].`
 - All other columns: blank
 
 **Tab exclusion fallback**: When any tab is excluded from source-data checks (e.g., a lookup table, reference tab, or output-only tab), always name it in the Excluded tabs field above with the reason. Do not silently omit tabs from coverage — every excluded tab must appear in AGENT_COMPLETE.

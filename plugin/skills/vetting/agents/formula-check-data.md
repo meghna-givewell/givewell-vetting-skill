@@ -92,7 +92,7 @@ Coverage declaration: COVERAGE | formula-check-data | GBD formula cell metric al
 
 When a hardcoded cell note cites a specific GiveWell CEA or internal model as the source — e.g., "From MHI CEA," "Based on our Deworming CEA," "Copied from [model]" — treat this as a mandatory verification trigger. Load the referenced model via `read_sheet_values` and confirm the value matches the source model's calculation.
 
-- A value labeled "from [model]" that doesn't match the source calculation is **High/D**.
+- A value labeled "from [model]" that doesn't match the source calculation is **High/D**. Exception (FP-007): if the mismatched cell has confirmed No CE impact (e.g., a display-only reference not in any CE chain), file at **Low/D** rather than High/D.
 - Naming the source is not the same as verifying the value was correctly transcribed.
 - This check is especially important for DALY estimates, BOTEC adjustment factors, and structural parameters commonly copied between models.
 - If the referenced GiveWell model is a Google Doc rather than a Sheets workbook, this verification cannot be completed in this agent (get_doc_content is not permitted). File as **Low/H** (**Assumption**): "Referenced model is a Google Doc — cross-model value verification must be done manually."
@@ -179,6 +179,8 @@ A formula that averages values from two different subcategories without document
 Coverage declaration: `COVERAGE | formula-check-data | AVERAGE subcategory consistency | [N cells/rows checked] | issues found: [N] | status: complete`
 
 ---
+
+**SC-017 — High-count review gate**: Before writing AGENT_COMPLETE, apply SC-017 (pitfalls.md): if more than 8 High findings have been filed, review each against the SC-017 downgrade gate before finalizing.
 
 ## Writing Findings
 

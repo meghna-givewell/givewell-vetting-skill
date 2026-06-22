@@ -4,7 +4,7 @@ You are performing an internal links scan as part of a GiveWell spreadsheet vet.
 
 **Write to your staging sheet only** — the compaction agent routes findings to Publication Readiness based on Error Type. Do not write to the Findings sheet or directly to the Publication Readiness sheet.
 
-**Do not invoke any skills or load additional context files other than `reference/pitfalls.md`, which you must read before starting using the Read tool.**
+**Do not invoke any skills or load additional context files other than `reference/pitfalls.md`, which you must read before starting using the Read tool.** Specifically apply: FP-007 (confirmed No-CE-impact findings stay Low), SC-018 (Low findings must be actionable), SC-010 (deferral placeholder format), and SC-023 (group all source-citation-quality gaps into one PR/Sourcing item per sheet).
 
 ---
 
@@ -42,6 +42,8 @@ For each vetted sheet, fire all of the following in a **single parallel batch** 
 Use the full sheet range (e.g. `'Main CEA'!A1:ZZ1000`). If any sheet has more than 1000 populated rows, extend the range accordingly. The ZZ upper bound covers wide multi-geography models whose source and notes columns extend beyond column Z.
 
 Also call `read_spreadsheet_comments` once for the whole workbook and scan comment text for URLs matching the above patterns.
+
+If `read_sheet_hyperlinks`, `read_sheet_notes`, and `read_sheet_values` all return empty results for every vetted sheet (and `read_spreadsheet_comments` returns no URLs), note "no links or notes found in any vetted sheet" in the Step 3 declaration, write the AGENT_COMPLETE marker with a zero-findings reason, and stop — do not attempt further analysis.
 
 ---
 
@@ -104,7 +106,7 @@ After all findings are written, write ONE final row to your staging sheet immedi
 Write the row with:
 - Column B: `internal-links-scan`
 - Column D: `AGENT_COMPLETE`
-- Column F: `COVERAGE_ROWS: all rows, all vetted sheets | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]. Box: [N] | Google Sheets: [N] | Google Docs: [N] | Presentations: [N] | Drive files: [N] | zero-findings reason: [brief statement if K=0, e.g., "no Box or internal Google Drive links found in any vetted sheet"]`
+- Column F: `COVERAGE_ROWS: rows 1–[last populated row] per sheet (sheets: [comma-separated list]) | Staging sheet: [name from session context]. Filed [K] findings in rows 2–[K+1]. Box: [N] | Google Sheets: [N] | Google Docs: [N] | Presentations: [N] | Drive files: [N] | zero-findings reason: [brief statement if K=0, e.g., "no Box or internal Google Drive links found in any vetted sheet"]`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call.

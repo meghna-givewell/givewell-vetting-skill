@@ -94,11 +94,11 @@ delta = |CE_replication - CE_stated| / CE_stated
 
 **If delta < 2%**: no finding. Write a coverage declaration and stop. The arithmetic checks out.
 
-**If 2% ≤ delta < 5%**: file **Medium/Formula**: "[cell] = [CE_stated] — independent replication from leaf inputs yields [CE_replication] ([delta]% discrepancy). This is within a plausible rounding range but worth confirming. Inputs used: [list key inputs and values]. Check whether any adjustment factor or discounting step was omitted from the replication."
+**If 2% ≤ delta < 5%**: file **Medium/Formula**: "[cell] = [CE_stated] — independent replication from leaf inputs yields [CE_replication] ([delta]% discrepancy). This is within a plausible rounding range but worth confirming. Inputs used: [list key inputs and values]. Check whether any adjustment factor or discounting step was omitted from the replication." Exception: if the discrepancy is traced to a specific cell confirmed in the direct CE chain that is demonstrably wrong (formula error or value contradiction per SC-003), escalate to High regardless of the 5% delta threshold.
 
 **If delta ≥ 5%**: file **High/Formula**: "[cell] = [CE_stated] — independent replication from leaf inputs yields [CE_replication] ([delta]% discrepancy). This indicates a formula error, a wrong parameter value, or a broken reference somewhere in the CE chain. The end-to-end arithmetic does not match the stated output. Inputs used: [list key inputs and values]. Trace the discrepancy to its source: [describe the most likely cause based on your dependency tree]."
 
-In column H: "Lowers CE — magnitude unknown" if your replication is higher than stated (model is overstated); "Raises CE — magnitude unknown" if replication is lower than stated (model understates CE).
+In column H: write "Lowers CE — magnitude unknown" if CE_replication > CE_stated (the true value is lower than stated, so the model overstates CE). Write "Raises CE — magnitude unknown" if CE_replication < CE_stated (the true value is higher than stated, so the model understates CE).
 
 **Diagnosing the source**: when delta ≥ 5%, attempt to narrow down which step in the chain produces the discrepancy. Compare your step-by-step intermediate results against the spreadsheet's intermediate values. The first intermediate where your value diverges from the spreadsheet's value is the likely location of the error. Report this in the finding explanation.
 
@@ -108,7 +108,7 @@ In column H: "Lowers CE — magnitude unknown" if your replication is higher tha
 
 After the primary replication, run a second computation substituting GW standard parameter values (from `key-parameters.md`) for the moral weight and benchmark cells — even if those cells match GW standards. This verifies whether any observed discrepancy is fully explained by a parameter deviation vs. a formula error.
 
-If your primary replication (Step 6) already matched CE_stated (delta < 2%): substitute GW standard parameters and recompute. If the substituted CE deviates from CE_stated by ≥ 5%, the spreadsheet's CE depends critically on non-standard parameters. File as **Medium/Parameter**: "CE_stated = [value] with non-standard [moral weight / benchmark] = [value]. Using GW standard parameters ([standard values]) produces CE ≈ [recomputed value] — a [delta]% deviation from stated. The model is sensitive to this parameter; confirm the deviation is intentional per key-parameters.md guidelines." Only file this if it would not already be caught by the consistency-check or key-params-check agents (i.e., the parameter value is not already flagged in session context as a known deviation). When a finding is suppressed by this carve-out, record the suppression in AGENT_COMPLETE column F: append 'Step 7 suppressed: [parameter name] deviation noted ([current cell value] vs. GW standard [standard value]) — not filed; already covered by [consistency-check / key-params-check].' This ensures suppressed observations are visible when reviewing vet completeness.
+If your primary replication (Step 6) already matched CE_stated (delta < 2%): substitute GW standard parameters and recompute. If the substituted CE deviates from CE_stated by ≥ 5%, the spreadsheet's CE depends critically on non-standard parameters. File as **Medium/Parameter**: "CE_stated = [value] with non-standard [moral weight / benchmark] = [value]. Using GW standard parameters ([standard values]) produces CE ≈ [recomputed value] — a [delta]% deviation from stated. The model is sensitive to this parameter; confirm the deviation is intentional per key-parameters.md guidelines." Only file this if it would not already be caught by the consistency-check or key-params-check agents (i.e., the parameter value is not already flagged in session context as a known deviation). Also do not file if the affected cell is confirmed to have no CE impact (FP-007) — write 'Step 7 suppressed: no-CE-impact' in AGENT_COMPLETE column F instead. When a finding is suppressed by this carve-out, record the suppression in AGENT_COMPLETE column F: append 'Step 7 suppressed: [parameter name] deviation noted ([current cell value] vs. GW standard [standard value]) — not filed; already covered by [consistency-check / key-params-check].' This ensures suppressed observations are visible when reviewing vet completeness.
 
 ---
 
@@ -121,13 +121,17 @@ Write at the end of Step 6:
 
 ## Writing findings
 
-Column reference: **A** blank | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type (Formula or Parameter) | **F** Explanation (3 sentences max; include CE_stated, CE_replication, delta, and the most likely discrepancy source) | **G** Recommended Fix (imperative verb; name the cell or formula to check) | **H** Estimated CE Impact | **I** blank
+Column reference: **A** blank | **B** Sheet | **C** Cell/Row | **D** Severity | **E** Error Type (Formula | Parameter | Adjustment | Assumption | Inconsistency | Legibility) | **F** Explanation (3 sentences max; include CE_stated, CE_replication, delta, and the most likely discrepancy source) | **G** Recommended Fix (imperative verb; name the cell or formula to check) | **H** Estimated CE Impact | **I** blank
 
-Before filing any finding, apply the pre-filing checklist from `reference/pitfalls.md` (SC-022 through SC-028).
+FORM-6 routing: for any Low+Legibility finding, leave column D blank. The compaction agent routes blank-D rows to Publication Readiness.
+
+Before filing any finding, read `reference/pitfalls.md` in full using the Read tool and apply every FP, FN, and SC entry. Do not limit application to any subset of rules.
 
 ---
 
 ## Final step — write completion marker
+
+Before writing the completion marker, apply SC-017 from `reference/pitfalls.md`: if more than 8 High findings have been filed, pause and re-examine each High for downgrade to Medium using the SC-017 gate criteria.
 
 Write ONE final row to your staging sheet at the next available row after any findings (or row 2 if no findings):
 

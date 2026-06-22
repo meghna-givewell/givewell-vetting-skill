@@ -56,6 +56,7 @@ Coverage declaration: `COVERAGE | formula-check-parameters | wrong-country note 
 When a cell note cites a data vintage or source year that is more than 2 years before the model's grant period start year AND the row is a key epidemiological or cost parameter (mortality rate, incidence, coverage, unit cost, or any parameter in `reference/key-parameters.md`), treat this as a trigger to verify the underlying value — not just the documentation.
 
 A note reading "GBD 2019" in a 2025–2027 grant model is a trigger to check whether the underlying value has changed materially. Before concluding no updated value is available, run a WebSearch for `"[parameter] [country/region] [data source]"`. After computing the parameter drift, trace the cell to the CE output to compute CE impact. Apply output-format.md's ≥5% = Material / <5% = Immaterial framework. Use the drift amount to determine Nature (Defect if updated value found and differs; Gap if no updated value found) — not materiality. Compare numerically:
+- **Drift found, CE impact = 0 (confirmed Zero)**: file as **Low/D** (Defect + Zero = Low — confirmed zero CE impact overrides the Defect floor; exception: benchmark and moral weight deviations are always High regardless of zero CE impact per the bright-line rule and FP-007).
 - **Drift found, CE impact <5% (Immaterial)**: file as **Medium/D** (Defect + Immaterial = Medium) noting the vintage is stale but the value has not materially changed; include the current value in the Explanation.
 - **Drift found, CE impact ≥5% (Material)**: file as **High/D** (Defect + Material) and include both values in the Explanation: "Cell [ref] cites [year] — current [source] value is [X] vs. model's [Y] ([Z]% difference)."
 - **No updated value found after searching**: file as **Medium/H** (**Parameter**): "Cell [ref] note cites [year] data for a key parameter in a [grant period] model — verify the value reflects the most recent available vintage and update the note."
@@ -67,6 +68,8 @@ A note reading "GBD 2019" in a 2025–2027 grant model is a trigger to check whe
 **SC-008 escalation — stale GBD vintage in direct CE chain**: When the stale GBD vintage cell is confirmed to be in the direct CE chain (traceable to the final CE output with no intermediate flags or documented overrides), escalate from Medium/H to **High/D**. Confirm CE chain membership by reading the cell in FORMULA mode and tracing ≥2 explicit formula hops toward the CE output using read_sheet_values (FORMULA mode). If the chain cannot be confirmed via ≥2 FORMULA-mode hops, retain Medium/H. The traced FORMULA path must terminate at the model's main CE output row — not a sensitivity analysis output, scenario column, or "what-if" row. A parameter that feeds only a sensitivity or scenario row does not qualify for SC-008 escalation; retain Medium/H in that case.
 
 **SC-008 ownership for GBD vintage**: This agent (formula-check-parameters) is the sole owner of SC-008 escalation for GBD vintage findings. formula-check-arithmetic defers all GBD vintage escalation decisions to this agent. If this agent confirms ≥2 FORMULA hops to the main CE output, it must escalate to High/D; if it cannot confirm the chain, it retains Medium/H and does not escalate.
+
+**SC-015 — GBD permalink 403 fallback**: This agent lacks WebFetch permission. When a GBD/IHME permalink returns 403, SC-015 requires formula-check-arithmetic, formula-check-data, or heads-up-epi to run a targeted WebSearch ("GBD [year] released") and record the result in column F of their staging row. Before defaulting to Medium for a 403-affected GBD cell, read column F of any co-agent finding for that cell — if column F confirms a newer GBD vintage was published before the model's grant period, treat the vintage as confirmed stale and apply SC-008 escalation normally. Only use Medium when no co-agent column F note confirms a newer vintage.
 
 Do not file this finding if the note already explains why the older vintage is appropriate (e.g., "GBD 2019 used because the 2021 vintage does not disaggregate this age group").
 
@@ -102,7 +105,7 @@ Coverage declaration: `COVERAGE | formula-check-parameters | grant amount consis
 
 When any hardcoded value corresponds to a parameter listed in `reference/key-parameters.md` and deviates from the standard value:
 
-**Bright-line exception — benchmark and moral weight parameters**: Any deviation from the GiveDirectly benchmark value or moral weights listed in `reference/key-parameters.md` is always **High/D**, regardless of deviation size or whether a cell note is present explaining the reason. Do not apply the deviation-size or note-presence rules below to these parameters.
+**Bright-line exception — benchmark and moral weight parameters**: Any deviation from the GiveDirectly benchmark value or moral weights listed in `reference/key-parameters.md` is always **High/D**, regardless of deviation size or whether a cell note is present explaining the reason. Do not apply the deviation-size or note-presence rules below to these parameters. Per SC-021, the Recommended Fix must offer two options: either update the benchmark to the current GW value OR add a rationale note documenting why the older value is retained (e.g., "kept for comparability with prior analysis"). Do not prescribe only the value change — researchers often retain older values intentionally for cross-program comparability.
 
 - **Deviation >5% with no explanatory cell note** → **High/H**: "[Cell] = [value], which deviates [X]% from the key-parameters.md standard of [standard]. Add a note documenting why the deviation is intentional, or update to the standard value."
 - **Deviation >5% with a note explaining the reason** → **Medium/H**: "[Cell] uses [value] (note: [summary]) vs. key-parameters.md standard of [standard]. Confirm the deviation is still appropriate."
@@ -122,6 +125,14 @@ This rule applies regardless of whether the deviation is directionally conservat
 ---
 
 **Numeric parsing — mandatory before drift computation**: All arithmetic (drift percentages, CE impact estimates) must use raw stored numbers. When cells were read in FORMATTED_VALUE mode, formatted values containing %, $, or commas corrupt arithmetic. Always use UNFORMATTED_VALUE mode when reading cells for numeric comparison or CE impact computation. Google Sheets stores percentages as decimals: `95%` displayed = `0.95` stored, `0.58088%` = `0.0058088`. When comparing a stored value to a key-parameters.md entry, compare both as raw decimals.
+
+## Pre-filing mandatory checklist
+
+Before filing any Low or Medium finding, apply the pre-filing mandatory checklist in `reference/pitfalls.md` (SC-022 through SC-028). In particular:
+- Accumulate all "add a cell note" / "document the rationale" gaps (no directional CE impact) into one grouped PR/Legibility item — do not file per-parameter (SC-022).
+- Accumulate all vague-source-note / missing-row-number / first-name-citation gaps into one grouped PR/Sourcing item — do not file per-cell (SC-023).
+- Accumulate all formula-robustness instances (missing IFERROR, unguarded divisions) into one grouped Low/Formula item — do not file per cell (SC-006).
+- Discard triangulation suggestions unless a specific numerical divergence was found (SC-025).
 
 ## Writing Findings
 

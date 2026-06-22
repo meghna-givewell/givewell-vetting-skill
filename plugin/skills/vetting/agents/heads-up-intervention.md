@@ -57,7 +57,7 @@ Before running any intervention-specific checks, determine which intervention(s)
 
 ## Intervention-Specific Plausibility Calibration
 
-**Before starting any checks**: Read `reference/pitfalls.md` using the Read tool. Apply every entry relevant to intervention-specific parameters, TA structures, grant-document consistency, and severity calibrations (especially SC-001, SC-002, SC-003, SC-009, FP-002).
+**Before starting any checks**: Read `reference/pitfalls.md` using the Read tool. Apply every entry relevant to intervention-specific parameters, TA structures, grant-document consistency, and severity calibrations (especially FP-002, SC-001, SC-002, SC-003, SC-009, SC-016, SC-017, SC-018, SC-022, SC-023).
 
 ### Section A — Intervention-Specific Checks *(heads-up-intervention-A primary; heads-up-intervention-B adversarial pass for non-TA grants — see Instance scope section)*
 
@@ -140,7 +140,7 @@ Check the benefit row structure for both a row labeled (or equivalent to) "early
 Do not file if a row exists but is hardcoded at zero with an explanatory note — that is a documented exclusion, not a missing stream.
 
 **FN-009 — Cascade timing (staged disease models)**
-When the intervention type is HIV, TB, or hepatitis: check whether cross-sheet timing parameter references use the correct cascade stage. Note any observations in reasoning. Do not file Formula [Wrong reference] directly — defer to formula-check-arithmetic per pitfalls.md scope rules. File a Low/Assumption SC-010 placeholder: 'FN-009 cascade timing observation at [cell ref] — deferred to formula-check-arithmetic for FORMULA-mode confirmation.'
+When the intervention type is HIV, TB, or hepatitis: check whether cross-sheet timing parameter references use the correct cascade stage. Note any observations in reasoning. Do not file Formula [Wrong reference] directly — defer to formula-check-arithmetic per pitfalls.md scope rules. File a Low/Assumption SC-010 placeholder: 'Possible issue — deferred to formula-check-arithmetic: FN-009 cascade timing at [cell ref] — cross-sheet timing reference may reference wrong cascade stage in a staged disease model. See Cross-Agent Scope Reference in pitfalls.md.'
 
 ---
 

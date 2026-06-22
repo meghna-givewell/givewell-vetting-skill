@@ -6,7 +6,7 @@ You have been provided:
 - Hardcoded Values sheet ID
 - User email for MCP calls
 
-**Before doing anything else, read `reference/pitfalls.md` using the Read tool. Apply every entry relevant to source citation, severity calibration (SC-003, SC-009), and value verification.**
+**Before doing anything else, read `reference/pitfalls.md` using the Read tool. Apply every entry relevant to source citation, severity calibration (SC-003, SC-009, SC-012, SC-017), and value verification. SC-012 governs the hop minimum required before escalating a Contradicted finding to High; SC-017 applies if more than 8 High findings are queued for the staging tab.**
 
 ---
 
@@ -56,7 +56,7 @@ After reading the sheet and confirming eligible rows exist, confirm the Bash too
 1. Fall back to manual `WebFetch` verification for the top 5 Study-Derived parameters only (Study-Derived rows with a URL in column F). Select the top 5 using this explicit priority order: (1) among Study-Derived rows, those with the highest CE-impact parameters rank first (prioritise rows whose Description mentions mortality rate, coverage, or unit cost); (2) among rows with equal CE-impact, rows appearing earlier in the sheet (lower row number) rank above rows added more recently (higher row number).
 2. For each of the 5 parameters: call `WebFetch` on the Source to Verify URL, then compare the stated value against the fetched content. If the fetched document exceeds 80,000 characters or the MCP tool returns a truncation warning, write verdict `Could not verify — document truncated at [N] chars; verify the specific value manually` rather than attempting to match against the incomplete document.
 3. Write verdicts (`Matched ✓`, `Contradicted ✗`, or `Could not verify`) and evidence to columns G and H of those 5 rows.
-4. Write a single row to the Hardcoded Values sheet immediately after the last filled row: column B = `source-citation-verify`, column D = `AGENT_COMPLETE`, column F = `Bash unavailable — fell back to manual spot-check of top-5 Study-Derived parameters; full citation verification not completed. [N] spot-checked. [K] Matched ✓, [M] Contradicted ✗, [P] Could not verify.`, all other columns blank.
+4. Write a single row to the Hardcoded Values sheet immediately after the last filled row: column B = `source-citation-verify`, column D = `AGENT_COMPLETE`, column F = `COVERAGE_ROWS: [row range checked, e.g., 2-6] | Bash unavailable — fell back to manual spot-check of top-5 Study-Derived parameters; full citation verification not completed. [N] spot-checked. [K] Matched ✓, [M] Contradicted ✗, [P] Could not verify.`, all other columns blank.
 5. Stop — do not proceed to Steps 3–5. Write the Step 6 coverage declaration covering only the 5 spot-checked rows, including the Contradicted ✗ block if any contradictions were found. Then stop (the AGENT_COMPLETE marker was already written in fallback bullet 4 above).
 
 The orchestrator (SKILL.md) checks the AGENT_COMPLETE text for `Bash unavailable` and will surface a warning to the researcher.
@@ -330,7 +330,7 @@ Write a finding to a Findings staging tab named `stg-srcverify-A` (create it if 
 - Column H: Direction unknown (or compute if possible)
 - Column I: (leave blank)
 
-If no Contradicted rows meet criteria (a) and (b), skip this step. Write AGENT_COMPLETE to the staging tab after writing any findings (or immediately if no findings were written).
+If no Contradicted rows meet criteria (a) and (b), skip this step.
 
 ---
 

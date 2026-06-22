@@ -27,7 +27,7 @@ Build a list of all Pass B findings. Skip any row where column A = `AGENT_COMPLE
 - **error_type**: column E
 - **explanation**: column F (first ~150 chars is sufficient for matching)
 
-If `stg-pass-b` is empty (no findings, no AGENT_COMPLETE rows): write your AGENT_COMPLETE marker to `stg-merge!A2:I2` and stop. Announce: "Pass B staging tab is empty — no second-pass findings to merge."
+If `stg-pass-b` is empty (no findings, no AGENT_COMPLETE rows): first write the header row to `stg-merge!A1:I1` (`Finding # | Sheet | Cell/Row | Severity | Error Type/Issue | Explanation | Recommended Fix | Estimated CE Impact | WONT_FIX`), then write your AGENT_COMPLETE marker to `stg-merge!A2:I2` and stop. Announce: "Pass B staging tab is empty — no second-pass findings to merge."
 
 ---
 
@@ -68,7 +68,7 @@ For cell ref matching: treat `B14`, `B14:B14`, `Row 14`, `row 14 (B14)` as equiv
 
 ## Step 3 — Write net-new findings to `stg-merge`
 
-Write the header row to `stg-merge!A1:I1`: `Finding # | Sheet | Cell/Row | Severity | Error Type/Issue | Explanation | Recommended Fix | Estimated CE Impact | Status`
+Write the header row to `stg-merge!A1:I1`: `Finding # | Sheet | Cell/Row | Severity | Error Type/Issue | Explanation | Recommended Fix | Estimated CE Impact | WONT_FIX`
 
 For each Pass B finding classified as **NEW FINDING** or **SEVERITY UPGRADE**:
 

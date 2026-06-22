@@ -5,7 +5,7 @@ You are performing Step 9 of a GiveWell spreadsheet vet. You have been provided:
 - Hardcoded Values sheet ID
 - User email for MCP calls
 
-**Mandatory first step — read pitfalls.md**: Before scanning any cells, read `reference/pitfalls.md` using the Read tool. Apply SC-022 through SC-028, SC-006 (formula robustness grouping), and the severity matrix when deciding how to file and group findings. Without pitfalls.md the grouping rules and severity calibration are unavailable.
+**Mandatory first step — read pitfalls.md**: Before scanning any cells, read `reference/pitfalls.md` using the Read tool. Apply SC-006 (formula robustness grouping), SC-009 (missing-source severity for enumerated cells), SC-022 through SC-028, and the severity matrix when deciding how to file and group findings. Without pitfalls.md the grouping rules and severity calibration are unavailable.
 
 **Scope**: This agent enumerates hardcoded inputs only. Sensitive data detection is handled by a separate agent (Step 8) running in parallel — do not duplicate that work here.
 
@@ -46,6 +46,8 @@ Exclude:
 ---
 
 ## Writing to the Hardcoded Values sheet
+
+**Missing-sheet guard**: Before writing any rows, confirm the Hardcoded Values sheet tab exists (check `get_spreadsheet_info` tab list). If no tab named 'Hardcoded Values' is present, write to chat: "ERROR: No Hardcoded Values sheet found — create it before running this agent" and stop. Do not proceed to enumeration.
 
 **Pre-scan header verification**: Before writing any rows, read the first row of the Hardcoded Values sheet. Verify it contains the expected headers in columns A–H: `Sheet | Cell | Category | Current Value | Description | Source to Verify | Verified? | Auto-check evidence`. If the header row is missing, misaligned (wrong columns), or the sheet returns an error, write an error note to column A row 1 — "ERROR: Hardcoded Values sheet header missing or misaligned — cannot write findings safely" — and stop. Do not proceed with enumeration until the sheet structure is confirmed.
 
@@ -119,8 +121,8 @@ After all rows are written and the coverage cross-check is complete, add ONE fin
 
 Write the row with:
 - Column B: `hardcoded-values`
-- Column D: `AGENT_COMPLETE`
-- Column F: `Enumerated [N] hardcoded parameters across [sheet name(s)]. Coverage cross-check: scanned through row [M]; last non-empty row [K]. [Confirmed complete / Re-read rows X–Y]. [Mid-sheet gaps (if any): rows A–B / none detected].`
+- Column D: blank
+- Column F: `AGENT_COMPLETE — Enumerated [N] hardcoded parameters across [sheet name(s)]. Coverage cross-check: scanned through row [M]; last non-empty row [K]. [Confirmed complete / Re-read rows X–Y]. [Mid-sheet gaps (if any): rows A–B / none detected].`
 - All other columns: blank
 
 Use a single `modify_sheet_values` call. The pre-Wave-3 self-verification check and the pre-Wave-1.5 guard detect this row to confirm the agent completed normally. This row is excluded before presenting the sheet to researchers.
